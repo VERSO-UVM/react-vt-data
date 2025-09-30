@@ -1,0 +1,41 @@
+
+
+# random stuff that's too big or unneeded to push
+venv/
+*FJK*
+*fjk*
+*__pycache__*
+.ruff_cache
+*large-data*
+*_trash*
+
+
+
+# build libraries
+*node_modules*
+*.next*
+
+
+
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# MacOS / IDE files
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Build output
+out/
+dist/
