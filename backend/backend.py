@@ -11,6 +11,5 @@ def read_root():
 
 
 @app.get("/load")
-def read_root():
-    return {"Hello": "Ian"}
-
+def read_root(filename):
+    return app_utils.process_file(filename)

@@ -9,6 +9,10 @@ function getDataFromSlug(slug: string) {
   return fetch(`/data/${slug}.json`).then((res) => res.json());
 }
 
+function get_from_py(slug: string, filter: string, local_host: string) {
+  return fetch(`$local_host/data/?slug=slug?filter=$filter`);
+}
+
 export default function MappingPage() {
   const params = useParams();
   const slug = params?.slug as string | undefined; // Type assertion
