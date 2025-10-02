@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import VTMap from '@/components/mapping/Mapping';
 import { Container } from '@mantine/core';
 
+// at some point this function will need to be replaced by api, etc.
 function getDataFromSlug(slug: string) {
   return fetch(`/data/${slug}.json`).then((res) => res.json());
 }
