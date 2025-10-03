@@ -6,6 +6,7 @@ import '@mantine/core/styles.css';
 
 import type { AppProps } from 'next/app';
 import { Center, Container, Title, Text, Stack } from '@mantine/core';
+import IncrementButton from '@/components/Counter/increment';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <Stack spacing="lg">
         <Center>
           <Title order={1}>Welcome!</Title>
+          <IncrementButton />
         </Center>
         <Text>
           This is the Vermont Data Exploration App, a prototype for a website

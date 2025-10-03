@@ -30,6 +30,7 @@ const links = [
   },
   { link: '/save', label: 'Working Report' },
   { link: '/data-export', label: 'Raw Data Export' },
+  { link: '/scratch', label: 'Scratch' },
 ];
 
 export default function HeaderMenu() {
