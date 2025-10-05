@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-
+from app_utils import data_loading
+import json
 
 
 app = FastAPI()
@@ -7,9 +8,10 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Default Message": "No endpoint specified"}
 
 
-@app.get("/load")
-def read_root(filename):
-    return app_utils.process_file(filename)
+@app.get("/load/zoning")
+def read_zoning():
+    zoning_data = data_loading.load_zoning_data()
+    return json.loads(zoning_data.to_json())
