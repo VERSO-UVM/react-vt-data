@@ -28,7 +28,7 @@ const links = [
     link: '/data-viewer',
     label: 'Data Viewer',
   },
-  { link: '/save', label: 'Working Report' },
+  { link: '/working-report', label: 'Working Report' },
   { link: '/data-export', label: 'Raw Data Export' },
   { link: '/scratch', label: 'Scratch' },
 ];

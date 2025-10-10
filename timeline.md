@@ -39,17 +39,22 @@ Precise due-dates to be elaborated.
 
 # Proof of structure for Working Report
 
-## Phase 1
+## Phase 0 (COMPLETE)
 
-- building a pipeline to add stuff to a saved-state report
-- adding in functionality to export the report/page in the form of a
+- make some simple charts with recharts.js.
+- define a initial version of metadata for charts
+- define a renderer of that metadata
+- handle metadata with saved states
+
+## Phase 1 (COMPLETE)
+
+- add functionality to remove saved states from the report
+- add functionality to export the report/page in the form of a pdf
 
 ## Phase 2
 
-- automated reports split by:
-  - area
-  - topic
-  - and more
+- begin scaling up vocabulary of reports
+- construct default automated reports based on profiles
 
 # Improvements and pretty
 

@@ -1,23 +1,36 @@
-type ChartItem = {
-  lib: 'recharts' | 'other'; // which renderer to use
-  type: string; // "line" | "bar" | etc.
-  data: any; // the actual chart data
-  options?: Record<string, any>; // extra settings
-};
+interface BaseItem<TData = any> {
+  id: string;
+  title: string;
+  type: 'chart' | 'counter' | 'map' | string;
+  createdAt?: string;
+  dataRef?: ItemDataRef;
+  data?: TData[];
+}
 
-type CountItem = {
-  count: number;
-};
+interface ItemDataRef {
+  datasetId: string;
+  filters?: Record<string, any>;
+  params?: Record<string, any>;
+}
 
-type GenItem =
-  | { id: string; type: 'chart'; data: ChartItem }
-  | { id: string; type: 'counter'; data: CountItem };
+interface ChartItem<TData> extends BaseItem {
+  type: 'chart';
+  xField: string;
+  yField: string;
+  chartParams?: Record<string, any>;
+}
 
-type ItemsContextType = {
-  items: GenItem[];
-  addItem: (item: GenItem) => void;
-  removeItem: (id: string) => void;
-  updateItem: (item: GenItem) => void;
-};
+interface CounterItem extends BaseItem {
+  type: 'counter';
+  value: number;
+  // just example type for now
+}
 
-export type { ChartItem, CountItem, GenItem, ItemsContextType };
+interface MapItem extends BaseItem {
+  type: 'map';
+  // details to be figured out later
+}
+
+type GenItem = ChartItem<any> | CounterItem | MapItem;
+
+export type { GenItem, ChartItem, CounterItem, MapItem, ItemDataRef };

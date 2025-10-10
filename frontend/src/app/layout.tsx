@@ -2,8 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { MantineProvider, createTheme } from '@mantine/core';
-import { ItemsProvider } from '@/components/ItemsProvider';
-import IncrementButton from '@/components/Counter/increment';
+import { useItems } from '@/components/ItemsProvider';
 import HeaderMenu from '../components/HeaderMenu';
 
 const geistSans = Geist({
@@ -39,10 +38,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <MantineProvider theme={theme}>
-          <ItemsProvider>
-            <HeaderMenu />
-            <main style={{ marginTop: 20 }}>{children}</main>
-          </ItemsProvider>
+          <HeaderMenu />
+          <main style={{ marginTop: 20 }}>{children}</main>
         </MantineProvider>
       </body>
     </html>
