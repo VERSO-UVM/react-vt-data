@@ -1,7 +1,7 @@
 'use client';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import VTMap from '@/components/mapping/Mapping';
+import VTMap from '@/components/mapping';
 import { Container } from '@mantine/core';
 
 // at some point this function will need to be replaced by api, etc.

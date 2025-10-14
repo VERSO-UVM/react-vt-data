@@ -24,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+a {
+  color: var(--mantine-color-blue-filled);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
