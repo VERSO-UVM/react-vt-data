@@ -7,7 +7,13 @@ import { GeoJsonLayer } from '@deck.gl/layers';
 import type { FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { ViewState, ViewStateChangeEvent } from 'react-map-gl/maplibre';
+import mlinesRaw from '@/Data/municipalites.json';
+import { Paper, Switch, Card, Button } from '@mantine/core';
 
+const countylines: FeatureCollection = {
+  type: 'FeatureCollection',
+  features: mlinesRaw.features,
+};
 interface MyMapProps {
   geojson: FeatureCollection;
 }
@@ -36,6 +42,12 @@ const INITIAL_VIEW_STATE: ViewState = {
 export default function VTMap({ geojson }: MyMapProps) {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [baseStyle, setBaseStyle] = useState(BASE_STYLES.OSM);
+  const [tooltip, setTooltip] = useState<{
+    x: number;
+    y: number;
+    content: any;
+  } | null>(null);
+  const [showCountyLines, setShowCountyLines] = useState(true);
 
   function clamp(value: number, minValue: number, maxValue: number) {
     return Math.max(minValue, Math.min(maxValue, value));
@@ -75,11 +87,39 @@ export default function VTMap({ geojson }: MyMapProps) {
       pickable: true,
       autoHighlight: true,
       highlightColor: [222, 102, 0, 200],
+      onHover: (info) => {
+        if (info.object) {
+          setTooltip({
+            x: info.x,
+            y: info.y,
+            content: info.object.properties.tooltip, // this is an object
+          });
+        } else {
+          setTooltip(null);
+        }
+      },
     }),
-  ];
+    showCountyLines &&
+      new GeoJsonLayer({
+        id: 'county-lines',
+        data: countylines,
+        filled: false,
+        stroked: true,
+        getLineColor: [80, 80, 80, 200],
+        lineWidthMinPixels: 1,
+      }),
+  ].filter(Boolean); // removes false layesr
 
   return (
     <>
+      <Card shadow="sm" p="md">
+        <Switch
+          label="Show County Lines"
+          checked={showCountyLines}
+          onChange={(event) => setShowCountyLines(event.currentTarget.checked)}
+        />
+      </Card>
+
       <div style={{ position: 'relative' }}>
         <DeckGL
           initialViewState={INITIAL_VIEW_STATE}
@@ -91,6 +131,30 @@ export default function VTMap({ geojson }: MyMapProps) {
         >
           <Map mapStyle={baseStyle} />
         </DeckGL>
+
+        {tooltip && (
+          <Paper
+            shadow="md"
+            p="xs"
+            style={{
+              position: 'absolute',
+              left: tooltip.x,
+              top: tooltip.y,
+              pointerEvents: 'none',
+              zIndex: 1000,
+            }}
+          >
+            <strong>{tooltip.content.__title__}</strong>
+            {Object.entries(tooltip.content).map(
+              ([k, v]) =>
+                k !== '__title__' && (
+                  <div key={k}>
+                    <b>{k}:</b> {v}
+                  </div>
+                ),
+            )}
+          </Paper>
+        )}
       </div>
 
       {/* Simple buttons to switch base layers */}
