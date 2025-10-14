@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "html2pdf.js": "^0.12.1",
+    "uuid": "^13.0.0"
+  }
+}
