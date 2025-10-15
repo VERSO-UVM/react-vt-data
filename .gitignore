@@ -8,7 +8,7 @@ venv/
 .ruff_cache
 *large-data*
 *_trash*
-
+*zoning.json*
 
 
 # build libraries
@@ -16,9 +16,7 @@ venv/
 *.next*
 
 
-
-
-# Logs
+# Logss
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
