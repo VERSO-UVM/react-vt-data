@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import html2pdf from 'html2pdf.js'; // Import the html2pdf library
+import html2pdf from 'html2pdf.js';
 import {
   Card,
   Container,
@@ -12,9 +12,12 @@ import {
   Box,
 } from '@mantine/core';
 import { useItems } from '@/components/ItemsProvider';
-import DualLine from '@/components/Charts/DualLine';
+import ChartStack from '@/components/Charts';
+
 import { useShallow } from 'zustand/shallow';
 import { ChartItem } from '@/types/cachedCharts';
+import { RemoveChart } from '@/components/Charts/saving';
+import { Chart } from 'chart.js';
 
 export default function WorkingReport() {
   const componentRef = useRef(null); // Create a ref for our report container
@@ -42,34 +45,14 @@ export default function WorkingReport() {
 
   return (
     <Container size="xl">
-      <Stack gap="xl">
+      <Stack>
         <Title>Working Report</Title>
         <Text>{`There are currently ${len} charts in the report`}</Text>
         <Button onClick={handleDownloadPdf}>Download as PDF</Button>
 
         {/* Assign the ref to the container to capture */}
         <div ref={componentRef}>
-          {charts.map((chart) => (
-            <Card
-              key={chart.id}
-              shadow="sm"
-              padding="lg"
-              radius="md"
-              withBorder
-            >
-              <Box
-                key={chart.id}
-                style={{
-                  height: 400,
-                  border: '1px solid #ccc',
-                  padding: '16px',
-                }}
-              >
-                <Title order={4}>{chart.title}</Title>
-                <DualLine chart={chart} />
-              </Box>
-            </Card>
-          ))}
+          <ChartStack charts={charts} action="remove" />
         </div>
       </Stack>
     </Container>

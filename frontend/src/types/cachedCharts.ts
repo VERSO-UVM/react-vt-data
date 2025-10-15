@@ -15,6 +15,7 @@ interface ItemDataRef {
 
 interface ChartItem<TData> extends BaseItem {
   type: 'chart';
+  subtype: string;
   xField: string;
   yField: string;
   chartParams?: Record<string, any>;

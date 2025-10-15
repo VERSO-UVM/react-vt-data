@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { MantineProvider, createTheme } from '@mantine/core';
-import { useItems } from '@/components/ItemsProvider';
+import { MantineProvider, Container } from '@mantine/core';
 import HeaderMenu from '../components/HeaderMenu';
+import { theme } from './theme';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -20,10 +20,6 @@ export const metadata: Metadata = {
   description: 'Vermont Data dashboard built at UVM by VERSO students',
 };
 
-const theme = createTheme({
-  primaryColor: 'blue',
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,8 +34,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <MantineProvider theme={theme}>
-          <HeaderMenu />
-          <main style={{ marginTop: 20 }}>{children}</main>
+          <div className="layout-wrapper">
+            <Container
+              size="xl"
+              style={{ backgroundColor: 'white', borderRadius: 8 }}
+            >
+              <HeaderMenu />
+              <main style={{ marginTop: 20 }}>{children}</main>
+            </Container>
+          </div>
         </MantineProvider>
       </body>
     </html>

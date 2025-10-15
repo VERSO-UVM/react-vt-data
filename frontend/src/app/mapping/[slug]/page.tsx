@@ -24,8 +24,14 @@ export default function MappingPage() {
   }, [slug]);
 
   return (
-    <Container>
-      <VTMap geojson={data} />
-    </Container>
+    <>
+      <Container size="xl" style={{ height: '80vh', padding: 0, margin: 0 }}>
+        <VTMap geojson={data} />
+      </Container>
+      <br></br>
+      <br></br>
+      <br></br>
+      <br></br>
+    </>
   );
 }

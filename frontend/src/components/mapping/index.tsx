@@ -1,14 +1,20 @@
 'use client';
 
+// react
 import { useState, useCallback } from 'react';
-import DeckGL from '@deck.gl/react';
-import { Map } from 'react-map-gl/maplibre';
+import { Map, ViewState, ViewStateChangeEvent } from 'react-map-gl/maplibre';
+
+// deck, geojson, and mablibre styling
 import { GeoJsonLayer } from '@deck.gl/layers';
+import DeckGL from '@deck.gl/react';
 import type { FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { ViewState, ViewStateChangeEvent } from 'react-map-gl/maplibre';
+
+// mantine and ui
+import { Paper, Switch, Card, Button, Divider } from '@mantine/core';
+
+// baseline data
 import mlinesRaw from '@/Data/municipalites.json';
-import { Paper, Switch, Card, Button } from '@mantine/core';
 
 const countylines: FeatureCollection = {
   type: 'FeatureCollection',
@@ -40,6 +46,8 @@ const INITIAL_VIEW_STATE: ViewState = {
 };
 
 export default function VTMap({ geojson }: MyMapProps) {
+  // At some point we are going to want to add multiple layer functionality to this.
+  // The tooltip use_state will have to be dynamically
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [baseStyle, setBaseStyle] = useState(BASE_STYLES.OSM);
   const [tooltip, setTooltip] = useState<{
@@ -145,6 +153,7 @@ export default function VTMap({ geojson }: MyMapProps) {
             }}
           >
             <strong>{tooltip.content.__title__}</strong>
+            <Divider />
             {Object.entries(tooltip.content).map(
               ([k, v]) =>
                 k !== '__title__' && (
@@ -156,15 +165,6 @@ export default function VTMap({ geojson }: MyMapProps) {
           </Paper>
         )}
       </div>
-
-      {/* Simple buttons to switch base layers */}
-      {/* <div style={{ position: "absolute", top: 10, left: 10 }}>
-        {Object.entries(BASE_STYLES).map(([name, style]) => (
-          <button key={name} onClick={() => setBaseStyle(style)} style={{ margin: 2 }}>
-            {name}
-          </button>
-        ))}
-      </div> */}
     </>
   );
 }

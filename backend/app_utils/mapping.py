@@ -65,20 +65,22 @@ def map_gdf_single_layer(gdf, view_state=None):
 def add_tooltip_from_dict(gdf, label_to_col, gdf_name=None):
     """
     Adds a tooltip column (for pydeck) using a dictionary with format {"label": "column_name"}.
-    Optionally includes the gdf_name as the top line with a separator.
+    Optionally includes the gdf_name as the top line with a sepsarator.
+     
+    Note: this has been altered from the streamlit version to create tooltips that will work in 
+    html
     """
-    gdf = gdf.copy()
-
     def format_tooltip(row):
-        lines = []
+        tooltip_dict = {}
         if gdf_name:
-            lines.append(f"<b>{gdf_name}</b>")
-            lines.append("<hr/>")
-        lines += [f"<b>{label}:</b> {row[col]}" for label, col in label_to_col.items()]
-        return "<br/>".join(lines)
+            tooltip_dict["__title__"] = gdf_name
+        for label, col in label_to_col.items():
+            tooltip_dict[label] = row[col]
+        return tooltip_dict
 
     gdf["tooltip"] = gdf.apply(format_tooltip, axis=1)
     return gdf
+
 
 
 def multi_layer_map(gdfs):
