@@ -1,6 +1,14 @@
 {
   "dependencies": {
+    "chart.js": "^4.5.1",
+    "d3-scale": "^4.0.2",
+    "d3-scale-chromatic": "^3.1.0",
     "html2pdf.js": "^0.12.1",
+    "react-chartjs-2": "^5.3.0",
     "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/chart.js": "^2.9.41",
+    "@types/d3-scale-chromatic": "^3.1.0"
   }
 }

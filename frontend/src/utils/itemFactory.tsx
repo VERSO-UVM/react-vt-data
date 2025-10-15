@@ -5,6 +5,7 @@ interface ChartItemConfig<TData> {
   title: string;
   xField: string;
   yField: string;
+  subtype: string;
   data: TData[];
   chartParams?: Record<string, any>;
 }
@@ -17,6 +18,7 @@ export function createChartItem<TData>(
     title: config.title,
     createdAt: new Date().toISOString(),
     type: 'chart',
+    subtype: config.subtype,
     xField: config.xField,
     yField: config.yField,
     data: config.data,
