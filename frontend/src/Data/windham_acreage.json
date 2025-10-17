@@ -1,0 +1,22 @@
+[
+    {
+        "District Type": "Mixed",
+        "Acres": 191568,
+        "hex_color": "#1f77b4b4"
+    },
+    {
+        "District Type": "Nonresidential",
+        "Acres": 15763,
+        "hex_color": "#d62728b4"
+    },
+    {
+        "District Type": "Overlay",
+        "Acres": 19,
+        "hex_color": "#f7b6d2b4"
+    },
+    {
+        "District Type": "Residential",
+        "Acres": 171243,
+        "hex_color": "#9edae5b4"
+    }
+]

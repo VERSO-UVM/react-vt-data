@@ -1,7 +1,7 @@
 'use client';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import VTMap from '@/components/mapping/Mapping';
+import VTMap from '@/components/mapping';
 import { Container } from '@mantine/core';
 
 // at some point this function will need to be replaced by api, etc.
@@ -24,8 +24,14 @@ export default function MappingPage() {
   }, [slug]);
 
   return (
-    <Container>
-      <VTMap geojson={data} />
-    </Container>
+    <>
+      <Container size="xl" style={{ height: '80vh', padding: 0, margin: 0 }}>
+        <VTMap geojson={data} />
+      </Container>
+      <br></br>
+      <br></br>
+      <br></br>
+      <br></br>
+    </>
   );
 }
