@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 
 
-## helper functions
+# helper functions
 def ensure_list(x):
     return x if isinstance(x, list) else [x]
 
@@ -61,7 +61,8 @@ class FilterUI:
         self.key_prefix = key_prefix
         self.presented_cols = presented_cols or filter_state.filter_columns
         self.defaults = defaults or {}
-        self.passed_cols = passed_cols or st.columns(len(filter_state.filter_columns))
+        self.passed_cols = passed_cols or st.columns(
+            len(filter_state.filter_columns))
         self.header = header
         self.allow_all = allow_all or {}
         self.raw_selections = {}
@@ -78,7 +79,8 @@ class FilterUI:
         self.raw_selections[col_name] = raw_selection
 
         # store expanded  version
-        selected_values = self.expand_all_selection(col_name, raw_selection, options)
+        selected_values = self.expand_all_selection(
+            col_name, raw_selection, options)
         self.selections[col_name] = selected_values
         return selected_values
 
@@ -154,7 +156,8 @@ class FilterUI:
                     label, options, default=default, key=key
                 )
 
-            selected_values = self.process_selection(col_name, raw_selection, options)
+            selected_values = self.process_selection(
+                col_name, raw_selection, options)
             if i < len(self.passed_cols) - 1:
                 tree = self.update_tree(tree, selected_values)
         self.update_filterstate()
@@ -200,6 +203,7 @@ def filter_snapshot_data(dfs, key_df):
         style="selectbox",
         presented_cols=["County", "Municipality"],
     )
-    filtered_dfs = {key: filter_state.apply_filters(df) for key, df in dfs.items()}
+    filtered_dfs = {key: filter_state.apply_filters(
+        df) for key, df in dfs.items()}
     selected_values = filter_state.raw_selections
     return filtered_dfs, selected_values

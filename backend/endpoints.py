@@ -1,13 +1,13 @@
 """
 uvicorn backend:app --reload --port 6767
-
 """
 
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from app_utils import data_loading
 import json
 from pathlib import Path
+from app_utils.df_filtering import FilterState
+from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -63,22 +63,51 @@ async def read_soil_septic_data(rpc):
     return json.loads(data.to_json())
 
 
+class FilterRequest(BaseModel):
+    filter_dict: dict
+
+
 # Load the Census "Main" Dataset by Cateogory (housing, economic, demographic, social)
-@app.get("/load/census/{category}")
-async def read_census_data(category: str):
+@app.post("/load/census/{category}")
+async def read_census_data(category: str, request: FilterRequest = None):
+
+    filter_dict = request.filter_dict if request else {}
+
+    # Error Handling with census category
     if category not in CENSUS_DATASETS:
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found")
 
+    # Load the census dataset
     data = data_loading.load_census_data(
         CENSUS_DATASETS[category]["main"])
 
-    return data.to_json()
+    # Create Filter Object using Filter class (takes data and columns)
+    filters = FilterState(
+        df=data,
+        filter_columns=list(filter_dict.keys())
+    )
+
+    # Filter the data
+    for col, value in filter_dict.items():
+        filters.selections[col] = [value]
+
+    # Apply filters with apply_filters class function
+    data_filtered = filters.apply_filters()
+
+    if data_filtered.empty:
+        raise HTTPException(
+            status_code=404, detail=f"No data found for the given filters: {filter_dict}")
+
+    return data_filtered.to_json()
 
 
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
-@app.get("/load/census/{category}/{subcategory}")
-async def read_census_data_subcat(category: str, subcategory: str):
+@app.post("/load/census/{category}/{subcategory}")
+async def read_census_data_subcat(category: str, subcategory: str = 'main', request: FilterRequest = None):
+
+    filter_dict = request.filter_dict if request else {}
+
     if category not in CENSUS_DATASETS:
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found")
@@ -90,4 +119,20 @@ async def read_census_data_subcat(category: str, subcategory: str):
     data = data_loading.load_census_data(
         CENSUS_DATASETS[category][subcategory])
 
-    return data.to_json()
+    # Create Filter Object using Filter class (takes data and columns)
+    filters = FilterState(
+        df=data,
+        filter_columns=list(filter_dict.keys())
+    )
+
+    for col, value in filter_dict.items():
+        filters.selections[col] = [value]
+
+    # Apply filters with apply_filters class function
+    data_filtered = filters.apply_filters()
+
+    if data_filtered.empty:
+        raise HTTPException(
+            status_code=404, detail=f"No data found for the given filters: {filter_dict}")
+
+    return data_filtered.to_json()
