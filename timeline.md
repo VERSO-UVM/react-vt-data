@@ -39,25 +39,34 @@ Precise due-dates to be elaborated.
 
 # Proof of structure for Working Report
 
-## Phase 1
+## Phase 0 (COMPLETE)
 
-- building a pipeline to add stuff to a saved-state report
-- adding in functionality to export the report/page in the form of a
+-[x] make some simple charts with recharts.js.
+-[x] define a initial version of metadata for charts
+-[x] define a renderer of that metadata
+-[x] handle metadata with saved states
 
-## Phase 2
+## Phase 1 (broad features) (COMPLETE)
 
-- automated reports split by:
-  - area
-  - topic
-  - and more
+-[x] add functionality to add saved states from the report (TODO)
+-[x] add functionality to remove saved states from the report (TODO)
+-[x] add functionality to export the report/page in the form of a pdf
+
+## Phase 2 (usability)
+
+- begin scaling up vocabulary of reports
+
+## Phase 3 (eventual)
+
+- construct default automated reports based on profiles
+- make the metadata either directly accessible or something that we can save into some sort of profile or export that can then be imported back in
 
 # Improvements and pretty
 
 ## Mapping
 
-- add base layers for counties and municpalities -- fitz
-  - we can decide what they make the most sense to use later (or have toggle)
-- tooltips
+-[x] add base layers for counties and municpalities
+-[x] tooltips
 - legends
 - other structure
 - styling
