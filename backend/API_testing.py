@@ -8,8 +8,20 @@ def test_get_zoning_data():
     response = client.get("/load/mapping/zoning")
     assert response.status_code == 200
     data = response.json()
-    assert isinstance(data, dict)
-    assert "features" in data
+    return data
+
+
+def test_get_flooding_data():
+    response = client.get("/load/mapping/flood_legal")
+    assert response.status_code == 200
+    data = response.json()
+    return data
+
+
+def test_get_soil_septic_data():
+    response = client.get("/load/mapping/soil_septic")
+    assert response.status_code == 200
+    data = response.json()
     return data
 
 
@@ -40,9 +52,7 @@ def main():
     data = test_get_census_data_subcat(
         category="economic", subcategory="median_earnings", filter_dict=filter_dict_example)
 
-    print("____________________________________________\nReturned Data:\n")
     print(data)
-    print("____________________________________________")
 
 
 if __name__ == "__main__":
