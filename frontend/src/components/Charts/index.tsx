@@ -18,6 +18,8 @@ interface ChartCardProps<TData> {
 }
 
 const ChartCard = <TData,>({
+  // ideally htis will eventually have multiple 'views' in to the same data
+  // tabular, visual, and textual summary.
   chart,
   ChartComponent,
   action = 'add',
