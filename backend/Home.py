@@ -11,6 +11,7 @@ streamlit run Home.py
 
 # Necessary imports
 import streamlit as st
+
 from app_utils.streamlit_config import streamlit_config
 
 

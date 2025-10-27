@@ -22,7 +22,6 @@ from app_utils.constants.dataset_sources import (
     SOCIAL_SOURCES,
 )
 from app_utils.data_cleaning import strip_all_whitespace
-from app_utils.flooding import process_flood_gdf
 from app_utils.mapping import add_cols_of_biggest_intersection
 from app_utils.wastewater import process_soil_data
 from app_utils.zoning import process_zoning_data
@@ -51,10 +50,14 @@ def load_data(path, simplify_tolerance=None, drop_cols=None, postprocess_fn=None
         case "geojson":
             df = safe_read(lambda: gpd.read_file(path))
             df = crs_set(df)
+        case "json":
+            df = safe_read(lambda: gpd.read_file(path))
+            df = crs_set(df)
         case "csv":
             df = safe_read(lambda: pd.read_csv(path))
         case _:
-            df = safe_read(lambda: pd.read_csv(io.StringIO(requests.get(path).text)))
+            df = safe_read(lambda: pd.read_csv(
+                io.StringIO(requests.get(path).text)))
 
     if drop_cols:
         df = df.drop(columns=drop_cols, errors="ignore")
@@ -105,7 +108,7 @@ def load_soil_septic_single(rpc):
             path=DATADIR / "soil-suitability" / f"{rpc}_Soil_Septic.fgb",
             simplify_tolerance=0.0001,
         )
-    except:
+    except Exception:
         import streamlit as st
 
         st.markdown(
@@ -120,12 +123,11 @@ def load_soil_septic_multi(rpcs):
     return pd.concat(dfs, ignore_index=True, sort=False)
 
 
-## TODO: update with actual path. once in stored place.
+# TODO: update with actual path. once in stored place.
 def load_flood_data():
     return load_data(
-        path=DATADIR
-        / "large-data"
-        / "Flood_Hazard_Areas_(Only_FEMA_-_digitized_data).geojson",
+        path=Path(__file__).parent.parent.parent /
+        "frontend/public/data/flood-legal.json",
         simplify_tolerance=0.0001,
     )
 
@@ -151,7 +153,8 @@ def load_census_data_dict(sources, basename=DATADIR / "Census"):
                 data[filename]
             )  # derive and cache from cached raw via func
         else:
-            data[label] = load_census_data(Path(basename) / src)  # cache raw sans func
+            data[label] = load_census_data(
+                Path(basename) / src)  # cache raw sans func
     return data
 
 
@@ -171,7 +174,7 @@ def load_combine_census(label_to_file):
     return df_combined
 
 
-### load metrics we've defined
+# load metrics we've defined
 def load_metrics(df, metric_source):
     """
     Compute, rename, and scale metrics.
@@ -225,7 +228,7 @@ def masterload(name, rpc=None):
 LOADERS = {
     "zoning": lambda: process_zoning_data(load_zoning_data()),
     "soil_septic": load_and_process_soil_septic,
-    "flood_legal": lambda: process_flood_gdf(load_flood_data()),
+    "flood_legal": lambda: load_flood_data(),
     # Census
     "census_housing": lambda: load_census_data_dict(HOUSING_SOURCES),
     "census_economics": lambda: load_census_data_dict(ECON_SOURCES),
