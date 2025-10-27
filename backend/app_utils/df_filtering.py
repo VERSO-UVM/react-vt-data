@@ -39,6 +39,15 @@ class FilterState:
             df = df[df[col].isin(selected_values)]
         return df
 
+    def set_filters(self, filter_dict: dict):
+        """
+        Update selections from a filter dictionary.
+        NOTE: still need to fix to handle 'all' 
+        """
+        for col, values in filter_dict.items():
+            if col in self.selections:
+                self.selections[col] = values if isinstance(values, list) else [values]
+
 
 class FilterUI:
     """

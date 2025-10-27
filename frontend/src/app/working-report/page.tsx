@@ -12,7 +12,7 @@ import {
   Box,
 } from '@mantine/core';
 import { useItems } from '@/components/ItemsProvider';
-import ChartStack from '@/components/Charts';
+import { ChartStack } from '@/components/Charts';
 
 import { useShallow } from 'zustand/shallow';
 import { ChartItem } from '@/types/cachedCharts';

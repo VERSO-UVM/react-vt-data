@@ -30,8 +30,9 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 import { schemePastel2 } from 'd3-scale-chromatic';
 import { scaleOrdinal } from 'd3-scale';
 const colorScale = scaleOrdinal(schemePastel2);
-
 import { ChartItem } from '@/types/cachedCharts';
+import { useFilter } from '../FilterUI/FilterContext';
+import { useEffect } from 'react';
 
 interface BarChartProps<TData> {
   chart: ChartItem<TData>;
