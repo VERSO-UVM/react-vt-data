@@ -3,7 +3,7 @@
 import { Stack, Text, Card, Container, Box, Title } from '@mantine/core';
 import { AddChart } from '@/components/Charts/saving';
 import { createChartItem } from '@/utils/itemFactory';
-import ChartStack from '@/components/Charts';
+import { ChartStack } from '@/components/Charts';
 
 const data1: any[] = [
   { name: 'Page A', uv: 4000, pv: 2400, amt: 2400 },
