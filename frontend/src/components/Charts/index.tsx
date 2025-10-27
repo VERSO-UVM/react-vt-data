@@ -17,7 +17,7 @@ interface ChartCardProps<TData> {
   action?: 'add' | 'remove';
 }
 
-const ChartCard = <TData,>({
+export const ChartCard = <TData,>({
   // ideally htis will eventually have multiple 'views' in to the same data
   // tabular, visual, and textual summary.
   chart,
@@ -42,7 +42,7 @@ interface ChartStackProps<TData> {
   action?: 'add' | 'remove';
 }
 
-const ChartStack = <TData,>({
+export const ChartStack = <TData,>({
   charts,
   action = 'add',
 }: ChartStackProps<TData>) => (
@@ -61,5 +61,3 @@ const ChartStack = <TData,>({
     })}
   </Stack>
 );
-
-export default ChartStack;

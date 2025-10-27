@@ -1,18 +1,12 @@
 'use client';
 
-import CounterDisplay from '@/components/Counter/display';
-import IncrementButton from '@/components/Counter/increment';
-import { Container } from '@mantine/core';
-import ResetButton from '@/components/reload';
-import BDLoad from '@/components/Data_Loading/basic_data_load';
+import BasePage from './base_page';
+import { FilterProvider } from '@/components/FilterUI/FilterContext';
 
-export default function BasePage() {
+export default function ScratchPage() {
   return (
-    <Container>
-      <CounterDisplay />
-      <IncrementButton />
-      <ResetButton />
-      <BDLoad />
-    </Container>
+    <FilterProvider>
+      <BasePage />
+    </FilterProvider>
   );
 }

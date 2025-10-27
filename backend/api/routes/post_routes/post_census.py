@@ -1,36 +1,15 @@
-"""
-uvicorn endpoints:app --reload --port 6767
-"""
 
-import json
-import logging
 from pathlib import Path
 
-from fastapi import Body, FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
 
+from api.models.filter_models import FilterRequest
 from app_utils import data_loading
 from app_utils.df_filtering import FilterState
 
-logger = logging.getLogger(__name__)
-### Notes --- caching the filter states, too, would be a good idea. 
+router = APIRouter()
 
 
-
-app = FastAPI()
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:6767",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 DATADIR = Path(__file__).parent / "Data"
 CENSUS_DATADIR = DATADIR / "Census"
 
@@ -56,73 +35,8 @@ CENSUS_DATASETS = {
     }
 }
 
-class FilterRequest(BaseModel):
-    filters: dict[str, list[str]] = {}
-    format: str | None = "geojson"
-
-@app.get("/")
-def read_root():
-    return {"Default Message": "No endpoint specified"}
-
-# Zoning endpoint (Hardcoded for now)
-@app.post("/load/mapping/zoning")
-async def read_zoning_data(request: FilterRequest = Body(None)):
-    df = data_loading.masterload(name="zoning")
-
-    if request.filters:
-        filter_dict = request.filters
-
-        # Optional: validate columns exist
-        for col in filter_dict.keys():
-            if col not in df.columns:
-                raise HTTPException(status_code=400, detail=f"Column '{col}' does not exist")
-
-        Filter = FilterState(df=df, filter_columns=list(filter_dict.keys()))
-        Filter.set_filters(filter_dict)
-        df = Filter.apply_filters(df)
-
-    if request.format == "aggregated_acres":
-        result = (
-            df.groupby("District Type")["Acres"]
-              .sum()
-              .reset_index()
-              .rename(columns={"District Type": "District Type"})
-        )
-        result["hex_color"] = df.groupby("District Type")["hex_color"].first().values
-        return result.to_dict(orient="records")
-    
-    return df.to_json()
-
-@app.get("/load/mapping/zoning/filters")
-async def read_zoning_data():
-    data = data_loading.masterload(name="zoning")
-    filter_columns=["County", "Jurisdiction", "District Name"]
-    logger.info(f"cols are {filter_columns}")
-    Filter = FilterState(data, filter_columns=filter_columns)
-    return {
-        "tree": Filter.tree,
-        "labels": filter_columns
-    }
-# Flood Endpoint (Hardcoded for now)
-@app.get("/load/mapping/flood_legal")
-async def read_flood_data():
-    data = data_loading.masterload(name="flood_legal")
-    return json.loads(data.to_json())
-
-
-# Soil Septic Endpoint (Hardcoded for now)
-@app.get("/load/mapping/soil_septic/{rpc}")
-async def read_soil_septic_data(rpc):
-    data = data_loading.load_and_process_soil_septic(rpc=rpc)
-    return json.loads(data.to_json())
-
-
-class FilterRequest(BaseModel):
-    filter_dict: dict
-
-
 # Load the Census "Main" Dataset by Cateogory (housing, economic, demographic, social)
-@app.post("/load/census/{category}")
+@router.post("/load/census/{category}")
 async def read_census_data(category: str, request: FilterRequest = None):
     filter_dict = request.filter_dict if request else {}
     if category not in CENSUS_DATASETS:
@@ -145,7 +59,7 @@ async def read_census_data(category: str, request: FilterRequest = None):
 
 
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
-@app.post("/load/census/{category}/{subcategory}")
+@router.post("/load/census/{category}/{subcategory}")
 async def read_census_data_subcat(category: str, subcategory: str = 'main', request: FilterRequest = None):
     filter_dict = request.filter_dict if request else {}
     if category not in CENSUS_DATASETS:
