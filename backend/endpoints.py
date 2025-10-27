@@ -1,5 +1,5 @@
 """
-uvicorn backend:app --reload --port 6767
+uvicorn endpoints:app --reload --port 6767
 """
 
 from fastapi import FastAPI, HTTPException, Request
@@ -8,9 +8,23 @@ import json
 from pathlib import Path
 from app_utils.df_filtering import FilterState
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 app = FastAPI()
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:6767",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 DATADIR = Path(__file__).parent / "Data"
 CENSUS_DATADIR = DATADIR / "Census"
 
