@@ -1,6 +1,6 @@
 import { Stack } from '@mantine/core';
-import GenericFilter from './Filter';
-import ApplyButton from './Apply_Filter';
+import GenericFilter from './GetFilterTreeFromAPI';
+import ApplyButton from './LocalFilterButton';
 import { useFilter } from './FilterContext';
 
 type FilterContainerProps = {
