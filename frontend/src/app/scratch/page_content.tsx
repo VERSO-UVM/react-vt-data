@@ -1,10 +1,6 @@
 'use client';
 
-import CounterDisplay from '@/components/Counter/display';
-import IncrementButton from '@/components/Counter/increment';
 import { Container, Stack, Paper } from '@mantine/core';
-import ResetButton from '@/components/reload';
-import BDLoad from '@/components/Data_Loading/basic_data_load';
 import FilterContainer from '@/components/FilterUI/Filter_wrap';
 import { useFilter } from '@/components/FilterUI/FilterContext';
 import { useState } from 'react';
@@ -13,11 +9,12 @@ import { DiffPerXBarChart } from '@/components/Charts/Bar';
 import { useEffect } from 'react';
 import { BASE_API_URL } from '@/config';
 import { ChartCard } from '@/components/Charts';
+import { ProfileModal } from '@/components/profile/SetProfile';
 
 export default function BasePage() {
   const [data, setData] = useState<any[]>([]);
   const [chartConfig, setChartConfig] = useState<any>(null);
-  const { format, setFormat, selectedFilters, labels } = useFilter();
+  const { setFormat, selectedFilters, labels } = useFilter();
 
   useEffect(() => {
     setFormat('aggregated_acres'); // safe here
@@ -49,10 +46,6 @@ export default function BasePage() {
       <Stack>
         <Paper p="md" shadow="sm">
           <Stack>
-            {/* <CounterDisplay /> */}
-            {/* <IncrementButton /> */}
-            {/* <ResetButton /> */}
-            {/* <BDLoad /> */}
             <FilterContainer
               apiURL={`${BASE_API_URL}/get/load/mapping/zoning/filters`}
               dataURL={`${BASE_API_URL}/post/load/mapping/zoning`}

@@ -11,7 +11,6 @@ router = APIRouter()
 @router.post("/load/mapping/zoning")
 async def read_zoning_data(request: FilterRequest = Body(None)):
     df = data_loading.masterload(name="zoning")
-
     if request.filters:
         filter_dict = request.filters
 
