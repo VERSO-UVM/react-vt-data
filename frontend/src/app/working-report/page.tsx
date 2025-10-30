@@ -16,8 +16,6 @@ import { ChartStack } from '@/components/Charts';
 
 import { useShallow } from 'zustand/shallow';
 import { ChartItem } from '@/types/cachedCharts';
-import { RemoveChart } from '@/components/Charts/saving';
-import { Chart } from 'chart.js';
 
 export default function WorkingReport() {
   const componentRef = useRef(null); // Create a ref for our report container
