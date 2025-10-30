@@ -1,8 +1,8 @@
 /* HeaderMenu.module.css */
 .header {
-  background-color: #FFD700; /* gold/yellow */
+  background-color: #FFD100;  
   padding: 0.5rem 0; /* optional padding */
-  z-index: 1000; /* stay on top if needed */
+  z-index: 1000;
 }
 
 .inner {

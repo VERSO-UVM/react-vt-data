@@ -12,6 +12,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
 import Link from 'next/link';
+import { ProfileModal } from '../profile/SetProfile';
 
 const links = [
   { link: '/', label: 'Home' },
@@ -76,6 +77,7 @@ export default function HeaderMenu() {
       <Container size="md">
         <div className={classes.inner}>
           <Group gap={5} visibleFrom="sm">
+            <ProfileModal />
             {items}
           </Group>
           <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="sm" />

@@ -28,7 +28,7 @@ body {
 
 /* add wrapper for green sidebars */
 .layout-wrapper {
-  background-color: #33b833; /* UVM green */
+  background-color: #154734; /* UVM green */
   min-height: 100vh;
   padding: 0 16px; /* controls width of green edges */
   display: absolute;
