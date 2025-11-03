@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface Location {
+export interface Location {
   type: 'state' | 'county' | 'town' | 'rpc';
   state?: boolean;
   county?: string | null;
   town?: string | null;
   rpc?: string | null;
+  name: string;
 }
 
 interface ProfileStore {
@@ -19,8 +20,8 @@ interface ProfileStore {
 export const useProfile = create<ProfileStore>()(
   persist(
     (set) => ({
-      myLocation: { type: 'state', state: true },
-      comparison: { type: 'county', county: 'Chittenden' },
+      myLocation: { type: 'state', state: true, name: 'Vermont' },
+      comparison: { type: 'county', county: 'Chittenden', name: 'Chittenden' },
       setLocation: (location) => set({ myLocation: location }),
       setComparison: (location) => set({ comparison: location }),
     }),

@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 
 from api.models.filter_models import FilterRequest
 from app_utils import data_loading
-from app_utils.df_filtering import FilterState
+from app_utils.df_filtering import filter_from_request, FilterState
 
 router = APIRouter()
 
@@ -55,6 +55,20 @@ async def read_census_data(category: str, request: FilterRequest = None):
         )
 
     return data_filtered.to_json()
+
+
+@router.post('load/census/housing/unit_type')
+async def get_housing_unit_type(
+    request: FilterRequest = Body(None)
+):
+    from app_utils.housing import housing_df_metric_dict
+    dfs = data_loading.masterload("census_housing")
+    metrics, plot_dfs = housing_df_metric_dict()
+    df = plot_dfs["units_in_structure_df"]
+    df = filter_from_request(df, request)
+    
+    
+
 
 
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
