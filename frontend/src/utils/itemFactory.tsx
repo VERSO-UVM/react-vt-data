@@ -1,6 +1,5 @@
 import { ChartItem } from '@/types/cachedCharts';
 import { v4 as uuidv4 } from 'uuid';
-
 interface ChartItemConfig<TData> {
   title: string;
   xField: string;
@@ -8,6 +7,8 @@ interface ChartItemConfig<TData> {
   subtype: string;
   data: TData[];
   chartParams?: Record<string, any>;
+  description?: string;
+  compareData?: TData[];
 }
 
 export function createChartItem<TData>(
@@ -23,5 +24,7 @@ export function createChartItem<TData>(
     yField: config.yField,
     data: config.data,
     chartParams: config.chartParams,
+    description: config.description,
+    compareData: config.compareData,
   };
 }

@@ -4,7 +4,7 @@ interface BaseItem<TData = any> {
   type: 'chart' | 'counter' | 'map' | string;
   createdAt?: string;
   dataRef?: ItemDataRef;
-  data?: TData[];
+  data: TData[];
 }
 
 interface ItemDataRef {
@@ -13,12 +13,14 @@ interface ItemDataRef {
   params?: Record<string, any>;
 }
 
-interface ChartItem<TData> extends BaseItem {
+interface ChartItem<TData> extends BaseItem<TData> {
   type: 'chart';
   subtype: string;
   xField: string;
   yField: string;
   chartParams?: Record<string, any>;
+  description?: string;
+  compareData?: TData[];
 }
 
 interface CounterItem extends BaseItem {
