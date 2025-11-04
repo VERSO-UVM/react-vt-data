@@ -1,7 +1,6 @@
 /* HeaderMenu.module.css */
 .header {
   background-color: #FFD100;  
-  padding: 0.5rem 0; /* optional padding */
   z-index: 1000;
 }
 
@@ -9,25 +8,28 @@
   height: 56px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex;
 }
 
 .link {
-  display: block;
-  line-height: 1;
-  padding: 8px 12px;
-  border-radius: var(--mantine-radius-sm);
+  display: flex;
+  align-items: center;
+  height: 100%;
+  border-radius: 4px;
+  padding: 0px 7px;
   text-decoration: none;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
   font-size: var(--mantine-font-size-sm);
-  font-weight: 500;
+  transition: background-color .3s ease;
+  font-family: "Trebuchet MS", sans-serif;
+}
 
-  @mixin hover {
-    background-color: light-dark(
-      var(--mantine-color-gray-0),
-      var(--mantine-color-dark-6)
-    );
-  }
+.link:hover {
+    background-color: whitesmoke;
+}
+
+.active {
+  background-color: whitesmoke;
 }
 
 .linkLabel {
