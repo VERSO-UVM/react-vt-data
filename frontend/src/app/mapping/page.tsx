@@ -1,13 +1,29 @@
 import React from 'react';
 import { Title, Group, Container, Button } from '@mantine/core';
 import Link from 'next/link';
+import ExploratoryMappingGrid from '@/components/Grids/ExploratoryMappingOptions';
 
-const links = [
+export const links = [
   { link: '/mapping/zoning', label: 'Zoning' },
   { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
   { link: '/mapping/flood-legal', label: 'Flood Insurance' },
 ];
 
+export default function BaseMappingPage() {
+  return (
+    <>
+      <Title>Exploratory Mapping</Title>
+      <Container>
+        <ExploratoryMappingGrid links={links} />
+      </Container>
+    </>
+  );
+}
+
+
+
+
+/*
 export default function BaseMappingPage() {
   const items = links.map((link) => {
     return (
@@ -28,3 +44,5 @@ export default function BaseMappingPage() {
     </>
   );
 }
+*/
+
