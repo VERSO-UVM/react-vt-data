@@ -15,6 +15,7 @@
     "@mantine/core": "^8.3.2",
     "@mantine/hooks": "^8.3.2",
     "@tabler/icons-react": "^3.35.0",
+    "axios": "^1.13.1",
     "cors": "^2.8.5",
     "deck.gl": "^9.1.14",
     "maplibre-gl": "^5.7.3",
