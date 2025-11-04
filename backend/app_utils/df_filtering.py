@@ -1,6 +1,9 @@
 import pandas as pd
 import streamlit as st
 
+from api.models.filter_models import FilterRequest
+from fastapi import HTTPException
+
 
 # helper functions
 def ensure_list(x):
@@ -170,6 +173,20 @@ class FilterUI:
             if i < len(self.passed_cols) - 1:
                 tree = self.update_tree(tree, selected_values)
         self.update_filterstate()
+
+def filter_from_request(df, request: FilterRequest):
+    if request.filters:
+        filter_dict = request.filters
+
+        # Optional: validate columns exist
+        for col in filter_dict.keys():
+            if col not in df.columns:
+                raise HTTPException(status_code=400, detail=f"Column '{col}' does not exist")
+
+        Filter = FilterState(df=df, filter_columns=list(filter_dict.keys()))
+        Filter.set_filters(filter_dict)
+        df = Filter.apply_filters(df)
+    return df
 
 
 ### wrappers for utility ###
