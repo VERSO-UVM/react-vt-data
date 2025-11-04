@@ -26,19 +26,9 @@ import {
 } from 'chart.js';
 ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 
-//
-import { schemePastel2 } from 'd3-scale-chromatic';
-import { scaleOrdinal } from 'd3-scale';
-const colorScale = scaleOrdinal(schemePastel2);
 import { ChartItem } from '@/types/cachedCharts';
-import { useFilter } from '../FilterUI/FilterContext';
-import { useEffect } from 'react';
 
-interface BarChartProps<TData> {
-  chart: ChartItem<TData>;
-}
-
-const SamePerXBarChart = <TData,>({ chart }: { chart: any }) => {
+const SamePerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
@@ -65,7 +55,7 @@ const SamePerXBarChart = <TData,>({ chart }: { chart: any }) => {
   );
 };
 
-const DiffPerXBarChart = <TData,>({ chart }: { chart: any }) => {
+const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
   const labels = chart.data.map((entry: any) => entry[chart.xField]);
   const colors = chart.data.map((entry: any) => entry[chart.chartParams.color]);
 
@@ -95,5 +85,51 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: any }) => {
 
   return <BarJS data={data} options={options} />;
 };
+interface CompareDiffChartItem<TData> extends ChartItem<TData> {
+  compareData: TData[];
+  chartParams: {
+    color: string;
+    legendLabels?: [string, string];
+  };
+}
+const CompareDiffPerXBarChart = <TData,>({
+  chart,
+}: {
+  chart: CompareDiffChartItem<TData>;
+}) => {
+  const labels = chart.data.map((entry: any) => entry[chart.xField]);
 
-export { SamePerXBarChart, DiffPerXBarChart };
+  const colors = chart.data.map((entry: any) => entry[chart.chartParams.color]);
+  const compareColors = chart.compareData.map(() => '#999');
+
+  const legendLabels = chart.chartParams.legendLabels || [
+    chart.yField,
+    `${chart.yField} (compare)`,
+  ];
+
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: legendLabels[0],
+        data: chart.data.map((entry: any) => entry[chart.yField]),
+        backgroundColor: colors,
+      },
+      {
+        label: legendLabels[1],
+        data: chart.compareData.map((entry: any) => entry[chart.yField]),
+        backgroundColor: compareColors,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: true } },
+  };
+
+  return <BarJS data={data} options={options} />;
+};
+
+export { SamePerXBarChart, DiffPerXBarChart, CompareDiffPerXBarChart };

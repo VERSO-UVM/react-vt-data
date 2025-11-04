@@ -3,45 +3,54 @@ import { Modal, Button, Stack, Select, Title } from '@mantine/core';
 import { useProfile } from './profileStore';
 import county_town_names from '@/Data/county_town_names.json';
 
-interface ProfileLocationSelectProps {
-  title: string;
+interface ProfileLocation {
   type: 'state' | 'county' | 'town' | 'rpc';
-  setType: (type: 'state' | 'county' | 'town') => void;
+  state?: boolean;
   county?: string | null;
   town?: string | null;
-  setLocation: (loc: {
-    type: string;
-    state?: boolean;
-    county?: string | null;
-    town?: string | null;
-  }) => void;
+  name?: string; // only used internally
+}
+
+interface ProfileLocationSelectProps {
+  title: string;
+  location: ProfileLocation;
+  setLocation: (loc: ProfileLocation) => void;
 }
 
 const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   title,
-  type,
-  setType,
-  county,
-  town,
+  location,
   setLocation,
 }) => {
   const counties = Object.keys(county_town_names);
 
+  const getName = (
+    type: string,
+    county?: string | null,
+    town?: string | null,
+  ) => {
+    if (type === 'state') return 'Vermont';
+    if (type === 'county' && county) return county;
+    if (type === 'town' && county && town) return `${town}, ${county}`;
+    return 'Unknown';
+  };
+
   return (
     <>
       <Title order={2}>{title}</Title>
-      {/* Select the level we're interested in */}
+
       <Select
         label="Area type"
-        value={type}
+        value={location.type}
         onChange={(value) => {
           if (!value) return;
-          setType(value as 'state' | 'county' | 'town');
+          const newType = value as 'state' | 'county' | 'town';
           setLocation({
-            type: value,
-            state: value === 'state',
-            county: value === 'town' ? county : null, // preserve existing county when switching to town
+            type: newType,
+            state: newType === 'state',
+            county: newType === 'town' ? location.county : null,
             town: null,
+            name: getName(newType, newType === 'town' ? location.county : null),
           });
         }}
         data={[
@@ -51,25 +60,39 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         ]}
       />
 
-      {(type === 'county' || type === 'town') && (
+      {(location.type === 'county' || location.type === 'town') && (
         <Select
           label="Pick a county"
-          value={county || ''}
+          value={location.county || ''}
           onChange={(value) =>
-            value && setLocation({ type, county: value, town: null })
+            value &&
+            setLocation({
+              ...location,
+              county: value,
+              town: null,
+              name: getName(location.type, value, null),
+            })
           }
           data={counties.map((c) => ({ value: c, label: c }))}
         />
       )}
 
-      {type === 'town' && county && (
+      {location.type === 'town' && location.county && (
         <Select
           label="Pick a town"
-          value={town || ''}
+          value={location.town || ''}
           onChange={(value) =>
-            value && setLocation({ type, county, town: value })
+            value &&
+            setLocation({
+              ...location,
+              town: value,
+              name: getName(location.type, location.county, value),
+            })
           }
-          data={county_town_names[county].map((t) => ({ value: t, label: t }))}
+          data={county_town_names[location.county].map((t) => ({
+            value: t,
+            label: t,
+          }))}
         />
       )}
     </>
@@ -77,12 +100,20 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
 };
 
 export const ProfileModal: React.FC = () => {
-  const [opened, setOpened] = useState(false);
   const { myLocation, setLocation, comparison, setComparison } = useProfile();
-  const [myType, setMyType] = useState(myLocation.type);
-  const [compType, setCompType] = useState(comparison.type);
+  const [opened, setOpened] = useState(false);
 
-  const counties = Object.keys(county_town_names);
+  const [tempMyLocation, setTempMyLocation] =
+    useState<ProfileLocation>(myLocation);
+  const [tempComparison, setTempComparison] =
+    useState<ProfileLocation>(comparison);
+
+  const handleSave = () => {
+    setLocation(tempMyLocation);
+    setComparison(tempComparison);
+    setOpened(false);
+  };
+
   return (
     <>
       <Button onClick={() => setOpened(true)}>Set Profile</Button>
@@ -94,24 +125,17 @@ export const ProfileModal: React.FC = () => {
         <Stack spacing="md">
           <ProfileLocationSelect
             title="My Location"
-            type={myType}
-            setType={setMyType}
-            county={myLocation.county}
-            town={myLocation.town}
-            setLocation={setLocation}
+            location={tempMyLocation}
+            setLocation={setTempMyLocation}
           />
-
           <ProfileLocationSelect
-            title="Comparison (optional)"
-            type={compType}
-            setType={setCompType}
-            county={comparison.county}
-            town={comparison.town}
-            setLocation={setComparison}
+            title="Comparison"
+            location={tempComparison}
+            setLocation={setTempComparison}
           />
+          <Button onClick={handleSave}>Set</Button>
         </Stack>
       </Modal>
-      {console.log('mylocation', myLocation, 'comparison', comparison)}
     </>
   );
 };
