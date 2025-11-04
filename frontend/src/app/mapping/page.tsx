@@ -12,10 +12,13 @@ export const links = [
 export default function BaseMappingPage() {
   return (
     <>
-      <Title>Exploratory Mapping</Title>
+      <Title mb={100}>Exploratory Mapping</Title>
+      
       <Container>
         <ExploratoryMappingGrid links={links} />
       </Container>
+
+      <span style={{ display: 'block', height: 150 }}></span>
     </>
   );
 }
