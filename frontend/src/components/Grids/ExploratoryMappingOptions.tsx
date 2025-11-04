@@ -13,17 +13,15 @@ interface ExploratoryMappingGridProps {
   links: LinkItem[];
 }
 
-/** simple slugifier to turn "Soil Suitability" -> "soil-suitability" */
 function standardizeLabel(label: string) {
   return label
     .toLowerCase()
     .trim()
     .replace(/&/g, 'and')
-    .replace(/[^\w\s-]/g, '') // remove punctuation
+    .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-');
 }
 
-/** Single card for one mapping link */
 function MappingCard({ item }: { item: LinkItem }) {
   const fileName = `${standardizeLabel(item.label)}.png`;
   const src = `/images/mapping-icons/${fileName}`;
@@ -45,7 +43,7 @@ function MappingCard({ item }: { item: LinkItem }) {
 
       
       <text style={{ flexGrow: 0, textAlign: 'center', marginTop: 8, marginBottom: 4, color: '#555' }}>
-        Brief description or summary about {item.label} offerings/use cases.
+        Brief description or summary about offerings/use cases.
       </text>
       
       <Box style={{ padding: 12 }}>
@@ -59,7 +57,6 @@ function MappingCard({ item }: { item: LinkItem }) {
   );
 }
 
-/** Grid that renders mapping cards */
 export default function ExploratoryMappingGrid({ links }: ExploratoryMappingGridProps) {
   if (!links || links.length === 0) return null;
 
