@@ -44,3 +44,16 @@ a {
 a:hover {
   text-decoration: none;
 }
+
+/* Formatting the about markdown text*/
+.about-markdown h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.about-markdown p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
