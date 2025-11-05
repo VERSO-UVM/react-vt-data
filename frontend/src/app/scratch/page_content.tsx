@@ -9,7 +9,6 @@ import { DiffPerXBarChart } from '@/components/Charts/Bar';
 import { useEffect } from 'react';
 import { BASE_API_URL } from '@/config';
 import { ChartCard } from '@/components/Charts';
-import { ProfileModal } from '@/components/profile/SetProfile';
 
 export default function BasePage() {
   const [data, setData] = useState<any[]>([]);
