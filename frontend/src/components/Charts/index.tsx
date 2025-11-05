@@ -1,22 +1,20 @@
-// charts/index.ts
-import DualLine from './DualLine';
-import { SamePerXBarChart, DiffPerXBarChart } from './Bar';
+export { default as DualLine } from './DualLine';
+export {
+  SamePerXBarChart,
+  DiffPerXBarChart,
+  CompareDiffPerXBarChart,
+} from './Bar';
+
 import { ChartItem } from '@/types/cachedCharts';
-import { Card, Box, Title, Stack } from '@mantine/core';
+import { Card, Box, Title, Stack, Text } from '@mantine/core';
 import { AddChart, RemoveChart } from './saving';
 
-const chartComponents: Record<string, React.FC<{ chart: any }>> = {
-  DualLine: DualLine,
-  SameXBar: SamePerXBarChart,
-  DiffXBar: DiffPerXBarChart,
-};
-
+// ChartCard
 interface ChartCardProps<TData> {
   chart: ChartItem<TData>;
   ChartComponent: React.FC<{ chart: ChartItem<TData> }>;
   action?: 'add' | 'remove';
 }
-
 export const ChartCard = <TData,>({
   // ideally htis will eventually have multiple 'views' in to the same data
   // tabular, visual, and textual summary.
@@ -26,7 +24,10 @@ export const ChartCard = <TData,>({
 }: ChartCardProps<TData>) => (
   <Card shadow="sm" padding="lg" radius="md" withBorder>
     <Box mb="xl" style={{ height: 400, padding: '16px' }}>
-      <Title order={4}>{chart.title}</Title>
+      <Title order={4}>
+        {chart.description ? ` ${chart.description} for ` : ''}
+        {chart.title}
+      </Title>
       <ChartComponent chart={chart} />
     </Box>
     {action === 'add' ? (
@@ -42,14 +43,27 @@ interface ChartStackProps<TData> {
   action?: 'add' | 'remove';
 }
 
+import * as allCharts from './index'; // self-import to dynamically access all exports
+
 export const ChartStack = <TData,>({
   charts,
   action = 'add',
 }: ChartStackProps<TData>) => (
   <Stack>
     {charts.map((chart) => {
-      const ChartComponent = chartComponents[chart.subtype];
+      const ChartComponent = allCharts[
+        chart.subtype as keyof typeof allCharts
+      ] as React.FC<{ chart: ChartItem<TData> }>;
       if (!ChartComponent) return null;
+      if (!chart.data || chart.data.length === 0)
+        return (
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Text>
+              No data available from {`${chart.title}`}
+              {chart.description ? ` for ${chart.description}` : ''}.
+            </Text>
+          </Card>
+        );
       return (
         <ChartCard
           key={chart.id}
