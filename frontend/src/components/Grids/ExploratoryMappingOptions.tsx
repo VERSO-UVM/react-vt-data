@@ -42,9 +42,9 @@ function MappingCard({ item }: { item: LinkItem }) {
       </Card.Section>
 
       
-      <text style={{ flexGrow: 0, textAlign: 'center', marginTop: 8, marginBottom: 4, color: '#555' }}>
+      <Text style={{ flexGrow: 0, textAlign: 'center', marginTop: 8, marginBottom: 4, color: '#555' }}>
         Brief description or summary about offerings/use cases.
-      </text>
+      </Text>
       
       <Box style={{ padding: 12 }}>
         <Group mb="xs">
