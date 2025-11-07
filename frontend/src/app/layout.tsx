@@ -35,11 +35,11 @@ export default function RootLayout({
       >
         <MantineProvider theme={theme}>
           <div className="layout-wrapper">
+            <HeaderMenu />
             <Container
               size="xl"
               style={{ backgroundColor: 'white', borderRadius: 8 }}
             >
-              <HeaderMenu />
               <main style={{ marginTop: 20 }}>{children}</main>
             </Container>
           </div>

@@ -1,7 +1,11 @@
 /* HeaderMenu.module.css */
 .header {
+  position: sticky;
+  top: 0px;
   background-color: #FFD100;  
   z-index: 1000;
+  width: 100vw;
+  margin-left: -16px;
 }
 
 .inner {
@@ -16,7 +20,7 @@
   align-items: center;
   height: 100%;
   border-radius: 4px;
-  padding: 0px 7px;
+  padding: 0px 8px;
   text-decoration: none;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
   font-size: var(--mantine-font-size-sm);
@@ -30,6 +34,7 @@
 
 .active {
   background-color: whitesmoke;
+  text-decoration: underline;
 }
 
 .linkLabel {
