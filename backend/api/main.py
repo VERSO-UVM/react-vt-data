@@ -25,7 +25,7 @@ app.add_middleware(
 )
 
 for r in all_get_routers:
-    app.include_router(r, prefix="/get")
+    app.include_router(r)
 
 for r in all_post_routers:
-    app.include_router(r, prefix="/post")
+    app.include_router(r)

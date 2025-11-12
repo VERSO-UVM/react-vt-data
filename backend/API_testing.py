@@ -44,16 +44,17 @@ def test_get_census_data_subcat(category, subcategory, filter_dict):
     return data
 
 
-def main():
-    filter_dict_example = {
-        "Jurisdiction": "Addison town",
-        "year": "2021",
-        "variable": "DP03_0092"
-    }
-    data = test_get_census_data_subcat(
-        category="economic", subcategory="median_earnings", filter_dict=filter_dict_example)
+def test_get_WWTF():
+    response = client.get("/load/mapping/wastewater")
+    print("Status Code: ")
+    print(response.status_code, response.text)
+    data = response.json()
+    return data
 
-    print(data)
+
+def main():
+    WWTF = test_get_WWTF()
+    print(WWTF)
 
 
 if __name__ == "__main__":
