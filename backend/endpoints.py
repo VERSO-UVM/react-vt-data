@@ -65,9 +65,8 @@ class FilterRequest(BaseModel):
 def read_root():
     return {"Default Message": "No endpoint specified"}
 
+
 # Zoning endpoint (Hardcoded for now)
-
-
 @app.post("/load/mapping/zoning")
 async def read_zoning_data(request: FilterRequest = Body(None)):
     df = data_loading.masterload(name="zoning")
@@ -109,9 +108,9 @@ async def read_zoning_data():
         "tree": Filter.tree,
         "labels": filter_columns
     }
+
+
 # Flood Endpoint (Hardcoded for now)
-
-
 @app.get("/load/mapping/flood_legal")
 async def read_flood_data():
     data = data_loading.masterload(name="flood_legal")
