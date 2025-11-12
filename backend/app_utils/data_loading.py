@@ -129,6 +129,14 @@ def load_WWTF_data():
         path=DATADIR / "wastewater" / "VermontWWTF.geojson",
     )
 
+# TODO: update with actual path. once in stored place.
+
+
+def load_service_areas():
+    return load_data(
+        path=DATADIR / "wastewater" / "VermontServiceArea.geojson",
+    )
+
 
 # TODO: update with actual path. once in stored place.
 def load_flood_data():
@@ -233,10 +241,12 @@ def masterload(name, rpc=None):
 
 # Map dataset names to loader functions
 LOADERS = {
+    # Mapping
     "zoning": lambda: process_zoning_data(load_zoning_data()),
     "soil_septic": load_and_process_soil_septic,
     "flood_legal": lambda: load_flood_data(),
     "WWTF": lambda: load_WWTF_data(),
+    "service_areas": lambda: load_service_areas(),
     # Census
     "census_housing": lambda: load_census_data_dict(HOUSING_SOURCES),
     "census_economics": lambda: load_census_data_dict(ECON_SOURCES),
