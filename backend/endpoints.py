@@ -14,8 +14,7 @@ from app_utils import data_loading
 from app_utils.df_filtering import FilterState
 
 logger = logging.getLogger(__name__)
-### Notes --- caching the filter states, too, would be a good idea. 
-
+# Notes --- caching the filter states, too, would be a good idea.
 
 
 app = FastAPI()
@@ -56,15 +55,19 @@ CENSUS_DATASETS = {
     }
 }
 
+
 class FilterRequest(BaseModel):
     filters: dict[str, list[str]] = {}
     format: str | None = "geojson"
+
 
 @app.get("/")
 def read_root():
     return {"Default Message": "No endpoint specified"}
 
 # Zoning endpoint (Hardcoded for now)
+
+
 @app.post("/load/mapping/zoning")
 async def read_zoning_data(request: FilterRequest = Body(None)):
     df = data_loading.masterload(name="zoning")
@@ -75,7 +78,8 @@ async def read_zoning_data(request: FilterRequest = Body(None)):
         # Optional: validate columns exist
         for col in filter_dict.keys():
             if col not in df.columns:
-                raise HTTPException(status_code=400, detail=f"Column '{col}' does not exist")
+                raise HTTPException(
+                    status_code=400, detail=f"Column '{col}' does not exist")
 
         Filter = FilterState(df=df, filter_columns=list(filter_dict.keys()))
         Filter.set_filters(filter_dict)
@@ -88,15 +92,17 @@ async def read_zoning_data(request: FilterRequest = Body(None)):
               .reset_index()
               .rename(columns={"District Type": "District Type"})
         )
-        result["hex_color"] = df.groupby("District Type")["hex_color"].first().values
+        result["hex_color"] = df.groupby("District Type")[
+            "hex_color"].first().values
         return result.to_dict(orient="records")
-    
+
     return df.to_json()
+
 
 @app.get("/load/mapping/zoning/filters")
 async def read_zoning_data():
     data = data_loading.masterload(name="zoning")
-    filter_columns=["County", "Jurisdiction", "District Name"]
+    filter_columns = ["County", "Jurisdiction", "District Name"]
     logger.info(f"cols are {filter_columns}")
     Filter = FilterState(data, filter_columns=filter_columns)
     return {
@@ -104,6 +110,8 @@ async def read_zoning_data():
         "labels": filter_columns
     }
 # Flood Endpoint (Hardcoded for now)
+
+
 @app.get("/load/mapping/flood_legal")
 async def read_flood_data():
     data = data_loading.masterload(name="flood_legal")

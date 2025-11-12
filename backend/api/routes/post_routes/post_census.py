@@ -8,8 +8,8 @@ from app_utils.df_filtering import filter_from_request, FilterState
 
 router = APIRouter()
 
-
-DATADIR = Path(__file__).parent / "Data"
+# Fixed this path to four levels up to reach the Data directory
+DATADIR = Path(__file__).parent.parent.parent.parent / "Data"
 CENSUS_DATADIR = DATADIR / "Census"
 
 CENSUS_DATASETS = {
@@ -36,7 +36,7 @@ CENSUS_DATASETS = {
 # Load the Census "Main" Dataset by Cateogory (housing, economic, demographic, social)
 @router.post("/load/census/{category}")
 async def read_census_data(category: str, request: FilterRequest = None):
-    filter_dict = request.filter_dict if request else {}
+    filter_dict = request.filters if request else {}
     if category not in CENSUS_DATASETS:
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found"
@@ -57,18 +57,17 @@ async def read_census_data(category: str, request: FilterRequest = None):
     return data_filtered.to_json()
 
 
-@router.post('load/census/housing/unit_type')
+@router.post('/load/census/housing/unit_type')
 async def get_housing_unit_type(
     request: FilterRequest = Body(None)
 ):
     from app_utils.housing import housing_df_metric_dict
     dfs = data_loading.masterload("census_housing")
-    metrics, plot_dfs = housing_df_metric_dict()
+    metrics, plot_dfs = housing_df_metric_dict(dfs)
     df = plot_dfs["units_in_structure_df"]
     df = filter_from_request(df, request)
-    
-    
 
+    return df.to_json()
 
 
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
@@ -76,7 +75,7 @@ async def get_housing_unit_type(
 async def read_census_data_subcat(
     category: str, subcategory: str = "main", request: FilterRequest = None
 ):
-    filter_dict = request.filter_dict if request else {}
+    filter_dict = request.filters if request else {}
     if category not in CENSUS_DATASETS:
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found"
@@ -87,7 +86,8 @@ async def read_census_data_subcat(
             detail=f"Census subcategory '{subcategory}' was not found in category '{category}'",
         )
 
-    data = data_loading.load_census_data(CENSUS_DATASETS[category][subcategory])
+    data = data_loading.load_census_data(
+        CENSUS_DATASETS[category][subcategory])
 
     filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
 

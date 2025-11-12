@@ -124,6 +124,13 @@ def load_soil_septic_multi(rpcs):
 
 
 # TODO: update with actual path. once in stored place.
+def load_WWTF_data():
+    return load_data(
+        path=DATADIR / "wastewater" / "VermontWWTF.geojson",
+    )
+
+
+# TODO: update with actual path. once in stored place.
 def load_flood_data():
     return load_data(
         path=Path(__file__).parent.parent.parent /
@@ -229,6 +236,7 @@ LOADERS = {
     "zoning": lambda: process_zoning_data(load_zoning_data()),
     "soil_septic": load_and_process_soil_septic,
     "flood_legal": lambda: load_flood_data(),
+    "WWTF": lambda: load_WWTF_data(),
     # Census
     "census_housing": lambda: load_census_data_dict(HOUSING_SOURCES),
     "census_economics": lambda: load_census_data_dict(ECON_SOURCES),
