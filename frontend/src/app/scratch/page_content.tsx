@@ -46,8 +46,8 @@ export default function BasePage() {
         <Paper p="md" shadow="sm">
           <Stack>
             <FilterContainer
-              apiURL={`${BASE_API_URL}/get/load/mapping/zoning/filters`}
-              dataURL={`${BASE_API_URL}/post/load/mapping/zoning`}
+              apiURL={`${BASE_API_URL}/load/mapping/zoning/filters`}
+              dataURL={`${BASE_API_URL}/load/mapping/zoning`}
               onData={(fetchedData) => {
                 setData(fetchedData);
                 handleData(fetchedData);
