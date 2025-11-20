@@ -33,8 +33,8 @@ export default function MappingContent() {
     <>
       <Container size="xl" style={{ height: '80vh', padding: 0, margin: 0 }}>
         <FilterContainer
-          apiURL={`${BASE_API_URL}/get/load/mapping/${slug}/filters`}
-          dataURL={`${BASE_API_URL}/post/load/mapping/${slug}`}
+          apiURL={`${BASE_API_URL}/load/mapping/${slug}/filters`}
+          dataURL={`${BASE_API_URL}/load/mapping/${slug}`}
           onData={(fetchedData) => {
             console.log('fetched Data', fetchedData);
             console.log(format);
