@@ -9,6 +9,7 @@ import { DiffPerXBarChart } from '@/components/Charts/Bar';
 import { useEffect } from 'react';
 import { BASE_API_URL } from '@/config';
 import { ChartCard } from '@/components/Charts';
+import ResetButton from '@/components/reload';
 
 export default function BasePage() {
   const [data, setData] = useState<any[]>([]);
@@ -42,6 +43,7 @@ export default function BasePage() {
   };
   return (
     <Container size="xl" py="md">
+      <ResetButton />
       <Stack>
         <Paper p="md" shadow="sm">
           <Stack>

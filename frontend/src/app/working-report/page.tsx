@@ -3,33 +3,30 @@
 import { useRef } from 'react';
 import html2pdf from 'html2pdf.js';
 import {
-  Card,
   Container,
   Text,
   Title,
   Button,
+  Center,
   Stack,
-  Box,
+  Card,
 } from '@mantine/core';
 import { useItems } from '@/components/ItemsProvider';
 import { ChartStack } from '@/components/Charts';
-
 import { useShallow } from 'zustand/shallow';
 import { ChartItem } from '@/types/cachedCharts';
 
 export default function WorkingReport() {
-  const componentRef = useRef(null); // Create a ref for our report container
+  const componentRef = useRef<HTMLDivElement>(null);
 
   const charts = useItems(
     useShallow((state) => state.items.filter((item) => item.type === 'chart')),
   ) as ChartItem<any>[];
   const len = charts.length;
 
-  // Function to handle the PDF export with pagination
   const handleDownloadPdf = () => {
     if (!componentRef.current) return;
 
-    // Configuration for html2pdf
     const options = {
       margin: 10,
       filename: 'working-report.pdf',
@@ -42,16 +39,22 @@ export default function WorkingReport() {
   };
 
   return (
-    <Container size="xl">
-      <Stack>
-        <Title>Working Report</Title>
-        <Text>{`There are currently ${len} charts in the report`}</Text>
-        <Button onClick={handleDownloadPdf}>Download as PDF</Button>
+    <Container size="xl" py="xl">
+      <Stack spacing="xl">
+        <Center direction="column" spacing="sm">
+          <Title order={2}>Working Report</Title>
+        </Center>
+        <Center direction="column" spacing="sm">
+          <Text color="dimmed">{`There are currently ${len} charts in the report`}</Text>
+        </Center>
 
-        {/* Assign the ref to the container to capture */}
-        <div ref={componentRef}>
-          <ChartStack charts={charts} action="remove" />
-        </div>
+        <Center>
+          <Button size="md" onClick={handleDownloadPdf}>
+            Download PDF
+          </Button>
+        </Center>
+
+        <ChartStack charts={charts} action="remove" />
       </Stack>
     </Container>
   );

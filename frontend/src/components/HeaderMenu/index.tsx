@@ -15,7 +15,6 @@ import classes from './HeaderMenu.module.css';
 import Link from 'next/link';
 import { ProfileModal } from '../profile/SetProfile';
 
-
 const links = [
   { link: '/', label: 'Home' },
   {
@@ -27,11 +26,11 @@ const links = [
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
-  {link: '/data-viewer', label: 'Data Viewer',},
+  { link: '/data-viewer', label: 'Data Viewer' },
   { link: '/working-report', label: 'Working Report' },
   { link: '/data-export', label: 'Raw Data Export' },
-  { link: '/scratch', label: 'Scratch' },
-  { link: '/about', label: 'About'},
+  // { link: '/scratch', label: 'Scratch' },
+  { link: '/about', label: 'About' },
 ];
 
 export default function HeaderMenu() {
@@ -40,9 +39,9 @@ export default function HeaderMenu() {
   const [opened, { toggle }] = useDisclosure(false);
 
   const items = links.map((link) => {
-    
-    const isActive = (link: string) => pathname === link || pathname.startsWith(link + '/');
-    
+    const isActive = (link: string) =>
+      pathname === link || pathname.startsWith(link + '/');
+
     const menuItems = link.links?.map((item) => (
       <Menu.Item key={item.link} component={Link} href={item.link}>
         {item.label}
@@ -60,7 +59,10 @@ export default function HeaderMenu() {
           withinPortal
         >
           <Menu.Target>
-            <Link href={link.link} className={`${classes.link} ${active ? classes.active : ''}`}>
+            <Link
+              href={link.link}
+              className={`${classes.link} ${active ? classes.active : ''}`}
+            >
               <UnstyledButton style={{ display: 'flex', alignItems: 'center' }}>
                 <span className={classes.linkLabel}>{link.label}</span>
               </UnstyledButton>
@@ -71,7 +73,11 @@ export default function HeaderMenu() {
       );
     }
     return (
-      <Link href={link.link} key={link.link} className={`${classes.link} ${active ? classes.active : ''}`}>
+      <Link
+        href={link.link}
+        key={link.link}
+        className={`${classes.link} ${active ? classes.active : ''}`}
+      >
         <UnstyledButton style={{ display: 'flex', alignItems: 'center' }}>
           <span className={classes.linkLabel}>{link.label}</span>
         </UnstyledButton>
