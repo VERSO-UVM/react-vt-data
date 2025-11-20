@@ -35,14 +35,9 @@ export default function DataViewerPage() {
     });
   }, [myLocation, comparison]);
 
-  const title =
-    myLocation.type === 'state'
-      ? 'Vermont'
-      : (myLocation[myLocation.type] ?? 'Unknown');
-
   const charts = chartDefs.map((chart) =>
     createChartItem({
-      title,
+      title: myLocation.name,
       xField: chart.xField,
       yField: chart.yField,
       data: chartData[chart.id] || [],
