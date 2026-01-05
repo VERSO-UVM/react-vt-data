@@ -1,9 +1,11 @@
 """
 run from root/backend
 
-
 uvicorn api.main:app --reload --port 6767
+
+Then go to: http://localhost:6767/
 """
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

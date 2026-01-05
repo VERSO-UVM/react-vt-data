@@ -4,7 +4,7 @@ from fastapi import APIRouter, Body, HTTPException
 
 from api.models.filter_models import FilterRequest
 from app_utils import data_loading
-from app_utils.df_filtering import filter_from_request, FilterState
+from app_utils.df_filtering import FilterState, filter_from_request
 
 router = APIRouter()
 
@@ -46,7 +46,7 @@ async def read_census_data(category: str, request: FilterRequest = None):
 
     filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
     for col, value in filter_dict.items():
-        filters.selections[col] = [value]
+        filters.selections[col] = [value]  # type: ignore
     data_filtered = filters.apply_filters()
 
     if data_filtered.empty:
@@ -57,11 +57,10 @@ async def read_census_data(category: str, request: FilterRequest = None):
     return data_filtered.to_json()
 
 
-@router.post('/load/census/housing/unit_type')
-async def get_housing_unit_type(
-    request: FilterRequest = Body(None)
-):
+@router.post("/load/census/housing/unit_type")
+async def get_housing_unit_type(request: FilterRequest = Body(None)):
     from app_utils.housing import housing_df_metric_dict
+
     dfs = data_loading.masterload("census_housing")
     metrics, plot_dfs = housing_df_metric_dict(dfs)
     df = plot_dfs["units_in_structure_df"]
@@ -86,13 +85,12 @@ async def read_census_data_subcat(
             detail=f"Census subcategory '{subcategory}' was not found in category '{category}'",
         )
 
-    data = data_loading.load_census_data(
-        CENSUS_DATASETS[category][subcategory])
+    data = data_loading.load_census_data(CENSUS_DATASETS[category][subcategory])
 
     filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
 
     for col, value in filter_dict.items():
-        filters.selections[col] = [value]
+        filters.selections[col] = [value]  # type: ignore
 
     data_filtered = filters.apply_filters()
 
