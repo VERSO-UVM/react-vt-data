@@ -16,7 +16,7 @@ interface ChartCardProps<TData> {
   action?: 'add' | 'remove';
 }
 export const ChartCard = <TData,>({
-  // ideally htis will eventually have multiple 'views' in to the same data
+  // ideally this will eventually have multiple 'views' in to the same data
   // tabular, visual, and textual summary.
   chart,
   ChartComponent,

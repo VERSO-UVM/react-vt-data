@@ -23,13 +23,14 @@ export default function DataViewerPage() {
     chartDefs.forEach((chart: ChartDef) => {
       const url = chart.url;
       const filterkey = chart.filterkey;
+      const datakey = chart.datakey;
       const filters = buildFilters(myLocation);
       const compFilters = buildFilters(comparison);
 
-      applyFilters(url, filters, filterkey, (data) =>
+      applyFilters(url, filters, filterkey, datakey, (data) =>
         setChartData((prev) => ({ ...prev, [chart.id]: data })),
       );
-      applyFilters(url, compFilters, filterkey, (data) =>
+      applyFilters(url, compFilters, filterkey, datakey, (data) =>
         setCompareChartData((prev) => ({ ...prev, [chart.id]: data })),
       );
     });
