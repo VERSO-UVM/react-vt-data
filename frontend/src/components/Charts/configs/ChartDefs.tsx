@@ -10,6 +10,7 @@ export interface ChartDef {
   chartParams?: any;
   url: string;
   filterkey?: string;
+  datakey?: string;
 }
 
 export const chartDefs: ChartDef[] = [
@@ -23,5 +24,17 @@ export const chartDefs: ChartDef[] = [
     url: `${BASE_API_URL}/load/mapping/zoning`,
     filterkey: 'aggregated_acres',
   },
-
+  {
+    id: 'tenure',
+    title: 'Housing Tenure',
+    xField: 'Occupied Tenure',
+    yField: 'Value',
+    subtype: 'CompareDiffPerXBarChart',
+    chartParams: {
+      colorScheme: 'schemeAccent',
+      legendLabels: ['Main', 'Compare'],
+    },
+    datakey: 'plot_data.tenure_df',
+    url: `${BASE_API_URL}/load/census/housing/snapshot`,
+  },
 ];
