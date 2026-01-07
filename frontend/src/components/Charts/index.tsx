@@ -6,8 +6,18 @@ export {
 } from './Bar';
 
 import { ChartItem } from '@/types/cachedCharts';
-import { Card, Box, Title, Stack, Text } from '@mantine/core';
+import {
+  Card,
+  Box,
+  Title,
+  Stack,
+  Text,
+  Group,
+  SegmentedControl,
+} from '@mantine/core';
 import { AddChart, RemoveChart } from './saving';
+import { useState } from 'react';
+import { TableView, ViewSwitch } from './TableView';
 
 // ChartCard
 interface ChartCardProps<TData> {
@@ -21,22 +31,37 @@ export const ChartCard = <TData,>({
   chart,
   ChartComponent,
   action = 'add',
-}: ChartCardProps<TData>) => (
-  <Card shadow="sm" padding="lg" radius="md" withBorder>
-    <Box mb="xl" style={{ height: 400, padding: '16px' }}>
-      <Title order={4}>
-        {chart.description ? ` ${chart.description} for ` : ''}
-        {chart.title}
-      </Title>
-      <ChartComponent chart={chart} />
-    </Box>
-    {action === 'add' ? (
-      <AddChart chart={chart} />
-    ) : (
-      <RemoveChart chart={chart} />
-    )}
-  </Card>
-);
+}: ChartCardProps<TData>) => {
+  const [view, setView] = useState<'chart' | 'table'>('chart');
+
+  return (
+    <Card shadow="sm" padding="lg" radius="md" withBorder>
+      <Box mb="xl" style={{ height: 400, padding: '16px' }}>
+        <Title order={4}>
+          {chart.description ? ` ${chart.description} for ` : ''}
+          {chart.title}
+        </Title>
+        <ViewSwitch view={view} setView={setView} />
+        {view === 'chart' ? (
+          <ChartComponent chart={chart} />
+        ) : (
+          <TableView chart={chart} />
+        )}
+      </Box>
+      <Text size="sm" c="gray.6" mt="md" ta="right">
+        {chart.metadata.source}
+        {/* TODO: Come up with a more reasonable way to show metadata */}
+      </Text>
+      <Group mt="md">
+        {action === 'add' ? (
+          <AddChart chart={chart} />
+        ) : (
+          <RemoveChart chart={chart} />
+        )}
+      </Group>
+    </Card>
+  );
+};
 
 interface ChartStackProps<TData> {
   charts: ChartItem<TData>[];

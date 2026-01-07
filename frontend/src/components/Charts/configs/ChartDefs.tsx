@@ -9,8 +9,9 @@ export interface ChartDef {
   subtype: string;
   chartParams?: any;
   url: string;
-  filterkey?: string;
-  datakey?: string;
+  filterKey?: string;
+  dataKey?: string;
+  notes?: string;
 }
 
 export const chartDefs: ChartDef[] = [
@@ -22,7 +23,8 @@ export const chartDefs: ChartDef[] = [
     subtype: 'CompareDiffPerXBarChart',
     chartParams: { color: 'hex_color', legendLabels: ['Main', 'Compare'] },
     url: `${BASE_API_URL}/load/mapping/zoning`,
-    filterkey: 'aggregated_acres',
+    filterKey: 'aggregated_acres',
+    notes: 'Acreage is defined as a good time.',
   },
   {
     id: 'tenure',
@@ -34,7 +36,7 @@ export const chartDefs: ChartDef[] = [
       colorScheme: 'schemeAccent',
       legendLabels: ['Main', 'Compare'],
     },
-    datakey: 'plot_data.tenure_df',
+    dataKey: 'plot_data.tenure_df',
     url: `${BASE_API_URL}/load/census/housing/snapshot`,
   },
 ];

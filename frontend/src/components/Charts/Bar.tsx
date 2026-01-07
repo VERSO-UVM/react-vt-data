@@ -110,8 +110,6 @@ const CompareDiffPerXBarChart = <TData,>({
     // 2. Use d3 color scale
     const schemeName = chart.chartParams?.colorScheme || 'schemeCategory10';
     const colorScale = d3.scaleOrdinal((d3 as any)[schemeName]);
-    console.log('Using scheme:', schemeName);
-    console.log('Scheme exists?', (d3 as any)[schemeName]);
     colors = chart.data.map((_, index) => colorScale(index.toString()));
   }
   const compareColors = chart.compareData.map(() => '#999');

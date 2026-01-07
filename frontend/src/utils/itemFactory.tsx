@@ -9,6 +9,10 @@ interface ChartItemConfig<TData> {
   chartParams?: Record<string, any>;
   description?: string;
   compareData?: TData[];
+  notes?: string;
+  metadata?: Record<string, any>;
+  rawData?: TData[];
+  compareRawData?: TData[];
 }
 
 export function createChartItem<TData>(
@@ -26,5 +30,7 @@ export function createChartItem<TData>(
     chartParams: config.chartParams,
     description: config.description,
     compareData: config.compareData,
+    notes: config.notes,
+    metadata: config.metadata,
   };
 }
