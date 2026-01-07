@@ -21,6 +21,8 @@ interface ChartItem<TData> extends BaseItem<TData> {
   chartParams?: Record<string, any>;
   description?: string;
   compareData?: TData[];
+  notes?: string;
+  metadata?: Record<string, any>;
 }
 
 interface CounterItem extends BaseItem {

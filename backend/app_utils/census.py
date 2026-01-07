@@ -19,11 +19,10 @@ def split_name_col(census_gdf):
     @param census_gdf: A census style GeoDataFrame with a "NAME" column.
     @return: The cleaned dataset with the split "NAME" column.
     """
-    # Split the NAME column
+    # Split the NAME column and drop it
     census_gdf[["Jurisdiction", "County"]] = census_gdf["NAME"].str.extract(
         r"^(.*?),\s*(.*?) County,"
     )
-    # Drop the original NAME column if desired
     census_gdf = census_gdf.drop(columns="NAME")
 
     if "year" in census_gdf.columns:
