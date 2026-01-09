@@ -15,8 +15,10 @@ export const TableView = <TData extends Record<string, any>>({
 
   if (!rows || rows.length === 0) return null;
 
+  // start with show cols, fall back to x and y field provided they're in there.
   const columns =
-    chart.showCols?.filter((c) => c.visible ?? true) ?? Object.keys(rows[0]);
+    chart.showCols?.filter((c) => c.visible ?? true) ??
+    (rows[0] ? [chart.xField, chart.yField].filter((k) => k in rows[0]) : []);
 
   return (
     <ScrollArea style={{ height: 400 }}>
