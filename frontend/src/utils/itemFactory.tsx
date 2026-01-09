@@ -1,5 +1,8 @@
 import { ChartItem } from '@/types/cachedCharts';
 import { v4 as uuidv4 } from 'uuid';
+
+import { TableColumnConfig } from '@/types/cachedCharts';
+
 interface ChartItemConfig<TData> {
   title: string;
   xField: string;
@@ -9,6 +12,12 @@ interface ChartItemConfig<TData> {
   chartParams?: Record<string, any>;
   description?: string;
   compareData?: TData[];
+  notes?: string;
+  metadata?: Record<string, any>;
+  compareTableData?: TData[];
+
+  tableData?: TData[];
+  showCols?: TableColumnConfig[];
 }
 
 export function createChartItem<TData>(
@@ -26,5 +35,10 @@ export function createChartItem<TData>(
     chartParams: config.chartParams,
     description: config.description,
     compareData: config.compareData,
+    notes: config.notes,
+    metadata: config.metadata,
+
+    tableData: config.tableData,
+    showCols: config.showCols,
   };
 }

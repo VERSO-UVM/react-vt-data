@@ -48,8 +48,7 @@ def clean_data(df):
         # If the column is a year variable
         elif "year" in col_name:
             # Convert it into a datetime type
-            df[col] = pd.to_datetime(df[col].astype(
-                str) + "-01-01", errors="coerce")
+            df[col] = pd.to_datetime(df[col].astype(str) + "-01-01", errors="coerce")
             continue
         # If the column is a month variable
         elif "month" in col_name:
@@ -65,8 +64,7 @@ def clean_data(df):
 
         # Convert binary numeric columns with values [0,1] to boolean
         if df[col].dropna().nunique() == 2:
-            vals = set(str(v).strip().lower()
-                       for v in df[col].dropna().unique())
+            vals = set(str(v).strip().lower() for v in df[col].dropna().unique())
             if (
                 vals == {"yes", "no", " "}
                 or vals == {"0", "1"}
@@ -121,10 +119,8 @@ def month_name_to_num(month_name):
         else:
             return None
     # Check if month name (short or full)
-    month_abbrs = {m.lower(): i for i, m in enumerate(
-        calendar.month_abbr) if m}
-    month_names = {m.lower(): i for i, m in enumerate(
-        calendar.month_name) if m}
+    month_abbrs = {m.lower(): i for i, m in enumerate(calendar.month_abbr) if m}
+    month_names = {m.lower(): i for i, m in enumerate(calendar.month_name) if m}
 
     if month_name in month_abbrs:
         return month_abbrs[month_name]

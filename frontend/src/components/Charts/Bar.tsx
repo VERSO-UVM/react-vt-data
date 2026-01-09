@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import * as d3 from 'd3';
 
 // chartjs
 import { Bar as BarJS } from 'react-chartjs-2';
@@ -88,10 +89,12 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
 interface CompareDiffChartItem<TData> extends ChartItem<TData> {
   compareData: TData[];
   chartParams: {
-    color: string;
+    color?: string;
     legendLabels?: [string, string];
+    colorScheme?: string;
   };
 }
+
 const CompareDiffPerXBarChart = <TData,>({
   chart,
 }: {
@@ -99,7 +102,16 @@ const CompareDiffPerXBarChart = <TData,>({
 }) => {
   const labels = chart.data.map((entry: any) => entry[chart.xField]);
 
-  const colors = chart.data.map((entry: any) => entry[chart.chartParams.color]);
+  let colors: string[];
+  if (chart.chartParams?.color && chart.data[0]?.[chart.chartParams.color]) {
+    // 1. Use per-entry colors from data (zoning case)
+    colors = chart.data.map((entry: any) => entry[chart.chartParams.color]);
+  } else {
+    // 2. Use d3 color scale
+    const schemeName = chart.chartParams?.colorScheme || 'schemeCategory10';
+    const colorScale = d3.scaleOrdinal((d3 as any)[schemeName]);
+    colors = chart.data.map((_, index) => colorScale(index.toString()));
+  }
   const compareColors = chart.compareData.map(() => '#999');
 
   const legendLabels = chart.chartParams.legendLabels || [

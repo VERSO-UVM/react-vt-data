@@ -153,11 +153,11 @@ def compute_housing_metrics(df):
     return load_metrics(df, ACS_HOUSING_METRICS)
 
 
-def housing_df_metric_dict(filtered_housing_2023):
+def housing_df_metric_dict(filtered_housing_dfs):
     # Unpack necessary datasets
-    filtered_gdf_2023 = filtered_housing_2023["housing_2023"]
+    filtered_gdf_2023 = filtered_housing_dfs["housing_2023"]
     metrics = compute_housing_metrics(filtered_gdf_2023)
-    dfs = build_housing_plot_dataframes(filtered_housing_2023, metrics)
+    dfs = build_housing_plot_dataframes(filtered_housing_dfs, metrics)
 
     return metrics, dfs
 
@@ -303,30 +303,30 @@ def render_occupancy(metrics, plot_dfs, text_color, title_geo):
 
     # In the middle, show the donut chart of occupied units
     occupancy_occ_chart = donut_chart(
-      source=plot_dfs['occupancy_occ_df'], 
-      colorColumnName="Occupancy Status", 
-      title_size=15, 
-      fill="tomato", 
-      title="Units Occupied", 
-      text_color=text_color, 
-      stat=metrics['pct_occupied'], 
-      innerRadius=135, 
-      height=400
+        source=plot_dfs["occupancy_occ_df"],
+        colorColumnName="Occupancy Status",
+        title_size=15,
+        fill="tomato",
+        title="Units Occupied",
+        text_color=text_color,
+        stat=metrics["pct_occupied"],
+        innerRadius=135,
+        height=400,
     )
     # In the right column, show the donut chart of vacant units
     occupancy_vac_chart = donut_chart(
-      source=plot_dfs['occupancy_vac_df'], 
-      colorColumnName="Occupancy Status", 
-      title_size=15, 
-      fill="tomato", 
-      title="Units Vacant", 
-      text_color=text_color, 
-      stat=metrics['pct_vacant'], 
-      innerRadius=135, 
-      height=400, 
-      inverse=True
+        source=plot_dfs["occupancy_vac_df"],
+        colorColumnName="Occupancy Status",
+        title_size=15,
+        fill="tomato",
+        title="Units Vacant",
+        text_color=text_color,
+        stat=metrics["pct_vacant"],
+        innerRadius=135,
+        height=400,
+        inverse=True,
     )
-    
+
     # Display the two donut charts
     occ_col2.altair_chart(occupancy_occ_chart, use_container_width=True)
     occ_col3.altair_chart(occupancy_vac_chart, use_container_width=True)
@@ -334,17 +334,17 @@ def render_occupancy(metrics, plot_dfs, text_color, title_geo):
     st.divider()
     # Define a bar chart distribution of structure types (1 unit, 2 unit, etc.)
     units_in_structure_bar_chart = bar_chart(
-      plot_dfs['units_in_structure_df'], 
-      title_geo=title_geo, 
-      x_col="Structure Category", 
-      y_col="Units",
-      distribution=True, 
-      height=600, 
-      fill="tomato", 
-      title="2023 Housing Unit Type Distribution",
-      bar_width=90, 
-      x_label_angle=0, 
-      x_label_size=12
+        plot_dfs["units_in_structure_df"],
+        title_geo=title_geo,
+        x_col="Structure Category",
+        y_col="Units",
+        distribution=True,
+        height=600,
+        fill="tomato",
+        title="2023 Housing Unit Type Distribution",
+        bar_width=90,
+        x_label_angle=0,
+        x_label_size=12,
     )
 
     # Display the bar chart
@@ -373,24 +373,24 @@ def render_tenure(metrics, plot_dfs, text_color):
 
     # Create the owner-occupied donut chart
     tenure_own_donut = donut_chart(
-      plot_dfs['tenure_df'], 
-      colorColumnName="Occupied Tenure", 
-      fill="tomato", 
-      title="Owner Occupied", 
-      stat=metrics['pct_owned'], 
-      text_color=text_color
+        plot_dfs["tenure_df"],
+        colorColumnName="Occupied Tenure",
+        fill="tomato",
+        title="Owner Occupied",
+        stat=metrics["pct_owned"],
+        text_color=text_color,
     )
     # Create the renter-occupied donut chart
     tenure_rent_donut = donut_chart(
-      source=plot_dfs['tenure_df'], 
-      colorColumnName="Occupied Tenure", 
-      fill="tomato", 
-      title="Renter Occupied", 
-      stat=metrics['pct_rented'], 
-      text_color=text_color, 
-      inverse=True
+        source=plot_dfs["tenure_df"],
+        colorColumnName="Occupied Tenure",
+        fill="tomato",
+        title="Renter Occupied",
+        stat=metrics["pct_rented"],
+        text_color=text_color,
+        inverse=True,
     )
-    
+
     # Display the two donut charts
     ten_col2.altair_chart(tenure_own_donut)
     ten_col3.altair_chart(tenure_rent_donut)

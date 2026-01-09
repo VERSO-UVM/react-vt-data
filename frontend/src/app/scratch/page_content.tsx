@@ -45,6 +45,7 @@ export default function BasePage() {
     <Container size="xl" py="md">
       <ResetButton />
       <Stack>
+        a
         <Paper p="md" shadow="sm">
           <Stack>
             <FilterContainer
@@ -57,7 +58,6 @@ export default function BasePage() {
             />
           </Stack>
         </Paper>
-
         {chartConfig && (
           <ChartCard
             chart={chartConfig}

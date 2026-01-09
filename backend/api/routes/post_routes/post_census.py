@@ -1,10 +1,15 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from api.models.filter_models import FilterRequest
+from api.models.response_models import make_response
 from app_utils import data_loading
-from app_utils.df_filtering import FilterState, filter_from_request
+from app_utils.df_filtering import (
+    filter_from_request,
+    mass_filter_from_requests,
+)
+from app_utils.housing import housing_df_metric_dict
 
 router = APIRouter()
 
@@ -35,46 +40,54 @@ CENSUS_DATASETS = {
 
 # Load the Census "Main" Dataset by Cateogory (housing, economic, demographic, social)
 @router.post("/load/census/{category}")
-async def read_census_data(category: str, request: FilterRequest = None):
-    filter_dict = request.filters if request else {}
+async def read_census_data(category: str, request: FilterRequest):
     if category not in CENSUS_DATASETS:
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found"
         )
 
     data = data_loading.load_census_data(CENSUS_DATASETS[category]["main"])
+    data = filter_from_request(data, request)
+    metadata = {}
 
-    filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
-    for col, value in filter_dict.items():
-        filters.selections[col] = [value]  # type: ignore
-    data_filtered = filters.apply_filters()
-
-    if data_filtered.empty:
-        raise HTTPException(
-            status_code=404, detail=f"No data for given filters: {filter_dict}"
-        )
-
-    return data_filtered.to_json()
+    return make_response(data, metadata)
 
 
-@router.post("/load/census/housing/unit_type")
-async def get_housing_unit_type(request: FilterRequest = Body(None)):
-    from app_utils.housing import housing_df_metric_dict
-
+@router.post("/load/census/housing/snapshot")
+async def get_housing_snapshot(request: FilterRequest):
     dfs = data_loading.masterload("census_housing")
+    dfs = mass_filter_from_requests(dfs, request)
     metrics, plot_dfs = housing_df_metric_dict(dfs)
-    df = plot_dfs["units_in_structure_df"]
-    df = filter_from_request(df, request)
 
-    return df.to_json()
+    # Convert metrics to JSON-serializable
+    metrics_json = {k: float(v) if v is not None else None for k, v in metrics.items()}
+
+    # Convert plot dataframes
+    plot_data = {k: v.to_dict(orient="records") for k, v in plot_dfs.items()}
+
+    response = {"metrics": metrics_json, "plot_data": plot_data}
+
+    # Filter response if specific includes requested
+    if request and request.include:
+        filtered_response = {}
+        if "metrics" in request.include:
+            filtered_response["metrics"] = metrics_json
+
+        # Filter plot_data to only included charts
+        plot_includes = [i for i in request.include if i in plot_dfs]
+        if plot_includes:
+            filtered_response["plot_data"] = {k: plot_data[k] for k in plot_includes}
+
+        return filtered_response
+
+    return response
 
 
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
 @router.post("/load/census/{category}/{subcategory}")
 async def read_census_data_subcat(
-    category: str, subcategory: str = "main", request: FilterRequest = None
+    category: str, request: FilterRequest, subcategory: str = "main"
 ):
-    filter_dict = request.filters if request else {}
     if category not in CENSUS_DATASETS:
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found"
@@ -86,18 +99,13 @@ async def read_census_data_subcat(
         )
 
     data = data_loading.load_census_data(CENSUS_DATASETS[category][subcategory])
+    data = filter_from_request(data, request)
+    metadata = {}
 
-    filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
-
-    for col, value in filter_dict.items():
-        filters.selections[col] = [value]  # type: ignore
-
-    data_filtered = filters.apply_filters()
-
-    if data_filtered.empty:
+    if data.empty:
         raise HTTPException(
             status_code=404,
-            detail=f"No data found for the given filters: {filter_dict}",
+            detail=f"No data found for the given filters: {request.filters if request else {}}",
         )
 
-    return data_filtered.to_json()
+    return make_response(data, metadata)
