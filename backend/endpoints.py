@@ -37,22 +37,20 @@ CENSUS_DATASETS = {
     "housing": {
         "main": CENSUS_DATADIR / "VT_HOUSING_ALL.fgb",
         "median_home_value": CENSUS_DATADIR / "med_home_value_by_year.csv",
-        "median_smoc": CENSUS_DATADIR / "med_smoc_by_year.csv"
+        "median_smoc": CENSUS_DATADIR / "med_smoc_by_year.csv",
     },
     "economic": {
         "main": CENSUS_DATADIR / "VT_ECONOMIC_ALL.fgb",
         "median_earnings": CENSUS_DATADIR / "median_earnings_by_year.csv",
         "unemployment_rate": CENSUS_DATADIR / "unemployment_rate_by_year.csv",
         "commute_habits": CENSUS_DATADIR / "commute_habits_by_year.csv",
-        "commute_time": CENSUS_DATADIR / "commute_time_by_year.csv"
+        "commute_time": CENSUS_DATADIR / "commute_time_by_year.csv",
     },
     "demographic": {
         "main": CENSUS_DATADIR / "VT_DEMOGRAPHIC_ALL.fgb",
-        "historic_population": CENSUS_DATADIR / "VT_Historic_Population.csv"
+        "historic_population": CENSUS_DATADIR / "VT_Historic_Population.csv",
     },
-    "social": {
-        "main": CENSUS_DATADIR / "VT_SOCIAL_ALL.fgb"
-    }
+    "social": {"main": CENSUS_DATADIR / "VT_SOCIAL_ALL.fgb"},
 }
 
 
@@ -78,7 +76,8 @@ async def read_zoning_data(request: FilterRequest = Body(None)):
         for col in filter_dict.keys():
             if col not in df.columns:
                 raise HTTPException(
-                    status_code=400, detail=f"Column '{col}' does not exist")
+                    status_code=400, detail=f"Column '{col}' does not exist"
+                )
 
         Filter = FilterState(df=df, filter_columns=list(filter_dict.keys()))
         Filter.set_filters(filter_dict)
@@ -87,12 +86,11 @@ async def read_zoning_data(request: FilterRequest = Body(None)):
     if request.format == "aggregated_acres":
         result = (
             df.groupby("District Type")["Acres"]
-              .sum()
-              .reset_index()
-              .rename(columns={"District Type": "District Type"})
+            .sum()
+            .reset_index()
+            .rename(columns={"District Type": "District Type"})
         )
-        result["hex_color"] = df.groupby("District Type")[
-            "hex_color"].first().values
+        result["hex_color"] = df.groupby("District Type")["hex_color"].first().values
         return result.to_dict(orient="records")
 
     return df.to_json()
@@ -104,10 +102,7 @@ async def read_zoning_data():
     filter_columns = ["County", "Jurisdiction", "District Name"]
     logger.info(f"cols are {filter_columns}")
     Filter = FilterState(data, filter_columns=filter_columns)
-    return {
-        "tree": Filter.tree,
-        "labels": filter_columns
-    }
+    return {"tree": Filter.tree, "labels": filter_columns}
 
 
 # Flood Endpoint (Hardcoded for now)
@@ -134,10 +129,10 @@ async def read_census_data(category: str, request: FilterRequest = None):
     filter_dict = request.filter_dict if request else {}
     if category not in CENSUS_DATASETS:
         raise HTTPException(
-            status_code=404, detail=f"Census category '{category}' was not found")
+            status_code=404, detail=f"Census category '{category}' was not found"
+        )
 
-    data = data_loading.load_census_data(
-        CENSUS_DATASETS[category]["main"])
+    data = data_loading.load_census_data(CENSUS_DATASETS[category]["main"])
 
     filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
     for col, value in filter_dict.items():
@@ -146,24 +141,29 @@ async def read_census_data(category: str, request: FilterRequest = None):
 
     if data_filtered.empty:
         raise HTTPException(
-            status_code=404, detail=f"No data for given filters: {filter_dict}")
+            status_code=404, detail=f"No data for given filters: {filter_dict}"
+        )
 
     return data_filtered.to_json()
 
 
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
 @app.post("/load/census/{category}/{subcategory}")
-async def read_census_data_subcat(category: str, subcategory: str = 'main', request: FilterRequest = None):
+async def read_census_data_subcat(
+    category: str, subcategory: str = "main", request: FilterRequest = None
+):
     filter_dict = request.filter_dict if request else {}
     if category not in CENSUS_DATASETS:
         raise HTTPException(
-            status_code=404, detail=f"Census category '{category}' was not found")
+            status_code=404, detail=f"Census category '{category}' was not found"
+        )
     if subcategory not in CENSUS_DATASETS[category]:
         raise HTTPException(
-            status_code=404, detail=f"Census subcategory '{subcategory}' was not found in category '{category}'")
+            status_code=404,
+            detail=f"Census subcategory '{subcategory}' was not found in category '{category}'",
+        )
 
-    data = data_loading.load_census_data(
-        CENSUS_DATASETS[category][subcategory])
+    data = data_loading.load_census_data(CENSUS_DATASETS[category][subcategory])
 
     filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
 
@@ -174,6 +174,8 @@ async def read_census_data_subcat(category: str, subcategory: str = 'main', requ
 
     if data_filtered.empty:
         raise HTTPException(
-            status_code=404, detail=f"No data found for the given filters: {filter_dict}")
+            status_code=404,
+            detail=f"No data found for the given filters: {filter_dict}",
+        )
 
     return data_filtered.to_json()
