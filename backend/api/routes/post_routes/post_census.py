@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from api.models.filter_models import FilterRequest
 from app_utils import data_loading
@@ -9,9 +9,7 @@ from app_utils.df_filtering import (
     filter_from_request,
     mass_filter_from_requests,
 )
-
 from app_utils.housing import housing_df_metric_dict
-
 
 router = APIRouter()
 
@@ -42,7 +40,7 @@ CENSUS_DATASETS = {
 
 # Load the Census "Main" Dataset by Cateogory (housing, economic, demographic, social)
 @router.post("/load/census/{category}")
-async def read_census_data(category: str, request: FilterRequest = None):
+async def read_census_data(category: str, request: FilterRequest):
     filter_dict = request.filters if request else {}
     if category not in CENSUS_DATASETS:
         raise HTTPException(
@@ -65,7 +63,7 @@ async def read_census_data(category: str, request: FilterRequest = None):
 
 
 @router.post("/load/census/housing/snapshot")
-async def get_housing_snapshot(request: FilterRequest = Body(None)):
+async def get_housing_snapshot(request: FilterRequest):
     dfs = data_loading.masterload("census_housing")
     dfs = mass_filter_from_requests(dfs, request)
     metrics, plot_dfs = housing_df_metric_dict(dfs)
@@ -97,7 +95,7 @@ async def get_housing_snapshot(request: FilterRequest = Body(None)):
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
 @router.post("/load/census/{category}/{subcategory}")
 async def read_census_data_subcat(
-    category: str, subcategory: str = "main", request: FilterRequest = None
+    category: str, request: FilterRequest, subcategory: str = "main"
 ):
     if category not in CENSUS_DATASETS:
         raise HTTPException(
