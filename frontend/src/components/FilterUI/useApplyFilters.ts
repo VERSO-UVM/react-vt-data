@@ -7,13 +7,15 @@ export function useApplyFilters() {
     filters: Record<string, any>,
     format?: string,
     dataKey?: string,
-    onData?: (data: any, metadata?: any, rawData?: any) => void,
+    onData?: (data: any, metadata?: any, tableData?: any) => void,
   ) {
     if (!dataURL) return;
     try {
       const res = await axios.post(dataURL, { filters, format });
-      let data = res.data.data || res.data; // handle both shapes
-      const metadata = res.data.metadata;
+      let responseData = res.data; // handle both shapes
+      let data = responseData.data || responseData;
+      const metadata = responseData.metadata;
+      const tableData = responseData.tableData;
 
       if (dataKey) {
         const keys = dataKey.split('.');
@@ -21,7 +23,7 @@ export function useApplyFilters() {
           data = data?.[key];
         }
       }
-      onData?.(data, metadata);
+      onData?.(data, metadata, tableData);
     } catch (err) {
       console.error('Error fetching filtered data:', err);
     }

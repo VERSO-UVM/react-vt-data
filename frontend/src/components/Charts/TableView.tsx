@@ -2,30 +2,50 @@
 
 import { ChartItem } from '@/types/cachedCharts';
 import { Table } from '@mantine/core';
-import { Group, Title, SegmentedControl } from '@mantine/core';
+import { Group, Title, SegmentedControl, ScrollArea } from '@mantine/core';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
 }
 
-export const TableView = <TData,>({ chart }: TableViewProps<TData>) => (
-  <Table>
-    <Table.Thead>
-      <Table.Tr>
-        <Table.Th>{chart.xField}</Table.Th>
-        <Table.Th>{chart.yField}</Table.Th>
-      </Table.Tr>
-    </Table.Thead>
-    <Table.Tbody>
-      {chart.data.map((row, i) => (
-        <Table.Tr key={i}>
-          <Table.Td>{row[chart.xField]}</Table.Td>
-          <Table.Td>{row[chart.yField]}</Table.Td>
-        </Table.Tr>
-      ))}
-    </Table.Tbody>
-  </Table>
-);
+export const TableView = <TData extends Record<string, any>>({
+  chart,
+}: TableViewProps<TData>) => {
+  const rows = (chart.tableData || chart.data) as TData[];
+
+  if (!rows || rows.length === 0) return null;
+
+  const columns =
+    chart.showCols?.filter((c) => c.visible ?? true) ?? Object.keys(rows[0]);
+
+  return (
+    <ScrollArea style={{ height: 400 }}>
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
+            {columns.map((col) =>
+              typeof col === 'string' ? (
+                <Table.Th key={col}>{col}</Table.Th>
+              ) : (
+                <Table.Th key={col.key}>{col.label ?? col.key}</Table.Th>
+              ),
+            )}
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {rows.map((row, i) => (
+            <Table.Tr key={i}>
+              {columns.map((col) => {
+                const key = typeof col === 'string' ? col : col.key;
+                return <Table.Td key={key}>{String(row[key])}</Table.Td>;
+              })}
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    </ScrollArea>
+  );
+};
 
 interface ViewSwitchProps {
   view: 'chart' | 'table';

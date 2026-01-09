@@ -1,5 +1,6 @@
 // chartDefs.ts\
 import { BASE_API_URL } from '@/config';
+import { TableColumnConfig } from '@/types/cachedCharts';
 
 export interface ChartDef {
   id: string;
@@ -12,6 +13,7 @@ export interface ChartDef {
   filterKey?: string;
   dataKey?: string;
   notes?: string;
+  showCols?: TableColumnConfig[];
 }
 
 export const chartDefs: ChartDef[] = [
@@ -25,6 +27,13 @@ export const chartDefs: ChartDef[] = [
     url: `${BASE_API_URL}/load/mapping/zoning`,
     filterKey: 'aggregated_acres',
     notes: 'Acreage is defined as a good time.',
+    showCols: [
+      { key: 'County' },
+      { key: 'Jurisdiction District Name' },
+      { key: 'District Type' },
+      { key: 'Acres', label: 'Total Acres' },
+      { key: 'hex_color', visible: false },
+    ],
   },
   {
     id: 'tenure',

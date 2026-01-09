@@ -36,22 +36,26 @@ export const ChartCard = <TData,>({
 
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
-      <Box mb="xl" style={{ height: 400, padding: '16px' }}>
-        <Title order={4}>
+      <Box mb="sm">
+        <Title order={3}>
           {chart.description ? ` ${chart.description} for ` : ''}
           {chart.title}
         </Title>
         <ViewSwitch view={view} setView={setView} />
+      </Box>
+
+      <Box style={{ height: 400, overflow: 'auto' }}>
         {view === 'chart' ? (
           <ChartComponent chart={chart} />
         ) : (
           <TableView chart={chart} />
         )}
       </Box>
+
       <Text size="sm" c="gray.6" mt="md" ta="right">
         {chart.metadata.source}
-        {/* TODO: Come up with a more reasonable way to show metadata */}
       </Text>
+
       <Group mt="md">
         {action === 'add' ? (
           <AddChart chart={chart} />

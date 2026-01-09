@@ -1,11 +1,16 @@
+import geopandas as gpd
 import pandas as pd
 from pydantic import BaseModel
+
+from logger.logging import setup_api_logger
+
+logger = setup_api_logger()
 
 
 class APIResponse(BaseModel):
     """API Response. Note that:
             data is required
-            table_data should only be included if table_data must be differentiated from regular data (eg, for a table view)
+            tableData should only be included if tableData must be differentiated from regular data (eg, for a table view)
             metadata should always be included
 
     Args:
@@ -13,30 +18,32 @@ class APIResponse(BaseModel):
     """
 
     data: dict | list = {}
-    table_data: dict | list | None = None  # unaggregated for table view
+    tableData: dict | list | None = None  # unaggregated for table view
     metadata: dict | None = (
         None  # TODO include this throughout API, then make no longer optional.
     )
 
 
 def make_response(
-    data: pd.DataFrame | dict | list,
+    data: pd.DataFrame | gpd.GeoDataFrame | dict | list,
     metadata: dict,
-    table_data: pd.DataFrame | dict | list | None = None,
+    tableData: pd.DataFrame | gpd.GeoDataFrame | dict | list | None = None,
 ) -> APIResponse:
-    """_summary_
+    data = serialize_data(data)
+    tableData = serialize_data(tableData) if tableData is not None else None
+    return APIResponse(data=data, tableData=tableData, metadata=metadata)
 
-    Args:
-        data (pd.DataFrame | dict | list): data, required.
-        metadata (dict): metatdata, required
-        table_data (pd.DataFrame | dict | list | None, optional): table_data is optional, and should only be included if the data (for viz) is distinct from what a table (raw) data would use
 
-    Returns:
-        APIResponse: _description_
-    """
-    if isinstance(data, pd.DataFrame):
+def serialize_data(
+    data: pd.DataFrame | gpd.GeoDataFrame | dict | list,
+) -> dict | list:
+    if isinstance(data, gpd.GeoDataFrame):
+        df = pd.DataFrame(data.drop(columns="geometry"))
+        return df.to_dict(orient="records")
+    elif isinstance(data, pd.DataFrame):
         data = data.to_dict(orient="records")
-    if isinstance(table_data, pd.DataFrame):
-        table_data = table_data.to_dict(orient="records")
-
-    return APIResponse(data=data, table_data=table_data, metadata=metadata)
+    logger.debug(f"serialized type: {type(data)}")
+    logger.debug(
+        f"serialized sample: {data[:2] if isinstance(data, list) else 'not a list'}"
+    )
+    return data

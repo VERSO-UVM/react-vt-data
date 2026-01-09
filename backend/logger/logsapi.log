@@ -1,0 +1,97 @@
+2026-01-09 13:30:27,864 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:30:27,865 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:30:28,128 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:30:28,128 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:30:30,375 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:30:30,375 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:30:30,678 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:30:30,678 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:48,175 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:48,175 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 2351240.2547729784, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 541112.3825829916, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:52,750 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:52,750 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:53,748 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:53,748 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:53,914 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:53,914 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:54,811 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:54,811 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:55,063 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:55,064 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:56,097 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:56,097 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:32:56,369 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:32:56,369 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:36:24,461 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:36:24,461 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:36:24,495 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:36:24,495 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:36:25,882 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:36:25,882 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:36:25,916 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:36:25,916 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:52:50,390 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:52:50,390 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:52:50,424 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:52:50,424 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 13:52:52,353 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:52:52,353 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 13:52:52,388 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 13:52:52,388 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:09:39,158 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:09:39,158 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:09:39,192 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:09:39,192 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:09:39,468 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:09:39,468 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:09:39,544 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:09:39,544 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:00,889 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:00,889 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:00,933 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:00,933 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:01,246 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:01,246 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:01,283 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:01,283 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:15,537 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:15,538 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 2351240.2547729784, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 541112.3825829916, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:16,012 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:16,012 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:16,260 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:16,260 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:16,297 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:16,298 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:19,032 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:19,032 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:19,075 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:19,075 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:19,256 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:19,256 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:14:19,293 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:14:19,293 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:21:31,378 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:21:31,378 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:21:31,417 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:21:31,418 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:21:31,536 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:21:31,537 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:21:31,917 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:21:31,917 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-01-09 14:21:50,075 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:21:50,075 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 2351240.2547729784, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 541112.3825829916, 'hex_color': '#d62728b4'}]
+2026-01-09 14:21:50,525 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:21:50,526 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:22:39,475 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:22:39,476 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-01-09 14:22:39,528 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:22:39,528 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:25:01,769 - api.routes.get_routes.get_filters - INFO - cols are ['County', 'Jurisdiction', 'District Name']
+2026-01-09 14:37:14,269 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:37:14,269 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-01-09 14:37:14,323 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:37:14,323 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:37:14,401 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:37:14,401 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-01-09 14:37:15,864 - api - DEBUG - serialized type: <class 'list'>
+2026-01-09 14:37:15,864 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
