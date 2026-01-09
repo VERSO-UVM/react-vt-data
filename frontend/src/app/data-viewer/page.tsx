@@ -14,10 +14,10 @@ import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 export default function DataViewerPage() {
   const { myLocation, comparison } = useProfile();
   const [chartData, setChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; rawData?: any[] }>
+    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
   const [compareChartData, setCompareChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; rawData?: any[] }>
+    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
   const applyFilters = useApplyFilters();
 
@@ -34,10 +34,10 @@ export default function DataViewerPage() {
         filters,
         filterKey,
         dataKey,
-        (data, metadata, rawData) =>
+        (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, rawData },
+            [chart.id]: { data, metadata, tableData },
           })),
       );
       applyFilters(
@@ -45,10 +45,10 @@ export default function DataViewerPage() {
         compFilters,
         filterKey,
         dataKey,
-        (data, metadata, rawData) =>
+        (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, rawData },
+            [chart.id]: { data, metadata, tableData },
           })),
       );
     });
@@ -60,11 +60,13 @@ export default function DataViewerPage() {
       xField: chart.xField,
       yField: chart.yField,
       data: chartData[chart.id]?.data || [],
-      rawData: chartData[chart.id]?.rawData || [],
+
+      tableData: chartData[chart.id]?.tableData || [],
+      showCols: chart.showCols,
 
       metadata: chartData[chart.id]?.metadata || [],
       compareData: compareChartData[chart.id]?.data || [],
-      compareRawData: compareChartData[chart.id]?.rawData || [],
+      compareTableData: compareChartData[chart.id]?.tableData || [],
 
       subtype: chart.subtype,
       chartParams: {

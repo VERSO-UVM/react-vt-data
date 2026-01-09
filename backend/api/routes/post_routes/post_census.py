@@ -3,9 +3,9 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from api.models.filter_models import FilterRequest
+from api.models.response_models import make_response
 from app_utils import data_loading
 from app_utils.df_filtering import (
-    FilterState,
     filter_from_request,
     mass_filter_from_requests,
 )
@@ -41,25 +41,16 @@ CENSUS_DATASETS = {
 # Load the Census "Main" Dataset by Cateogory (housing, economic, demographic, social)
 @router.post("/load/census/{category}")
 async def read_census_data(category: str, request: FilterRequest):
-    filter_dict = request.filters if request else {}
     if category not in CENSUS_DATASETS:
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found"
         )
 
     data = data_loading.load_census_data(CENSUS_DATASETS[category]["main"])
+    data = filter_from_request(data, request)
+    metadata = {}
 
-    filters = FilterState(df=data, filter_columns=list(filter_dict.keys()))
-    for col, value in filter_dict.items():
-        filters.selections[col] = [value]  # type: ignore
-    data_filtered = filters.apply_filters()
-
-    if data_filtered.empty:
-        raise HTTPException(
-            status_code=404, detail=f"No data for given filters: {filter_dict}"
-        )
-
-    return data_filtered.to_json()
+    return make_response(data, metadata)
 
 
 @router.post("/load/census/housing/snapshot")
@@ -109,6 +100,7 @@ async def read_census_data_subcat(
 
     data = data_loading.load_census_data(CENSUS_DATASETS[category][subcategory])
     data = filter_from_request(data, request)
+    metadata = {}
 
     if data.empty:
         raise HTTPException(
@@ -116,4 +108,4 @@ async def read_census_data_subcat(
             detail=f"No data found for the given filters: {request.filters if request else {}}",
         )
 
-    return data.to_json()
+    return make_response(data, metadata)
