@@ -18,6 +18,8 @@ import time
 import pandas as pd
 import requests
 
+from app_utils.census import split_name_col
+
 API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5"
 STATE_FIPS = "50"
@@ -92,6 +94,7 @@ def fetch(year, variables, for_clause, in_clause):
         r.raise_for_status()
         data = r.json()
         df = pd.DataFrame(data[1:], columns=data[0])
+        df
         df["year"] = year
         # cast all estimate columns to numeric
         for c in df.columns:
@@ -268,6 +271,7 @@ def scrape():
                 )
 
             df["geo_type"] = geo_label
+            df
             all_frames.append(df)
             time.sleep(0.1)
 

@@ -288,3 +288,99 @@
 2026-02-18 17:10:48,584 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
 2026-02-18 17:10:54,520 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
 2026-02-18 17:10:54,520 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 17:33:54,396 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 17:33:54,396 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 17:34:19,200 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 17:34:19,201 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 17:35:06,982 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 17:35:06,982 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 17:51:31,598 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:31,600 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 17112.799352057158, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 10023.009433308927, 'hex_color': '#d62728b4'}]
+2026-02-18 17:51:31,624 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:31,624 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:51:34,403 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:34,403 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 17112.799352057158, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 10023.009433308927, 'hex_color': '#d62728b4'}]
+2026-02-18 17:51:34,431 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:34,431 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:51:47,739 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:47,740 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:51:47,818 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:47,818 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:51:54,725 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:54,725 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 240217.77724031542, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 28092.247646612093, 'hex_color': '#d62728b4'}]
+2026-02-18 17:51:54,770 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:51:54,771 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:53:25,576 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:53:25,576 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 2351240.2547729784, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 541112.3825829916, 'hex_color': '#d62728b4'}]
+2026-02-18 17:53:26,064 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:53:26,064 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:53:26,339 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:53:26,339 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 240217.77724031542, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 28092.247646612093, 'hex_color': '#d62728b4'}]
+2026-02-18 17:53:26,396 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:53:26,396 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:15,476 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:15,476 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:15,541 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:15,541 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:15,870 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:15,870 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:15,927 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:15,927 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:33,947 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:33,947 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:34,002 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:34,002 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:34,286 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:34,286 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 17:57:34,343 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 17:57:34,343 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 17:59:04,173 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 17:59:04,174 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 18:03:58,163 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 18:03:58,163 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 18:04:12,004 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:12,005 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 18:04:12,058 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:12,058 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:04:14,387 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:14,387 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 18:04:14,441 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:14,441 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:04:22,634 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:22,634 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 18:04:22,693 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:22,693 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:04:22,976 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:22,977 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 18:04:23,032 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:04:23,032 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:12:38,817 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:12:38,817 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-02-18 18:12:38,856 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:12:38,856 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:12:39,141 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:12:39,141 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-02-18 18:12:39,176 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:12:39,176 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:13:04,130 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:13:04,130 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 2351240.2547729784, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 541112.3825829916, 'hex_color': '#d62728b4'}]
+2026-02-18 18:13:04,582 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:13:04,582 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:13:04,771 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:13:04,772 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 245565.25401113665, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 34701.94946854303, 'hex_color': '#d62728b4'}]
+2026-02-18 18:13:04,858 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:13:04,858 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 18:23:52,831 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 18:23:52,832 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 18:23:55,198 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 18:23:55,199 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 18:25:00,219 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 18:25:00,219 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 18:25:50,478 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 18:25:50,478 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-18 18:25:58,039 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:25:58,039 - api - DEBUG - serialized sample: [{'year': 2010, 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 383.0, 'Percent': 6.0}, {'year': 2010, 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 523.0, 'Percent': 8.2}]
+2026-02-18 18:25:58,051 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 18:25:58,052 - api - DEBUG - serialized sample: [{'year': 2010, 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 383.0, 'Percent': 6.0}, {'year': 2010, 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 523.0, 'Percent': 8.2}]
+2026-02-18 18:26:18,076 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 18:26:18,076 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet

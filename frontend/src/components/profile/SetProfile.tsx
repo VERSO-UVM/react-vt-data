@@ -30,11 +30,11 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
     town?: string | null,
   ) => {
     if (type === 'state') return 'Vermont';
-    if (type === 'county' && county) return county;
-    if (type === 'town' && county && town) return `${town}, ${county}`;
+    if (type === 'county' && county) return `${county} County, Vermont`;
+    if (type === 'town' && county && town)
+      return `${town}, ${county} County, Vermont`;
     return 'Unknown';
   };
-
   return (
     <>
       <Title order={2}>{title}</Title>
