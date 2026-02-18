@@ -15,12 +15,7 @@ TIDY_PARQUET = (
     Path(__file__).resolve().parent
     / "../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet"
 )
-PARQUET = (
-    Path(__file__).resolve().parent
-    / "../../../Data/Census/ACS_5/vt_acs5_combined.parquet"
-)
 logger.debug(f"ACS_5 TIDY_PARQUET_PATH = {TIDY_PARQUET}")
-logger.debug(f"ACS_5 TIDY_PARQUET_PATH = {PARQUET}")
 
 DB = duckdb.connect()
 DB.execute(f"CREATE VIEW tidy_census AS SELECT * FROM read_parquet('/{TIDY_PARQUET}')")
