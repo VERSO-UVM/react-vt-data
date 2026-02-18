@@ -8,10 +8,11 @@ export function useApplyFilters() {
     format?: string,
     dataKey?: string,
     onData?: (data: any, metadata?: any, tableData?: any) => void,
+    extra?: Record<string, any>,
   ) {
     if (!dataURL) return;
     try {
-      const res = await axios.post(dataURL, { filters, format });
+      const res = await axios.post(dataURL, { filters, format, ...extra });
       let responseData = res.data; // handle both shapes
       let data = responseData.data || responseData;
       const metadata = responseData.metadata;
