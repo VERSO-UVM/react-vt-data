@@ -26,16 +26,19 @@ DB.execute(f"CREATE VIEW tidy_census AS SELECT * FROM read_parquet('/{TIDY_PARQU
 # DB.execute(f"CREATE VIEW reg_census AS SELECT * FROM read_parquet('/{PARQUET}')")
 
 
-@router.get("/load/acs5-db/tidy/demographics")
-def dirty_demographics(jurisdiction: str, year_min: int = 2010, year_max: int = 2023):
+@router.get("/load/acs5-db/tidy/demographics-percent")
+def tidy_demographics_percent(
+    jurisdiction: str, year_min: int = 2010, year_max: int = 2023
+):
     rows = (
         DB.execute(
             """
         SELECT year, Category, Variable, Value
         FROM tidy_census
-        WHERE JURISDICTION = ?
+        WHERE NAME  = ?
           AND "table" = 'DP05'
-          AND Measure = 'Estimate'
+          AND Measure = 'Percent'
+          AND CAST(value as INTEGER) <= 100
           AND CAST(year as INTEGER) BETWEEN ? AND ?
         ORDER BY year
     """,
@@ -47,22 +50,22 @@ def dirty_demographics(jurisdiction: str, year_min: int = 2010, year_max: int = 
     return rows
 
 
-@router.get("/load/acs5-db/reg/demographics")
-def demographics(name: str, year_min: int = 2010, year_max: int = 2023):
-    rows = (
-        DB.execute(
-            """
-        SELECT year, Category, Variable, Value
-        FROM tidy_census
-        WHERE NAME = ?
-          AND "table" = 'DP05'
-          AND Measure = 'Estimate'
-          AND CAST(year as INTEGER) BETWEEN ? AND ?
-        ORDER BY year
-    """,
-            [name, year_min, year_max],
-        )
-        .df()
-        .to_dict(orient="records")
-    )
-    return rows
+# @router.get("/load/acs5-db/reg/demographics")
+# def demographics(name: str, year_min: int = 2010, year_max: int = 2023):
+#     rows = (
+#         DB.execute(
+#             """
+#         SELECT year, Category, Variable, Value
+#         FROM tidy_census
+#         WHERE NAME = ?
+#           AND "table" = 'DP05'
+#           AND Measure = 'Estimate'
+#           AND CAST(year as INTEGER) BETWEEN ? AND ?
+#         ORDER BY year
+#     """,
+#             [name, year_min, year_max],
+#         )
+#         .df()
+#         .to_dict(orient="records")
+#     )
+#     return rows

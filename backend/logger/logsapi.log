@@ -170,3 +170,9 @@
 2026-02-18 14:32:47,816 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
 2026-02-18 14:32:53,603 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
 2026-02-18 14:32:53,603 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:33:40,808 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:33:40,808 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:35:02,753 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:35:02,753 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:39:05,759 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:39:05,759 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
