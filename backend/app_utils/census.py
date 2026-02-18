@@ -30,9 +30,10 @@ def split_name_col(census_gdf):
     return census_gdf
 
 
-@st.cache_data
-def get_census_cols():
-    r = requests.get("https://api.census.gov/data/2019/acs/acs5/profile/variables.html")
+def get_census_cols(year: int):
+    r = requests.get(
+        f"https://api.census.gov/data/{year}/acs/acs5/profile/variables.html"
+    )
     soup = BeautifulSoup(r.content, "html.parser")
 
     # get table headers as keys
@@ -93,14 +94,15 @@ def relabel_census_cols(df):
     return name_df
 
 
-def merge_census_cols(name_df, data_gdf):
-    # Melt the gdf into tidy format
-    id_vars = [
+def merge_census_cols(name_df, data_gdf, id_vars: list | None):
+    id_vars = id_vars or [
         "GEOID",
         "geometry",
         "Jurisdiction",
         "County",
     ]
+
+    # Melt the gdf into tidy format
     data_gdf[id_vars]
     df_long = data_gdf.melt(
         id_vars=id_vars,
@@ -115,11 +117,11 @@ def merge_census_cols(name_df, data_gdf):
     )
 
 
-def tidy_census(census_gdf):
+def tidy_census(census_gdf, year=2019, id_vars: list | None = None):
     # wrapper func to rename codes in func
-    name_df = get_census_cols()
+    name_df = get_census_cols(year)
     name_df = relabel_census_cols(name_df)
-    return merge_census_cols(name_df, census_gdf)
+    return merge_census_cols(name_df, census_gdf, id_vars)
 
 
 def get_geography_title(selected_values):

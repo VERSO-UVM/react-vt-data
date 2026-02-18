@@ -95,3 +95,78 @@
 2026-01-09 14:37:14,401 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
 2026-01-09 14:37:15,864 - api - DEBUG - serialized type: <class 'list'>
 2026-01-09 14:37:15,864 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:00,028 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:00,030 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:00,085 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:00,085 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:02,163 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:02,163 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:02,221 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:02,221 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:53,605 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:53,605 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 2351240.2547729784, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 541112.3825829916, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:54,052 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:54,052 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:54,313 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:54,313 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 12:07:54,364 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:07:54,365 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 12:08:35,972 - api.routes.get_routes.get_filters - INFO - cols are ['County', 'Jurisdiction', 'District Name']
+2026-02-18 12:08:36,209 - api.routes.get_routes.get_filters - INFO - cols are ['County', 'Jurisdiction', 'District Name']
+2026-02-18 12:50:25,490 - api.routes.get_routes.get_db - DEBUG - PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 12:50:48,278 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 12:50:54,721 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 12:54:04,254 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:54:04,254 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 12:54:04,309 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:54:04,309 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 12:54:05,800 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:54:05,800 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-18 12:54:05,859 - api - DEBUG - serialized type: <class 'list'>
+2026-02-18 12:54:05,859 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-18 12:58:12,909 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 12:59:03,346 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 12:59:44,218 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:28:28,719 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:28:44,351 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:34:24,651 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:34:34,758 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:34:44,991 - api.routes.get_routes.get_db - DEBUG - ACS_5 PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:35:36,671 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:35:36,671 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_.parquet
+2026-02-18 13:35:49,608 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:35:49,608 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:51:47,143 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:51:47,144 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:52:09,654 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:52:09,654 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:52:16,352 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:52:16,352 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:52:53,552 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:52:53,552 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:52:56,646 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:52:56,646 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:53:28,960 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:53:28,961 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:54:00,661 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:54:00,661 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:55:58,064 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:55:58,064 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 13:57:17,366 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 13:57:17,367 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined.parquet
+2026-02-18 14:15:25,946 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:15:25,946 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:16:39,783 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:16:39,783 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:17:35,060 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:17:35,061 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:31:46,611 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:31:46,612 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:32:32,601 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:32:32,601 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:32:43,693 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:32:43,693 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:32:47,816 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:32:47,816 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
+2026-02-18 14:32:53,603 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined_TIDY.parquet
+2026-02-18 14:32:53,603 - api.routes.get_routes.get_db - DEBUG - ACS_5 TIDY_PARQUET_PATH = /home/fitsl/dev/react-vt-data/backend/api/routes/get_routes/../../../Data/Census/ACS_5/vt_acs5_combined.parquet
