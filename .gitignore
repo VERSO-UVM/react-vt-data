@@ -9,6 +9,7 @@ venv/
 *large-data*
 *_trash*
 *zoning.json*
+*tidy.csv*
 
 
 # build libraries
@@ -37,3 +38,4 @@ yarn-error.log*
 # Build output
 out/
 dist/
+backend/Data/Census/**/*.csv
