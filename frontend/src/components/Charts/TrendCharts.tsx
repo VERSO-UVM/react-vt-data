@@ -11,6 +11,15 @@ import {
   YAxis,
 } from 'recharts';
 import { ChartItem } from '@/types/cachedCharts';
+import { Text } from '@mantine/core';
+
+/** Small label shown above the chart when comparison data is present. */
+const CompareNote = ({ name }: { name: string }) => (
+  <Text size="xs" c="dimmed" mb={4}>
+    <span style={{ letterSpacing: 2, marginRight: 6 }}>– – –</span>
+    dashed lines = {name}
+  </Text>
+);
 
 // ---------------------------------------------------------------------------
 // Demographics: Under 18 vs 65+
@@ -26,6 +35,8 @@ export const DemographicsTrendChart = <TData,>({
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
@@ -49,46 +60,48 @@ export const DemographicsTrendChart = <TData,>({
       : {}),
   }));
 
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
-  const cmpLabel = labels?.[1] ?? 'Comparison';
-
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart
-        data={plotData}
-        margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-        <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-        <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-        <Legend />
-        <Line type="monotone" dataKey="Under 18" stroke="#154734" strokeWidth={2} dot={false} />
-        <Line type="monotone" dataKey="65+" stroke="#e07b39" strokeWidth={2} dot={false} />
-        {compareData.length > 0 && (
-          <>
-            <Line
-              type="monotone"
-              dataKey="Under 18 (cmp)"
-              name={`Under 18 — ${cmpLabel}`}
-              stroke="#154734"
-              strokeWidth={1.5}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="65+ (cmp)"
-              name={`65+ — ${cmpLabel}`}
-              stroke="#e07b39"
-              strokeWidth={1.5}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-          </>
-        )}
-      </LineChart>
-    </ResponsiveContainer>
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
+          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
+          <Legend />
+          <Line type="monotone" dataKey="Under 18" stroke="#154734" strokeWidth={2} dot={false} />
+          <Line type="monotone" dataKey="65+" stroke="#e07b39" strokeWidth={2} dot={false} />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Under 18 (cmp)"
+                name="Under 18"
+                stroke="#154734"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+              <Line
+                type="monotone"
+                dataKey="65+ (cmp)"
+                name="65+"
+                stroke="#e07b39"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
   );
 };
 
@@ -117,9 +130,8 @@ export const EducationTrendChart = <TData,>({
   const filtered = data.filter((r) => keys.has(r.Variable));
   const cmpFiltered = compareData.filter((r) => keys.has(r.Variable));
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort();
-
   const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
-  const cmpLabel = labels?.[1] ?? 'Comparison';
+  const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => {
     const rows = filtered.filter((r) => r.year === year);
@@ -135,41 +147,44 @@ export const EducationTrendChart = <TData,>({
   });
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart
-        data={plotData}
-        margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-        <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-        <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-        <Legend />
-        {EDU_SERIES.map((s) => (
-          <Line
-            key={s.key}
-            type="monotone"
-            dataKey={s.key}
-            stroke={s.color}
-            strokeWidth={2}
-            dot={false}
-          />
-        ))}
-        {compareData.length > 0 &&
-          EDU_SERIES.map((s) => (
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
+          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
+          <Legend />
+          {EDU_SERIES.map((s) => (
             <Line
-              key={`${s.key}-cmp`}
+              key={s.key}
               type="monotone"
-              dataKey={`${s.key} (cmp)`}
-              name={`${s.key} — ${cmpLabel}`}
+              dataKey={s.key}
               stroke={s.color}
-              strokeWidth={1.5}
-              strokeDasharray="5 5"
+              strokeWidth={2}
               dot={false}
             />
           ))}
-      </LineChart>
-    </ResponsiveContainer>
+          {compareData.length > 0 &&
+            EDU_SERIES.map((s) => (
+              <Line
+                key={`${s.key}-cmp`}
+                type="monotone"
+                dataKey={`${s.key} (cmp)`}
+                stroke={s.color}
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
   );
 };
 
@@ -194,7 +209,7 @@ export const HousingTrendChart = <TData,>({
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
-  const cmpLabel = labels?.[1] ?? 'Comparison';
+  const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => {
     const rows = data.filter((r) => r.year === year);
@@ -218,66 +233,69 @@ export const HousingTrendChart = <TData,>({
   };
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart
-        data={plotData}
-        margin={{ top: 10, right: 50, left: 20, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-        <YAxis
-          yAxisId="left"
-          tick={{ fontSize: 12 }}
-          tickFormatter={(v) => v.toLocaleString()}
-          label={{
-            value: 'Units',
-            angle: -90,
-            position: 'insideLeft',
-            offset: -5,
-            style: { fontSize: 11 },
-          }}
-        />
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          tick={{ fontSize: 12 }}
-          tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-          label={{
-            value: 'Home Value',
-            angle: 90,
-            position: 'insideRight',
-            offset: 15,
-            style: { fontSize: 11 },
-          }}
-        />
-        <Tooltip formatter={fmtTooltip} />
-        <Legend />
-        {HOUSING_SERIES.map((s) => (
-          <Line
-            key={s.key}
-            yAxisId={s.axis}
-            type="monotone"
-            dataKey={s.key}
-            stroke={s.color}
-            strokeWidth={2}
-            dot={false}
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 50, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis
+            yAxisId="left"
+            tick={{ fontSize: 12 }}
+            tickFormatter={(v) => v.toLocaleString()}
+            label={{
+              value: 'Units',
+              angle: -90,
+              position: 'insideLeft',
+              offset: -5,
+              style: { fontSize: 11 },
+            }}
           />
-        ))}
-        {compareData.length > 0 &&
-          HOUSING_SERIES.map((s) => (
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{ fontSize: 12 }}
+            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+            label={{
+              value: 'Home Value',
+              angle: 90,
+              position: 'insideRight',
+              offset: 15,
+              style: { fontSize: 11 },
+            }}
+          />
+          <Tooltip formatter={fmtTooltip} />
+          <Legend />
+          {HOUSING_SERIES.map((s) => (
             <Line
-              key={`${s.key}-cmp`}
+              key={s.key}
               yAxisId={s.axis}
               type="monotone"
-              dataKey={`${s.key} (cmp)`}
-              name={`${s.key} — ${cmpLabel}`}
+              dataKey={s.key}
               stroke={s.color}
-              strokeWidth={1.5}
-              strokeDasharray="5 5"
+              strokeWidth={2}
               dot={false}
             />
           ))}
-      </LineChart>
-    </ResponsiveContainer>
+          {compareData.length > 0 &&
+            HOUSING_SERIES.map((s) => (
+              <Line
+                key={`${s.key}-cmp`}
+                yAxisId={s.axis}
+                type="monotone"
+                dataKey={`${s.key} (cmp)`}
+                stroke={s.color}
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
   );
 };

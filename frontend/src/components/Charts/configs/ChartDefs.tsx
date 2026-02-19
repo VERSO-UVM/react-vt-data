@@ -49,20 +49,18 @@ export const chartDefs: ChartDef[] = [
       { key: 'hex_color', visible: false },
     ],
   },
-  {
-    id: 'tenure',
-    title: 'Housing Tenure',
-    categories: ['Housing'],
-    xField: 'Occupied Tenure',
-    yField: 'Value',
-    subtype: 'CompareDiffPerXBarChart',
-    chartParams: {
-      colorScheme: 'schemeAccent',
-      legendLabels: ['Main', 'Compare'],
-    },
-    dataKey: 'plot_data.tenure_df',
-    url: `${BASE_API_URL}/load/census/housing/snapshot`,
-  },
+  // tenure bar chart removed — not adding enough information (4.3)
+  // {
+  //   id: 'tenure',
+  //   title: 'Housing Tenure',
+  //   categories: ['Housing'],
+  //   xField: 'Occupied Tenure',
+  //   yField: 'Value',
+  //   subtype: 'CompareDiffPerXBarChart',
+  //   chartParams: { colorScheme: 'schemeAccent', legendLabels: ['Main', 'Compare'] },
+  //   dataKey: 'plot_data.tenure_df',
+  //   url: `${BASE_API_URL}/load/census/housing/snapshot`,
+  // },
   {
     id: 'demographics',
     title: 'Demographics — Percent',
@@ -121,21 +119,7 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2012, year_max: 2023 },
     },
   },
-  // Housing Tenure (owner vs renter over time)
-  {
-    id: 'housing_tenure',
-    title: 'Housing Tenure',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/housing/tenure`,
-    xField: '',
-    yField: '',
-    subtype: 'renderTableMixed',
-    categories: ['Housing'],
-    filterKey: '',
-    dataKey: '',
-    tableConfig: {
-      extraParams: { year_min: 2010, year_max: 2023 },
-    },
-  },
+  // housing_tenure table removed — endpoint not needed (4.3)
   // Housing
   {
     id: 'housing',

@@ -115,43 +115,7 @@ async def tidy_labor_force(request: FilterRequest):
     return make_response(data=rows, metadata=metadata)
 
 
-@router.post("/load/acs5-db/tidy/housing/tenure")
-async def tidy_housing_tenure(request: FilterRequest):
-    import pandas as pd
-
-    rows = DB.execute(
-        """
-        SELECT year, Variable, Value, Percent
-        FROM b_housing
-        WHERE NAME = ?
-        AND Variable IN ('Renter-Occupied Units', 'Total Housing Units')
-        AND CAST(year AS INTEGER) BETWEEN ? AND ?
-        ORDER BY year, Variable
-    """,
-        [request.name, request.year_min, request.year_max],
-    ).df()
-
-    # Derive Owner-Occupied Units = Total - Renter, with percentages.
-    owner_rows = []
-    for year in rows["year"].unique():
-        yr = rows[rows["year"] == year]
-        total_s = yr[yr["Variable"] == "Total Housing Units"]["Value"].values
-        renter_s = yr[yr["Variable"] == "Renter-Occupied Units"]["Value"].values
-        if len(total_s) == 0 or len(renter_s) == 0:
-            continue
-        total_val = float(total_s[0])
-        renter_val = float(renter_s[0])
-        owner_val = total_val - renter_val
-        pct = round(owner_val / total_val * 100, 1) if total_val > 0 else None
-        owner_rows.append(
-            {"year": year, "Variable": "Owner-Occupied Units", "Value": owner_val, "Percent": pct}
-        )
-
-    if owner_rows:
-        rows = pd.concat([rows, pd.DataFrame(owner_rows)], ignore_index=True)
-
-    metadata = get_metadata("housing")
-    return make_response(data=rows, metadata=metadata)
+# Housing tenure endpoint removed — not needed (4.3)
 
 
 @router.post("/load/acs5-db/tidy/income")
