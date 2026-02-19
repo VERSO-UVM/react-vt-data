@@ -155,7 +155,7 @@ export default function DataViewerPage() {
 
   return (
     <>
-      <Center mb="md">
+      <Center mt="xl" mb="md">
         <Title order={2}>Data Analysis</Title>
       </Center>
       {interests.length > 0 && (

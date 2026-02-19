@@ -4,7 +4,7 @@ import { Center, Container, Text, Title } from '@mantine/core';
 export default function DataExport() {
   return (
     <>
-      <Center mb="md">
+      <Center mt="xl" mb="md">
         <Title order={2}>Raw Data Export</Title>
       </Center>
       <Container>

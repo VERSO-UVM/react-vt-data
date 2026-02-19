@@ -11,7 +11,7 @@ export const links = [
 export default function BaseMappingPage() {
   return (
     <>
-      <Center mb="xl">
+      <Center mt="xl" mb="xl">
         <Title order={2}>Exploratory Mapping</Title>
       </Center>
 
