@@ -159,6 +159,7 @@ export const HousingTrendChart = <TData,>({
     return {
       year,
       'Total Housing Units': find('Total Housing Units'),
+      'Renter-Occupied Units': find('Renter-Occupied Units'),
       'Median Home Value': find('Median Home Value'),
     };
   });
@@ -198,7 +199,7 @@ export const HousingTrendChart = <TData,>({
         />
         <Tooltip
           formatter={(val: any, name: string) => {
-            if (name === 'Total Housing Units')
+            if (name === 'Total Housing Units' || name === 'Renter-Occupied Units')
               return [val?.toLocaleString() ?? '—', name];
             if (name === 'Median Home Value')
               return [`$${val?.toLocaleString() ?? '—'}`, name];
@@ -211,6 +212,14 @@ export const HousingTrendChart = <TData,>({
           type="monotone"
           dataKey="Total Housing Units"
           stroke="#154734"
+          strokeWidth={2}
+          dot={false}
+        />
+        <Line
+          yAxisId="left"
+          type="monotone"
+          dataKey="Renter-Occupied Units"
+          stroke="#e07b39"
           strokeWidth={2}
           dot={false}
         />
