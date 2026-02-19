@@ -62,3 +62,19 @@ export const renderTableEstimates = <TData,>({
     }
   />
 );
+
+/** Shows Percent when available, falls back to Value — for mixed tables like Housing. */
+export const renderTableMixed = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => (
+  <DemographicsTableBase
+    chart={chart}
+    renderCell={(row) => {
+      if (row?.Percent != null) return `${row.Percent.toFixed(1)}%`;
+      if (row?.Value != null) return row.Value.toLocaleString();
+      return '—';
+    }}
+  />
+);

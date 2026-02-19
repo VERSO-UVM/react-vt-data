@@ -5,7 +5,7 @@ export {
   CompareDiffPerXBarChart,
 } from './Bar';
 
-export { renderTable, renderTableEstimates } from './DemographicsTable';
+export { renderTable, renderTableEstimates, renderTableMixed } from './DemographicsTable';
 
 import { ChartItem } from '@/types/cachedCharts';
 import {

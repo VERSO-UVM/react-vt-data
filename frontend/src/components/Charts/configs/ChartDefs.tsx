@@ -111,4 +111,72 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2012, year_max: 2023 },
     },
   },
+  // Housing
+  {
+    id: 'housing',
+    title: 'Housing Stock & Value',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableMixed',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  {
+    id: 'housing_estimates',
+    title: 'Housing Stock & Value — Value',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  // Labor Force
+  {
+    id: 'labor_force',
+    title: 'Labor Force Participation — Percent',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTable',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  {
+    id: 'labor_force_estimates',
+    title: 'Labor Force Participation — Value',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  // Income
+  {
+    id: 'income',
+    title: 'Median Household & Per Capita Income',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
 ];

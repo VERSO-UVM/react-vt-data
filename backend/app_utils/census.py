@@ -11,19 +11,21 @@ import streamlit as st
 from bs4 import BeautifulSoup
 
 
-def split_name_col(census_gdf):
+def split_name_col(census_gdf, keep_name: bool = True):
     """
-    Splits the "NAME" columns in the census datasets into
-    "Jurisdiction" and "County" columns.
+    Splits the "NAME" column into "Jurisdiction" and "County" columns.
+    By default the original NAME column is preserved (keep_name=True).
 
-    @param census_gdf: A census style GeoDataFrame with a "NAME" column.
-    @return: The cleaned dataset with the split "NAME" column.
+    @param census_gdf: A census-style DataFrame with a "NAME" column.
+    @param keep_name:  When True (default) the NAME column is kept alongside
+                       the new Jurisdiction and County columns.
+    @return: The dataset with Jurisdiction and County added.
     """
-    # Split the NAME column and drop it
     census_gdf[["Jurisdiction", "County"]] = census_gdf["NAME"].str.extract(
         r"^(.*?),\s*(.*?) County,"
     )
-    census_gdf = census_gdf.drop(columns="NAME")
+    if not keep_name:
+        census_gdf = census_gdf.drop(columns="NAME")
 
     if "year" in census_gdf.columns:
         census_gdf["year"] = census_gdf["year"].astype(str)
