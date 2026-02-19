@@ -116,6 +116,7 @@ export default function DataViewerPage() {
       metadata: chartData[def.id]?.metadata || [],
       notes: def.notes,
       subtype: def.subtype,
+      trendChart: def.trendChart,
     }),
   );
 

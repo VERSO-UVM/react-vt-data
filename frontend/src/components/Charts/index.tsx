@@ -6,6 +6,11 @@ export {
 } from './Bar';
 
 export { renderTable, renderTableEstimates, renderTableMixed } from './DemographicsTable';
+export {
+  DemographicsTrendChart,
+  EducationTrendChart,
+  HousingTrendChart,
+} from './TrendCharts';
 
 import { ChartItem } from '@/types/cachedCharts';
 import {
@@ -15,26 +20,50 @@ import {
   Stack,
   Text,
   Group,
-  SegmentedControl,
 } from '@mantine/core';
 import { AddChart, RemoveChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 
 // ChartCard
-interface ChartCardProps<TData> {
+interface ChartCardProps<TData extends Record<string, any>> {
   chart: ChartItem<TData>;
   ChartComponent: React.FC<{ chart: ChartItem<TData> }>;
+  TrendComponent?: React.FC<{ chart: ChartItem<TData> }>;
   action?: 'add' | 'remove';
 }
-export const ChartCard = <TData,>({
-  // ideally this will eventually have multiple 'views' in to the same data
-  // tabular, visual, and textual summary.
+export const ChartCard = <TData extends Record<string, any>>({
   chart,
   ChartComponent,
+  TrendComponent,
   action = 'add',
 }: ChartCardProps<TData>) => {
-  const [view, setView] = useState<'chart' | 'table'>('chart');
+  // Table-primary items (renderTable*) default to table view; charts default to chart view.
+  const isTablePrimary = chart.subtype.startsWith('renderTable');
+  const [view, setView] = useState<'chart' | 'table'>(
+    isTablePrimary ? 'table' : 'chart',
+  );
+
+  // Only show the toggle when there is something meaningful on both sides.
+  // Table-primary items only get a toggle if a trend chart is wired up.
+  const showViewSwitch = isTablePrimary ? !!TrendComponent : true;
+
+  const content = isTablePrimary ? (
+    // table view  → the formatted table renderer (renderTable*)
+    // chart view  → the trend chart (if provided)
+    view === 'chart' && TrendComponent ? (
+      <TrendComponent chart={chart} />
+    ) : (
+      <ChartComponent chart={chart} />
+    )
+  ) : (
+    // chart view → the visualisation; table view → generic data table
+    view === 'chart' ? (
+      <ChartComponent chart={chart} />
+    ) : (
+      <TableView chart={chart} />
+    )
+  );
 
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -43,19 +72,13 @@ export const ChartCard = <TData,>({
           {chart.description ? ` ${chart.description} for ` : ''}
           {chart.title}
         </Title>
-        <ViewSwitch view={view} setView={setView} />
+        {showViewSwitch && <ViewSwitch view={view} setView={setView} />}
       </Box>
 
-      <Box style={{ height: 400, overflow: 'auto' }}>
-        {view === 'chart' ? (
-          <ChartComponent chart={chart} />
-        ) : (
-          <TableView chart={chart} />
-        )}
-      </Box>
+      <Box style={{ height: 400, overflow: 'auto' }}>{content}</Box>
 
       <Text size="sm" c="gray.6" mt="md" ta="right">
-        {chart.metadata.source}
+        {chart.metadata?.source}
       </Text>
 
       <Group mt="md">
@@ -69,14 +92,14 @@ export const ChartCard = <TData,>({
   );
 };
 
-interface ChartStackProps<TData> {
+interface ChartStackProps<TData extends Record<string, any>> {
   charts: ChartItem<TData>[];
   action?: 'add' | 'remove';
 }
 
 import * as allCharts from './index'; // self-import to dynamically access all exports
 
-export const ChartStack = <TData,>({
+export const ChartStack = <TData extends Record<string, any>>({
   charts,
   action = 'add',
 }: ChartStackProps<TData>) => (
@@ -85,6 +108,13 @@ export const ChartStack = <TData,>({
       const ChartComponent = allCharts[
         chart.subtype as keyof typeof allCharts
       ] as React.FC<{ chart: ChartItem<TData> }>;
+
+      const TrendComponent = chart.trendChart
+        ? (allCharts[
+            chart.trendChart as keyof typeof allCharts
+          ] as React.FC<{ chart: ChartItem<TData> }>)
+        : undefined;
+
       if (!ChartComponent) return null;
       if (!chart.data || chart.data.length === 0)
         return (
@@ -101,6 +131,7 @@ export const ChartStack = <TData,>({
           chart={chart}
           action={action}
           ChartComponent={ChartComponent}
+          TrendComponent={TrendComponent}
         />
       );
     })}

@@ -49,6 +49,7 @@ export function createTableItem<TData>(config: {
   metadata?: Record<string, any>;
   description?: string;
   subtype?: string;
+  trendChart?: string;
 }): ChartItem<TData> {
   return {
     id: `${config.title.replace(/\s/g, '')}-${uuidv4()}`,
@@ -56,6 +57,7 @@ export function createTableItem<TData>(config: {
     createdAt: new Date().toISOString(),
     type: 'chart',
     subtype: config.subtype ?? 'renderTable',
+    trendChart: config.trendChart,
     xField: '',
     yField: '',
     data: config.data,

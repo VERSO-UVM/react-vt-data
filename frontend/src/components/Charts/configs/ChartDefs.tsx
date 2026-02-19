@@ -18,6 +18,7 @@ export interface ChartDef {
   xField: string;
   yField: string;
   subtype: string;
+  trendChart?: string; // optional trend chart component name for table-primary defs
   chartParams?: any;
   url: string;
   filterKey?: string;
@@ -66,6 +67,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTable', // signals to the renderer to use TableStack not ChartStack
+    trendChart: 'DemographicsTrendChart',
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -92,6 +94,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTable',
+    trendChart: 'EducationTrendChart',
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -119,6 +122,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTableMixed',
+    trendChart: 'HousingTrendChart',
     filterKey: '',
     dataKey: '',
     tableConfig: {
