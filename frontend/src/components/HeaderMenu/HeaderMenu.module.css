@@ -2,7 +2,7 @@
 .header {
   position: sticky;
   top: 0px;
-  background-color: #FFD100;  
+  background-color: #f5ede0;
   z-index: 1000;
   width: 100vw;
   margin-left: -16px;
@@ -22,18 +22,18 @@
   border-radius: 4px;
   padding: 0px 8px;
   text-decoration: none;
-  color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
+  color: #1a1a1a;
   font-size: var(--mantine-font-size-sm);
   transition: background-color .3s ease;
-  font-family: "Trebuchet MS", sans-serif;
+  font-family: var(--font-zilla-slab), Georgia, serif;
 }
 
 .link:hover {
-    background-color: whitesmoke;
+    background-color: #e8ddd0;
 }
 
 .active {
-  background-color: whitesmoke;
+  background-color: #e8ddd0;
   text-decoration: underline;
 }
 
