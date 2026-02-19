@@ -4,12 +4,13 @@ import {
   Divider,
   Modal,
   MultiSelect,
+  RangeSlider,
   Select,
   Stack,
   Text,
   Title,
 } from '@mantine/core';
-import { useProfile, INTEREST_OPTIONS, Location } from './profileStore';
+import { useProfile, INTEREST_OPTIONS, YEAR_MIN_OVERALL, YEAR_MAX_OVERALL, Location } from './profileStore';
 import county_town_names from '@/Data/county_town_names.json';
 
 type CountyKey = keyof typeof county_town_names;
@@ -103,6 +104,11 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   );
 };
 
+const YEAR_MARKS = [2009, 2012, 2015, 2018, 2021, 2024].map((y) => ({
+  value: y,
+  label: String(y),
+}));
+
 export const ProfileModal: React.FC = () => {
   const {
     myLocation,
@@ -111,18 +117,23 @@ export const ProfileModal: React.FC = () => {
     setComparison,
     interests,
     setInterests,
+    yearMin,
+    yearMax,
+    setYearRange,
   } = useProfile();
   const [opened, setOpened] = useState(false);
 
   const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
   const [tempComparison, setTempComparison] = useState<Location>(comparison);
   const [tempInterests, setTempInterests] = useState<string[]>(interests);
+  const [tempYearRange, setTempYearRange] = useState<[number, number]>([yearMin, yearMax]);
 
   const handleOpen = () => {
     // Sync temp state from store each time the modal opens
     setTempMyLocation(myLocation);
     setTempComparison(comparison);
     setTempInterests(interests);
+    setTempYearRange([yearMin, yearMax]);
     setOpened(true);
   };
 
@@ -130,6 +141,7 @@ export const ProfileModal: React.FC = () => {
     setLocation(tempMyLocation);
     setComparison(tempComparison);
     setInterests(tempInterests);
+    setYearRange(tempYearRange[0], tempYearRange[1]);
     setOpened(false);
   };
 
@@ -168,6 +180,26 @@ export const ProfileModal: React.FC = () => {
               onChange={setTempInterests}
               placeholder="Any topic"
               clearable
+            />
+          </div>
+
+          <Divider />
+
+          <div>
+            <Title order={2}>Years of Longitudinal Interest</Title>
+            <Text size="sm" c="dimmed" mb="xs">
+              Restrict trend tables and charts to this year range ({tempYearRange[0]}–{tempYearRange[1]}).
+            </Text>
+            <RangeSlider
+              min={YEAR_MIN_OVERALL}
+              max={YEAR_MAX_OVERALL}
+              step={1}
+              value={tempYearRange}
+              onChange={setTempYearRange}
+              marks={YEAR_MARKS}
+              label={(v) => String(v)}
+              mt="xs"
+              mb="xl"
             />
           </div>
 

@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter
 
 from api.models import APIResponse, FilterRequest, make_response
@@ -31,6 +33,7 @@ async def read_zoning_data(request: FilterRequest) -> APIResponse:
             .rename(columns={"District Type": "District Type"})
         )
         result["hex_color"] = df.groupby("District Type")["hex_color"].first().values
-        df = result
+        return make_response(result, metadata, table_data)
 
-    return make_response(df, metadata, table_data)
+    # Default: return as GeoJSON so geometry is preserved for map rendering
+    return APIResponse(data=json.loads(df.to_json()), tableData=None, metadata=metadata)

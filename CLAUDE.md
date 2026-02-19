@@ -13,6 +13,9 @@ Vermont Data Exploration App — a full-stack web application for visualizing Ve
 * Eventually, work towards smooth pipelines, with purely SQL // duckdb backends 
 * Place for data export, visualization, analysis, new indicators, dissimulation of old indicators, etc. 
 
+## Tips 
+* Use `conda activate leahy_data` before executing any python commands to try stuff.
+
 ## Commands
 
 ### Frontend (Next.js, `frontend/`)

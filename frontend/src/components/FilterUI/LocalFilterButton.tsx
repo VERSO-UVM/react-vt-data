@@ -14,7 +14,7 @@ export default function ApplyButton({
   disabled,
 }: ApplyButtonProps) {
   const { selectedFilters, labels, format } = useFilter();
-  const apply = useApplyFilters(dataURL, onData);
+  const apply = useApplyFilters();
 
   const handleApply = () => {
     const filters: Record<string, string[]> = {};
@@ -24,7 +24,7 @@ export default function ApplyButton({
       if (colName && value && value !== 'All') filters[colName] = [value];
     }
 
-    apply(filters, format);
+    apply(dataURL, filters, format, undefined, onData);
   };
 
   return (

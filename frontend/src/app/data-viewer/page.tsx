@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 
 export default function DataViewerPage() {
-  const { myLocation, comparison, interests } = useProfile();
+  const { myLocation, comparison, interests, yearMin, yearMax } = useProfile();
   const [chartData, setChartData] = useState<
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
@@ -65,13 +65,19 @@ export default function DataViewerPage() {
   useEffect(() => {
     const seen = new Set<string>();
     tableDefs.forEach((def) => {
-      const key = `${def.url}::${JSON.stringify(def.tableConfig?.extraParams)}`;
+      // Merge profile year range into extraParams, overriding any hardcoded defaults
+      const effectiveExtra = def.tableConfig?.extraParams
+        ? { ...def.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+        : { year_min: yearMin, year_max: yearMax };
+      const key = `${def.url}::${JSON.stringify(effectiveExtra)}`;
       if (seen.has(key)) return;
       seen.add(key);
-      const siblings = tableDefs.filter(
-        (d) =>
-          `${d.url}::${JSON.stringify(d.tableConfig?.extraParams)}` === key,
-      );
+      const siblings = tableDefs.filter((d) => {
+        const extra = d.tableConfig?.extraParams
+          ? { ...d.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+          : { year_min: yearMin, year_max: yearMax };
+        return `${d.url}::${JSON.stringify(extra)}` === key;
+      });
       applyFilters(
         def.url,
         {},
@@ -81,10 +87,10 @@ export default function DataViewerPage() {
           siblings.forEach((d) =>
             setChartData((prev) => ({ ...prev, [d.id]: { data } })),
           ),
-        { name: myLocation.name, ...def.tableConfig?.extraParams },
+        { name: myLocation.name, ...effectiveExtra },
       );
     });
-  }, [myLocation]);
+  }, [myLocation, yearMin, yearMax]);
 
   const charts = nonTableDefs.map((chart) =>
     createChartItem({

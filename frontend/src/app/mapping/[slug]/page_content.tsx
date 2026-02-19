@@ -2,58 +2,126 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import VTMap from '@/components/mapping';
-import { Container, filterProps } from '@mantine/core';
+import { Box, Paper, Select, Title } from '@mantine/core';
 import { BASE_API_URL } from '@/config';
 import FilterContainer from '@/components/FilterUI/Filter_wrap';
-import { useFilter } from '@/components/FilterUI/FilterContext';
+import axios from 'axios';
 
-// at some point this function will need to be replaced by api, etc.
-function getDataFromSlug(slug: string) {
-  return fetch(`/data/${slug}.json`).then((res) => res.json());
-}
+const SOIL_RPCS = [
+  { value: 'ACRPC', label: 'Addison County (ACRPC)' },
+  { value: 'BCRC', label: 'Bennington County (BCRC)' },
+  { value: 'CCRPC', label: 'Chittenden County (CCRPC)' },
+  { value: 'CVRPC', label: 'Central Vermont (CVRPC)' },
+  { value: 'LCPC', label: 'Lamoille County (LCPC)' },
+  { value: 'MARC', label: 'Mount Ascutney (MARC)' },
+  { value: 'NWRPC', label: 'Northwest (NWRPC)' },
+];
 
-function get_from_py(slug: string, filter: string, local_host: string) {
-  return fetch(`$local_host/data/?slug=slug?filter=$filter`);
-}
+const MAP_CONFIG: Record<
+  string,
+  { title: string; initialURL?: string; filterURL?: string; dataURL?: string }
+> = {
+  zoning: {
+    title: 'Zoning',
+    initialURL: `${BASE_API_URL}/load/mapping/zoning`,
+    filterURL: `${BASE_API_URL}/load/mapping/zoning/filters`,
+    dataURL: `${BASE_API_URL}/load/mapping/zoning`,
+  },
+  'flood-legal': {
+    title: 'Flood Insurance',
+    initialURL: `${BASE_API_URL}/load/mapping/flood_legal`,
+  },
+  'soil-suitability': {
+    title: 'Soil Suitability',
+    // initialURL requires RPC — handled separately below
+  },
+};
 
 export default function MappingContent() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
   const [data, setData] = useState<any>(null);
-  const { format } = useFilter();
+  const [rpc, setRpc] = useState<string | null>(null);
 
+  const config = slug ? MAP_CONFIG[slug] : undefined;
+
+  // Clear state on slug change
   useEffect(() => {
-    if (!slug) return;
-    getDataFromSlug(slug).then(setData);
+    setData(null);
+    setRpc(null);
   }, [slug]);
 
-  const handleData = (data: any) => {};
+  // Initial load via GET for slugs that have a direct URL
+  useEffect(() => {
+    if (!slug || !config?.initialURL) return;
+    axios
+      .get(config.initialURL)
+      .then((res) => setData(res.data))
+      .catch(console.error);
+  }, [slug, config?.initialURL]);
+
+  // Soil-suitability: load when RPC is selected
+  useEffect(() => {
+    if (!rpc) return;
+    setData(null);
+    axios
+      .get(`${BASE_API_URL}/load/mapping/wastewater/soil_septic/${rpc}`)
+      .then((res) => setData(res.data))
+      .catch(console.error);
+  }, [rpc]);
 
   return (
-    <>
-      <Container size="xl" style={{ height: '80vh', padding: 0, margin: 0 }}>
-        <FilterContainer
-          apiURL={`${BASE_API_URL}/load/mapping/${slug}/filters`}
-          dataURL={`${BASE_API_URL}/load/mapping/${slug}`}
-          onData={(fetchedData) => {
-            console.log('fetched Data', fetchedData);
-            console.log(format);
-            setData({ fetchedData });
-            console.log(' Data', data);
+    <Box
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: 'calc(100vh - 180px)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Filter / control panel */}
+      <Paper
+        p="md"
+        radius="sm"
+        shadow="xs"
+        mb="sm"
+        style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}
+      >
+        <Title order={4} mb="xs">
+          {config?.title ?? slug}
+        </Title>
 
-            handleData(fetchedData);
-            // console.log(data);
-            data.features.forEach((f) => {
-              console.log(f.geometry); // should not be undefined
-            });
-          }}
-        />
+        {slug === 'soil-suitability' && (
+          <Select
+            label="Regional Planning Commission"
+            placeholder="Select RPC to load data"
+            data={SOIL_RPCS}
+            value={rpc}
+            onChange={setRpc}
+          />
+        )}
+
+        {config?.filterURL && config?.dataURL && (
+          <FilterContainer
+            apiURL={config.filterURL}
+            dataURL={config.dataURL}
+            onData={(fetchedData) => setData(fetchedData)}
+          />
+        )}
+      </Paper>
+
+      {/* Map panel — fills all remaining height */}
+      <Box
+        style={{
+          flex: 1,
+          position: 'relative',
+          minHeight: 0,
+          overflow: 'hidden',
+          borderRadius: 'var(--mantine-radius-sm)',
+        }}
+      >
         <VTMap geojson={data} />
-      </Container>
-      <br></br>
-      <br></br>
-      <br></br>
-      <br></br>
-    </>
+      </Box>
+    </Box>
   );
 }
