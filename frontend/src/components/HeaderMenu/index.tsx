@@ -27,6 +27,7 @@ const links = [
     ],
   },
   { link: '/data-viewer', label: 'Data Analysis' },
+  { link: '/data-comparison', label: 'Data Comparison' },
   { link: '/working-report', label: 'Working Report' },
   { link: '/data-export', label: 'Raw Data Export' },
   { link: '/scratch', label: 'Scratch' },

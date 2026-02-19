@@ -35,17 +35,21 @@ export const DemographicsTrendChart = <TData,>({
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
-      rows.find((r) => r.year === year && r.Variable === label)?.Percent ?? null;
+      rows.find((r) => r.year === year && r.Variable === label)?.Percent ??
+      null;
     const p65_74 = find('65 to 74') ?? 0;
     const p75plus = find('75 Plus') ?? 0;
     return {
       'Under 18': find('Under 18'),
-      '65+': p65_74 + p75plus > 0 ? Math.round((p65_74 + p75plus) * 10) / 10 : null,
+      '65+':
+        p65_74 + p75plus > 0 ? Math.round((p65_74 + p75plus) * 10) / 10 : null,
     };
   };
 
@@ -73,8 +77,20 @@ export const DemographicsTrendChart = <TData,>({
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
           <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
           <Legend />
-          <Line type="monotone" dataKey="Under 18" stroke="#154734" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="65+" stroke="#e07b39" strokeWidth={2} dot={false} />
+          <Line
+            type="monotone"
+            dataKey="Under 18"
+            stroke="#154734"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="65+"
+            stroke="#e07b39"
+            strokeWidth={2}
+            dot={false}
+          />
           {compareData.length > 0 && (
             <>
               <Line
@@ -130,7 +146,9 @@ export const EducationTrendChart = <TData,>({
   const filtered = data.filter((r) => keys.has(r.Variable));
   const cmpFiltered = compareData.filter((r) => keys.has(r.Variable));
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => {
@@ -140,7 +158,8 @@ export const EducationTrendChart = <TData,>({
     for (const { key } of EDU_SERIES) {
       pt[key] = rows.find((r) => r.Variable === key)?.Percent ?? null;
       if (compareData.length > 0) {
-        pt[`${key} (cmp)`] = cmpRows.find((r) => r.Variable === key)?.Percent ?? null;
+        pt[`${key} (cmp)`] =
+          cmpRows.find((r) => r.Variable === key)?.Percent ?? null;
       }
     }
     return pt;
@@ -208,7 +227,9 @@ export const HousingTrendChart = <TData,>({
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => {
@@ -228,7 +249,8 @@ export const HousingTrendChart = <TData,>({
     const base = name.replace(' (cmp)', '');
     if (base === 'Total Housing Units' || base === 'Renter-Occupied Units')
       return [val?.toLocaleString() ?? '—', name];
-    if (base === 'Median Home Value') return [`$${val?.toLocaleString() ?? '—'}`, name];
+    if (base === 'Median Home Value')
+      return [`$${val?.toLocaleString() ?? '—'}`, name];
     return [val, name];
   };
 

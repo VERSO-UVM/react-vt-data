@@ -3,6 +3,7 @@ export {
   SamePerXBarChart,
   DiffPerXBarChart,
   CompareDiffPerXBarChart,
+  CompareHBarChart,
 } from './Bar';
 
 export {

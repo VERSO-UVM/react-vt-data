@@ -63,8 +63,16 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
     setViewState({
       ...vs,
       zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
-      latitude: clamp(vs.latitude, VERMONT_BOUNDS.latitude.min, VERMONT_BOUNDS.latitude.max),
-      longitude: clamp(vs.longitude, VERMONT_BOUNDS.longitude.min, VERMONT_BOUNDS.longitude.max),
+      latitude: clamp(
+        vs.latitude,
+        VERMONT_BOUNDS.latitude.min,
+        VERMONT_BOUNDS.latitude.max,
+      ),
+      longitude: clamp(
+        vs.longitude,
+        VERMONT_BOUNDS.longitude.min,
+        VERMONT_BOUNDS.longitude.max,
+      ),
     });
   }, []);
 
@@ -82,7 +90,11 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
         highlightColor: [222, 102, 0, 200],
         onHover: (info: any) => {
           if (info.object) {
-            setTooltip({ x: info.x, y: info.y, content: info.object.properties.tooltip });
+            setTooltip({
+              x: info.x,
+              y: info.y,
+              content: info.object.properties.tooltip,
+            });
           } else {
             setTooltip(null);
           }
@@ -101,9 +113,23 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
 
   return (
     // Fill the parent container completely (parent must have position:relative and a defined height)
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        height: '100%',
+      }}
+    >
       {/* Map area — fills remaining height, clips overflow */}
-      <div style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden' }}>
+      <div
+        style={{
+          flex: 1,
+          position: 'relative',
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
+      >
         <DeckGL
           viewState={viewState}
           onViewStateChange={onViewStateChange}

@@ -18,7 +18,9 @@ const DemographicsTableBase = <TData,>({
   const hasCompare = compareData.length > 0;
   const [showCompare, setShowCompare] = useState(false);
 
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
   const homeLabel = labels?.[0] ?? 'Primary';
   const compareLabel = labels?.[1] ?? 'Comparison';
 
@@ -87,7 +89,9 @@ const DemographicsTableBase = <TData,>({
                 {years.map((year) => {
                   const mainRow = findRow(data, variable, year);
                   if (!showCompare) {
-                    return <Table.Td key={year}>{renderCell(mainRow)}</Table.Td>;
+                    return (
+                      <Table.Td key={year}>{renderCell(mainRow)}</Table.Td>
+                    );
                   }
                   const cmpRow = findRow(compareData, variable, year);
                   return (

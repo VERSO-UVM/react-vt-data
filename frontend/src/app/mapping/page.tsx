@@ -24,9 +24,6 @@ export default function BaseMappingPage() {
   );
 }
 
-
-
-
 /*
 export default function BaseMappingPage() {
   const items = links.map((link) => {
@@ -49,4 +46,3 @@ export default function BaseMappingPage() {
   );
 }
 */
-

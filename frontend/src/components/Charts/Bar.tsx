@@ -144,4 +144,71 @@ const CompareDiffPerXBarChart = <TData,>({
   return <BarJS data={data} options={options} />;
 };
 
-export { SamePerXBarChart, DiffPerXBarChart, CompareDiffPerXBarChart };
+/**
+ * Horizontal grouped bar chart for head-to-head location comparison.
+ * data entries:        [{ [xField]: variableName, [yField]: primaryValue }]
+ * compareData entries: [{ [xField]: variableName, [yField]: compareValue }]
+ * chartParams.unit:    optional suffix appended to tooltip values (e.g. '%')
+ *
+ * Extensible to multiple variables: just add more entries to both arrays.
+ */
+const CompareHBarChart = <TData,>({
+  chart,
+}: {
+  chart: CompareDiffChartItem<TData>;
+}) => {
+  const labels = chart.data.map((entry: any) => entry[chart.xField]);
+  const legendLabels = chart.chartParams?.legendLabels || [
+    'Primary',
+    'Comparison',
+  ];
+  const unit = (chart.chartParams as any)?.unit ?? '';
+
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: legendLabels[0],
+        data: chart.data.map((entry: any) => entry[chart.yField]),
+        backgroundColor: '#154734',
+      },
+      {
+        label: legendLabels[1] ?? 'Comparison',
+        data: (chart.compareData ?? []).map(
+          (entry: any) => entry[chart.yField],
+        ),
+        backgroundColor: '#8899aa',
+      },
+    ],
+  };
+
+  const options = {
+    indexAxis: 'y' as const,
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true },
+      tooltip: {
+        callbacks: {
+          label: (ctx: any) => `${ctx.dataset.label}: ${ctx.raw}${unit}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          callback: (value: any) => `${value}${unit}`,
+        },
+      },
+    },
+  };
+
+  return <BarJS data={data} options={options} />;
+};
+
+export {
+  SamePerXBarChart,
+  DiffPerXBarChart,
+  CompareDiffPerXBarChart,
+  CompareHBarChart,
+};

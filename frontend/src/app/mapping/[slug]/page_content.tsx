@@ -45,7 +45,11 @@ const STATS_CONFIG: Record<
 > = {
   zoning: { categoryKey: 'District Type', valueKey: 'Acres', unit: 'acres' },
   'flood-legal': { categoryKey: 'FLD_ZONE', valueKey: null, unit: 'polygons' },
-  'soil-suitability': { categoryKey: 'Suitability', valueKey: 'Acres', unit: 'acres' },
+  'soil-suitability': {
+    categoryKey: 'Suitability',
+    valueKey: 'Acres',
+    unit: 'acres',
+  },
 };
 
 function computeStats(
@@ -125,7 +129,10 @@ export default function MappingContent() {
         radius="sm"
         shadow="xs"
         mb="sm"
-        style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', flexShrink: 0 }}
+        style={{
+          borderBottom: '1px solid var(--mantine-color-gray-3)',
+          flexShrink: 0,
+        }}
       >
         <Title order={4} mb="xs">
           {config?.title ?? slug}

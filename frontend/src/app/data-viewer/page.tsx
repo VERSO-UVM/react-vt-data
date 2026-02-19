@@ -1,6 +1,13 @@
 'use client';
 
-import { Center, Container, Group, SegmentedControl, Text, Title } from '@mantine/core';
+import {
+  Center,
+  Container,
+  Group,
+  SegmentedControl,
+  Text,
+  Title,
+} from '@mantine/core';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -70,14 +77,22 @@ export default function DataViewerPage() {
     tableDefs.forEach((def) => {
       // Merge profile year range into extraParams, overriding any hardcoded defaults
       const effectiveExtra = def.tableConfig?.extraParams
-        ? { ...def.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+        ? {
+            ...def.tableConfig.extraParams,
+            year_min: yearMin,
+            year_max: yearMax,
+          }
         : { year_min: yearMin, year_max: yearMax };
       const key = `${def.url}::${JSON.stringify(effectiveExtra)}`;
       if (seen.has(key)) return;
       seen.add(key);
       const siblings = tableDefs.filter((d) => {
         const extra = d.tableConfig?.extraParams
-          ? { ...d.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+          ? {
+              ...d.tableConfig.extraParams,
+              year_min: yearMin,
+              year_max: yearMax,
+            }
           : { year_min: yearMin, year_max: yearMax };
         return `${d.url}::${JSON.stringify(extra)}` === key;
       });
@@ -206,7 +221,11 @@ export default function DataViewerPage() {
         </Group>
       )}
       <Container size="xl">
-        <ChartStack charts={visibleItems} action="add" userInterests={interests} />
+        <ChartStack
+          charts={visibleItems}
+          action="add"
+          userInterests={interests}
+        />
       </Container>
     </>
   );
