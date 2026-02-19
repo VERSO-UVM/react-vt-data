@@ -1,12 +1,11 @@
 import logging
 from pathlib import Path
-import json
 
 import duckdb
 from fastapi import APIRouter
 
-from api.models.response_models import make_response
 from api.models.filter_models import FilterRequest
+from api.models.response_models import make_response
 
 logger = logging.getLogger(__name__)
 

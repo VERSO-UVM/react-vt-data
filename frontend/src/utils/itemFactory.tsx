@@ -42,3 +42,24 @@ export function createChartItem<TData>(
     showCols: config.showCols,
   };
 }
+export function createTableItem<TData>(config: {
+  title: string;
+  data: TData[];
+  notes?: string;
+  metadata?: Record<string, any>;
+  description?: string;
+}): ChartItem<TData> {
+  return {
+    id: `${config.title.replace(/\s/g, '')}-${uuidv4()}`,
+    title: config.title,
+    createdAt: new Date().toISOString(),
+    type: 'chart',
+    subtype: 'renderTable',
+    xField: '',
+    yField: '',
+    data: config.data,
+    notes: config.notes,
+    description: config.description,
+    metadata: config.metadata,
+  };
+}

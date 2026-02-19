@@ -271,7 +271,6 @@ def scrape():
                 )
 
             df["geo_type"] = geo_label
-            df
             all_frames.append(df)
             time.sleep(0.1)
 
@@ -279,6 +278,7 @@ def scrape():
     tidy = compute_tidy(combined)
 
     tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
+    tidy = split_name_col(tidy)
     tidy.reset_index(drop=True, inplace=True)
 
     out = f"{STORAGE_LOCATION}/vt_acs5_b_demographics_tidy.parquet"

@@ -9,9 +9,7 @@ export interface TableRowDef {
 }
 
 export interface TableConfig {
-  rows: TableRowDef[];
   extraParams?: Record<string, any>; // year_min, year_max, etc.
-  renderCell?: (d: any) => string; // defaults to percent formatting
 }
 
 export interface ChartDef {
@@ -67,14 +65,11 @@ export const chartDefs: ChartDef[] = [
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
     xField: '',
     yField: '',
-    subtype: 'table', // signals to the renderer to use TableStack not ChartStack
+    subtype: 'renderTable', // signals to the renderer to use TableStack not ChartStack
+    filterKey: '',
+    dataKey: '',
     tableConfig: {
       extraParams: { year_min: 2010, year_max: 2023 },
-      rows: [
-        { label: 'Male', variable: 'Male', section: 'Age/Sex' },
-        { label: 'Female', variable: 'Female', section: 'Age/Sex' },
-        // ...etc
-      ],
     },
   },
 ];
