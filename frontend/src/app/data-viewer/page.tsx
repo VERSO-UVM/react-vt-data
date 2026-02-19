@@ -84,7 +84,7 @@ export default function DataViewerPage() {
     });
   }, [myLocation]);
 
-  const charts = chartDefs.map((chart) =>
+  const charts = nonTableDefs.map((chart) =>
     createChartItem({
       title: myLocation.name,
       xField: chart.xField,
@@ -110,11 +110,11 @@ export default function DataViewerPage() {
 
   const tableItems = tableDefs.map((def) =>
     createTableItem({
-      title: def.title,
+      title: myLocation.name,
+      description: def.title,
       data: chartData[def.id]?.data || [],
       metadata: chartData[def.id]?.metadata || [],
       notes: def.notes,
-      description: def.title,
       subtype: def.subtype,
     }),
   );
