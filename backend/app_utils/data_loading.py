@@ -56,8 +56,7 @@ def load_data(path, simplify_tolerance=None, drop_cols=None, postprocess_fn=None
         case "csv":
             df = safe_read(lambda: pd.read_csv(path))
         case _:
-            df = safe_read(lambda: pd.read_csv(
-                io.StringIO(requests.get(path).text)))
+            df = safe_read(lambda: pd.read_csv(io.StringIO(requests.get(path).text)))
 
     if drop_cols:
         df = df.drop(columns=drop_cols, errors="ignore")
@@ -129,6 +128,7 @@ def load_WWTF_data():
         path=DATADIR / "wastewater" / "VermontWWTF.geojson",
     )
 
+
 # TODO: update with actual path. once in stored place.
 
 
@@ -141,8 +141,8 @@ def load_service_areas():
 # TODO: update with actual path. once in stored place.
 def load_flood_data():
     return load_data(
-        path=Path(__file__).parent.parent.parent /
-        "frontend/public/data/flood-legal.json",
+        path=Path(__file__).parent.parent.parent
+        / "frontend/public/data/flood-legal.json",
         simplify_tolerance=0.0001,
     )
 
@@ -155,6 +155,7 @@ def load_census_data_dict(sources, basename=DATADIR / "Census"):
     """
     Caching a census dictionary.
     If dictionary includes derived, this caches them from the original raw.
+    All NAME columns are cleaned to the appropriate JURISDICTION and COUNTY columns
     """
     data = {}
     for label, src in sources.items():
@@ -168,8 +169,7 @@ def load_census_data_dict(sources, basename=DATADIR / "Census"):
                 data[filename]
             )  # derive and cache from cached raw via func
         else:
-            data[label] = load_census_data(
-                Path(basename) / src)  # cache raw sans func
+            data[label] = load_census_data(Path(basename) / src)  # cache raw sans func
     return data
 
 

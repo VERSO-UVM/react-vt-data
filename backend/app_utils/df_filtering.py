@@ -45,7 +45,7 @@ class FilterState:
     def set_filters(self, filter_dict: dict):
         """
         Update selections from a filter dictionary.
-        NOTE: still need to fix to handle 'all' 
+        NOTE: still need to fix to handle 'all'
         """
         for col, values in filter_dict.items():
             if col in self.selections:
@@ -73,8 +73,7 @@ class FilterUI:
         self.key_prefix = key_prefix
         self.presented_cols = presented_cols or filter_state.filter_columns
         self.defaults = defaults or {}
-        self.passed_cols = passed_cols or st.columns(
-            len(filter_state.filter_columns))
+        self.passed_cols = passed_cols or st.columns(len(filter_state.filter_columns))
         self.header = header
         self.allow_all = allow_all or {}
         self.raw_selections = {}
@@ -91,8 +90,7 @@ class FilterUI:
         self.raw_selections[col_name] = raw_selection
 
         # store expanded  version
-        selected_values = self.expand_all_selection(
-            col_name, raw_selection, options)
+        selected_values = self.expand_all_selection(col_name, raw_selection, options)
         self.selections[col_name] = selected_values
         return selected_values
 
@@ -168,25 +166,44 @@ class FilterUI:
                     label, options, default=default, key=key
                 )
 
-            selected_values = self.process_selection(
-                col_name, raw_selection, options)
+            selected_values = self.process_selection(col_name, raw_selection, options)
             if i < len(self.passed_cols) - 1:
                 tree = self.update_tree(tree, selected_values)
         self.update_filterstate()
 
+
 def filter_from_request(df, request: FilterRequest):
+    """Apply filters from the request to the df."""
     if request.filters:
         filter_dict = request.filters
 
-        # Optional: validate columns exist
+        # Validate columns exist
         for col in filter_dict.keys():
             if col not in df.columns:
-                raise HTTPException(status_code=400, detail=f"Column '{col}' does not exist")
+                raise HTTPException(
+                    status_code=400, detail=f"Column '{col}' does not exist"
+                )
 
         Filter = FilterState(df=df, filter_columns=list(filter_dict.keys()))
         Filter.set_filters(filter_dict)
         df = Filter.apply_filters(df)
     return df
+
+
+def mass_filter_from_requests(dfs: dict, request: FilterRequest):
+    """Apply filters to all dataframes in the dict."""
+    if not request or not request.filters:
+        return dfs
+
+    filtered_dfs = {}
+    for k, v in dfs.items():
+        try:
+            filtered_dfs[k] = filter_from_request(v, request)  # Use v, not df
+        except HTTPException:
+            # If column doesn't exist in this df, keep it unfiltered
+            filtered_dfs[k] = v
+
+    return filtered_dfs
 
 
 ### wrappers for utility ###
@@ -229,7 +246,6 @@ def filter_snapshot_data(dfs, key_df):
         style="selectbox",
         presented_cols=["County", "Municipality"],
     )
-    filtered_dfs = {key: filter_state.apply_filters(
-        df) for key, df in dfs.items()}
+    filtered_dfs = {key: filter_state.apply_filters(df) for key, df in dfs.items()}
     selected_values = filter_state.raw_selections
     return filtered_dfs, selected_values

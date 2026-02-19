@@ -2,32 +2,32 @@
 
 // react
 import { useState, useCallback } from 'react';
-import { Map, ViewState, ViewStateChangeEvent } from 'react-map-gl/maplibre';
+import { Map, ViewStateChangeEvent } from 'react-map-gl/maplibre';
 
-// deck, geojson, and mablibre styling
+// deck, geojson, and maplibre styling
 import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
 import type { FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 // mantine and ui
-import { Paper, Switch, Card, Button, Divider } from '@mantine/core';
+import { Paper, Switch, Divider } from '@mantine/core';
 
 // baseline data
 import mlinesRaw from '@/Data/municipalites.json';
 
 const countylines: FeatureCollection = {
   type: 'FeatureCollection',
-  features: mlinesRaw.features,
+  features: mlinesRaw.features as any,
 };
+
 interface MyMapProps {
-  geojson: FeatureCollection;
+  geojson: FeatureCollection | null;
 }
 
 const BASE_STYLES = {
   OSM: 'https://tiles.basemaps.cartocdn.com/gl/positron-gl-style/style.json',
   Dark: 'https://tiles.basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  Satellite: 'https://api.maptiler.com/maps/hybrid/style.json?key=YOUR_KEY',
 };
 
 const VERMONT_BOUNDS = {
@@ -36,20 +36,21 @@ const VERMONT_BOUNDS = {
   zoom: { min: 7, max: 11 },
 };
 
-const INITIAL_VIEW_STATE: ViewState = {
+const INITIAL_VIEW_STATE = {
   longitude: -72.7,
   latitude: 43.9,
   zoom: 7,
   pitch: 0,
   bearing: 0,
-  padding: { top: 0, bottom: 0, left: 0, right: 0 },
 };
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
 export default function VTMap({ geojson }: MyMapProps) {
-  // At some point we are going to want to add multiple layer functionality to this.
-  // The tooltip use_state will have to be dynamically
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
-  const [baseStyle, setBaseStyle] = useState(BASE_STYLES.OSM);
+  const [baseStyle] = useState(BASE_STYLES.OSM);
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
@@ -57,56 +58,36 @@ export default function VTMap({ geojson }: MyMapProps) {
   } | null>(null);
   const [showCountyLines, setShowCountyLines] = useState(true);
 
-  function clamp(value: number, minValue: number, maxValue: number) {
-    return Math.max(minValue, Math.min(maxValue, value));
-  }
+  const onViewStateChange = useCallback((params: any) => {
+    const vs = params.viewState;
+    setViewState({
+      ...vs,
+      zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
+      latitude: clamp(vs.latitude, VERMONT_BOUNDS.latitude.min, VERMONT_BOUNDS.latitude.max),
+      longitude: clamp(vs.longitude, VERMONT_BOUNDS.longitude.min, VERMONT_BOUNDS.longitude.max),
+    });
+  }, []);
 
-  const onViewStateChange = useCallback(
-    ({ viewState }: ViewStateChangeEvent) => {
-      setViewState({
-        ...viewState,
-        zoom: clamp(
-          viewState.zoom,
-          VERMONT_BOUNDS.zoom.min,
-          VERMONT_BOUNDS.zoom.max,
-        ),
-        latitude: clamp(
-          viewState.latitude,
-          VERMONT_BOUNDS.latitude.min,
-          VERMONT_BOUNDS.latitude.max,
-        ),
-        longitude: clamp(
-          viewState.longitude,
-          VERMONT_BOUNDS.longitude.min,
-          VERMONT_BOUNDS.longitude.max,
-        ),
-      });
-    },
-    [],
-  );
   const layers = [
-    new GeoJsonLayer({
-      id: 'geojson',
-      data: geojson,
-      filled: true,
-      getFillColor: (d: any) => d.properties?.rgba_color ?? [0, 0, 0, 0],
-      getLineColor: [80, 80, 80, 80],
-      lineWidthMinPixels: 0.5,
-      pickable: true,
-      autoHighlight: true,
-      highlightColor: [222, 102, 0, 200],
-      onHover: (info) => {
-        if (info.object) {
-          setTooltip({
-            x: info.x,
-            y: info.y,
-            content: info.object.properties.tooltip, // this is an object
-          });
-        } else {
-          setTooltip(null);
-        }
-      },
-    }),
+    geojson &&
+      new GeoJsonLayer({
+        id: 'geojson',
+        data: geojson,
+        filled: true,
+        getFillColor: (d: any) => d.properties?.rgba_color ?? [0, 0, 0, 0],
+        getLineColor: [80, 80, 80, 80],
+        lineWidthMinPixels: 0.5,
+        pickable: true,
+        autoHighlight: true,
+        highlightColor: [222, 102, 0, 200],
+        onHover: (info: any) => {
+          if (info.object) {
+            setTooltip({ x: info.x, y: info.y, content: info.object.properties.tooltip });
+          } else {
+            setTooltip(null);
+          }
+        },
+      }),
     showCountyLines &&
       new GeoJsonLayer({
         id: 'county-lines',
@@ -116,55 +97,67 @@ export default function VTMap({ geojson }: MyMapProps) {
         getLineColor: [80, 80, 80, 200],
         lineWidthMinPixels: 1,
       }),
-  ].filter(Boolean); // removes false layesr
+  ].filter(Boolean);
 
   return (
-    <>
-      <Card shadow="sm" p="md">
+    // Fill the parent container completely (parent must have position:relative and a defined height)
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+      {/* Controls overlay bar */}
+      <div
+        style={{
+          flexShrink: 0,
+          padding: '6px 12px',
+          background: 'rgba(255,255,255,0.92)',
+          borderBottom: '1px solid var(--mantine-color-gray-3)',
+          zIndex: 10,
+        }}
+      >
         <Switch
-          label="Show County Lines"
+          label="Show municipality boundaries"
+          size="sm"
           checked={showCountyLines}
-          onChange={(event) => setShowCountyLines(event.currentTarget.checked)}
+          onChange={(e) => setShowCountyLines(e.currentTarget.checked)}
         />
-      </Card>
+      </div>
 
-      <div style={{ position: 'relative' }}>
+      {/* Map area — fills remaining height, clips overflow */}
+      <div style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden' }}>
         <DeckGL
-          initialViewState={INITIAL_VIEW_STATE}
           viewState={viewState}
           onViewStateChange={onViewStateChange}
           controller
           layers={layers}
-          style={{ width: '80vw', height: '80vh' }}
+          style={{ width: '100%', height: '100%' }}
         >
           <Map mapStyle={baseStyle} />
         </DeckGL>
 
-        {tooltip && (
+        {tooltip && tooltip.content && (
           <Paper
             shadow="md"
             p="xs"
             style={{
               position: 'absolute',
-              left: tooltip.x,
-              top: tooltip.y,
+              left: tooltip.x + 12,
+              top: tooltip.y + 12,
               pointerEvents: 'none',
               zIndex: 1000,
+              maxWidth: 280,
             }}
           >
             <strong>{tooltip.content.__title__}</strong>
-            <Divider />
+            <Divider my={4} />
             {Object.entries(tooltip.content).map(
               ([k, v]) =>
                 k !== '__title__' && (
-                  <div key={k}>
-                    <b>{k}:</b> {v}
+                  <div key={k} style={{ fontSize: 12 }}>
+                    <b>{k}:</b> {String(v)}
                   </div>
                 ),
             )}
           </Paper>
         )}
       </div>
-    </>
+    </div>
   );
 }

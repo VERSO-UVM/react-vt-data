@@ -11,29 +11,31 @@ import streamlit as st
 from bs4 import BeautifulSoup
 
 
-def split_name_col(census_gdf):
+def split_name_col(census_gdf, keep_name: bool = True):
     """
-    Splits the "NAME" columns in the census datasets into
-    "Jurisdiction" and "County" columns.
+    Splits the "NAME" column into "Jurisdiction" and "County" columns.
+    By default the original NAME column is preserved (keep_name=True).
 
-    @param census_gdf: A census style GeoDataFrame with a "NAME" column.
-    @return: The cleaned dataset with the split "NAME" column.
+    @param census_gdf: A census-style DataFrame with a "NAME" column.
+    @param keep_name:  When True (default) the NAME column is kept alongside
+                       the new Jurisdiction and County columns.
+    @return: The dataset with Jurisdiction and County added.
     """
-    # Split the NAME column
     census_gdf[["Jurisdiction", "County"]] = census_gdf["NAME"].str.extract(
         r"^(.*?),\s*(.*?) County,"
     )
-    # Drop the original NAME column if desired
-    census_gdf = census_gdf.drop(columns="NAME")
+    if not keep_name:
+        census_gdf = census_gdf.drop(columns="NAME")
 
     if "year" in census_gdf.columns:
         census_gdf["year"] = census_gdf["year"].astype(str)
     return census_gdf
 
 
-@st.cache_data
-def get_census_cols():
-    r = requests.get("https://api.census.gov/data/2019/acs/acs5/profile/variables.html")
+def get_census_cols(year: int):
+    r = requests.get(
+        f"https://api.census.gov/data/{year}/acs/acs5/profile/variables.html"
+    )
     soup = BeautifulSoup(r.content, "html.parser")
 
     # get table headers as keys
@@ -94,14 +96,15 @@ def relabel_census_cols(df):
     return name_df
 
 
-def merge_census_cols(name_df, data_gdf):
-    # Melt the gdf into tidy format
-    id_vars = [
+def merge_census_cols(name_df, data_gdf, id_vars: list | None):
+    id_vars = id_vars or [
         "GEOID",
         "geometry",
         "Jurisdiction",
         "County",
     ]
+
+    # Melt the gdf into tidy format
     data_gdf[id_vars]
     df_long = data_gdf.melt(
         id_vars=id_vars,
@@ -116,11 +119,11 @@ def merge_census_cols(name_df, data_gdf):
     )
 
 
-def tidy_census(census_gdf):
+def tidy_census(census_gdf, year=2019, id_vars: list | None = None):
     # wrapper func to rename codes in func
-    name_df = get_census_cols()
+    name_df = get_census_cols(year)
     name_df = relabel_census_cols(name_df)
-    return merge_census_cols(name_df, census_gdf)
+    return merge_census_cols(name_df, census_gdf, id_vars)
 
 
 def get_geography_title(selected_values):
