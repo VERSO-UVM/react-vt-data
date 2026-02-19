@@ -69,6 +69,7 @@ export const ChartCard = <TData extends Record<string, any>>({
   );
 
   const isHighlighted = matchedCategories.length > 0;
+  const allCategories = chart.categories ?? [];
 
   return (
     <Card
@@ -88,10 +89,15 @@ export const ChartCard = <TData extends Record<string, any>>({
             {chart.description ? ` ${chart.description} for ` : ''}
             {chart.title}
           </Title>
-          {isHighlighted && (
+          {allCategories.length > 0 && (
             <Group gap={4} style={{ flexShrink: 0 }}>
-              {matchedCategories.map((cat) => (
-                <Badge key={cat} color="green" variant="light" size="sm">
+              {allCategories.map((cat) => (
+                <Badge
+                  key={cat}
+                  color="green"
+                  variant={matchedCategories.includes(cat) ? 'filled' : 'light'}
+                  size="sm"
+                >
                   {cat}
                 </Badge>
               ))}
