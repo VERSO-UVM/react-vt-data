@@ -1,7 +1,13 @@
 import { ScrollArea, Table } from '@mantine/core';
 import { ChartItem } from '@/types/cachedCharts';
 
-export const renderTable = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
+const DemographicsTableBase = <TData,>({
+  chart,
+  renderCell,
+}: {
+  chart: ChartItem<TData>;
+  renderCell: (row: any) => React.ReactNode;
+}) => {
   const data = chart.data as any[];
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const variables = Array.from(new Set(data.map((r) => r.Variable)));
@@ -25,11 +31,7 @@ export const renderTable = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
                 const row = data.find(
                   (r) => r.Variable === variable && r.year === year,
                 );
-                return (
-                  <Table.Td key={year}>
-                    {row?.Percent != null ? `${row.Percent.toFixed(1)}%` : '—'}
-                  </Table.Td>
-                );
+                return <Table.Td key={year}>{renderCell(row)}</Table.Td>;
               })}
             </Table.Tr>
           ))}
@@ -38,3 +40,25 @@ export const renderTable = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
     </ScrollArea>
   );
 };
+
+export const renderTable = <TData,>({ chart }: { chart: ChartItem<TData> }) => (
+  <DemographicsTableBase
+    chart={chart}
+    renderCell={(row) =>
+      row?.Percent != null ? `${row.Percent.toFixed(1)}%` : '—'
+    }
+  />
+);
+
+export const renderTableEstimates = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => (
+  <DemographicsTableBase
+    chart={chart}
+    renderCell={(row) =>
+      row?.Value != null ? row.Value.toLocaleString() : '—'
+    }
+  />
+);

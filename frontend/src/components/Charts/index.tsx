@@ -5,7 +5,7 @@ export {
   CompareDiffPerXBarChart,
 } from './Bar';
 
-export { renderTable } from './DemographicsTable';
+export { renderTable, renderTableEstimates } from './DemographicsTable';
 
 import { ChartItem } from '@/types/cachedCharts';
 import {
@@ -75,7 +75,6 @@ interface ChartStackProps<TData> {
 }
 
 import * as allCharts from './index'; // self-import to dynamically access all exports
-import { table } from './DemographicsTable';
 
 export const ChartStack = <TData,>({
   charts,

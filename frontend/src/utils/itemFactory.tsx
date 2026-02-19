@@ -48,13 +48,14 @@ export function createTableItem<TData>(config: {
   notes?: string;
   metadata?: Record<string, any>;
   description?: string;
+  subtype?: string;
 }): ChartItem<TData> {
   return {
     id: `${config.title.replace(/\s/g, '')}-${uuidv4()}`,
     title: config.title,
     createdAt: new Date().toISOString(),
     type: 'chart',
-    subtype: 'renderTable',
+    subtype: config.subtype ?? 'renderTable',
     xField: '',
     yField: '',
     data: config.data,

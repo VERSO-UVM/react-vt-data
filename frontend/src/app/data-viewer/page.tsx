@@ -20,8 +20,12 @@ export default function DataViewerPage() {
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
   const applyFilters = useApplyFilters();
-  const tableDefs = chartDefs.filter((c) => c.subtype === 'renderTable');
-  const nonTableDefs = chartDefs.filter((c) => c.subtype !== 'table');
+  const tableDefs = chartDefs.filter((c) =>
+    c.subtype.startsWith('renderTable'),
+  );
+  const nonTableDefs = chartDefs.filter(
+    (c) => !c.subtype.startsWith('renderTable'),
+  );
 
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
@@ -56,16 +60,29 @@ export default function DataViewerPage() {
     });
   }, [myLocation, comparison]);
 
-  tableDefs.forEach((def) => {
-    applyFilters(
-      def.url,
-      {},
-      undefined,
-      undefined,
-      (data) => setChartData((prev) => ({ ...prev, [def.id]: { data } })),
-      { name: myLocation.name, ...def.tableConfig?.extraParams },
-    );
-  });
+  useEffect(() => {
+    const seen = new Set<string>();
+    tableDefs.forEach((def) => {
+      const key = `${def.url}::${JSON.stringify(def.tableConfig?.extraParams)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const siblings = tableDefs.filter(
+        (d) =>
+          `${d.url}::${JSON.stringify(d.tableConfig?.extraParams)}` === key,
+      );
+      applyFilters(
+        def.url,
+        {},
+        undefined,
+        undefined,
+        (data) =>
+          siblings.forEach((d) =>
+            setChartData((prev) => ({ ...prev, [d.id]: { data } })),
+          ),
+        { name: myLocation.name, ...def.tableConfig?.extraParams },
+      );
+    });
+  }, [myLocation]);
 
   const charts = chartDefs.map((chart) =>
     createChartItem({
@@ -98,6 +115,7 @@ export default function DataViewerPage() {
       metadata: chartData[def.id]?.metadata || [],
       notes: def.notes,
       description: def.title,
+      subtype: def.subtype,
     }),
   );
 

@@ -61,11 +61,24 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'demographics',
-    title: 'Demographic Profile',
+    title: 'Demographics — Percent',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
     xField: '',
     yField: '',
     subtype: 'renderTable', // signals to the renderer to use TableStack not ChartStack
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  {
+    id: 'demographics_estimates',
+    title: 'Demographics — Value',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
     filterKey: '',
     dataKey: '',
     tableConfig: {
