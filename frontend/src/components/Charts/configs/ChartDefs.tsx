@@ -188,6 +188,7 @@ export const chartDefs: ChartDef[] = [
     xField: 'quarter_label',
     yField: 'employment_4qma',
     subtype: 'EmploymentAreaChart',
+    chartParams: { noViewSwitch: true },
     url: `${BASE_API_URL}/load/qcew/employment`,
   },
   // Income

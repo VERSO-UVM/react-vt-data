@@ -5,7 +5,11 @@ export {
   CompareDiffPerXBarChart,
 } from './Bar';
 
-export { renderTable, renderTableEstimates, renderTableMixed } from './DemographicsTable';
+export {
+  renderTable,
+  renderTableEstimates,
+  renderTableMixed,
+} from './DemographicsTable';
 export {
   DemographicsTrendChart,
   EducationTrendChart,
@@ -14,15 +18,7 @@ export {
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem } from '@/types/cachedCharts';
-import {
-  Badge,
-  Card,
-  Box,
-  Title,
-  Stack,
-  Text,
-  Group,
-} from '@mantine/core';
+import { Badge, Card, Box, Title, Stack, Text, Group } from '@mantine/core';
 import { AddChart, RemoveChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
@@ -48,11 +44,17 @@ export const ChartCard = <TData extends Record<string, any>>({
     isTablePrimary ? 'table' : 'chart',
   );
 
+  // Components that manage their own view switching internally opt out here.
+  const selfManagesViews = !!chart.chartParams?.noViewSwitch;
+
   // Only show the toggle when there is something meaningful on both sides.
   // Table-primary items only get a toggle if a trend chart is wired up.
-  const showViewSwitch = isTablePrimary ? !!TrendComponent : true;
+  const showViewSwitch =
+    !selfManagesViews && (isTablePrimary ? !!TrendComponent : true);
 
-  const content = isTablePrimary ? (
+  const content = selfManagesViews ? (
+    <ChartComponent chart={chart} />
+  ) : isTablePrimary ? (
     // table view  → the formatted table renderer (renderTable*)
     // chart view  → the trend chart (if provided)
     view === 'chart' && TrendComponent ? (
@@ -60,13 +62,11 @@ export const ChartCard = <TData extends Record<string, any>>({
     ) : (
       <ChartComponent chart={chart} />
     )
+  ) : // chart view → the visualisation; table view → generic data table
+  view === 'chart' ? (
+    <ChartComponent chart={chart} />
   ) : (
-    // chart view → the visualisation; table view → generic data table
-    view === 'chart' ? (
-      <ChartComponent chart={chart} />
-    ) : (
-      <TableView chart={chart} />
-    )
+    <TableView chart={chart} />
   );
 
   const isHighlighted = matchedCategories.length > 0;
@@ -79,9 +79,7 @@ export const ChartCard = <TData extends Record<string, any>>({
       radius="md"
       withBorder
       style={
-        isHighlighted
-          ? { borderColor: '#154734', borderWidth: 2 }
-          : undefined
+        isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : undefined
       }
     >
       <Box mb="sm">
@@ -145,9 +143,9 @@ export const ChartStack = <TData extends Record<string, any>>({
       ] as React.FC<{ chart: ChartItem<TData> }>;
 
       const TrendComponent = chart.trendChart
-        ? (allCharts[
-            chart.trendChart as keyof typeof allCharts
-          ] as React.FC<{ chart: ChartItem<TData> }>)
+        ? (allCharts[chart.trendChart as keyof typeof allCharts] as React.FC<{
+            chart: ChartItem<TData>;
+          }>)
         : undefined;
 
       const matchedCategories =
@@ -158,13 +156,7 @@ export const ChartStack = <TData extends Record<string, any>>({
       // Compact note card — no chart, no 400px box
       if (chart.subtype === 'noteCard')
         return (
-          <Card
-            key={chart.id}
-            shadow="sm"
-            padding="sm"
-            radius="md"
-            withBorder
-          >
+          <Card key={chart.id} shadow="sm" padding="sm" radius="md" withBorder>
             <Text size="sm" c="dimmed">
               {chart.notes}
             </Text>
