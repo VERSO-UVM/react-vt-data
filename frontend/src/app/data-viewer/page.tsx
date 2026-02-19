@@ -92,8 +92,23 @@ export default function DataViewerPage() {
     });
   }, [myLocation, yearMin, yearMax]);
 
-  const charts = nonTableDefs.map((chart) =>
-    createChartItem({
+  // QCEW employment data is county-level only; swap to a note card for town selections
+  const isSubcountyLocation = myLocation.type === 'town';
+  const employmentCounty = myLocation.county;
+
+  const charts = nonTableDefs.map((chart) => {
+    if (chart.id === 'employment' && isSubcountyLocation) {
+      return createChartItem({
+        title: myLocation.name,
+        xField: '',
+        yField: '',
+        data: [],
+        subtype: 'noteCard',
+        categories: chart.categories,
+        notes: `County-level data (${employmentCounty} County) — QCEW does not report employment at the town level.`,
+      });
+    }
+    return createChartItem({
       title: myLocation.name,
       xField: chart.xField,
       yField: chart.yField,
@@ -114,8 +129,8 @@ export default function DataViewerPage() {
       description: chart.title,
       notes: chart.notes,
       categories: chart.categories,
-    }),
-  );
+    });
+  });
 
   const tableItems = tableDefs.map((def) =>
     createTableItem({
@@ -139,9 +154,20 @@ export default function DataViewerPage() {
       : allItems;
 
   return (
-    <Container size="xl">
+    <>
       {interests.length > 0 && (
-        <Group mb="md" justify="flex-end">
+        <Group
+          mb="md"
+          justify="flex-end"
+          style={{
+            position: 'sticky',
+            top: 56,
+            zIndex: 100,
+            backgroundColor: 'var(--mantine-color-body)',
+            paddingBlock: 8,
+            paddingInline: 16,
+          }}
+        >
           <Text size="sm" c="dimmed">
             {interests.join(', ')}
           </Text>
@@ -156,7 +182,9 @@ export default function DataViewerPage() {
           />
         </Group>
       )}
-      <ChartStack charts={visibleItems} action="add" userInterests={interests} />
-    </Container>
+      <Container size="xl">
+        <ChartStack charts={visibleItems} action="add" userInterests={interests} />
+      </Container>
+    </>
   );
 }

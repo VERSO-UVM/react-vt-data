@@ -4,6 +4,7 @@ from pathlib import Path
 import duckdb
 from fastapi import APIRouter
 
+from api.metadata_registry import get_metadata
 from api.models.filter_models import FilterRequest
 from api.models.response_models import make_response
 
@@ -61,7 +62,7 @@ async def tidy_demographics(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("demographics")
     return make_response(data=b_rows, metadata=metadata)
 
 
@@ -77,7 +78,7 @@ async def tidy_education(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("education")
     return make_response(data=rows, metadata=metadata)
 
 
@@ -93,7 +94,7 @@ async def tidy_housing(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("housing")
     return make_response(data=rows, metadata=metadata)
 
 
@@ -110,7 +111,7 @@ async def tidy_labor_force(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("labor_force")
     return make_response(data=rows, metadata=metadata)
 
 
@@ -127,5 +128,5 @@ async def tidy_income(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("income")
     return make_response(data=rows, metadata=metadata)

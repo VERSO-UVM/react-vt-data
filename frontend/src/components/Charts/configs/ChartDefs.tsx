@@ -180,6 +180,16 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
+  // Employment (QCEW quarterly, stacked by sector)
+  {
+    id: 'employment',
+    title: 'Total Employment — Four-Quarter Moving Average',
+    categories: ['Labor & Economy'],
+    xField: 'quarter_label',
+    yField: 'employment_4qma',
+    subtype: 'EmploymentAreaChart',
+    url: `${BASE_API_URL}/load/qcew/employment`,
+  },
   // Income
   {
     id: 'income',

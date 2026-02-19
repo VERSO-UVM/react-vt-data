@@ -11,6 +11,7 @@ export {
   EducationTrendChart,
   HousingTrendChart,
 } from './TrendCharts';
+export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem } from '@/types/cachedCharts';
 import {
@@ -153,6 +154,22 @@ export const ChartStack = <TData extends Record<string, any>>({
         userInterests.length > 0 && chart.categories
           ? chart.categories.filter((cat) => userInterests.includes(cat))
           : [];
+
+      // Compact note card — no chart, no 400px box
+      if (chart.subtype === 'noteCard')
+        return (
+          <Card
+            key={chart.id}
+            shadow="sm"
+            padding="sm"
+            radius="md"
+            withBorder
+          >
+            <Text size="sm" c="dimmed">
+              {chart.notes}
+            </Text>
+          </Card>
+        );
 
       if (!ChartComponent) return null;
       if (!chart.data || chart.data.length === 0)
