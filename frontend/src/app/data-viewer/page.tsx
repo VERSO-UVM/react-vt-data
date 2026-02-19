@@ -1,6 +1,6 @@
 'use client';
 
-import { Container, Group, SegmentedControl, Text } from '@mantine/core';
+import { Center, Container, Group, SegmentedControl, Text, Title } from '@mantine/core';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -155,6 +155,9 @@ export default function DataViewerPage() {
 
   return (
     <>
+      <Center mb="md">
+        <Title order={2}>Data Analysis</Title>
+      </Center>
       {interests.length > 0 && (
         <Group
           mb="md"

@@ -1,12 +1,14 @@
 import React from 'react';
-import { Container, Title, Text } from '@mantine/core';
+import { Center, Container, Text, Title } from '@mantine/core';
 
 export default function DataExport() {
   return (
     <>
+      <Center mb="md">
+        <Title order={2}>Raw Data Export</Title>
+      </Center>
       <Container>
-        <Title>Data Export </Title>
-        <Text> Under Construction</Text>
+        <Text>Under Construction</Text>
       </Container>
     </>
   );
