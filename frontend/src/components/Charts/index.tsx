@@ -14,6 +14,7 @@ export {
 
 import { ChartItem } from '@/types/cachedCharts';
 import {
+  Badge,
   Card,
   Box,
   Title,
@@ -30,12 +31,14 @@ interface ChartCardProps<TData extends Record<string, any>> {
   chart: ChartItem<TData>;
   ChartComponent: React.FC<{ chart: ChartItem<TData> }>;
   TrendComponent?: React.FC<{ chart: ChartItem<TData> }>;
+  matchedCategories?: string[];
   action?: 'add' | 'remove';
 }
 export const ChartCard = <TData extends Record<string, any>>({
   chart,
   ChartComponent,
   TrendComponent,
+  matchedCategories = [],
   action = 'add',
 }: ChartCardProps<TData>) => {
   // Table-primary items (renderTable*) default to table view; charts default to chart view.
@@ -65,13 +68,36 @@ export const ChartCard = <TData extends Record<string, any>>({
     )
   );
 
+  const isHighlighted = matchedCategories.length > 0;
+
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card
+      shadow="sm"
+      padding="lg"
+      radius="md"
+      withBorder
+      style={
+        isHighlighted
+          ? { borderColor: '#154734', borderWidth: 2 }
+          : undefined
+      }
+    >
       <Box mb="sm">
-        <Title order={3}>
-          {chart.description ? ` ${chart.description} for ` : ''}
-          {chart.title}
-        </Title>
+        <Group justify="space-between" wrap="nowrap" align="flex-start">
+          <Title order={3}>
+            {chart.description ? ` ${chart.description} for ` : ''}
+            {chart.title}
+          </Title>
+          {isHighlighted && (
+            <Group gap={4} style={{ flexShrink: 0 }}>
+              {matchedCategories.map((cat) => (
+                <Badge key={cat} color="green" variant="light" size="sm">
+                  {cat}
+                </Badge>
+              ))}
+            </Group>
+          )}
+        </Group>
         {showViewSwitch && <ViewSwitch view={view} setView={setView} />}
       </Box>
 
@@ -95,6 +121,7 @@ export const ChartCard = <TData extends Record<string, any>>({
 interface ChartStackProps<TData extends Record<string, any>> {
   charts: ChartItem<TData>[];
   action?: 'add' | 'remove';
+  userInterests?: string[];
 }
 
 import * as allCharts from './index'; // self-import to dynamically access all exports
@@ -102,6 +129,7 @@ import * as allCharts from './index'; // self-import to dynamically access all e
 export const ChartStack = <TData extends Record<string, any>>({
   charts,
   action = 'add',
+  userInterests = [],
 }: ChartStackProps<TData>) => (
   <Stack>
     {charts.map((chart) => {
@@ -114,6 +142,11 @@ export const ChartStack = <TData extends Record<string, any>>({
             chart.trendChart as keyof typeof allCharts
           ] as React.FC<{ chart: ChartItem<TData> }>)
         : undefined;
+
+      const matchedCategories =
+        userInterests.length > 0 && chart.categories
+          ? chart.categories.filter((cat) => userInterests.includes(cat))
+          : [];
 
       if (!ChartComponent) return null;
       if (!chart.data || chart.data.length === 0)
@@ -132,6 +165,7 @@ export const ChartStack = <TData extends Record<string, any>>({
           action={action}
           ChartComponent={ChartComponent}
           TrendComponent={TrendComponent}
+          matchedCategories={matchedCategories}
         />
       );
     })}

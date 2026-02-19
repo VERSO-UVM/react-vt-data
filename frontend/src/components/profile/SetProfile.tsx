@@ -1,40 +1,44 @@
 import React, { useState } from 'react';
-import { Modal, Button, Stack, Select, Title } from '@mantine/core';
-import { useProfile } from './profileStore';
+import {
+  Button,
+  Divider,
+  Modal,
+  MultiSelect,
+  Select,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core';
+import { useProfile, INTEREST_OPTIONS, Location } from './profileStore';
 import county_town_names from '@/Data/county_town_names.json';
 
-interface ProfileLocation {
-  type: 'state' | 'county' | 'town' | 'rpc';
-  state?: boolean;
-  county?: string | null;
-  town?: string | null;
-  name?: string; // only used internally
-}
+type CountyKey = keyof typeof county_town_names;
 
 interface ProfileLocationSelectProps {
   title: string;
-  location: ProfileLocation;
-  setLocation: (loc: ProfileLocation) => void;
+  location: Location;
+  setLocation: (loc: Location) => void;
 }
+
+const getName = (
+  type: string,
+  county?: string | null,
+  town?: string | null,
+) => {
+  if (type === 'state') return 'Vermont';
+  if (type === 'county' && county) return `${county} County, Vermont`;
+  if (type === 'town' && county && town)
+    return `${town}, ${county} County, Vermont`;
+  return 'Unknown';
+};
 
 const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   title,
   location,
   setLocation,
 }) => {
-  const counties = Object.keys(county_town_names);
+  const counties = Object.keys(county_town_names) as CountyKey[];
 
-  const getName = (
-    type: string,
-    county?: string | null,
-    town?: string | null,
-  ) => {
-    if (type === 'state') return 'Vermont';
-    if (type === 'county' && county) return `${county} County, Vermont`;
-    if (type === 'town' && county && town)
-      return `${town}, ${county} County, Vermont`;
-    return 'Unknown';
-  };
   return (
     <>
       <Title order={2}>{title}</Title>
@@ -89,7 +93,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
               name: getName(location.type, location.county, value),
             })
           }
-          data={county_town_names[location.county].map((t) => ({
+          data={county_town_names[location.county as CountyKey].map((t) => ({
             value: t,
             label: t,
           }))}
@@ -100,29 +104,45 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
 };
 
 export const ProfileModal: React.FC = () => {
-  const { myLocation, setLocation, comparison, setComparison } = useProfile();
+  const {
+    myLocation,
+    setLocation,
+    comparison,
+    setComparison,
+    interests,
+    setInterests,
+  } = useProfile();
   const [opened, setOpened] = useState(false);
 
-  const [tempMyLocation, setTempMyLocation] =
-    useState<ProfileLocation>(myLocation);
-  const [tempComparison, setTempComparison] =
-    useState<ProfileLocation>(comparison);
+  const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
+  const [tempComparison, setTempComparison] = useState<Location>(comparison);
+  const [tempInterests, setTempInterests] = useState<string[]>(interests);
+
+  const handleOpen = () => {
+    // Sync temp state from store each time the modal opens
+    setTempMyLocation(myLocation);
+    setTempComparison(comparison);
+    setTempInterests(interests);
+    setOpened(true);
+  };
 
   const handleSave = () => {
     setLocation(tempMyLocation);
     setComparison(tempComparison);
+    setInterests(tempInterests);
     setOpened(false);
   };
 
   return (
     <>
-      <Button onClick={() => setOpened(true)}>Set Profile</Button>
+      <Button onClick={handleOpen}>Set Profile</Button>
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}
-        title="Set Profile Location"
+        title="Set Profile"
+        size="md"
       >
-        <Stack spacing="md">
+        <Stack gap="md">
           <ProfileLocationSelect
             title="My Location"
             location={tempMyLocation}
@@ -133,7 +153,25 @@ export const ProfileModal: React.FC = () => {
             location={tempComparison}
             setLocation={setTempComparison}
           />
-          <Button onClick={handleSave}>Set</Button>
+
+          <Divider />
+
+          <div>
+            <Title order={2}>Areas of Interest</Title>
+            <Text size="sm" c="dimmed" mb="xs">
+              Highlight and filter charts relevant to your focus areas.
+            </Text>
+            <MultiSelect
+              label="Select topics"
+              data={[...INTEREST_OPTIONS]}
+              value={tempInterests}
+              onChange={setTempInterests}
+              placeholder="Any topic"
+              clearable
+            />
+          </div>
+
+          <Button onClick={handleSave}>Save</Button>
         </Stack>
       </Modal>
     </>

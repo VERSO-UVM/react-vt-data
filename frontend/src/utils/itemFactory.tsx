@@ -15,6 +15,7 @@ interface ChartItemConfig<TData> {
   notes?: string;
   metadata?: Record<string, any>;
   compareTableData?: TData[];
+  categories?: string[];
 
   tableData?: TData[];
   showCols?: TableColumnConfig[];
@@ -29,6 +30,7 @@ export function createChartItem<TData>(
     createdAt: new Date().toISOString(),
     type: 'chart',
     subtype: config.subtype,
+    categories: config.categories,
     xField: config.xField,
     yField: config.yField,
     data: config.data,
@@ -50,6 +52,7 @@ export function createTableItem<TData>(config: {
   description?: string;
   subtype?: string;
   trendChart?: string;
+  categories?: string[];
 }): ChartItem<TData> {
   return {
     id: `${config.title.replace(/\s/g, '')}-${uuidv4()}`,
@@ -58,6 +61,7 @@ export function createTableItem<TData>(config: {
     type: 'chart',
     subtype: config.subtype ?? 'renderTable',
     trendChart: config.trendChart,
+    categories: config.categories,
     xField: '',
     yField: '',
     data: config.data,

@@ -19,6 +19,7 @@ export interface ChartDef {
   yField: string;
   subtype: string;
   trendChart?: string; // optional trend chart component name for table-primary defs
+  categories?: string[]; // topic areas for interest-based filtering
   chartParams?: any;
   url: string;
   filterKey?: string;
@@ -32,6 +33,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'acreage',
     title: 'Acreage Chart',
+    categories: ['Land Use'],
     xField: 'District Type',
     yField: 'Acres',
     subtype: 'CompareDiffPerXBarChart',
@@ -50,6 +52,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'tenure',
     title: 'Housing Tenure',
+    categories: ['Housing'],
     xField: 'Occupied Tenure',
     yField: 'Value',
     subtype: 'CompareDiffPerXBarChart',
@@ -68,6 +71,7 @@ export const chartDefs: ChartDef[] = [
     yField: '',
     subtype: 'renderTable', // signals to the renderer to use TableStack not ChartStack
     trendChart: 'DemographicsTrendChart',
+    categories: ['Demographics'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -81,6 +85,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',
+    categories: ['Demographics'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -95,6 +100,7 @@ export const chartDefs: ChartDef[] = [
     yField: '',
     subtype: 'renderTable',
     trendChart: 'EducationTrendChart',
+    categories: ['Education'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -108,6 +114,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',
+    categories: ['Education'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -123,6 +130,7 @@ export const chartDefs: ChartDef[] = [
     yField: '',
     subtype: 'renderTableMixed',
     trendChart: 'HousingTrendChart',
+    categories: ['Housing'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -136,6 +144,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',
+    categories: ['Housing'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -150,6 +159,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTable',
+    categories: ['Labor & Economy'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -163,6 +173,7 @@ export const chartDefs: ChartDef[] = [
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',
+    categories: ['Labor & Economy'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
@@ -176,6 +187,7 @@ export const chartDefs: ChartDef[] = [
     url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
     xField: '',
     yField: '',
+    categories: ['Labor & Economy'],
     subtype: 'renderTableEstimates',
     filterKey: '',
     dataKey: '',

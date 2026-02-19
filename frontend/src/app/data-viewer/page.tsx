@@ -1,6 +1,6 @@
 'use client';
 
-import { Container } from '@mantine/core';
+import { Container, Group, SegmentedControl, Text } from '@mantine/core';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -12,13 +12,15 @@ import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 
 export default function DataViewerPage() {
-  const { myLocation, comparison } = useProfile();
+  const { myLocation, comparison, interests } = useProfile();
   const [chartData, setChartData] = useState<
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
   const [compareChartData, setCompareChartData] = useState<
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
+  const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
+
   const applyFilters = useApplyFilters();
   const tableDefs = chartDefs.filter((c) =>
     c.subtype.startsWith('renderTable'),
@@ -105,6 +107,7 @@ export default function DataViewerPage() {
       },
       description: chart.title,
       notes: chart.notes,
+      categories: chart.categories,
     }),
   );
 
@@ -117,12 +120,37 @@ export default function DataViewerPage() {
       notes: def.notes,
       subtype: def.subtype,
       trendChart: def.trendChart,
+      categories: def.categories,
     }),
   );
 
+  const allItems = [...charts, ...tableItems];
+  const visibleItems =
+    focusMode === 'focus' && interests.length > 0
+      ? allItems.filter((c) =>
+          c.categories?.some((cat) => interests.includes(cat)),
+        )
+      : allItems;
+
   return (
     <Container size="xl">
-      <ChartStack charts={[...charts, ...tableItems]} action="add" />
+      {interests.length > 0 && (
+        <Group mb="md" justify="flex-end">
+          <Text size="sm" c="dimmed">
+            {interests.join(', ')}
+          </Text>
+          <SegmentedControl
+            size="sm"
+            value={focusMode}
+            onChange={(v) => setFocusMode(v as 'all' | 'focus')}
+            data={[
+              { label: 'All charts', value: 'all' },
+              { label: 'My focus', value: 'focus' },
+            ]}
+          />
+        </Group>
+      )}
+      <ChartStack charts={visibleItems} action="add" userInterests={interests} />
     </Container>
   );
 }
