@@ -3,6 +3,7 @@
 import React from 'react';
 import { Grid, Card, Button, Text, Group, Box } from '@mantine/core';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface LinkItem {
   link: string;
@@ -49,7 +50,7 @@ function MappingCard({ item }: { item: LinkItem }) {
       <Box style={{ padding: 12 }}>
         <Group mb="xs">
         </Group>
-        <Button component="a" href={item.link} fullWidth variant="filled">
+        <Button component={Link} href={item.link} fullWidth variant="filled">
           Explore {item.label}
         </Button>
       </Box>
