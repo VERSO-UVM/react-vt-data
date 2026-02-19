@@ -53,6 +53,8 @@ export function createTableItem<TData>(config: {
   subtype?: string;
   trendChart?: string;
   categories?: string[];
+  compareData?: TData[];
+  chartParams?: Record<string, any>;
 }): ChartItem<TData> {
   return {
     id: `${config.title.replace(/\s/g, '')}-${uuidv4()}`,
@@ -65,6 +67,8 @@ export function createTableItem<TData>(config: {
     xField: '',
     yField: '',
     data: config.data,
+    compareData: config.compareData,
+    chartParams: config.chartParams,
     notes: config.notes,
     description: config.description,
     metadata: config.metadata,

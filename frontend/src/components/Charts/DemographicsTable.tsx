@@ -1,5 +1,10 @@
-import { ScrollArea, Table } from '@mantine/core';
+import { useState } from 'react';
+import { Box, Button, Group, ScrollArea, Table, Text } from '@mantine/core';
 import { ChartItem } from '@/types/cachedCharts';
+
+const HOME_BG = 'var(--mantine-color-green-0)';
+const COMP_BG = 'var(--mantine-color-blue-0)';
+const SPLIT_BORDER = '1px solid var(--mantine-color-gray-3)';
 
 const DemographicsTableBase = <TData,>({
   chart,
@@ -9,35 +14,116 @@ const DemographicsTableBase = <TData,>({
   renderCell: (row: any) => React.ReactNode;
 }) => {
   const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  const hasCompare = compareData.length > 0;
+  const [showCompare, setShowCompare] = useState(false);
+
+  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const homeLabel = labels?.[0] ?? 'Primary';
+  const compareLabel = labels?.[1] ?? 'Comparison';
+
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const variables = Array.from(new Set(data.map((r) => r.Variable)));
 
+  const findRow = (rows: any[], variable: string, year: number) =>
+    rows.find((r) => r.Variable === variable && r.year === year);
+
   return (
-    <ScrollArea>
-      <Table striped withTableBorder withColumnBorders fz="xs">
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Demographic</Table.Th>
-            {years.map((y) => (
-              <Table.Th key={y}>{y}</Table.Th>
-            ))}
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {variables.map((variable) => (
-            <Table.Tr key={variable}>
-              <Table.Td>{variable}</Table.Td>
-              {years.map((year) => {
-                const row = data.find(
-                  (r) => r.Variable === variable && r.year === year,
-                );
-                return <Table.Td key={year}>{renderCell(row)}</Table.Td>;
-              })}
+    <Box>
+      {hasCompare && (
+        <Group mb="xs" gap="sm" align="center">
+          <Button
+            size="xs"
+            variant={showCompare ? 'filled' : 'light'}
+            color="blue"
+            onClick={() => setShowCompare((v) => !v)}
+          >
+            {showCompare ? 'Hide Comparison' : 'Show Comparison'}
+          </Button>
+          {showCompare && (
+            <Group gap={6}>
+              <Box
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 2,
+                  background: HOME_BG,
+                  border: '1px solid var(--mantine-color-green-3)',
+                  display: 'inline-block',
+                }}
+              />
+              <Text size="xs">{homeLabel}</Text>
+              <Box
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 2,
+                  background: COMP_BG,
+                  border: '1px solid var(--mantine-color-blue-3)',
+                  display: 'inline-block',
+                  marginLeft: 8,
+                }}
+              />
+              <Text size="xs">{compareLabel}</Text>
+            </Group>
+          )}
+        </Group>
+      )}
+
+      <ScrollArea>
+        <Table striped withTableBorder withColumnBorders fz="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Demographic</Table.Th>
+              {years.map((y) => (
+                <Table.Th key={y}>{y}</Table.Th>
+              ))}
             </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
-    </ScrollArea>
+          </Table.Thead>
+          <Table.Tbody>
+            {variables.map((variable) => (
+              <Table.Tr key={variable}>
+                <Table.Td>{variable}</Table.Td>
+                {years.map((year) => {
+                  const mainRow = findRow(data, variable, year);
+                  if (!showCompare) {
+                    return <Table.Td key={year}>{renderCell(mainRow)}</Table.Td>;
+                  }
+                  const cmpRow = findRow(compareData, variable, year);
+                  return (
+                    <Table.Td key={year} style={{ padding: 0 }}>
+                      <div style={{ display: 'flex', minWidth: 90 }}>
+                        <div
+                          style={{
+                            flex: 1,
+                            padding: '3px 6px',
+                            background: HOME_BG,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {renderCell(mainRow)}
+                        </div>
+                        <div
+                          style={{
+                            flex: 1,
+                            padding: '3px 6px',
+                            background: COMP_BG,
+                            borderLeft: SPLIT_BORDER,
+                            textAlign: 'right',
+                          }}
+                        >
+                          {renderCell(cmpRow)}
+                        </div>
+                      </div>
+                    </Table.Td>
+                  );
+                })}
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
+    </Box>
   );
 };
 

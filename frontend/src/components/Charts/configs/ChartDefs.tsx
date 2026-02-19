@@ -121,6 +121,21 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2012, year_max: 2023 },
     },
   },
+  // Housing Tenure (owner vs renter over time)
+  {
+    id: 'housing_tenure',
+    title: 'Housing Tenure',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/housing/tenure`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableMixed',
+    categories: ['Housing'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
   // Housing
   {
     id: 'housing',

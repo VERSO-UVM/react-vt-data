@@ -19,6 +19,9 @@ export default function DataViewerPage() {
   const [compareChartData, setCompareChartData] = useState<
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
+  const [compareTableData, setCompareTableData] = useState<
+    Record<string, any[]>
+  >({});
   const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
 
   const applyFilters = useApplyFilters();
@@ -78,6 +81,7 @@ export default function DataViewerPage() {
           : { year_min: yearMin, year_max: yearMax };
         return `${d.url}::${JSON.stringify(extra)}` === key;
       });
+      // Primary location fetch
       applyFilters(
         def.url,
         {},
@@ -89,8 +93,22 @@ export default function DataViewerPage() {
           ),
         { name: myLocation.name, ...effectiveExtra },
       );
+      // Comparison location fetch
+      if (comparison.name) {
+        applyFilters(
+          def.url,
+          {},
+          undefined,
+          undefined,
+          (data) =>
+            siblings.forEach((d) =>
+              setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
+            ),
+          { name: comparison.name, ...effectiveExtra },
+        );
+      }
     });
-  }, [myLocation, yearMin, yearMax]);
+  }, [myLocation, comparison, yearMin, yearMax]);
 
   // QCEW employment data is county-level only; swap to a note card for town selections
   const isSubcountyLocation = myLocation.type === 'town';
@@ -138,6 +156,8 @@ export default function DataViewerPage() {
       description: def.title,
       data: chartData[def.id]?.data || [],
       metadata: chartData[def.id]?.metadata || [],
+      compareData: compareTableData[def.id] || [],
+      chartParams: { legendLabels: [myLocation.name, comparison.name] },
       notes: def.notes,
       subtype: def.subtype,
       trendChart: def.trendChart,
