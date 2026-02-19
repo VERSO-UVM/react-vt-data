@@ -85,4 +85,30 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
+  {
+    id: 'education',
+    title: 'Educational Attainment — Percent',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTable',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2012, year_max: 2023 },
+    },
+  },
+  {
+    id: 'education_estimates',
+    title: 'Educational Attainment — Value',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2012, year_max: 2023 },
+    },
+  },
 ];

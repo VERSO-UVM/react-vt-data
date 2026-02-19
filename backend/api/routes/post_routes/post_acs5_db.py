@@ -19,6 +19,10 @@ b10_census_path = (
     Path(__file__).resolve().parent
     / "../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet"
 )
+b15003_census_path = (
+    Path(__file__).resolve().parent
+    / "../../../Data/Census/ACS_5/vt_acs5_b_education_tidy.parquet"
+)
 
 logger.debug(f"ACS_5 profile_census_path = {profile_census_path}")
 logger.debug(f"ACS_5 b10_census_path = {b10_census_path}")
@@ -29,6 +33,7 @@ DB.execute(
     f"CREATE VIEW profile_census AS SELECT * FROM read_parquet('{profile_census_path}')"
 )
 DB.execute(f"CREATE VIEW b10_census AS SELECT * FROM read_parquet('{b10_census_path}')")
+DB.execute(f"CREATE VIEW b15003_education AS SELECT * FROM read_parquet('{b15003_census_path}')")
 
 
 router = APIRouter()
@@ -48,3 +53,19 @@ async def tidy_demographics(request: FilterRequest):
     ).df()
     metadata = {}
     return make_response(data=b_rows, metadata=metadata)
+
+
+@router.post("/load/acs5-db/tidy/education")
+async def tidy_education(request: FilterRequest):
+    rows = DB.execute(
+        """
+        SELECT year, Section, Variable, Value, Percent
+        FROM b15003_education
+        WHERE NAME = ?
+        AND CAST(year AS INTEGER) BETWEEN ? AND ?
+        ORDER BY year, Variable
+    """,
+        [request.name, request.year_min, request.year_max],
+    ).df()
+    metadata = {}
+    return make_response(data=rows, metadata=metadata)
