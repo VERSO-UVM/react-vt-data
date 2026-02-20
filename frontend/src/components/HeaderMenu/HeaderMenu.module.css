@@ -24,12 +24,12 @@
   text-decoration: none;
   color: #1a1a1a;
   font-size: var(--mantine-font-size-sm);
-  transition: background-color .3s ease;
+  transition: background-color 0.3s ease;
   font-family: var(--font-zilla-slab), Georgia, serif;
 }
 
 .link:hover {
-    background-color: #e8ddd0;
+  background-color: #e8ddd0;
 }
 
 .active {

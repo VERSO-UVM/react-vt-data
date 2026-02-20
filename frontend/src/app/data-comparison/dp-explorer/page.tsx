@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import {
+  Alert,
   Center,
   Container,
   Divider,
@@ -467,6 +468,20 @@ export default function DPExplorerPage() {
             </Grid>
           </Paper>
 
+          {/* Census vintage note */}
+          <Alert variant="light" color="yellow" radius="md">
+            <Text size="xs">
+              <strong>Note on year coverage:</strong> Census Data Profile
+              variable labels (categories, subcategories, variable names) change
+              between ACS vintages. A selection may only cover a subset of years
+              if its label was introduced, renamed, or restructured in a
+              particular release. Variables with broad year coverage (e.g.
+              racial composition totals, median age) are <em> generally </em>
+              labeled consistently; highly specific sub-groups may only appear
+              in one or two vintages.
+            </Text>
+          </Alert>
+
           {/* Side selectors */}
           <Paper withBorder p="md" radius="md">
             <Grid>
@@ -537,6 +552,17 @@ export default function DPExplorerPage() {
                 <Text size="xs" c="dimmed">
                   {table} › {category} › {subcategory} › {variable} › {measure}
                 </Text>
+                {availableYears.length > 0 && availableYears.length < 10 && (
+                  <Text size="xs" c="orange.7" mt={4}>
+                    Data available for {availableYears.length} year
+                    {availableYears.length === 1 ? '' : 's'} only (
+                    {availableYears[0]}
+                    {availableYears.length > 1
+                      ? `–${availableYears[availableYears.length - 1]}`
+                      : ''}
+                    ). This variable&apos;s label changed in other ACS vintages.
+                  </Text>
+                )}
               </Paper>
 
               {/* Trend chart via ChartStack (includes Add to Report) */}

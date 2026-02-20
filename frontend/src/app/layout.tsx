@@ -26,9 +26,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/icons8-maple-leaf-48.png" />
       </head>
-      <body
-        className={`${zillaSlab.variable} antialiased`}
-      >
+      <body className={`${zillaSlab.variable} antialiased`}>
         <MantineProvider theme={theme}>
           <div className="layout-wrapper">
             <HeaderMenu />

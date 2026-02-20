@@ -10,7 +10,13 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { useProfile, INTEREST_OPTIONS, YEAR_MIN_OVERALL, YEAR_MAX_OVERALL, Location } from './profileStore';
+import {
+  useProfile,
+  INTEREST_OPTIONS,
+  YEAR_MIN_OVERALL,
+  YEAR_MAX_OVERALL,
+  Location,
+} from './profileStore';
 import county_town_names from '@/Data/county_town_names.json';
 
 type CountyKey = keyof typeof county_town_names;
@@ -126,7 +132,10 @@ export const ProfileModal: React.FC = () => {
   const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
   const [tempComparison, setTempComparison] = useState<Location>(comparison);
   const [tempInterests, setTempInterests] = useState<string[]>(interests);
-  const [tempYearRange, setTempYearRange] = useState<[number, number]>([yearMin, yearMax]);
+  const [tempYearRange, setTempYearRange] = useState<[number, number]>([
+    yearMin,
+    yearMax,
+  ]);
 
   const handleOpen = () => {
     // Sync temp state from store each time the modal opens
@@ -188,7 +197,8 @@ export const ProfileModal: React.FC = () => {
           <div>
             <Title order={2}>Years of Longitudinal Interest</Title>
             <Text size="sm" c="dimmed" mb="xs">
-              Restrict trend tables and charts to this year range ({tempYearRange[0]}–{tempYearRange[1]}).
+              Restrict trend tables and charts to this year range (
+              {tempYearRange[0]}–{tempYearRange[1]}).
             </Text>
             <RangeSlider
               min={YEAR_MIN_OVERALL}

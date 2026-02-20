@@ -2,10 +2,8 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Container, Title, Text } from '@mantine/core';
 
-
 function AboutMarkdown() {
-  const markdown = 
-  `
+  const markdown = `
   ## Open-Research Community Accelerator (ORCA)
   The [Open Research Community Accelerator](https://verso.w3.uvm.edu/orca/) is an initiative that grows the impact of academic research by making research products accessible to other academics, local businesses, and community members through open source projects. ORCA creates these products through student project teams called Pods -- groups of dynamic and passionate students who learn industry open source practices by working on real products destined for public use. This program is run and funded by the University of Vermont [Open Source Program Office (VERSO)](https://verso.w3.uvm.edu/).
   ORCA's goals are to produce impactful, accessible, open source research tools by training tomorrow's workforce in marketable open source skills. This Repository contains all the supporting documentation and policies for the ORCA program. These documents are meant to help new ORCA members learns the program, show project sponsors how we work, and provide a template that can be "forked" to other academic institutions.
@@ -23,20 +21,19 @@ function AboutMarkdown() {
   ## Wastewater Infrastructure Mapping
   This initiative, in collaboration with the Windham Regional Commission systematically maps wastewater infrastructure data to understand its impact on economic activity and housing development. This includes finding what data is already available, working with partners to determine the format of the data to be collect, and then working with available online resources and reaching out to towns to identify and record wastewater systems.
   UVM students continuously compile and publish town-level wastewater infrastructure data on a publicly accessible repository, working in tandem with state agencies like the Vermont Center for Geographic Information, the Vermont Department of Environmental Conservation, and the Vermont Agency of Commerce and Community Development.
-  These efforts will be in collaboration with the Town of Jericho's efforts to pilot an outreach strategy to educate and empower stakeholders with essential information on funding pathways, resources, and planning considerations. These efforts aim not only to address immediate development challenges but also to align with broader state objectives outlined in the Vermont Climate Action Plan, Comprehensive Energy Plan, and Long-Range Transportation Plan, fostering a holistic approach to sustainable growth and resilience.`
-  
+  These efforts will be in collaboration with the Town of Jericho's efforts to pilot an outreach strategy to educate and empower stakeholders with essential information on funding pathways, resources, and planning considerations. These efforts aim not only to address immediate development challenges but also to align with broader state objectives outlined in the Vermont Climate Action Plan, Comprehensive Energy Plan, and Long-Range Transportation Plan, fostering a holistic approach to sustainable growth and resilience.`;
+
   return (
-  <div className='about-markdown'>
-    <ReactMarkdown>{markdown}</ReactMarkdown>
-  </div>
+    <div className="about-markdown">
+      <ReactMarkdown>{markdown}</ReactMarkdown>
+    </div>
   );
 }
-
 
 export default function DataExport() {
   return (
     <>
-      <Container size='md' py='xl'>
+      <Container size="md" py="xl">
         <Title>About</Title>
         <AboutMarkdown />
       </Container>
