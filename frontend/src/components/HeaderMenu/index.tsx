@@ -27,7 +27,14 @@ const links = [
     ],
   },
   { link: '/data-viewer', label: 'Data Analysis' },
-  { link: '/data-comparison', label: 'Data Comparison' },
+  {
+    link: '/data-comparison',
+    label: 'Data Comparison',
+    links: [
+      { link: '/data-comparison/b-tables', label: 'B-Table Comparison' },
+      { link: '/data-comparison/dp-explorer', label: 'DP Tables Explorer' },
+    ],
+  },
   { link: '/working-report', label: 'Working Report' },
   { link: '/data-export', label: 'Raw Data Export' },
   { link: '/scratch', label: 'Scratch' },

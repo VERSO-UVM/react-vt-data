@@ -321,3 +321,81 @@ export const HousingTrendChart = <TData,>({
     </>
   );
 };
+
+// ---------------------------------------------------------------------------
+// Generic two-location trend chart for the DP-combined explorer
+// data:        [{year, Value}] for side A
+// compareData: [{year, Value}] for side B
+// chartParams.legendLabels: [sideA label, sideB label]
+// chartParams.measure:      raw measure string (e.g. 'Percent') for formatting
+// ---------------------------------------------------------------------------
+
+export const DPTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  const lbls = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const primaryName = lbls?.[0] ?? 'Side A';
+  const compareName = lbls?.[1] ?? 'Side B';
+  const isPercent = (chart.chartParams?.measure as string | undefined)
+    ?.toLowerCase()
+    .includes('percent');
+
+  const allYears = Array.from(
+    new Set([...data, ...compareData].map((r) => r.year)),
+  ).sort((a, b) => a - b);
+
+  const plotData = allYears.map((year) => ({
+    year,
+    primary: data.find((r) => r.year === year)?.Value ?? null,
+    compare: compareData.find((r) => r.year === year)?.Value ?? null,
+  }));
+
+  const fmt = (v: any) =>
+    v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
+
+  if (!data || data.length === 0) return null;
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart
+        data={plotData}
+        margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+        <YAxis
+          tick={{ fontSize: 12 }}
+          tickFormatter={(v) =>
+            isPercent ? `${v}%` : Number(v).toLocaleString()
+          }
+          domain={['auto', 'auto']}
+        />
+        <Tooltip formatter={(val: any, name: string) => [fmt(val), name]} />
+        <Legend />
+        <Line
+          type="monotone"
+          dataKey="primary"
+          name={primaryName}
+          stroke="#154734"
+          strokeWidth={2}
+          dot={false}
+        />
+        {compareData.length > 0 && (
+          <Line
+            type="monotone"
+            dataKey="compare"
+            name={compareName}
+            stroke="#8899aa"
+            strokeWidth={1.5}
+            strokeDasharray="6 4"
+            dot={false}
+          />
+        )}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+};
