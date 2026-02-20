@@ -1,8 +1,8 @@
 import pandas as pd
 import streamlit as st
+from fastapi import HTTPException
 
 from api.models.filter_models import FilterRequest
-from fastapi import HTTPException
 
 
 # helper functions

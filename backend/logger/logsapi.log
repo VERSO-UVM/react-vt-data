@@ -54412,3 +54412,655 @@
 2026-02-19 21:52:35,922 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 402.0, 'Percent': 1.0}, {'year': '2010', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 254700.0, 'Percent': nan}]
 2026-02-19 21:52:35,926 - api - DEBUG - serialized type: <class 'list'>
 2026-02-19 21:52:35,926 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 129.0, 'Percent': 1.1}, {'year': '2010', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 198800.0, 'Percent': nan}]
+2026-02-19 22:17:24,284 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:17:24,284 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:17:39,830 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:17:39,830 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:17:50,220 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:17:50,220 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:18:12,017 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:18:12,018 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:18:31,522 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:18:31,522 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:18:35,219 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:18:35,219 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:19:52,694 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:19:52,694 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:20:42,929 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 profile_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/vt_acs5_combined_TIDY.parquet
+2026-02-19 22:20:42,929 - api.routes.post_routes.post_acs5_db - DEBUG - ACS_5 b10_census_path = /home/fitsl/dev/react-vt-data/backend/api/routes/post_routes/../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet
+2026-02-19 22:20:52,727 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,727 - api - DEBUG - serialized sample: [{'a': 1, 'b': 'x'}, {'a': 2, 'b': 'y'}]
+2026-02-19 22:20:52,727 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,727 - api - DEBUG - serialized sample: [{'key': 'val'}]
+2026-02-19 22:20:52,728 - api - DEBUG - serialized type: <class 'dict'>
+2026-02-19 22:20:52,728 - api - DEBUG - serialized sample: not a list
+2026-02-19 22:20:52,729 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,729 - api - DEBUG - serialized sample: []
+2026-02-19 22:20:52,733 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,733 - api - DEBUG - serialized sample: [{'x': 1}]
+2026-02-19 22:20:52,733 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,733 - api - DEBUG - serialized sample: [{'x': 1}]
+2026-02-19 22:20:52,734 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,734 - api - DEBUG - serialized sample: [{'y': 2}]
+2026-02-19 22:20:52,734 - api - DEBUG - serialized type: <class 'dict'>
+2026-02-19 22:20:52,734 - api - DEBUG - serialized sample: not a list
+2026-02-19 22:20:52,735 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,735 - api - DEBUG - serialized sample: [{'a': 1}]
+2026-02-19 22:20:52,735 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:20:52,735 - api - DEBUG - serialized sample: []
+2026-02-19 22:25:31,995 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:31,995 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 22:25:32,054 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,054 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 22:25:32,096 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,096 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 22:25:32,101 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,102 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 22:25:32,110 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,111 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 22:25:32,115 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,115 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 22:25:32,119 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,120 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 22:25:32,124 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,124 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 22:25:32,129 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,129 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 22:25:32,135 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,135 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 22:25:32,145 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,145 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 22:25:32,202 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,202 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 22:25:32,206 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,206 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 22:25:32,212 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,212 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 22:25:32,222 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,222 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 22:25:32,260 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,260 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 22:25:32,269 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,269 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 22:25:32,274 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,274 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 22:25:32,279 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,279 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 22:25:32,284 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,285 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 22:25:32,289 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,289 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 22:25:32,292 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,292 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 22:25:32,297 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,297 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 22:25:32,300 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,300 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 22:25:32,303 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,304 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 22:25:32,307 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,307 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 22:25:32,310 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,310 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 22:25:32,314 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:25:32,314 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 22:25:38,556 - api.routes.get_routes.get_filters - INFO - cols are ['County', 'Jurisdiction', 'District Name']
+2026-02-19 22:25:43,790 - api.routes.get_routes.get_filters - INFO - cols are ['County', 'Jurisdiction', 'District Name']
+2026-02-19 22:41:29,194 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:29,194 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 22:41:29,206 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:29,206 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 22:41:29,217 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:29,217 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 22:41:29,228 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:29,229 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 22:41:36,223 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,223 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 22:41:36,233 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,233 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 22:41:36,248 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,249 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 22:41:36,256 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,257 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 22:41:36,277 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,277 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 22:41:36,350 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,350 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 22:41:36,394 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,394 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 22:41:36,399 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,399 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 22:41:36,404 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,404 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 22:41:36,409 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,409 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 22:41:36,418 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,418 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 22:41:36,423 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,423 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 22:41:36,428 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,428 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 22:41:36,433 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,433 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 22:41:36,444 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,445 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 22:41:36,450 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,450 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 22:41:36,460 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,461 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 22:41:36,508 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,509 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 22:41:36,572 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,572 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 22:41:36,577 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,578 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 22:41:36,585 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,586 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 22:41:36,590 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,590 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 22:41:36,594 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,594 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 22:41:36,599 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,599 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 22:41:36,603 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,604 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 22:41:36,608 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,608 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 22:41:36,612 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,612 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 22:41:36,616 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:41:36,616 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 22:48:02,240 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,240 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 22:48:02,310 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,310 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 22:48:02,351 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,351 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 22:48:02,358 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,359 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 22:48:02,363 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,363 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 22:48:02,370 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,371 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 22:48:02,376 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,377 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 22:48:02,380 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,381 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 22:48:02,386 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,386 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 22:48:02,393 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,393 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 22:48:02,396 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,396 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 22:48:02,401 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,401 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 22:48:02,408 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,408 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 22:48:02,412 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,412 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 22:48:02,421 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,421 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 22:48:02,484 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,484 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 22:48:02,527 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,527 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 22:48:02,534 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,534 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 22:48:02,539 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,539 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 22:48:02,545 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,545 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 22:48:02,552 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,552 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 22:48:02,559 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,559 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 22:48:02,563 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,563 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 22:48:02,567 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,567 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 22:48:02,571 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,571 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 22:48:02,574 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,575 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 22:48:02,578 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,579 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 22:48:02,582 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:02,582 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 22:48:11,173 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:11,173 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 22:48:11,181 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:11,181 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 22:48:11,190 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:11,190 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 22:48:11,199 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 22:48:11,199 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 23:08:46,913 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:46,913 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:08:46,987 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:46,987 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:08:47,031 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,031 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:08:47,043 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,043 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:08:47,088 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,089 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:08:47,097 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,097 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:08:47,102 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,102 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:08:47,108 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,108 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:08:47,114 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,114 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:08:47,119 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,119 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:08:47,124 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,124 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:08:47,128 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,129 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:08:47,132 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,132 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:08:47,136 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,136 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:08:47,141 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,141 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:08:47,151 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,151 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:08:47,212 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,212 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:08:47,220 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,220 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:08:47,225 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,226 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:08:47,232 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,232 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:08:47,238 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,238 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:08:47,242 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,242 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:08:47,247 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,247 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:08:47,250 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,251 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:08:47,254 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,254 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:08:47,258 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,258 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:08:47,261 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,261 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:08:47,265 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:08:47,265 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:20:47,056 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:20:47,056 - api - DEBUG - serialized sample: [{'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Estimate'}, {'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Percent'}]
+2026-02-19 23:20:47,183 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:20:47,184 - api - DEBUG - serialized sample: [{'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Estimate'}, {'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Percent'}]
+2026-02-19 23:20:53,450 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:20:53,450 - api - DEBUG - serialized sample: [{'year': 2010, 'Value': 6629.0}, {'year': 2010, 'Value': 16595.0}]
+2026-02-19 23:20:53,462 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:20:53,462 - api - DEBUG - serialized sample: [{'year': 2010, 'Value': 1312.0}, {'year': 2010, 'Value': 4330.0}]
+2026-02-19 23:21:34,071 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:34,072 - api - DEBUG - serialized sample: [{'year': 2010, 'Value': 14537.0}, {'year': 2011, 'Value': 14786.0}]
+2026-02-19 23:21:34,081 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:34,081 - api - DEBUG - serialized sample: [{'year': 2010, 'Value': 3538.0}, {'year': 2011, 'Value': 3785.0}]
+2026-02-19 23:21:56,024 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,024 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:21:56,090 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,090 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:21:56,133 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,133 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:21:56,141 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,141 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:21:56,150 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,150 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:21:56,161 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,161 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:21:56,171 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,171 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:21:56,176 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,176 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:21:56,182 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,182 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:21:56,187 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,187 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:21:56,192 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,192 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:21:56,202 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,203 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:21:56,265 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,265 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:21:56,302 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,303 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:21:56,308 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,308 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:21:56,317 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,317 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:21:56,324 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,324 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:21:56,329 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,329 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:21:56,335 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,335 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:21:56,338 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,338 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:21:56,342 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,342 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:21:56,345 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,345 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:21:56,348 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,348 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:21:56,352 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,352 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:21:56,356 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,356 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:21:56,359 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,359 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:21:56,362 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,362 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:21:56,365 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:21:56,365 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:22:20,612 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:20,612 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 23:22:20,622 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:20,622 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 23:22:20,632 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:20,633 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 23:22:20,643 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:20,643 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 23:22:38,301 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,301 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:38,372 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,372 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:38,413 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,414 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:22:38,422 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,422 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:22:38,427 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,427 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:22:38,435 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,435 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:22:38,440 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,440 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:22:38,444 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,444 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:22:38,450 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,450 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:22:38,456 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,456 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:22:38,459 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,459 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:22:38,464 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,464 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:22:38,472 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,472 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:22:38,475 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,475 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:22:38,486 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,486 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:38,550 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,550 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:38,593 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,593 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:22:38,600 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,600 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:22:38,605 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,606 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:22:38,610 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,610 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:22:38,617 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,617 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:22:38,624 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,624 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:22:38,628 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,628 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:22:38,633 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,633 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:22:38,636 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,636 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:22:38,639 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,639 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:22:38,643 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,643 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:22:38,646 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:38,647 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:22:42,688 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,688 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:42,754 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,755 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:42,797 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,797 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:22:42,806 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,806 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:22:42,811 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,811 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:22:42,819 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,819 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:22:42,826 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,826 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:22:42,830 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,830 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:22:42,835 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,836 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:22:42,840 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,841 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:22:42,844 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,844 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:22:42,848 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,848 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:22:42,853 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,853 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:22:42,857 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,857 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:22:42,866 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,866 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:42,927 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,927 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-19 23:22:42,969 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,969 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-19 23:22:42,976 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,976 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-19 23:22:42,981 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,981 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:22:42,986 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,986 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-19 23:22:42,992 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,993 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-19 23:22:42,999 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:42,999 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:22:43,005 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:43,005 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-19 23:22:43,011 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:43,011 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-19 23:22:43,015 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:43,015 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-19 23:22:43,018 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:43,018 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-19 23:22:43,022 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:43,023 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-19 23:22:43,027 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:22:43,027 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-19 23:23:19,061 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:19,061 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 23:23:19,070 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:19,070 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 23:23:19,077 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:19,078 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-19 23:23:19,086 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:19,086 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3281.0, 'Percent': 8.8}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3295.0, 'Percent': 8.9}]
+2026-02-19 23:23:20,699 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:20,700 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-19 23:23:20,704 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:20,704 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-19 23:23:22,298 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:22,298 - api - DEBUG - serialized sample: [{'year': '2011', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 62260.0, 'Percent': nan}, {'year': '2011', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 32533.0, 'Percent': nan}]
+2026-02-19 23:23:22,302 - api - DEBUG - serialized type: <class 'list'>
+2026-02-19 23:23:22,302 - api - DEBUG - serialized sample: [{'year': '2011', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48083.0, 'Percent': nan}, {'year': '2011', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 27989.0, 'Percent': nan}]
+2026-02-20 09:34:02,614 - api.routes.get_routes.get_filters - INFO - cols are ['County', 'Jurisdiction', 'District Name']
+2026-02-20 09:34:09,150 - api.routes.get_routes.get_filters - INFO - cols are ['County', 'Jurisdiction', 'District Name']
+2026-02-20 09:35:01,968 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:01,968 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-20 09:35:02,060 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,060 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-20 09:35:02,123 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,123 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-20 09:35:02,208 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,208 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 180888.5482404762, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 129183.69742775086, 'hex_color': '#d62728b4'}]
+2026-02-20 09:35:02,267 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,268 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-20 09:35:02,284 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,284 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-20 09:35:02,293 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,293 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-20 09:35:02,297 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,297 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-20 09:35:02,306 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,307 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-20 09:35:02,312 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,312 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-20 09:35:02,322 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,322 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-20 09:35:02,329 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,329 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-20 09:35:02,335 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,335 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-20 09:35:02,340 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,340 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-20 09:35:02,345 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,345 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-20 09:35:02,350 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,350 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-20 09:35:02,360 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,360 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-20 09:35:02,370 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,370 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 3112.0, 'Trade, Transportation & Utilities': 2981.0, 'Education & Health Services': 3515.0, 'Leisure & Hospitality': 2054.0, 'Professional & Business Services': 564.0, 'Information & Financial Activities': 828.0, 'Government': 149.0, 'Other Services': 445.0}, {'quarter_label': '2014Q2', 'Goods-producing': 3164.0, 'Trade, Transportation & Utilities': 2960.0, 'Education & Health Services': 3544.0, 'Leisure & Hospitality': 2064.0, 'Professional & Business Services': 640.0, 'Information & Financial Activities': 816.0, 'Government': 1218.0, 'Other Services': 443.0}]
+2026-02-20 09:35:02,376 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,377 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-20 09:35:02,386 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,386 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 3300.0, 'Percent': 8.9}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3343.0, 'Percent': 9.0}]
+2026-02-20 09:35:02,394 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,394 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-20 09:35:02,399 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,399 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 2066, 'Percent': 7.9}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 5312, 'Percent': 20.3}]
+2026-02-20 09:35:02,405 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,405 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-20 09:35:02,411 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,411 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 141.0, 'Percent': 1.2}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 206300.0, 'Percent': nan}]
+2026-02-20 09:35:02,416 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,416 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-20 09:35:02,421 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,422 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 20109.0, 'Percent': 65.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 11652.0, 'Percent': 85.7}]
+2026-02-20 09:35:02,426 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,426 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-20 09:35:02,431 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:02,431 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 48938.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 28493.0, 'Percent': nan}]
+2026-02-20 09:35:35,051 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,051 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-20 09:35:35,136 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,136 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 247874.39852173973, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 15535.416846509213, 'hex_color': '#d62728b4'}]
+2026-02-20 09:35:35,172 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,172 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-20 09:35:35,179 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,179 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 192.0, 'Percent': 2.1}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 161400.0, 'Percent': nan}]
+2026-02-20 09:35:35,189 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,189 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 1885.0, 'Trade, Transportation & Utilities': 2106.0, 'Education & Health Services': 2332.0, 'Leisure & Hospitality': 1044.0, 'Professional & Business Services': 283.0, 'Information & Financial Activities': 570.0, 'Government': 96.0, 'Other Services': 244.0}, {'quarter_label': '2014Q2', 'Goods-producing': 1974.0, 'Trade, Transportation & Utilities': 2117.0, 'Education & Health Services': 2326.0, 'Leisure & Hospitality': 1002.0, 'Professional & Business Services': 286.0, 'Information & Financial Activities': 560.0, 'Government': 1116.0, 'Other Services': 247.0}]
+2026-02-20 09:35:35,196 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,196 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 44435.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 23017.0, 'Percent': nan}]
+2026-02-20 09:35:35,203 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,203 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-20 09:35:35,211 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,211 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-20 09:35:35,215 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,215 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-20 09:35:35,222 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,222 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 2945.0, 'Percent': 9.4}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3301.0, 'Percent': 10.6}]
+2026-02-20 09:35:35,230 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,230 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 16823.0, 'Percent': 66.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 9947.0, 'Percent': 84.0}]
+2026-02-20 09:35:35,235 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,235 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-20 09:35:35,240 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,240 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 1893, 'Percent': 8.8}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 3425, 'Percent': 15.9}]
+2026-02-20 09:35:35,246 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:35:35,247 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-20 09:39:57,098 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:39:57,098 - api - DEBUG - serialized sample: [{'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Estimate'}, {'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Percent'}]
+2026-02-20 09:39:57,547 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:39:57,547 - api - DEBUG - serialized sample: [{'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Estimate'}, {'table': 'DP02', 'Category': 'ANCESTRY', 'Subcategory': 'American', 'Variable': 'Total', 'Measure': 'Percent'}]
+2026-02-20 09:40:06,581 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:40:06,581 - api - DEBUG - serialized sample: [{'year': 2013, 'Value': -888888888.0}, {'year': 2014, 'Value': -888888888.0}]
+2026-02-20 09:40:06,594 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:40:06,594 - api - DEBUG - serialized sample: [{'year': 2013, 'Value': -888888888.0}, {'year': 2014, 'Value': -888888888.0}]
+2026-02-20 09:40:19,314 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:40:19,315 - api - DEBUG - serialized sample: [{'year': 2010, 'Value': 6504.0}, {'year': 2011, 'Value': 7076.0}]
+2026-02-20 09:40:19,330 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:40:19,330 - api - DEBUG - serialized sample: [{'year': 2010, 'Value': 376.0}, {'year': 2011, 'Value': 397.0}]
+2026-02-20 09:41:06,952 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:06,952 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-20 09:41:06,965 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:06,966 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 2952.0, 'Percent': 9.5}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3237.0, 'Percent': 10.4}]
+2026-02-20 09:41:06,999 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:06,999 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 23743.0, 'Percent': 15.3}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 19879.0, 'Percent': 12.8}]
+2026-02-20 09:41:07,011 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:07,011 - api - DEBUG - serialized sample: [{'year': '2010', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 2952.0, 'Percent': 9.5}, {'year': '2010', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3237.0, 'Percent': 10.4}]
+2026-02-20 09:41:42,512 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:42,512 - api - DEBUG - serialized sample: [{'year': '2011', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 91796.0, 'Percent': 71.5}, {'year': '2011', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56886.0, 'Percent': 87.9}]
+2026-02-20 09:41:42,518 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:42,518 - api - DEBUG - serialized sample: [{'year': '2011', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 16979.0, 'Percent': 67.3}, {'year': '2011', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 10209.0, 'Percent': 85.1}]
+2026-02-20 09:41:53,882 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:53,882 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-20 09:41:53,888 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:41:53,888 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 1893, 'Percent': 8.8}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 3425, 'Percent': 15.9}]
+2026-02-20 09:45:26,192 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,192 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-20 09:45:26,285 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,285 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 247874.39852173973, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 15535.416846509213, 'hex_color': '#d62728b4'}]
+2026-02-20 09:45:26,337 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,338 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 1885.0, 'Trade, Transportation & Utilities': 2106.0, 'Education & Health Services': 2332.0, 'Leisure & Hospitality': 1044.0, 'Professional & Business Services': 283.0, 'Information & Financial Activities': 570.0, 'Government': 96.0, 'Other Services': 244.0}, {'quarter_label': '2014Q2', 'Goods-producing': 1974.0, 'Trade, Transportation & Utilities': 2117.0, 'Education & Health Services': 2326.0, 'Leisure & Hospitality': 1002.0, 'Professional & Business Services': 286.0, 'Information & Financial Activities': 560.0, 'Government': 1116.0, 'Other Services': 247.0}]
+2026-02-20 09:45:26,350 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,350 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-20 09:45:26,366 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,366 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-20 09:45:26,377 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,378 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 2945.0, 'Percent': 9.4}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3301.0, 'Percent': 10.6}]
+2026-02-20 09:45:26,388 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,388 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-20 09:45:26,395 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,396 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 1893, 'Percent': 8.8}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 3425, 'Percent': 15.9}]
+2026-02-20 09:45:26,403 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,403 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-20 09:45:26,411 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,411 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 192.0, 'Percent': 2.1}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 161400.0, 'Percent': nan}]
+2026-02-20 09:45:26,428 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,428 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-20 09:45:26,434 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,434 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 16823.0, 'Percent': 66.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 9947.0, 'Percent': 84.0}]
+2026-02-20 09:45:26,440 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,440 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-20 09:45:26,445 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,445 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 44435.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 23017.0, 'Percent': nan}]
+2026-02-20 09:45:26,458 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,459 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 14773.0, 'Trade, Transportation & Utilities': 17744.0, 'Education & Health Services': 17244.0, 'Leisure & Hospitality': 9458.0, 'Professional & Business Services': 12072.0, 'Information & Financial Activities': 6359.0, 'Government': 16992.0, 'Other Services': 3004.0}, {'quarter_label': '2014Q2', 'Goods-producing': 14965.0, 'Trade, Transportation & Utilities': 18002.0, 'Education & Health Services': 17316.0, 'Leisure & Hospitality': 9847.0, 'Professional & Business Services': 12156.0, 'Information & Financial Activities': 6421.0, 'Government': 16948.0, 'Other Services': 3068.0}]
+2026-02-20 09:45:26,475 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,475 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 98119.68868421068, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 75362.31783499681, 'hex_color': '#d62728b4'}]
+2026-02-20 09:45:26,564 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,564 - api - DEBUG - serialized sample: [{'District Type': 'Mixed', 'Acres': 247874.39852173973, 'hex_color': '#1f77b4b4'}, {'District Type': 'Nonresidential', 'Acres': 15535.416846509213, 'hex_color': '#d62728b4'}]
+2026-02-20 09:45:26,606 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,607 - api - DEBUG - serialized sample: [{'quarter_label': '2014Q1', 'Goods-producing': 1885.0, 'Trade, Transportation & Utilities': 2106.0, 'Education & Health Services': 2332.0, 'Leisure & Hospitality': 1044.0, 'Professional & Business Services': 283.0, 'Information & Financial Activities': 570.0, 'Government': 96.0, 'Other Services': 244.0}, {'quarter_label': '2014Q2', 'Goods-producing': 1974.0, 'Trade, Transportation & Utilities': 2117.0, 'Education & Health Services': 2326.0, 'Leisure & Hospitality': 1002.0, 'Professional & Business Services': 286.0, 'Information & Financial Activities': 560.0, 'Government': 1116.0, 'Other Services': 247.0}]
+2026-02-20 09:45:26,614 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,614 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 2945.0, 'Percent': 9.4}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 3301.0, 'Percent': 10.6}]
+2026-02-20 09:45:26,623 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,623 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Age/Sex', 'Variable': '18 to 24', 'Value': 24510.0, 'Percent': 15.6}, {'year': '2012', 'Section': 'Age/Sex', 'Variable': '25 to 34', 'Value': 20597.0, 'Percent': 13.1}]
+2026-02-20 09:45:26,631 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,632 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 9586, 'Percent': 9.5}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 29406, 'Percent': 29.1}]
+2026-02-20 09:45:26,637 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,637 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Associate's Degree", 'Value': 1893, 'Percent': 8.8}, {'year': '2012', 'Section': 'Educational Attainment', 'Variable': "Bachelor's Degree", 'Value': 3425, 'Percent': 15.9}]
+2026-02-20 09:45:26,643 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,643 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 16823.0, 'Percent': 66.5}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 9947.0, 'Percent': 84.0}]
+2026-02-20 09:45:26,648 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,649 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Labor Force', 'Variable': 'Labor Force Participation Rate (16+)', 'Value': 92425.0, 'Percent': 71.3}, {'year': '2012', 'Section': 'Labor Force', 'Variable': 'Prime-Age Labor Force Participation Rate (25-54)', 'Value': 56972.0, 'Percent': 88.3}]
+2026-02-20 09:45:26,654 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,654 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 376.0, 'Percent': 0.9}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 266400.0, 'Percent': nan}]
+2026-02-20 09:45:26,659 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,659 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Housing', 'Variable': 'Homeowner Vacancy Rate', 'Value': 192.0, 'Percent': 2.1}, {'year': '2012', 'Section': 'Housing', 'Variable': 'Median Home Value', 'Value': 161400.0, 'Percent': nan}]
+2026-02-20 09:45:26,665 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,666 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 63900.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 33021.0, 'Percent': nan}]
+2026-02-20 09:45:26,671 - api - DEBUG - serialized type: <class 'list'>
+2026-02-20 09:45:26,671 - api - DEBUG - serialized sample: [{'year': '2012', 'Section': 'Income', 'Variable': 'Median Household Income', 'Value': 44435.0, 'Percent': nan}, {'year': '2012', 'Section': 'Income', 'Variable': 'Per Capita Income', 'Value': 23017.0, 'Percent': nan}]

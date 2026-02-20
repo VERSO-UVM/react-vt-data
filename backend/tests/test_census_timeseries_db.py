@@ -63,9 +63,7 @@ def _normalize(df: pd.DataFrame) -> pd.DataFrame:
 )
 def test_golden_output_matches(view_name: str, golden_file: str):
     """DuckDB result must match pre-migration pandas result exactly."""
-    actual = timeseries_db.query_timeseries(
-        view_name, {"Jurisdiction": [FILTER_TOWN]}
-    )
+    actual = timeseries_db.query_timeseries(view_name, {"Jurisdiction": [FILTER_TOWN]})
     expected = _load_golden(golden_file)
 
     # Align column sets (golden may have extra cols like 'Unnamed: 0' from to_csv)
@@ -149,9 +147,7 @@ def test_nonsense_filter_returns_empty():
 
 
 def test_county_filter_works():
-    df = timeseries_db.query_timeseries(
-        "unemployment_rate", {"County": ["Addison"]}
-    )
+    df = timeseries_db.query_timeseries("unemployment_rate", {"County": ["Addison"]})
     assert len(df) > 0
     assert (df["County"] == "Addison").all()
 

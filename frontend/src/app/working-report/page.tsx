@@ -45,7 +45,11 @@ export default function WorkingReport() {
       filename: 'working-report.pdf',
       image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
+      jsPDF: {
+        unit: 'mm' as const,
+        format: 'a4',
+        orientation: 'portrait' as const,
+      },
     };
 
     await html2pdf().set(options).from(chartsRef.current).save();
@@ -65,11 +69,9 @@ export default function WorkingReport() {
       flushSync(() => setIsPdfMode(true));
 
       // Small delay to let the DOM settle after the re-render
-      await new Promise((r) => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 300));
 
-      const { generateReportPdf } = await import(
-        '@/lib/pdfReport/generatePdf'
-      );
+      const { generateReportPdf } = await import('@/lib/pdfReport/generatePdf');
       await generateReportPdf(charts, chartsRef.current!, locationName);
     } catch (err) {
       console.error('[WorkingReport] PDF generation failed:', err);

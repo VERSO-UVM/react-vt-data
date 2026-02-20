@@ -1,6 +1,6 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import sys
+from logging.handlers import RotatingFileHandler
 
 
 def setup_api_logger(

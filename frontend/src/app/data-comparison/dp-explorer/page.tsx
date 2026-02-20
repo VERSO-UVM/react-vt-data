@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
 import {
   Alert,
   Center,
@@ -198,9 +199,9 @@ export default function DPExplorerPage() {
   // ---------------------------------------------------------------------------
   const [tree, setTree] = useState<TreeRow[]>([]);
   useEffect(() => {
-    fetch(`${BASE_API_URL}/load/acs5-db/dp-combined/tree`)
-      .then((r) => r.json())
-      .then((res) => setTree(res.data ?? []));
+    axios
+      .get(`${BASE_API_URL}/load/acs5-db/dp-combined/tree`)
+      .then((r) => setTree(r.data.data ?? []));
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -316,24 +317,19 @@ export default function DPExplorerPage() {
     setLoading(true);
     setError(null);
 
-    const body = (name: string) =>
-      JSON.stringify({
-        name,
-        table,
-        category,
-        subcategory,
-        variable,
-        measure,
-        year_min: 2009,
-        year_max: 2024,
-      });
-
     const post = (name: string) =>
-      fetch(`${BASE_API_URL}/load/acs5-db/dp-combined/series`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: body(name),
-      }).then((r) => r.json());
+      axios
+        .post(`${BASE_API_URL}/load/acs5-db/dp-combined/series`, {
+          name,
+          table,
+          category,
+          subcategory,
+          variable,
+          measure,
+          year_min: 2009,
+          year_max: 2024,
+        })
+        .then((r) => r.data);
 
     Promise.all([post(makeName(sideA)), post(makeName(sideB))])
       .then(([aRes, bRes]) => {

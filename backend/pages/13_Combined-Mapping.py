@@ -48,7 +48,6 @@ def main():
         if layer:
             selected_layers_toggle.append(option)
 
-
     ## get filters and then apply them
     filter_state = filter_wrapper(
         zoning_gdf,

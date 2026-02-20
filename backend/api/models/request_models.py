@@ -12,3 +12,14 @@ class FilterRequest(BaseModel):
     categories: list[str] | None = None
     table: str = "DP05"
     measure: str | None = "Percent"
+
+
+class DPSeriesRequest(BaseModel):
+    name: str
+    table: str
+    category: str
+    subcategory: str
+    variable: str
+    measure: str
+    year_min: int = 2009
+    year_max: int = 2024

@@ -7,8 +7,10 @@ Credit: Written largely by Claude, with some fine-tuning and troubleshooting by 
 """
 
 import time
+
 import pandas as pd
 import requests
+
 from app_utils.census import tidy_census
 
 API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"

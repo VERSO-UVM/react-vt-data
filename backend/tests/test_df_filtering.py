@@ -3,24 +3,27 @@ Tests for app_utils/df_filtering.py:
   FilterState (dataframe_to_tree, apply_filters, set_filters),
   filter_from_request()
 """
+
 import pandas as pd
 import pytest
 
-from app_utils.df_filtering import FilterState, filter_from_request
 from api.models.filter_models import FilterRequest
-
+from app_utils.df_filtering import FilterState, filter_from_request
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def sample_df():
-    return pd.DataFrame({
-        "County": ["Chittenden", "Chittenden", "Washington", "Washington"],
-        "Jurisdiction": ["Burlington", "Winooski", "Montpelier", "Barre City"],
-        "Value": [100, 200, 300, 400],
-    })
+    return pd.DataFrame(
+        {
+            "County": ["Chittenden", "Chittenden", "Washington", "Washington"],
+            "Jurisdiction": ["Burlington", "Winooski", "Montpelier", "Barre City"],
+            "Value": [100, 200, 300, 400],
+        }
+    )
 
 
 @pytest.fixture
@@ -31,6 +34,7 @@ def fs(sample_df):
 # ---------------------------------------------------------------------------
 # FilterState.dataframe_to_tree()
 # ---------------------------------------------------------------------------
+
 
 class TestDataframeToTree:
     def test_top_level_keys(self, fs):
@@ -56,6 +60,7 @@ class TestDataframeToTree:
 # ---------------------------------------------------------------------------
 # FilterState.apply_filters()
 # ---------------------------------------------------------------------------
+
 
 class TestApplyFilters:
     def test_no_filters_returns_full_df(self, fs, sample_df):
@@ -97,6 +102,7 @@ class TestApplyFilters:
 # FilterState.set_filters()
 # ---------------------------------------------------------------------------
 
+
 class TestSetFilters:
     def test_sets_list_value(self, fs):
         fs.set_filters({"County": ["Chittenden"]})
@@ -121,6 +127,7 @@ class TestSetFilters:
 # filter_from_request()
 # ---------------------------------------------------------------------------
 
+
 class TestFilterFromRequest:
     def test_no_filters_returns_original(self, sample_df):
         req = FilterRequest(filters={})
@@ -134,13 +141,16 @@ class TestFilterFromRequest:
         assert all(result["County"] == "Chittenden")
 
     def test_multi_filter_cascades(self, sample_df):
-        req = FilterRequest(filters={"County": ["Washington"], "Jurisdiction": ["Montpelier"]})
+        req = FilterRequest(
+            filters={"County": ["Washington"], "Jurisdiction": ["Montpelier"]}
+        )
         result = filter_from_request(sample_df, req)
         assert len(result) == 1
         assert result.iloc[0]["Jurisdiction"] == "Montpelier"
 
     def test_invalid_column_raises_http_exception(self, sample_df):
         from fastapi import HTTPException
+
         req = FilterRequest(filters={"BadColumn": ["X"]})
         with pytest.raises(HTTPException) as exc_info:
             filter_from_request(sample_df, req)
