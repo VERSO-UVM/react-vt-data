@@ -3,13 +3,33 @@ from pathlib import Path
 
 import duckdb
 from fastapi import APIRouter
+from pydantic import BaseModel
 
+from api.metadata_registry import get_metadata
 from api.models.filter_models import FilterRequest
 from api.models.response_models import make_response
+
+
+class DPSeriesRequest(BaseModel):
+    name: str
+    table: str
+    category: str
+    subcategory: str
+    variable: str
+    measure: str
+    year_min: int = 2009
+    year_max: int = 2024
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# DP-series individual tidy files (no cross-table nulls — used for dp-explorer)
+_dp_dir = Path(__file__).resolve().parent / "../../../Data/Census/ACS_5"
+dp02_path = _dp_dir / "vt_acs5_Social_data_tidy.parquet"
+dp03_path = _dp_dir / "vt_acs5_Economic_data_tidy.parquet"
+dp04_path = _dp_dir / "vt_acs5_Housing_data_tidy.parquet"
+dp05_path = _dp_dir / "vt_acs5_Demographic_data_tidy.parquet"
 
 profile_census_path = (
     Path(__file__).resolve().parent
@@ -45,6 +65,20 @@ DB.execute(f"CREATE VIEW b15003_education AS SELECT * FROM read_parquet('{b15003
 DB.execute(f"CREATE VIEW b_housing AS SELECT * FROM read_parquet('{b_housing_path}')")
 DB.execute(f"CREATE VIEW b_economic AS SELECT * FROM read_parquet('{b_economic_path}')")
 
+# Clean union of individual DP table files — zero nulls, no cross-table pollution.
+# Each file contains only its own table's rows so no WHERE Value IS NOT NULL needed.
+DB.execute(f"CREATE VIEW dp02 AS SELECT * FROM read_parquet('{dp02_path}')")
+DB.execute(f"CREATE VIEW dp03 AS SELECT * FROM read_parquet('{dp03_path}')")
+DB.execute(f"CREATE VIEW dp04 AS SELECT * FROM read_parquet('{dp04_path}')")
+DB.execute(f"CREATE VIEW dp05 AS SELECT * FROM read_parquet('{dp05_path}')")
+DB.execute(
+    "CREATE VIEW dp_combined AS "
+    "SELECT * FROM dp02 UNION ALL "
+    "SELECT * FROM dp03 UNION ALL "
+    "SELECT * FROM dp04 UNION ALL "
+    "SELECT * FROM dp05"
+)
+
 
 router = APIRouter()
 
@@ -61,7 +95,7 @@ async def tidy_demographics(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("demographics")
     return make_response(data=b_rows, metadata=metadata)
 
 
@@ -77,7 +111,7 @@ async def tidy_education(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("education")
     return make_response(data=rows, metadata=metadata)
 
 
@@ -93,7 +127,7 @@ async def tidy_housing(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("housing")
     return make_response(data=rows, metadata=metadata)
 
 
@@ -110,8 +144,11 @@ async def tidy_labor_force(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("labor_force")
     return make_response(data=rows, metadata=metadata)
+
+
+# Housing tenure endpoint removed — not needed (4.3)
 
 
 @router.post("/load/acs5-db/tidy/income")
@@ -127,5 +164,59 @@ async def tidy_income(request: FilterRequest):
     """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = {}
+    metadata = get_metadata("income")
     return make_response(data=rows, metadata=metadata)
+
+
+# ---------------------------------------------------------------------------
+# DP-series combined explorer (DP02 / DP03 / DP04 / DP05)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/load/acs5-db/dp-combined/tree")
+async def dp_combined_tree():
+    """Return the global set of distinct cascade options across all DP tables.
+    The result is location-independent (same 4,144 combos for every location)
+    and is used to drive the cascading filter UI client-side.
+    """
+    rows = DB.execute(
+        """
+        SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
+        FROM dp_combined
+        ORDER BY "table", Category, Subcategory, Variable, Measure
+        """
+    ).df()
+    return make_response(data=rows, metadata=None)
+
+
+@router.post("/load/acs5-db/dp-combined/series")
+async def dp_combined_series(request: DPSeriesRequest):
+    """Return the annual time-series for a single (location, table, Category,
+    Subcategory, Variable, Measure) selection.
+    """
+    rows = DB.execute(
+        """
+        SELECT CAST(year AS INTEGER) AS year,
+               CAST(Value AS DOUBLE) AS Value
+        FROM dp_combined
+        WHERE NAME = ?
+          AND "table" = ?
+          AND Category = ?
+          AND Subcategory = ?
+          AND Variable = ?
+          AND Measure = ?
+          AND CAST(year AS INTEGER) BETWEEN ? AND ?
+        ORDER BY year
+        """,
+        [
+            request.name,
+            request.table,
+            request.category,
+            request.subcategory,
+            request.variable,
+            request.measure,
+            request.year_min,
+            request.year_max,
+        ],
+    ).df()
+    return make_response(data=rows, metadata=None)

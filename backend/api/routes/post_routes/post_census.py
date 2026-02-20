@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from api.models.filter_models import FilterRequest
 from api.models.response_models import make_response
-from app_utils import data_loading
+from app_utils import data_loading, timeseries_db
 from app_utils.df_filtering import (
     filter_from_request,
     mass_filter_from_requests,
@@ -17,22 +17,30 @@ router = APIRouter()
 DATADIR = Path(__file__).parent.parent.parent.parent / "Data"
 CENSUS_DATADIR = DATADIR / "Census"
 
+# Maps (category, subcategory) to the timeseries_db view name.
+# These subcategories are served via DuckDB instead of pandas/CSV.
+_TIMESERIES_VIEWS: dict[tuple[str, str], str] = {
+    ("housing", "median_home_value"): "median_home_value",
+    ("housing", "median_smoc"): "median_smoc",
+    ("economic", "median_earnings"): "median_earnings",
+    ("economic", "unemployment_rate"): "unemployment_rate",
+    ("economic", "commute_habits"): "commute_habits",
+    ("economic", "commute_time"): "commute_time",
+    ("demographic", "historic_population"): "historic_population",
+}
+
 CENSUS_DATASETS = {
     "housing": {
         "main": CENSUS_DATADIR / "VT_HOUSING_ALL.fgb",
-        "median_home_value": CENSUS_DATADIR / "med_home_value_by_year.csv",
-        "median_smoc": CENSUS_DATADIR / "med_smoc_by_year.csv",
+        # time-series subcategories handled via _TIMESERIES_VIEWS / DuckDB
     },
     "economic": {
         "main": CENSUS_DATADIR / "VT_ECONOMIC_ALL.fgb",
-        "median_earnings": CENSUS_DATADIR / "median_earnings_by_year.csv",
-        "unemployment_rate": CENSUS_DATADIR / "unemployment_rate_by_year.csv",
-        "commute_habits": CENSUS_DATADIR / "commute_habits_by_year.csv",
-        "commute_time": CENSUS_DATADIR / "commute_time_by_year.csv",
+        # time-series subcategories handled via _TIMESERIES_VIEWS / DuckDB
     },
     "demographic": {
         "main": CENSUS_DATADIR / "VT_DEMOGRAPHIC_ALL.fgb",
-        "historic_population": CENSUS_DATADIR / "VT_Historic_Population.csv",
+        # time-series subcategories handled via _TIMESERIES_VIEWS / DuckDB
     },
     "social": {"main": CENSUS_DATADIR / "VT_SOCIAL_ALL.fgb"},
 }
@@ -92,6 +100,21 @@ async def read_census_data_subcat(
         raise HTTPException(
             status_code=404, detail=f"Census category '{category}' was not found"
         )
+
+    # Time-series subcategories are served via DuckDB
+    ts_key = (category, subcategory)
+    if ts_key in _TIMESERIES_VIEWS:
+        view_name = _TIMESERIES_VIEWS[ts_key]
+        filters = request.filters if request else None
+        data = timeseries_db.query_timeseries(view_name, filters)
+        if data.empty:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No data found for the given filters: {filters}",
+            )
+        return make_response(data, {})
+
+    # FGB/CSV-backed subcategories (legacy path for any remaining non-timeseries)
     if subcategory not in CENSUS_DATASETS[category]:
         raise HTTPException(
             status_code=404,

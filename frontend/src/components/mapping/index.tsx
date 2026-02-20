@@ -11,7 +11,7 @@ import type { FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 // mantine and ui
-import { Paper, Switch, Divider } from '@mantine/core';
+import { Paper, Divider } from '@mantine/core';
 
 // baseline data
 import mlinesRaw from '@/Data/municipalites.json';
@@ -23,6 +23,7 @@ const countylines: FeatureCollection = {
 
 interface MyMapProps {
   geojson: FeatureCollection | null;
+  showCountyLines: boolean;
 }
 
 const BASE_STYLES = {
@@ -48,7 +49,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-export default function VTMap({ geojson }: MyMapProps) {
+export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [baseStyle] = useState(BASE_STYLES.OSM);
   const [tooltip, setTooltip] = useState<{
@@ -56,15 +57,22 @@ export default function VTMap({ geojson }: MyMapProps) {
     y: number;
     content: any;
   } | null>(null);
-  const [showCountyLines, setShowCountyLines] = useState(true);
 
   const onViewStateChange = useCallback((params: any) => {
     const vs = params.viewState;
     setViewState({
       ...vs,
       zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
-      latitude: clamp(vs.latitude, VERMONT_BOUNDS.latitude.min, VERMONT_BOUNDS.latitude.max),
-      longitude: clamp(vs.longitude, VERMONT_BOUNDS.longitude.min, VERMONT_BOUNDS.longitude.max),
+      latitude: clamp(
+        vs.latitude,
+        VERMONT_BOUNDS.latitude.min,
+        VERMONT_BOUNDS.latitude.max,
+      ),
+      longitude: clamp(
+        vs.longitude,
+        VERMONT_BOUNDS.longitude.min,
+        VERMONT_BOUNDS.longitude.max,
+      ),
     });
   }, []);
 
@@ -82,7 +90,11 @@ export default function VTMap({ geojson }: MyMapProps) {
         highlightColor: [222, 102, 0, 200],
         onHover: (info: any) => {
           if (info.object) {
-            setTooltip({ x: info.x, y: info.y, content: info.object.properties.tooltip });
+            setTooltip({
+              x: info.x,
+              y: info.y,
+              content: info.object.properties.tooltip,
+            });
           } else {
             setTooltip(null);
           }
@@ -101,27 +113,23 @@ export default function VTMap({ geojson }: MyMapProps) {
 
   return (
     // Fill the parent container completely (parent must have position:relative and a defined height)
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
-      {/* Controls overlay bar */}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        width: '100%',
+        height: '100%',
+      }}
+    >
+      {/* Map area — fills remaining height, clips overflow */}
       <div
         style={{
-          flexShrink: 0,
-          padding: '6px 12px',
-          background: 'rgba(255,255,255,0.92)',
-          borderBottom: '1px solid var(--mantine-color-gray-3)',
-          zIndex: 10,
+          flex: 1,
+          position: 'relative',
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
-        <Switch
-          label="Show municipality boundaries"
-          size="sm"
-          checked={showCountyLines}
-          onChange={(e) => setShowCountyLines(e.currentTarget.checked)}
-        />
-      </div>
-
-      {/* Map area — fills remaining height, clips overflow */}
-      <div style={{ flex: 1, position: 'relative', minHeight: 0, overflow: 'hidden' }}>
         <DeckGL
           viewState={viewState}
           onViewStateChange={onViewStateChange}

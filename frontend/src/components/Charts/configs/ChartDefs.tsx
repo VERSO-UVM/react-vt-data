@@ -49,20 +49,18 @@ export const chartDefs: ChartDef[] = [
       { key: 'hex_color', visible: false },
     ],
   },
-  {
-    id: 'tenure',
-    title: 'Housing Tenure',
-    categories: ['Housing'],
-    xField: 'Occupied Tenure',
-    yField: 'Value',
-    subtype: 'CompareDiffPerXBarChart',
-    chartParams: {
-      colorScheme: 'schemeAccent',
-      legendLabels: ['Main', 'Compare'],
-    },
-    dataKey: 'plot_data.tenure_df',
-    url: `${BASE_API_URL}/load/census/housing/snapshot`,
-  },
+  // tenure bar chart removed — not adding enough information (4.3)
+  // {
+  //   id: 'tenure',
+  //   title: 'Housing Tenure',
+  //   categories: ['Housing'],
+  //   xField: 'Occupied Tenure',
+  //   yField: 'Value',
+  //   subtype: 'CompareDiffPerXBarChart',
+  //   chartParams: { colorScheme: 'schemeAccent', legendLabels: ['Main', 'Compare'] },
+  //   dataKey: 'plot_data.tenure_df',
+  //   url: `${BASE_API_URL}/load/census/housing/snapshot`,
+  // },
   {
     id: 'demographics',
     title: 'Demographics — Percent',
@@ -121,6 +119,7 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2012, year_max: 2023 },
     },
   },
+  // housing_tenure table removed — endpoint not needed (4.3)
   // Housing
   {
     id: 'housing',
@@ -179,6 +178,17 @@ export const chartDefs: ChartDef[] = [
     tableConfig: {
       extraParams: { year_min: 2010, year_max: 2023 },
     },
+  },
+  // Employment (QCEW quarterly, stacked by sector)
+  {
+    id: 'employment',
+    title: 'Total Employment — Four-Quarter Moving Average',
+    categories: ['Labor & Economy'],
+    xField: 'quarter_label',
+    yField: 'employment_4qma',
+    subtype: 'EmploymentAreaChart',
+    chartParams: { noViewSwitch: true },
+    url: `${BASE_API_URL}/load/qcew/employment`,
   },
   // Income
   {

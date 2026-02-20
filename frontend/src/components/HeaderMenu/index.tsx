@@ -26,10 +26,21 @@ const links = [
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
-  { link: '/data-viewer', label: 'Data Viewer' },
+  { link: '/data-viewer', label: 'Data Analysis' },
+  {
+    link: '/data-comparison',
+    label: 'Data Comparison',
+    links: [
+      {
+        link: '/data-comparison/dp-explorer',
+        label: 'Data Profile Comparison',
+      },
+      { link: '/data-comparison/b-tables', label: 'Detailed Table Comparison' },
+    ],
+  },
   { link: '/working-report', label: 'Working Report' },
   { link: '/data-export', label: 'Raw Data Export' },
-  { link: '/scratch', label: 'Scratch' },
+  // { link: '/scratch', label: 'Scratch' },
   // { link: '/about', label: 'About' },
 ];
 

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Title, Group, Container, Button } from '@mantine/core';
-import Link from 'next/link';
+import { Title, Center, Container } from '@mantine/core';
 import ExploratoryMappingGrid from '@/components/Grids/ExploratoryMappingOptions';
 
 export const links = [
@@ -12,8 +11,10 @@ export const links = [
 export default function BaseMappingPage() {
   return (
     <>
-      <Title mb={100}>Exploratory Mapping</Title>
-      
+      <Center pt="xl" mb="xl">
+        <Title order={2}>Exploratory Mapping</Title>
+      </Center>
+
       <Container>
         <ExploratoryMappingGrid links={links} />
       </Container>
@@ -22,9 +23,6 @@ export default function BaseMappingPage() {
     </>
   );
 }
-
-
-
 
 /*
 export default function BaseMappingPage() {
@@ -48,4 +46,3 @@ export default function BaseMappingPage() {
   );
 }
 */
-

@@ -4,6 +4,7 @@ import logging
 from fastapi import APIRouter
 
 from app_utils import data_loading
+from app_utils.flooding import add_flood_color
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,9 @@ def read_root():
 @router.get("/load/mapping/flood_legal")
 async def read_flood_data():
     data = data_loading.masterload(name="flood_legal")
+    # Re-apply zone-based colors at serve time so the static JSON
+    # does not need to be regenerated when the color scheme changes.
+    data = add_flood_color(data)
     return json.loads(data.to_json())
 
 

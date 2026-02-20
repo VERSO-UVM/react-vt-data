@@ -1,6 +1,13 @@
 'use client';
 
-import { Container, Group, SegmentedControl, Text } from '@mantine/core';
+import {
+  Center,
+  Container,
+  Group,
+  SegmentedControl,
+  Text,
+  Title,
+} from '@mantine/core';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -18,6 +25,9 @@ export default function DataViewerPage() {
   >({});
   const [compareChartData, setCompareChartData] = useState<
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
+  >({});
+  const [compareTableData, setCompareTableData] = useState<
+    Record<string, any[]>
   >({});
   const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
 
@@ -67,17 +77,26 @@ export default function DataViewerPage() {
     tableDefs.forEach((def) => {
       // Merge profile year range into extraParams, overriding any hardcoded defaults
       const effectiveExtra = def.tableConfig?.extraParams
-        ? { ...def.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+        ? {
+            ...def.tableConfig.extraParams,
+            year_min: yearMin,
+            year_max: yearMax,
+          }
         : { year_min: yearMin, year_max: yearMax };
       const key = `${def.url}::${JSON.stringify(effectiveExtra)}`;
       if (seen.has(key)) return;
       seen.add(key);
       const siblings = tableDefs.filter((d) => {
         const extra = d.tableConfig?.extraParams
-          ? { ...d.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+          ? {
+              ...d.tableConfig.extraParams,
+              year_min: yearMin,
+              year_max: yearMax,
+            }
           : { year_min: yearMin, year_max: yearMax };
         return `${d.url}::${JSON.stringify(extra)}` === key;
       });
+      // Primary location fetch
       applyFilters(
         def.url,
         {},
@@ -89,11 +108,40 @@ export default function DataViewerPage() {
           ),
         { name: myLocation.name, ...effectiveExtra },
       );
+      // Comparison location fetch
+      if (comparison.name) {
+        applyFilters(
+          def.url,
+          {},
+          undefined,
+          undefined,
+          (data) =>
+            siblings.forEach((d) =>
+              setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
+            ),
+          { name: comparison.name, ...effectiveExtra },
+        );
+      }
     });
-  }, [myLocation, yearMin, yearMax]);
+  }, [myLocation, comparison, yearMin, yearMax]);
 
-  const charts = nonTableDefs.map((chart) =>
-    createChartItem({
+  // QCEW employment data is county-level only; swap to a note card for town selections
+  const isSubcountyLocation = myLocation.type === 'town';
+  const employmentCounty = myLocation.county;
+
+  const charts = nonTableDefs.map((chart) => {
+    if (chart.id === 'employment' && isSubcountyLocation) {
+      return createChartItem({
+        title: myLocation.name,
+        xField: '',
+        yField: '',
+        data: [],
+        subtype: 'noteCard',
+        categories: chart.categories,
+        notes: `County-level data (${employmentCounty} County) — QCEW does not report employment at the town level.`,
+      });
+    }
+    return createChartItem({
       title: myLocation.name,
       xField: chart.xField,
       yField: chart.yField,
@@ -114,8 +162,8 @@ export default function DataViewerPage() {
       description: chart.title,
       notes: chart.notes,
       categories: chart.categories,
-    }),
-  );
+    });
+  });
 
   const tableItems = tableDefs.map((def) =>
     createTableItem({
@@ -123,6 +171,8 @@ export default function DataViewerPage() {
       description: def.title,
       data: chartData[def.id]?.data || [],
       metadata: chartData[def.id]?.metadata || [],
+      compareData: compareTableData[def.id] || [],
+      chartParams: { legendLabels: [myLocation.name, comparison.name] },
       notes: def.notes,
       subtype: def.subtype,
       trendChart: def.trendChart,
@@ -139,9 +189,23 @@ export default function DataViewerPage() {
       : allItems;
 
   return (
-    <Container size="xl">
+    <>
+      <Center pt="xl" mb="md">
+        <Title order={2}>Data Analysis</Title>
+      </Center>
       {interests.length > 0 && (
-        <Group mb="md" justify="flex-end">
+        <Group
+          mb="md"
+          justify="flex-end"
+          style={{
+            position: 'sticky',
+            top: 56,
+            zIndex: 100,
+            backgroundColor: 'var(--mantine-color-body)',
+            paddingBlock: 8,
+            paddingInline: 16,
+          }}
+        >
           <Text size="sm" c="dimmed">
             {interests.join(', ')}
           </Text>
@@ -156,7 +220,13 @@ export default function DataViewerPage() {
           />
         </Group>
       )}
-      <ChartStack charts={visibleItems} action="add" userInterests={interests} />
-    </Container>
+      <Container size="xl">
+        <ChartStack
+          charts={visibleItems}
+          action="add"
+          userInterests={interests}
+        />
+      </Container>
+    </>
   );
 }

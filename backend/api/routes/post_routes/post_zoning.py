@@ -2,26 +2,18 @@ import json
 
 from fastapi import APIRouter
 
+from api.metadata_registry import get_metadata
 from api.models import APIResponse, FilterRequest, make_response
 from app_utils import data_loading, df_filtering
 
 router = APIRouter()
 
 
-def get_zoning_metadata() -> dict:
-    ## TODO: transition this to pull from an updated registry of metadata
-    return {
-        "source": "Municipal Zoning Records",
-        "lastUpdated": "2024-12",  # or pull from df/file timestamp
-        "caveats": ["Aggregate district types may overlap in some municipalities"],
-    }
-
-
 @router.post("/load/mapping/zoning")
 async def read_zoning_data(request: FilterRequest) -> APIResponse:
     df = data_loading.masterload(name="zoning")
     df = df_filtering.filter_from_request(df, request)
-    metadata = get_zoning_metadata()
+    metadata = get_metadata("zoning")
     table_data = None
 
     if request.format == "aggregated_acres":

@@ -6,7 +6,6 @@ ORCA's goals are to produce impactful, accessible, open source research tools by
 
 Best experience is through Github Pages here: <https://verso-uvm.github.io/ORCA/>
 
-
 #### The Vermont Livability Map
 
 [Vermont Livability Map Page](https://verso-uvm.github.io/Vermont-Livability-Map/)
@@ -20,8 +19,8 @@ The Vermont Livability Map tells the story of the Vermont Zoning Atlas Project a
 The [Vermont Zoning Atlas](https://www.zoningatlas.org/vermont) is a web-based geospatial interface that visualizes zoning code distributions across all of Vermont. Zoning rules can present barriers to effective city planning, impairing our ability to achieve important policy objectives like community desegregation, climate change resiliency, transportation access, homelessness relief, and affordable housing development. The Vermont Zoning Atlas seeks to democratize researchers', policymakers', advocates', and everyday citizens' understanding of zoning regulations and enable apples-to-apples cross-jurisdiction comparisons through a methodology developed by our partner, the [National Zoning Atlas](https://www.zoningatlas.org/).
 Without this tool, one would have to read thousands of pages of dense legal code to answer simple questions - this is why we believe our tool will democratize zoning policy and make it possible for advocates and researchers to identify barriers to things like affordable housing development, climate resiliency, and community desegregation more quickly.
 
-
 #### Wastewater Infrastructure Mapping
+
 This initiative, in collaboration with the Windham Regional Commission systematically maps wastewater infrastructure data to understand its impact on economic activity and housing development. This includes finding what data is already available, working with partners to determine the format of the data to be collect, and then working with available online resources and reaching out to towns to identify and record wastewater systems.
 
 UVM students continuously compile and publish town-level wastewater infrastructure data on a publicly accessible repository, working in tandem with state agencies like the Vermont Center for Geographic Information, the Vermont Department of Environmental Conservation, and the Vermont Agency of Commerce and Community Development.
