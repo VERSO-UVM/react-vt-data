@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import html2pdf from 'html2pdf.js';
 import {
   Container,
@@ -9,23 +10,28 @@ import {
   Button,
   Center,
   Stack,
-  Card,
 } from '@mantine/core';
 import { useItems } from '@/components/ItemsProvider';
 import { ChartStack } from '@/components/Charts';
 import { useShallow } from 'zustand/shallow';
 import { ChartItem } from '@/types/cachedCharts';
+import { PdfModeContext } from '@/contexts/PdfModeContext';
 
 export default function WorkingReport() {
-  const componentRef = useRef<HTMLDivElement>(null);
+  const chartsRef = useRef<HTMLDivElement>(null);
+  const [isPdfMode, setIsPdfMode] = useState(false);
 
   const charts = useItems(
     useShallow((state) => state.items.filter((item) => item.type === 'chart')),
   ) as ChartItem<any>[];
   const len = charts.length;
 
-  const handleDownloadPdf = () => {
-    if (!componentRef.current) return;
+  const handleDownloadPdf = async () => {
+    if (!chartsRef.current) return;
+
+    // Switch to PDF mode synchronously so React re-renders SVG charts and
+    // unclips containers before html2canvas rasterizes the DOM.
+    flushSync(() => setIsPdfMode(true));
 
     const options = {
       margin: 10,
@@ -35,26 +41,32 @@ export default function WorkingReport() {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
 
-    html2pdf().set(options).from(componentRef.current).save();
+    await html2pdf().set(options).from(chartsRef.current).save();
+
+    setIsPdfMode(false);
   };
 
   return (
     <Container size="xl" py="xl">
-      <Stack spacing="xl">
-        <Center direction="column" spacing="sm">
+      <Stack gap="xl">
+        <Center>
           <Title order={2}>Working Report</Title>
         </Center>
-        <Center direction="column" spacing="sm">
-          <Text color="dimmed">{`There are currently ${len} charts in the report`}</Text>
+        <Center>
+          <Text c="dimmed">{`There are currently ${len} charts in the report`}</Text>
         </Center>
 
         <Center>
-          <Button size="md" onClick={handleDownloadPdf}>
+          <Button size="md" onClick={handleDownloadPdf} loading={isPdfMode}>
             Download PDF
           </Button>
         </Center>
 
-        <ChartStack charts={charts} action="remove" />
+        <PdfModeContext.Provider value={isPdfMode}>
+          <div ref={chartsRef}>
+            <ChartStack charts={charts} action="remove" />
+          </div>
+        </PdfModeContext.Provider>
       </Stack>
     </Container>
   );

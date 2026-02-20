@@ -24,6 +24,7 @@ import { Badge, Card, Box, Title, Stack, Text, Group } from '@mantine/core';
 import { AddChart, RemoveChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
+import { usePdfMode } from '@/contexts/PdfModeContext';
 
 // ChartCard
 interface ChartCardProps<TData extends Record<string, any>> {
@@ -40,6 +41,8 @@ export const ChartCard = <TData extends Record<string, any>>({
   matchedCategories = [],
   action = 'add',
 }: ChartCardProps<TData>) => {
+  const isPdfMode = usePdfMode();
+
   // Table-primary items (renderTable*) default to table view; charts default to chart view.
   const isTablePrimary = chart.subtype.startsWith('renderTable');
   const [view, setView] = useState<'chart' | 'table'>(
@@ -80,9 +83,12 @@ export const ChartCard = <TData extends Record<string, any>>({
       padding="lg"
       radius="md"
       withBorder
-      style={
-        isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : undefined
-      }
+      style={{
+        ...(isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : {}),
+        // Prevent page-break mid-card when printing / captured by html2pdf
+        breakInside: 'avoid',
+        pageBreakInside: 'avoid',
+      }}
     >
       <Box mb="sm">
         <Group justify="space-between" wrap="nowrap" align="flex-start">
@@ -108,19 +114,30 @@ export const ChartCard = <TData extends Record<string, any>>({
         {showViewSwitch && <ViewSwitch view={view} setView={setView} />}
       </Box>
 
-      <Box style={{ height: 400, overflow: 'auto' }}>{content}</Box>
+      {/* In PDF mode: remove the fixed height so tables/charts render fully */}
+      <Box
+        style={
+          isPdfMode
+            ? { height: 'auto', overflow: 'visible' }
+            : { height: 400, overflow: 'auto' }
+        }
+      >
+        {content}
+      </Box>
 
       <Text size="sm" c="gray.6" mt="md" ta="right">
         {chart.metadata?.source}
       </Text>
 
-      <Group mt="md">
-        {action === 'add' ? (
-          <AddChart chart={chart} />
-        ) : (
-          <RemoveChart chart={chart} />
-        )}
-      </Group>
+      {!isPdfMode && (
+        <Group mt="md">
+          {action === 'add' ? (
+            <AddChart chart={chart} />
+          ) : (
+            <RemoveChart chart={chart} />
+          )}
+        </Group>
+      )}
     </Card>
   );
 };
