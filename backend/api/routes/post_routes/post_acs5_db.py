@@ -162,6 +162,7 @@ async def dp_combined_tree():
         """
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
         FROM profile_census
+        WHERE Value IS NOT NULL
         ORDER BY "table", Category, Subcategory, Variable, Measure
         """
     ).df()
@@ -184,6 +185,7 @@ async def dp_combined_series(request: DPSeriesRequest):
           AND Subcategory = ?
           AND Variable = ?
           AND Measure = ?
+          AND Value IS NOT NULL
           AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year
         """,
