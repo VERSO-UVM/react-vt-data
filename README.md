@@ -14,13 +14,15 @@ A **React-based Website** for exploring, visualizing, and interpreting Vermont d
    ```
 
 2. **Install** python dependencies:
+   - First, set up [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) if you don't already have it.
+   - Then, use conda to set up your python environment
 
    ```sh
    cd backend
-   pip install -r requirements.txt
+   conda env create -f environment.yml
    ```
 
-3. **Install** backend react dependencies:
+4. **Install** backend react dependencies:
 
    - First, set up [npm](https://docs.npmjs.com/cli/v6/commands/npm)
    - Then, use npm to install the dependencies:
@@ -29,8 +31,16 @@ A **React-based Website** for exploring, visualizing, and interpreting Vermont d
    cd frontend
    npm install
    ```
+## Running the website locally 
 
-4. **Run** the website from the terminal:
+1. Create the **Local API** Instance in one terminal (from the project root)
+   ```sh
+   cd backend
+   conda activate leahy-data
+   uvicorn api.main:app --reload --port 6767
+   ```
+
+2. **Run** the website from **a differnent terminal instance** (from the project root):
    ```sh
    cd frontend
    npm run dev
@@ -43,11 +53,13 @@ A **React-based Website** for exploring, visualizing, and interpreting Vermont d
 
 All development must:
 
-- Use the `prettier` formatter and `eslint` linter for reliable diffs.
+- Use the `prettier` formatter and `eslint` linter for reliable diffs in typescript, and `ruff format` in python. 
 
 All development should:
 
-- Use Mantine UI where applicable.
+- Use [Mantine](https://mantine.dev/) UI where applicable.
+- Use [Axios](https://axios-http.com/docs/intro) for internal API queries (frontend requesting backend API).
+- Use [Duckdb](https://duckdb.org/) for any new data queries. 
 
 ## License
 
@@ -59,4 +71,4 @@ This project is open-source under the **MIT License**.
 
 - Developed by Ian Sargent and Fitzwilliam Keenan-Koch
 - Created under the Open Research Community Accelerator (ORCA)
-- Built using the React framework
+- Built using the React framework, with Mantine UI.
