@@ -45,28 +45,48 @@ var_groups = [
     VarGroup("Male", S, ["B01001_002E"], ["B01001_001E"]),
     VarGroup("Female", S, ["B01001_026E"], ["B01001_001E"]),
     VarGroup("Median Age", S, ["B01002_001E"], None),
-    *[VarGroup(lbl, S, _b01001_codes(m, f), ["B01001_001E"]) for lbl, m, f in _AGE_BANDS],
+    *[
+        VarGroup(lbl, S, _b01001_codes(m, f), ["B01001_001E"])
+        for lbl, m, f in _AGE_BANDS
+    ],
     # Race (B02001)
     VarGroup("White", "Race", ["B02001_002E"], ["B02001_001E"]),
     VarGroup("Black or African American", "Race", ["B02001_003E"], ["B02001_001E"]),
-    VarGroup("American Indian and Alaska Native", "Race", ["B02001_004E"], ["B02001_001E"]),
+    VarGroup(
+        "American Indian and Alaska Native", "Race", ["B02001_004E"], ["B02001_001E"]
+    ),
     VarGroup("Asian", "Race", ["B02001_005E"], ["B02001_001E"]),
-    VarGroup("Native Hawaiian and Other Pacific Islander", "Race", ["B02001_006E"], ["B02001_001E"]),
+    VarGroup(
+        "Native Hawaiian and Other Pacific Islander",
+        "Race",
+        ["B02001_006E"],
+        ["B02001_001E"],
+    ),
     VarGroup("Some other race", "Race", ["B02001_007E"], ["B02001_001E"]),
     VarGroup("Two or more races", "Race", ["B02001_008E"], ["B02001_001E"]),
     # Hispanic (B03003)
-    VarGroup("Hispanic or Latino (of any race)", "Hispanic", ["B03003_003E"], ["B03003_001E"]),
+    VarGroup(
+        "Hispanic or Latino (of any race)", "Hispanic", ["B03003_003E"], ["B03003_001E"]
+    ),
 ]
 
 fetch_specs = {
     "B01001": _all_b01001_vars(),
     "B01002": ["B01002_001E"],
     "B02001": [
-        "B02001_001E", "B02001_002E", "B02001_003E", "B02001_004E",
-        "B02001_005E", "B02001_006E", "B02001_007E", "B02001_008E",
+        "B02001_001E",
+        "B02001_002E",
+        "B02001_003E",
+        "B02001_004E",
+        "B02001_005E",
+        "B02001_006E",
+        "B02001_007E",
+        "B02001_008E",
     ],
     "B03003": ["B03003_001E", "B03003_003E"],
 }
 
 if __name__ == "__main__":
-    run_scrape(fetch_specs, var_groups, "vt_acs5_b_demographics_tidy.parquet", YEARS, GEOS)
+    run_scrape(
+        fetch_specs, var_groups, "vt_acs5_b_demographics_tidy.parquet", YEARS, GEOS
+    )

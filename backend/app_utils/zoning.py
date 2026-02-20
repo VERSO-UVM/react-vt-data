@@ -17,7 +17,6 @@ from app_utils.mapping import add_tooltip_from_dict, map_gdf_single_layer
 
 
 def process_zoning_data(gdf):
-
     """
     wrapper for all the cleaning, color, tooltip functions for zoning dataset
     """
@@ -58,7 +57,6 @@ def add_zoning_tooltip(gdf):
             "Acreage": "Acres_fmt",
         },
     )
-
 
 
 def zoning_district_map(gdf):
@@ -144,8 +142,7 @@ def compute_acerage_metrics(gdf):
         "total_acreage": df["Acres"].sum(),
         "num_districts": len(df),
         "num_residential_districts": len(df[df["District Type"] == "Residential"]),
-        "residential_acreage": df[df["District Type"] == "Residential"]["Acres"].sum()
-        
+        "residential_acreage": df[df["District Type"] == "Residential"]["Acres"].sum(),
     }
     return metrics
 
@@ -159,25 +156,25 @@ def plot_acreage(gdf):
     acres_df["Percent"] = 100 * acres_df["Acres"] / total_acres
 
     bar_chart = (
-      alt.Chart(acres_df)
-      .mark_bar()
-      .encode(
-          x=alt.X(
-            "District Type:N", 
-            sort="-y", 
-            title="District Type", 
-            axis=alt.Axis(labelAngle=0)
-          ),
-          y=alt.Y("Acres:Q", title="Acres"),
-          color=alt.Color("hex_color:N", scale=None, legend=None),
-          tooltip=[
-              "District Type",
-              alt.Tooltip("Acres:Q", format=",.0f"),
-              alt.Tooltip("Percent:Q", format=".1f", title="% of Total")
-          ],
-      )
-      .properties(height=500, title="Zoning Acreage by District Type")
-   )
+        alt.Chart(acres_df)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                "District Type:N",
+                sort="-y",
+                title="District Type",
+                axis=alt.Axis(labelAngle=0),
+            ),
+            y=alt.Y("Acres:Q", title="Acres"),
+            color=alt.Color("hex_color:N", scale=None, legend=None),
+            tooltip=[
+                "District Type",
+                alt.Tooltip("Acres:Q", format=",.0f"),
+                alt.Tooltip("Percent:Q", format=".1f", title="% of Total"),
+            ],
+        )
+        .properties(height=500, title="Zoning Acreage by District Type")
+    )
 
     return bar_chart
 

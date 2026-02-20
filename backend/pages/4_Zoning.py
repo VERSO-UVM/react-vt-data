@@ -28,7 +28,7 @@ def zoning_mapping_tab(df, color_map):
     map_col, legend_col = st.columns([4, 1])
     map_col.pydeck_chart(map, height=550)
     with legend_col:
-        render_rgba_colormap_legend(color_map) 
+        render_rgba_colormap_legend(color_map)
 
 
 def zoning_report_tab(df, metrics):
@@ -39,21 +39,13 @@ def zoning_report_tab(df, metrics):
 
 def render_general_metrics(df, metrics):
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric(
-        label="**Districts**",
-        value=metrics['num_districts']
-    )
-    col2.metric(
-        label="**Total Acreage**",
-        value=f"{metrics['total_acreage']:,.0f}"
-    )
+    col1.metric(label="**Districts**", value=metrics["num_districts"])
+    col2.metric(label="**Total Acreage**", value=f"{metrics['total_acreage']:,.0f}")
     col3.metric(
-        label="**Residential Districts**",
-        value=metrics['num_residential_districts']
+        label="**Residential Districts**", value=metrics["num_residential_districts"]
     )
     col4.metric(
-        label="**Residential Acreage**",
-        value=f"{metrics['residential_acreage']:,.0f}"
+        label="**Residential Acreage**", value=f"{metrics['residential_acreage']:,.0f}"
     )
 
 
@@ -89,17 +81,25 @@ def main():
     )
     # Apply the selected filters
     filtered_gdf = filter_state.apply_filters(zoning_gdf)
-    
+
     # Define zoning tabs
-    mapping, report = st.tabs(["Map", "Report",])
-    
+    mapping, report = st.tabs(
+        [
+            "Map",
+            "Report",
+        ]
+    )
+
     # The color map to use for the map legend
-    color_map = dict(zip(zoning_gdf['District Type'], zoning_gdf['rgba_color'], strict=False))
-    
+    color_map = dict(
+        zip(zoning_gdf["District Type"], zoning_gdf["rgba_color"], strict=False)
+    )
+
     with mapping:
-        zoning_mapping_tab(filtered_gdf, color_map)  
-    with report: 
+        zoning_mapping_tab(filtered_gdf, color_map)
+    with report:
         zoning_report_tab(filtered_gdf, compute_acerage_metrics(filtered_gdf))
+
 
 if __name__ == "__main__":
     streamlit_config()

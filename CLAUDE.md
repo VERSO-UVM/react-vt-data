@@ -6,19 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Vermont Data Exploration App — a full-stack web application for visualizing Vermont livability indicators (housing, demographics, zoning, flood hazard, soil suitability). Targeted at non-technical users such as Regional Planning Commissions, Select Boards, developers, and reporters.
 
-### Project Goals
+## Tips
 
-* Replicate Annual Report in `design/Addison County Annual Report 2022 (1).docx`, both interactive and as PDF
-    * Eventually, much better PDF rendering
-* Eventually, work towards smooth pipelines, with purely SQL // duckdb backends 
-* Place for data export, visualization, analysis, new indicators, dissimulation of old indicators, etc. 
-
-## Tips 
-* Use `conda activate leahy_data` before executing any python commands to try stuff.
+- Use `conda activate leahy_data` before executing any python commands to try stuff.
 
 ## Commands
 
 ### Frontend (Next.js, `frontend/`)
+
 ```bash
 npm run dev          # Dev server on localhost:3000
 npm run build        # Production build (Turbopack)
@@ -28,6 +23,7 @@ npm run format:check # Check formatting without modifying
 ```
 
 ### Backend (FastAPI, `backend/`)
+
 ```bash
 uvicorn api.main:app --reload --port 6767  # API server on localhost:6767
 pip install -r requirements.txt            # Install dependencies
@@ -39,13 +35,15 @@ streamlit run Home.py                      # Legacy Streamlit interface (not pri
 ### Frontend (`frontend/src/`)
 
 **Next.js App Router pages:**
+
 - `app/page.tsx` — Home/landing
 - `app/data-viewer/page.tsx` — Auto-generated charts/tables from a selected profile
 - `app/mapping/[slug]/page.tsx` — Dynamic map pages (zoning, soil-suitability, flood-insurance)
-- `app/working-report/page.tsx` — PDF export of saved charts via `html2pdf.js`; users can save 
+- `app/working-report/page.tsx` — PDF export of saved charts via `html2pdf.js`; users can save
 - `app/data-export/page.tsx` — Raw data download
 
 **Key components:**
+
 - `components/Charts/` — Chart rendering (DualLine, Bar, DemographicsTable, ChartStack). Chart configs are centralized in `components/Charts/configs/ChartDefs.tsx`.
 - `components/FilterUI/` — Hierarchical filter UI. `useApplyFilters.ts` handles backend calls; `FilterContext.tsx` holds filter state.
 - `components/ItemsProvider/index.tsx` — Zustand store (localStorage-persisted) for the working report item list.
@@ -63,6 +61,7 @@ streamlit run Home.py                      # Legacy Streamlit interface (not pri
 **FastAPI app:** `api/main.py` — CORS configured for `localhost:3000`. Registers GET and POST routers.
 
 **Routes:**
+
 - `api/routes/get_routes/get_filters.py` — `GET /load/mapping/{dataset}/filters` — returns hierarchical filter tree
 - `api/routes/get_routes/get_wholedata.py` — full dataset fetch with optional filters
 - `api/routes/post_routes/post_census.py` — Census/ACS-5 data
@@ -71,6 +70,7 @@ streamlit run Home.py                      # Legacy Streamlit interface (not pri
 **Response model:** `api/models/response_models.py` — `APIResponse` with `data`, `tableData`, and `metadata` fields.
 
 **Data utilities (`app_utils/`):**
+
 - `data_loading.py` — `masterload()` loads CSV/Parquet/FGB/GeoJSON, handles geometry/CRS
 - `df_filtering.py` — `FilterState` class for hierarchical filtering
 - `constants/dataset_sources.py` — Dataset path definitions

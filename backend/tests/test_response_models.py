@@ -2,15 +2,16 @@
 Tests for api/models/response_models.py:
   serialize_data(), make_response(), APIResponse
 """
+
 import pandas as pd
 import pytest
 
 from api.models.response_models import APIResponse, make_response, serialize_data
 
-
 # ---------------------------------------------------------------------------
 # serialize_data()
 # ---------------------------------------------------------------------------
+
 
 class TestSerializeData:
     def test_dataframe_to_records(self):
@@ -35,6 +36,7 @@ class TestSerializeData:
         """GeoDataFrame with geometry column should serialize without it."""
         gpd = pytest.importorskip("geopandas")
         from shapely.geometry import Point
+
         gdf = gpd.GeoDataFrame(
             {"name": ["Burlington"], "pop": [44000]},
             geometry=[Point(-73.2, 44.5)],
@@ -49,6 +51,7 @@ class TestSerializeData:
 # ---------------------------------------------------------------------------
 # make_response()
 # ---------------------------------------------------------------------------
+
 
 class TestMakeResponse:
     def test_basic_dataframe(self):
@@ -81,6 +84,7 @@ class TestMakeResponse:
 # ---------------------------------------------------------------------------
 # APIResponse model
 # ---------------------------------------------------------------------------
+
 
 class TestAPIResponse:
     def test_defaults(self):

@@ -23,7 +23,9 @@ var_groups = [
     VarGroup("Total Housing Units", S, ["B25001_001E"], None),
     VarGroup("Median Home Value", S, ["B25077_001E"], None),
     # Homeowner vacancy: for-sale vacant / (owner-occupied + for-sale vacant)
-    VarGroup("Homeowner Vacancy Rate", S, ["B25004_004E"], ["B25003_002E", "B25004_004E"]),
+    VarGroup(
+        "Homeowner Vacancy Rate", S, ["B25004_004E"], ["B25003_002E", "B25004_004E"]
+    ),
     # Rental vacancy: for-rent vacant / (renter-occupied + for-rent vacant)
     VarGroup("Rental Vacancy Rate", S, ["B25004_002E"], ["B25003_003E", "B25004_002E"]),
     # Renter-occupied as % of all occupied units

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Center,
   Container,
@@ -90,15 +91,9 @@ export default function DataComparisonPage() {
     setError(null);
 
     const fetchOne = (name: string) =>
-      fetch(cfg.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          year_min: cfg.yearMin,
-          year_max: cfg.yearMax,
-        }),
-      }).then((r) => r.json());
+      axios
+        .post(cfg.url, { name, year_min: cfg.yearMin, year_max: cfg.yearMax })
+        .then((r) => r.data);
 
     Promise.all([fetchOne(myLocation.name), fetchOne(comparison.name)])
       .then(([primary, comp]) => {

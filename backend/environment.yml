@@ -32,9 +32,9 @@ dependencies:
   - brotli-python=1.1.0=py311hfdbb021_3
   - bzip2=1.0.8=h4bc722e_7
   - c-ares=1.34.5=hb9d3cd8_0
-  - ca-certificates=2025.6.15=hbd8a1cb_0
+  - ca-certificates=2026.1.4=hbd8a1cb_0
   - cairo=1.18.4=h3394656_0
-  - certifi=2025.6.15=pyhd8ed1ab_0
+  - certifi=2026.1.4=pyhd8ed1ab_0
   - cffi=1.17.1=py311hf29c0ef_0
   - charset-normalizer=3.4.2=pyhd8ed1ab_0
   - comm=0.2.2=pyhd8ed1ab_1
@@ -178,7 +178,7 @@ dependencies:
   - nlohmann_json=3.12.0=h3f2d84a_0
   - openjpeg=2.5.3=h5fbd93e_0
   - openldap=2.6.10=he970967_0
-  - openssl=3.5.1=h7b32b05_0
+  - openssl=3.6.1=h35e630c_1
   - orc=2.1.2=h17f744e_0
   - packaging=25.0=pyh29332c3_1
   - pandas=2.3.0=py311h7db5c69_0
@@ -197,6 +197,7 @@ dependencies:
   - pthread-stubs=0.4=hb9d3cd8_1002
   - ptyprocess=0.7.0=pyhd8ed1ab_1
   - pure_eval=0.2.3=pyhd8ed1ab_1
+  - pyarrow-core=20.0.0=py311h342b5a4_2_cpu
   - pycparser=2.22=pyh29332c3_1
   - pygments=2.19.2=pyhd8ed1ab_0
   - pyogrio=0.11.0=py311h75bf2cc_1
@@ -206,11 +207,14 @@ dependencies:
   - pysocks=1.7.1=pyha55dd90_7
   - python=3.11.13=h9e4cc4f_0_cpython
   - python-dateutil=2.9.0.post0=pyhe01879c_2
+  - python-duckdb=1.4.3=py311h7354ed3_0
   - python-tzdata=2025.2=pyhd8ed1ab_0
   - python_abi=3.11=7_cp311
   - pytz=2025.2=pyhd8ed1ab_0
+  - pyyaml=6.0.2=py311h5eee18b_0
   - pyzmq=27.0.0=py311h7deb3e3_0
   - qhull=2020.2=h434a139_5
+  - qrcode=8.2=py311h06a4308_0
   - qt6-main=6.9.1=h0384650_1
   - re2=2025.06.26=h9925aae_0
   - readline=8.2=h8c095d6_2
@@ -259,6 +263,7 @@ dependencies:
   - xorg-libxtst=1.2.5=hb9d3cd8_3
   - xorg-libxxf86vm=1.1.6=hb9d3cd8_0
   - xyzservices=2025.4.0=pyhd8ed1ab_0
+  - yaml=0.2.5=h7b6447c_0
   - zeromq=4.3.5=h3b0a872_7
   - zipp=3.23.0=pyhd8ed1ab_0
   - zlib=1.3.1=hb9d3cd8_2
@@ -268,6 +273,7 @@ dependencies:
       - altair==5.5.0
       - altex==0.2.0
       - annotated-types==0.7.0
+      - anyio==4.10.0
       - anywidget==0.9.18
       - asn1crypto==1.5.1
       - attrs==25.3.0
@@ -281,20 +287,31 @@ dependencies:
       - cloudpickle==3.0.0
       - cryptography==45.0.4
       - dacite==1.9.2
+      - dnspython==2.7.0
       - duckdb==1.3.1
+      - email-validator==2.2.0
       - entrypoints==0.4
       - et-xmlfile==2.0.0
       - eval-type-backport==0.2.2
       - faker==37.4.0
+      - fastapi==0.116.1
+      - fastapi-cli==0.0.8
+      - fastapi-cloud-cli==0.1.5
       - favicon==0.7.0
       - filelock==3.18.0
       - gdown==5.2.0
       - geojson==3.2.0
+      - git-filter-repo==2.47.0
       - gitdb==4.0.12
       - gitpython==3.1.44
+      - h11==0.16.0
       - htbuilder==0.9.0
       - htmlmin==0.1.12
+      - httpcore==1.0.9
+      - httptools==0.6.4
+      - httpx==0.28.1
       - imagehash==4.3.1
+      - iniconfig==2.3.0
       - ipyevents==2.0.2
       - ipyfilechooser==0.6.0
       - ipyleaflet==0.20.0
@@ -314,8 +331,10 @@ dependencies:
       - lxml==6.0.0
       - maplibre==0.3.4
       - markdown==3.8.2
+      - markdown-it-py==4.0.0
       - markdownlit==0.0.7
       - matplotlib==3.10.0
+      - mdurl==0.1.2
       - multimethod==1.12
       - narwhals==1.44.0
       - numba==0.61.0
@@ -324,6 +343,7 @@ dependencies:
       - patsy==1.0.1
       - phik==0.12.4
       - plotly==6.2.0
+      - pluggy==1.6.0
       - prometheus-client==0.22.1
       - protobuf==5.29.5
       - psygnal==0.13.0
@@ -338,23 +358,33 @@ dependencies:
       - pyreadstat==1.3.0
       - pystac==1.13.0
       - pystac-client==0.8.6
+      - pytest==9.0.2
       - python-box==7.3.2
       - python-decouple==3.8
+      - python-dotenv==1.1.1
+      - python-multipart==0.0.20
       - pywavelets==1.8.0
-      - pyyaml==6.0.2
       - referencing==0.36.2
+      - rich==14.1.0
+      - rich-toolkit==0.15.0
+      - rignore==0.6.4
       - rpds-py==0.25.1
+      - ruff==0.12.9
       - s3transfer==0.13.0
       - scipy==1.15.3
       - scooby==0.10.1
       - seaborn==0.13.2
+      - sentry-sdk==2.34.1
+      - shellingham==1.5.4
       - smmap==5.0.2
+      - sniffio==1.3.1
       - snowflake-connector-python==3.15.0
       - snowflake-snowpark-python==1.33.0
       - sortedcontainers==2.4.0
       - soupsieve==2.7
       - st-annotated-text==4.0.2
       - st-theme==1.2.3
+      - starlette==0.47.2
       - statsmodels==0.14.4
       - streamlit==1.46.1
       - streamlit-aggrid==1.1.6
@@ -376,11 +406,16 @@ dependencies:
       - tqdm==4.67.1
       - traittypes==0.2.1
       - typeguard==4.4.4
+      - typer==0.16.0
       - typing-inspection==0.4.1
       - tzlocal==5.3.1
+      - uvicorn==0.35.0
+      - uvloop==0.21.0
       - validators==0.35.0
       - visions==0.8.1
       - watchdog==6.0.0
+      - watchfiles==1.1.0
+      - websockets==15.0.1
       - whitebox==2.3.6
       - whiteboxgui==2.3.0
       - widgetsnbextension==4.0.14

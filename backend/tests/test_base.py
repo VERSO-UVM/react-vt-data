@@ -2,15 +2,16 @@
 Tests for data_collection/base.py:
   pct(), VarGroup, compute_tidy_generic()
 """
+
 import pandas as pd
 import pytest
 
 from data_collection.base import VarGroup, compute_tidy_generic, pct
 
-
 # ---------------------------------------------------------------------------
 # pct()
 # ---------------------------------------------------------------------------
+
 
 class TestPct:
     def test_normal(self):
@@ -40,6 +41,7 @@ class TestPct:
 # VarGroup
 # ---------------------------------------------------------------------------
 
+
 class TestVarGroup:
     def test_basic_construction(self):
         vg = VarGroup("My Label", "My Section", ["B01001_001E"])
@@ -60,6 +62,7 @@ class TestVarGroup:
 # ---------------------------------------------------------------------------
 # compute_tidy_generic()
 # ---------------------------------------------------------------------------
+
 
 def _make_df(**extra_cols):
     """Helper to build a minimal raw fetch DataFrame."""
@@ -132,14 +135,19 @@ class TestComputeTidyGeneric:
         assert row["county"] == "007"
 
     def test_multiple_geographies(self):
-        df = pd.DataFrame({
-            "year": [2020, 2020],
-            "geo_type": ["county", "county_subdivision"],
-            "NAME": ["Chittenden County, Vermont", "Burlington city, Chittenden County, Vermont"],
-            "state": ["50", "50"],
-            "county": ["007", "007"],
-            "B01001_001E": [170000.0, 44000.0],
-        })
+        df = pd.DataFrame(
+            {
+                "year": [2020, 2020],
+                "geo_type": ["county", "county_subdivision"],
+                "NAME": [
+                    "Chittenden County, Vermont",
+                    "Burlington city, Chittenden County, Vermont",
+                ],
+                "state": ["50", "50"],
+                "county": ["007", "007"],
+                "B01001_001E": [170000.0, 44000.0],
+            }
+        )
         groups = [VarGroup("Population", "Demo", ["B01001_001E"])]
         result = compute_tidy_generic(df, groups)
         assert len(result) == 2

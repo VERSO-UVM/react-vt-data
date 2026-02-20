@@ -26,22 +26,38 @@ SL = "Labor Force"
 SI = "Income"
 
 _PRIME_IN_LF = [
-    "B23001_025E", "B23001_032E", "B23001_039E", "B23001_046E",  # male 25-54
-    "B23001_111E", "B23001_118E", "B23001_125E", "B23001_132E",  # female 25-54
+    "B23001_025E",
+    "B23001_032E",
+    "B23001_039E",
+    "B23001_046E",  # male 25-54
+    "B23001_111E",
+    "B23001_118E",
+    "B23001_125E",
+    "B23001_132E",  # female 25-54
 ]
 _PRIME_TOTAL = [
-    "B23001_024E", "B23001_031E", "B23001_038E", "B23001_045E",  # male 25-54
-    "B23001_110E", "B23001_117E", "B23001_124E", "B23001_131E",  # female 25-54
+    "B23001_024E",
+    "B23001_031E",
+    "B23001_038E",
+    "B23001_045E",  # male 25-54
+    "B23001_110E",
+    "B23001_117E",
+    "B23001_124E",
+    "B23001_131E",  # female 25-54
 ]
 
 var_groups = [
     VarGroup(
-        "Labor Force Participation Rate (16+)", SL,
-        ["B23025_002E"], ["B23025_001E"],
+        "Labor Force Participation Rate (16+)",
+        SL,
+        ["B23025_002E"],
+        ["B23025_001E"],
     ),
     VarGroup(
-        "Prime-Age Labor Force Participation Rate (25-54)", SL,
-        _PRIME_IN_LF, _PRIME_TOTAL,
+        "Prime-Age Labor Force Participation Rate (25-54)",
+        SL,
+        _PRIME_IN_LF,
+        _PRIME_TOTAL,
     ),
     VarGroup("Median Household Income", SI, ["B19013_001E"], None),
     VarGroup("Per Capita Income", SI, ["B19301_001E"], None),

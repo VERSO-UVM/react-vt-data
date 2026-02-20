@@ -108,25 +108,24 @@ def safe_altair_plot(plot, data_type, chart_col=False):
 
 
 def donut_chart(
-  source, 
-  colorColumnName, 
-  height=300, 
-  width=300, 
-  innerRadius=90, 
-  fontSize=40, 
-  title_size=14, 
-  fill="mediumseagreen", 
-  title="Donut Chart", 
-  stat=0, 
-  text_color="grey", 
-  inverse=False
+    source,
+    colorColumnName,
+    height=300,
+    width=300,
+    innerRadius=90,
+    fontSize=40,
+    title_size=14,
+    fill="mediumseagreen",
+    title="Donut Chart",
+    stat=0,
+    text_color="grey",
+    inverse=False,
 ):
-    
     if inverse:
-        range=["whitesmoke", fill]
+        range = ["whitesmoke", fill]
         source = source.sort_values(by=colorColumnName, ascending=False)
     else:
-        range=[fill, "whitesmoke"]
+        range = [fill, "whitesmoke"]
         source = source.sort_values(by="Value", ascending=True)
 
     donut = (
@@ -158,90 +157,85 @@ def donut_chart(
 
     # Layer the donut and the label
     donut_chart = (
-      alt.layer(donut, center_label)
-      .properties(title=title)
-      .configure_title(fontSize=title_size, anchor="middle")
+        alt.layer(donut, center_label)
+        .properties(title=title)
+        .configure_title(fontSize=title_size, anchor="middle")
     )
-    
+
     return donut_chart
 
 
 def bar_chart(
-    source, 
-    x_col, 
-    y_col="Count", 
-    title_geo="", 
-    xType=":N", 
-    yType=":Q", 
-    y_tooltip_format=",.0f", 
-    y_axis_format=",.0f", 
-    x_label_angle=-50, 
-    fill="mediumseagreen", 
-    height=400, 
-    width=400, 
-    bar_width=60, 
-    title="Bar Chart", 
-    title_size=17, 
+    source,
+    x_col,
+    y_col="Count",
+    title_geo="",
+    xType=":N",
+    yType=":Q",
+    y_tooltip_format=",.0f",
+    y_axis_format=",.0f",
+    x_label_angle=-50,
+    fill="mediumseagreen",
+    height=400,
+    width=400,
+    bar_width=60,
+    title="Bar Chart",
+    title_size=17,
     distribution=True,
-    x_label_size=10.5, 
-    sort_order=None
-  ):
-    
+    x_label_size=10.5,
+    sort_order=None,
+):
     tooltip_list = [x_col, alt.Tooltip(y_col, format=y_tooltip_format)]
-    
-    
+
     if sort_order is None:
         sort_order = source[x_col].tolist()
-    
+
     if y_col == "Count":
         source = source.groupby(x_col).size().reset_index(name="Count")
     else:
         source = source.copy()
-    
-    
+
     if distribution:
         source[f"% of {y_col}"] = source[y_col] / source[y_col].sum()
         tooltip_list.append(alt.Tooltip(f"% of {y_col}", format=".1%"))
-    
+
     bar_chart = (
-      alt.Chart(source)
-      .mark_bar()
-      .encode(
-          x=alt.X(
-            f"{x_col}{xType}", 
-            sort=sort_order,
-            axis=alt.Axis(
-                labelAngle=x_label_angle, 
-                labelFont="Helvetica Neue", 
-                labelFontWeight='normal', 
-                labelFontSize=x_label_size, 
-                titleFont="Helvetica Neue"
+        alt.Chart(source)
+        .mark_bar()
+        .encode(
+            x=alt.X(
+                f"{x_col}{xType}",
+                sort=sort_order,
+                axis=alt.Axis(
+                    labelAngle=x_label_angle,
+                    labelFont="Helvetica Neue",
+                    labelFontWeight="normal",
+                    labelFontSize=x_label_size,
+                    titleFont="Helvetica Neue",
+                ),
             ),
-          ),
-        y=alt.Y(
-            f"{y_col}{yType}", 
-            axis=alt.Axis(
-                labelFont="Helvetica Neue", 
-                labelFontWeight='normal', 
-                titleFont="Helvetica Neue", 
-                format=y_axis_format
+            y=alt.Y(
+                f"{y_col}{yType}",
+                axis=alt.Axis(
+                    labelFont="Helvetica Neue",
+                    labelFontWeight="normal",
+                    titleFont="Helvetica Neue",
+                    format=y_axis_format,
+                ),
             ),
-        ),
-        tooltip=tooltip_list,
-      )
-      .configure_mark(color=fill, width=bar_width)
-      .properties(
-        height=height, 
-        width=width, 
-        title=alt.Title(
-          f"{title} | {title_geo}", 
-          anchor='middle', 
-          fontSize=title_size
-        ),
-      )
-      .interactive()
+            tooltip=tooltip_list,
+        )
+        .configure_mark(color=fill, width=bar_width)
+        .properties(
+            height=height,
+            width=width,
+            title=alt.Title(
+                f"{title} | {title_geo}", anchor="middle", fontSize=title_size
+            ),
+        )
+        .interactive()
     )
-    
+
     return bar_chart
 
 

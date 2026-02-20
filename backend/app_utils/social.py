@@ -38,11 +38,11 @@ def social_df_metric_dict(filtered_gdf_2023):
 
 
 def social_snapshot(social_dfs):
-    st.markdown(
-       open("under_construction.html").read(), unsafe_allow_html=True
-    )
+    st.markdown(open("under_construction.html").read(), unsafe_allow_html=True)
 
     # social_snapshot_header()
+
+
 #     # Filter the dataframes using select boxes for "County" and "Jurisdiction"
 #     filtered_dfs, selected_values = filter_snapshot_data(
 #         social_dfs, key_df=social_dfs["social_2023"]

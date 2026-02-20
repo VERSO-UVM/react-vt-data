@@ -10,7 +10,7 @@ Then calls run_scrape(fetch_specs, var_groups, output_filename).
 """
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pandas as pd
 import requests

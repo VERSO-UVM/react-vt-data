@@ -2,8 +2,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from api.models.filter_models import FilterRequest
-from api.models.response_models import make_response
+from api.models import FilterRequest, make_response
 from app_utils import data_loading, timeseries_db
 from app_utils.df_filtering import (
     filter_from_request,

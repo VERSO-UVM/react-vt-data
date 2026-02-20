@@ -52,25 +52,25 @@ VT_COUNTIES: dict[str, str] = {
 # 2-digit NAICS industry_code → display sector label
 # Private-sector breakdown (agglvl=74, own=5)
 SECTOR_MAP: dict[str, str] = {
-    "11": "Goods-producing",        # Agriculture, Forestry, Fishing
-    "21": "Goods-producing",        # Mining
+    "11": "Goods-producing",  # Agriculture, Forestry, Fishing
+    "21": "Goods-producing",  # Mining
     "22": "Trade, Transportation & Utilities",  # Utilities
-    "23": "Goods-producing",        # Construction
-    "31-33": "Goods-producing",     # Manufacturing
+    "23": "Goods-producing",  # Construction
+    "31-33": "Goods-producing",  # Manufacturing
     "42": "Trade, Transportation & Utilities",  # Wholesale Trade
     "44-45": "Trade, Transportation & Utilities",  # Retail Trade
     "48-49": "Trade, Transportation & Utilities",  # Transportation & Warehousing
-    "51": "Information & Financial Activities",    # Information
-    "52": "Information & Financial Activities",    # Finance & Insurance
-    "53": "Information & Financial Activities",    # Real Estate
-    "54": "Professional & Business Services",      # Professional, Scientific & Tech
-    "55": "Professional & Business Services",      # Management of Companies
-    "56": "Professional & Business Services",      # Administrative & Support
-    "61": "Education & Health Services",           # Educational Services
-    "62": "Education & Health Services",           # Health Care & Social Assistance
-    "71": "Leisure & Hospitality",                 # Arts, Entertainment & Recreation
-    "72": "Leisure & Hospitality",                 # Accommodation & Food Services
-    "81": "Other Services",                        # Other Services (excl. Public Admin)
+    "51": "Information & Financial Activities",  # Information
+    "52": "Information & Financial Activities",  # Finance & Insurance
+    "53": "Information & Financial Activities",  # Real Estate
+    "54": "Professional & Business Services",  # Professional, Scientific & Tech
+    "55": "Professional & Business Services",  # Management of Companies
+    "56": "Professional & Business Services",  # Administrative & Support
+    "61": "Education & Health Services",  # Educational Services
+    "62": "Education & Health Services",  # Health Care & Social Assistance
+    "71": "Leisure & Hospitality",  # Arts, Entertainment & Recreation
+    "72": "Leisure & Hospitality",  # Accommodation & Food Services
+    "81": "Other Services",  # Other Services (excl. Public Admin)
 }
 
 # Display order for the stacked chart (bottom → top)
@@ -145,12 +145,16 @@ def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
             else:
                 for col in ["month1_emplvl", "month2_emplvl", "month3_emplvl"]:
                     df[col] = df[col].apply(parse_empl)
-            df["employment"] = df[["month1_emplvl", "month2_emplvl", "month3_emplvl"]].mean(
-                axis=1
-            )
+            df["employment"] = df[
+                ["month1_emplvl", "month2_emplvl", "month3_emplvl"]
+            ].mean(axis=1)
 
-            base = {"County": county_name, "year": year, "quarter": quarter,
-                    "quarter_label": f"{year}Q{quarter}"}
+            base = {
+                "County": county_name,
+                "year": year,
+                "quarter": quarter,
+                "quarter_label": f"{year}Q{quarter}",
+            }
 
             # --- Total employment (agglvl=70, own=0, industry=10) ---
             total_row = df[
@@ -159,8 +163,13 @@ def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
                 & (df["industry_code"] == "10")
             ]
             if not total_row.empty:
-                rows.append({**base, "sector": "Total",
-                              "employment": total_row["employment"].iloc[0]})
+                rows.append(
+                    {
+                        **base,
+                        "sector": "Total",
+                        "employment": total_row["employment"].iloc[0],
+                    }
+                )
 
             # --- Government: federal + state + local (agglvl=71, own=1/2/3, industry=10) ---
             gov_rows = df[
@@ -173,10 +182,7 @@ def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
                 rows.append({**base, "sector": "Government", "employment": gov_empl})
 
             # --- Private sector NAICS sectors (agglvl=74, own=5) ---
-            private_rows = df[
-                (df["agglvl_code"] == "74")
-                & (df["own_code"] == "5")
-            ]
+            private_rows = df[(df["agglvl_code"] == "74") & (df["own_code"] == "5")]
             for _, row in private_rows.iterrows():
                 code = row["industry_code"]
                 sector = SECTOR_MAP.get(code)
@@ -191,11 +197,9 @@ def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
 
     # Sum sub-sectors that share the same sector label (e.g. multiple NAICS → "Goods-producing")
     # min_count=1 preserves NaN when ALL sub-sectors are suppressed (not just some)
-    df_out = (
-        df_out.groupby(
-            ["County", "year", "quarter", "quarter_label", "sector"], as_index=False
-        )["employment"].sum(min_count=1)
-    )
+    df_out = df_out.groupby(
+        ["County", "year", "quarter", "quarter_label", "sector"], as_index=False
+    )["employment"].sum(min_count=1)
     df_out.sort_values(["sector", "year", "quarter"], inplace=True)
     df_out.reset_index(drop=True, inplace=True)
 

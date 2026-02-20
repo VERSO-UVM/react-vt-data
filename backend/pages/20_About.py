@@ -18,7 +18,7 @@ def about():
         "<h2 style='color: #4a4a4a; font-family: Helvetica; font-weight: 300;'>About the Project</h2>",
         unsafe_allow_html=True,
     )
-    
+
     with open("pages/about.md") as f:
         html_content = markdown.markdown(f.read())
 

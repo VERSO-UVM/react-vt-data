@@ -66,10 +66,11 @@ def add_tooltip_from_dict(gdf, label_to_col, gdf_name=None):
     """
     Adds a tooltip column (for pydeck) using a dictionary with format {"label": "column_name"}.
     Optionally includes the gdf_name as the top line with a sepsarator.
-     
-    Note: this has been altered from the streamlit version to create tooltips that will work in 
+
+    Note: this has been altered from the streamlit version to create tooltips that will work in
     html
     """
+
     def format_tooltip(row):
         tooltip_dict = {}
         if gdf_name:
@@ -80,7 +81,6 @@ def add_tooltip_from_dict(gdf, label_to_col, gdf_name=None):
 
     gdf["tooltip"] = gdf.apply(format_tooltip, axis=1)
     return gdf
-
 
 
 def multi_layer_map(gdfs):

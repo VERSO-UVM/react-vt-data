@@ -3,22 +3,9 @@ from pathlib import Path
 
 import duckdb
 from fastapi import APIRouter
-from pydantic import BaseModel
 
 from api.metadata_registry import get_metadata
-from api.models.filter_models import FilterRequest
-from api.models.response_models import make_response
-
-
-class DPSeriesRequest(BaseModel):
-    name: str
-    table: str
-    category: str
-    subcategory: str
-    variable: str
-    measure: str
-    year_min: int = 2009
-    year_max: int = 2024
+from api.models import DPSeriesRequest, FilterRequest, make_response
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +48,9 @@ DB.execute(
     f"CREATE VIEW profile_census AS SELECT * FROM read_parquet('{profile_census_path}')"
 )
 DB.execute(f"CREATE VIEW b10_census AS SELECT * FROM read_parquet('{b10_census_path}')")
-DB.execute(f"CREATE VIEW b15003_education AS SELECT * FROM read_parquet('{b15003_census_path}')")
+DB.execute(
+    f"CREATE VIEW b15003_education AS SELECT * FROM read_parquet('{b15003_census_path}')"
+)
 DB.execute(f"CREATE VIEW b_housing AS SELECT * FROM read_parquet('{b_housing_path}')")
 DB.execute(f"CREATE VIEW b_economic AS SELECT * FROM read_parquet('{b_economic_path}')")
 
