@@ -24,6 +24,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# DP-series individual tidy files (no cross-table nulls — used for dp-explorer)
+_dp_dir = Path(__file__).resolve().parent / "../../../Data/Census/ACS_5"
+dp02_path = _dp_dir / "vt_acs5_Social_data_tidy.parquet"
+dp03_path = _dp_dir / "vt_acs5_Economic_data_tidy.parquet"
+dp04_path = _dp_dir / "vt_acs5_Housing_data_tidy.parquet"
+dp05_path = _dp_dir / "vt_acs5_Demographic_data_tidy.parquet"
+
 profile_census_path = (
     Path(__file__).resolve().parent
     / "../../../Data/Census/vt_acs5_combined_TIDY.parquet"
@@ -57,6 +64,20 @@ DB.execute(f"CREATE VIEW b10_census AS SELECT * FROM read_parquet('{b10_census_p
 DB.execute(f"CREATE VIEW b15003_education AS SELECT * FROM read_parquet('{b15003_census_path}')")
 DB.execute(f"CREATE VIEW b_housing AS SELECT * FROM read_parquet('{b_housing_path}')")
 DB.execute(f"CREATE VIEW b_economic AS SELECT * FROM read_parquet('{b_economic_path}')")
+
+# Clean union of individual DP table files — zero nulls, no cross-table pollution.
+# Each file contains only its own table's rows so no WHERE Value IS NOT NULL needed.
+DB.execute(f"CREATE VIEW dp02 AS SELECT * FROM read_parquet('{dp02_path}')")
+DB.execute(f"CREATE VIEW dp03 AS SELECT * FROM read_parquet('{dp03_path}')")
+DB.execute(f"CREATE VIEW dp04 AS SELECT * FROM read_parquet('{dp04_path}')")
+DB.execute(f"CREATE VIEW dp05 AS SELECT * FROM read_parquet('{dp05_path}')")
+DB.execute(
+    "CREATE VIEW dp_combined AS "
+    "SELECT * FROM dp02 UNION ALL "
+    "SELECT * FROM dp03 UNION ALL "
+    "SELECT * FROM dp04 UNION ALL "
+    "SELECT * FROM dp05"
+)
 
 
 router = APIRouter()
@@ -161,8 +182,7 @@ async def dp_combined_tree():
     rows = DB.execute(
         """
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
-        FROM profile_census
-        WHERE Value IS NOT NULL
+        FROM dp_combined
         ORDER BY "table", Category, Subcategory, Variable, Measure
         """
     ).df()
@@ -177,15 +197,14 @@ async def dp_combined_series(request: DPSeriesRequest):
     rows = DB.execute(
         """
         SELECT CAST(year AS INTEGER) AS year,
-               TRY_CAST(Value AS DOUBLE) AS Value
-        FROM profile_census
+               CAST(Value AS DOUBLE) AS Value
+        FROM dp_combined
         WHERE NAME = ?
           AND "table" = ?
           AND Category = ?
           AND Subcategory = ?
           AND Variable = ?
           AND Measure = ?
-          AND Value IS NOT NULL
           AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year
         """,

@@ -400,7 +400,7 @@ export default function DPExplorerPage() {
   return (
     <>
       <Center pt="xl" mb="md">
-        <Title order={2}>DP Tables Explorer</Title>
+        <Title order={2}>Data Profile Comparison</Title>
       </Center>
 
       <Container size="lg">

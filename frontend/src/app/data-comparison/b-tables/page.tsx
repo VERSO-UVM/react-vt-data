@@ -157,7 +157,7 @@ export default function DataComparisonPage() {
   return (
     <>
       <Center pt="xl" mb="md">
-        <Title order={2}>Data Exploration &amp; Comparison</Title>
+        <Title order={2}>Detailed Table Comparison</Title>
       </Center>
 
       <Container size="lg">

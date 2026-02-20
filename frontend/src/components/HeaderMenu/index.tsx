@@ -31,8 +31,11 @@ const links = [
     link: '/data-comparison',
     label: 'Data Comparison',
     links: [
-      { link: '/data-comparison/b-tables', label: 'B-Table Comparison' },
-      { link: '/data-comparison/dp-explorer', label: 'DP Tables Explorer' },
+      {
+        link: '/data-comparison/dp-explorer',
+        label: 'Data Profile Comparison',
+      },
+      { link: '/data-comparison/b-tables', label: 'Detailed Table Comparison' },
     ],
   },
   { link: '/working-report', label: 'Working Report' },
