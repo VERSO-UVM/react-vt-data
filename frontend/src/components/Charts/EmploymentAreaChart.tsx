@@ -15,6 +15,7 @@ import {
 import { ChartItem } from '@/types/cachedCharts';
 import { ScrollArea, SegmentedControl, Table } from '@mantine/core';
 import { useState } from 'react';
+import { usePdfMode } from '@/contexts/PdfModeContext';
 
 // Stacking order should match SECTOR_ORDER in post_qcew.py
 const SECTOR_COLORS: Record<string, string> = {
@@ -37,7 +38,10 @@ type EmpView = 'stacked' | 'trend' | 'table';
 const INNER_H = 345;
 
 export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
+  const isPdfMode = usePdfMode();
   const [view, setView] = useState<EmpView>('stacked');
+  // In PDF mode always show the stacked chart — no interactive controls.
+  const activeView: EmpView = isPdfMode ? 'stacked' : view;
   const data = chart.data as any[];
   if (!data?.length) return null;
 
@@ -82,19 +86,21 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
 
   return (
     <>
-      <SegmentedControl
-        value={view}
-        onChange={(v) => setView(v as EmpView)}
-        data={[
-          { label: 'Stacked', value: 'stacked' },
-          { label: 'Trend', value: 'trend' },
-          { label: 'Table', value: 'table' },
-        ]}
-        size="xs"
-        mb="sm"
-      />
+      {!isPdfMode && (
+        <SegmentedControl
+          value={view}
+          onChange={(v) => setView(v as EmpView)}
+          data={[
+            { label: 'Stacked', value: 'stacked' },
+            { label: 'Trend', value: 'trend' },
+            { label: 'Table', value: 'table' },
+          ]}
+          size="xs"
+          mb="sm"
+        />
+      )}
 
-      {view === 'stacked' && (
+      {activeView === 'stacked' && (
         <ResponsiveContainer width="100%" height={INNER_H}>
           <AreaChart
             data={data}
@@ -141,7 +147,7 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
         </ResponsiveContainer>
       )}
 
-      {view === 'trend' && (
+      {activeView === 'trend' && (
         <ResponsiveContainer width="100%" height={INNER_H}>
           <LineChart
             data={dataWithTotal}
@@ -183,8 +189,8 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
         </ResponsiveContainer>
       )}
 
-      {view === 'table' && (
-        <ScrollArea style={{ height: INNER_H }}>
+      {activeView === 'table' && (
+        <ScrollArea style={isPdfMode ? undefined : { height: INNER_H }}>
           <Table striped highlightOnHover withColumnBorders fz="xs">
             <Table.Thead
               style={{

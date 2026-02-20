@@ -111,14 +111,19 @@ export const ChartCard = <TData extends Record<string, any>>({
             </Group>
           )}
         </Group>
-        {showViewSwitch && <ViewSwitch view={view} setView={setView} />}
+        {!isPdfMode && showViewSwitch && (
+          <ViewSwitch view={view} setView={setView} />
+        )}
       </Box>
 
-      {/* In PDF mode: remove the fixed height so tables/charts render fully */}
+      {/* In PDF mode: tables need auto height to unclip; charts keep 400px so
+          ResponsiveContainer (height="100%") has a fixed parent to measure. */}
       <Box
         style={
           isPdfMode
-            ? { height: 'auto', overflow: 'visible' }
+            ? isTablePrimary
+              ? { height: 'auto', overflow: 'visible' }
+              : { height: 400, overflow: 'visible' }
             : { height: 400, overflow: 'auto' }
         }
       >
