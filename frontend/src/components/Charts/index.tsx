@@ -83,6 +83,8 @@ export const ChartCard = <TData extends Record<string, any>>({
       padding="lg"
       radius="md"
       withBorder
+      data-chart-id={chart.id}
+      data-chart-subtype={chart.subtype}
       style={{
         ...(isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : {}),
         // Prevent page-break mid-card when printing / captured by html2pdf
@@ -119,6 +121,7 @@ export const ChartCard = <TData extends Record<string, any>>({
       {/* In PDF mode: tables need auto height to unclip; charts keep 400px so
           ResponsiveContainer (height="100%") has a fixed parent to measure. */}
       <Box
+        data-chart-box
         style={
           isPdfMode
             ? isTablePrimary
