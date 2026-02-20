@@ -18,6 +18,7 @@ import { ChartStack } from '@/components/Charts';
 import { useShallow } from 'zustand/shallow';
 import { ChartItem } from '@/types/cachedCharts';
 import { PdfModeContext } from '@/contexts/PdfModeContext';
+import { useProfile } from '@/components/profile/profileStore';
 
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
@@ -28,6 +29,8 @@ export default function WorkingReport() {
     useShallow((state) => state.items.filter((item) => item.type === 'chart')),
   ) as ChartItem<any>[];
   const len = charts.length;
+
+  const locationName = useProfile((state) => state.myLocation.name);
 
   // ---------------------------------------------------------------------------
   // Legacy html2pdf path (kept as fallback)
@@ -67,7 +70,7 @@ export default function WorkingReport() {
       const { generateReportPdf } = await import(
         '@/lib/pdfReport/generatePdf'
       );
-      await generateReportPdf(charts, chartsRef.current!);
+      await generateReportPdf(charts, chartsRef.current!, locationName);
     } catch (err) {
       console.error('[WorkingReport] PDF generation failed:', err);
       alert(

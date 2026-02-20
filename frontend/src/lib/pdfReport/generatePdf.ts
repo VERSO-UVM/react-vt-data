@@ -33,10 +33,12 @@ async function captureElement(el: HTMLElement): Promise<string> {
  *
  * @param charts     The ChartItem[] from the Zustand store
  * @param container  The div wrapping the rendered ChartStack
+ * @param location   Location name shown on the title page (e.g. "Bristol")
  */
 export async function generateReportPdf(
   charts: ChartItem<any>[],
   container: HTMLElement,
+  location?: string,
 ): Promise<void> {
   // -------------------------------------------------------------------------
   // 1. Capture raster images for non-table charts
@@ -80,6 +82,7 @@ export async function generateReportPdf(
     charts,
     chartImages,
     generatedAt,
+    location,
   });
 
   // -------------------------------------------------------------------------
