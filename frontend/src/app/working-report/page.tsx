@@ -10,6 +10,8 @@ import {
   Button,
   Center,
   Stack,
+  Group,
+  Badge,
 } from '@mantine/core';
 import { useItems } from '@/components/ItemsProvider';
 import { ChartStack } from '@/components/Charts';
@@ -20,30 +22,62 @@ import { PdfModeContext } from '@/contexts/PdfModeContext';
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
   const [isPdfMode, setIsPdfMode] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const charts = useItems(
     useShallow((state) => state.items.filter((item) => item.type === 'chart')),
   ) as ChartItem<any>[];
   const len = charts.length;
 
-  const handleDownloadPdf = async () => {
+  // ---------------------------------------------------------------------------
+  // Legacy html2pdf path (kept as fallback)
+  // ---------------------------------------------------------------------------
+  const handleDownloadLegacy = async () => {
     if (!chartsRef.current) return;
 
-    // Switch to PDF mode synchronously so React re-renders SVG charts and
-    // unclips containers before html2canvas rasterizes the DOM.
     flushSync(() => setIsPdfMode(true));
 
     const options = {
       margin: 10,
       filename: 'working-report.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
     };
 
     await html2pdf().set(options).from(chartsRef.current).save();
 
     setIsPdfMode(false);
+  };
+
+  // ---------------------------------------------------------------------------
+  // New @react-pdf/renderer path
+  // ---------------------------------------------------------------------------
+  const handleDownloadPdf = async () => {
+    if (!chartsRef.current) return;
+    setIsGenerating(true);
+
+    try {
+      // Set PDF mode so SVG fallbacks render and scroll containers unclip
+      flushSync(() => setIsPdfMode(true));
+
+      // Small delay to let the DOM settle after the re-render
+      await new Promise((r) => setTimeout(r, 150));
+
+      const { generateReportPdf } = await import(
+        '@/lib/pdfReport/generatePdf'
+      );
+      await generateReportPdf(charts, chartsRef.current!);
+    } catch (err) {
+      console.error('[WorkingReport] PDF generation failed:', err);
+      alert(
+        'PDF generation failed — see the browser console for details. ' +
+          'Try the legacy download button as a fallback.',
+      );
+    } finally {
+      setIsPdfMode(false);
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -57,9 +91,27 @@ export default function WorkingReport() {
         </Center>
 
         <Center>
-          <Button size="md" onClick={handleDownloadPdf} loading={isPdfMode}>
-            Download PDF
-          </Button>
+          <Group gap="sm">
+            <Button
+              size="md"
+              onClick={handleDownloadPdf}
+              loading={isGenerating}
+            >
+              Download PDF
+            </Button>
+            <Button
+              size="md"
+              variant="light"
+              color="gray"
+              onClick={handleDownloadLegacy}
+              loading={isPdfMode && !isGenerating}
+            >
+              Download PDF (legacy)
+            </Button>
+            <Badge color="blue" variant="light" size="sm">
+              beta
+            </Badge>
+          </Group>
         </Center>
 
         <PdfModeContext.Provider value={isPdfMode}>
