@@ -16,6 +16,10 @@ app = FastAPI()
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:6767",
+    "https://unique-biscotti-90de02.netlify.app",
+    "*.netlify.app",
+    "https://data-react-vt.onrender.com",
+    "*",
 ]
 
 app.add_middleware(
