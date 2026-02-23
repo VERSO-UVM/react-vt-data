@@ -19,7 +19,7 @@ origins = [
     "https://unique-biscotti-90de02.netlify.app",
     "*.netlify.app",
     "https://data-react-vt.onrender.com",
-    "*",
+    "https://verso-uvm.github.io*",
 ]
 
 app.add_middleware(
