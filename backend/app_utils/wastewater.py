@@ -5,12 +5,8 @@ Vermont Data App
 Wastewater Utility Functions
 """
 
-import streamlit as st
-from streamlit_extras.metric_cards import style_metric_cards
-
-from app_utils.color import render_rgba_colormap_legend
 from app_utils.data_cleaning import convert_all_timestamps_to_str
-from app_utils.mapping import add_tooltip_from_dict, map_gdf_single_layer
+from app_utils.mapping import add_tooltip_from_dict
 
 SOIL_COLOR = {
     "Well Suited": [44, 160, 44, 180],
@@ -19,44 +15,6 @@ SOIL_COLOR = {
     "Not Suited": [220, 53, 69, 180],
     "Not Rated": [108, 117, 125, 180],
 }
-
-
-def land_suitability_metric_cards(gdf, total_acres):
-    """
-    Displays metric cards for all present Suitability values,
-    with % and acreage side-by-side for each category.
-    """
-
-    st.subheader("Land Suitability Overview")
-
-    # Group and calculate stats
-    summary = (
-        gdf.groupby("Suitability")["Acres"]
-        .sum()
-        .reset_index()
-        .sort_values("Acres", ascending=False)
-    )
-    summary["Percent"] = (
-        (summary["Acres"] / total_acres * 100) if total_acres > 0 else 0
-    )
-
-    # create metrics  from df rows
-    for _, row in summary.iterrows():
-        col1, col2 = st.columns(2)
-        col1.metric(
-            label=f"**{row['Suitability']}** (%)", value=f"{row['Percent']:.1f}%"
-        )
-        col2.metric(
-            label=f"**{row['Suitability']}** Acreage",
-            value=f"{row['Acres']:,.0f} acres",
-        )
-
-    style_metric_cards(
-        background_color="whitesmoke",
-        border_left_color="#2ca02c",
-        box_shadow=True,
-        border_size_px=0.5,
-    )
 
 
 ### cleaning and mapping functions  ##
@@ -107,36 +65,3 @@ def process_soil_data(gdf):
     gdf = add_soil_tooltip(gdf)
     gdf = convert_all_timestamps_to_str(gdf)
     return gdf
-
-
-### Front end functions
-def render_soil_colormap():
-    """
-    Hard-coded wrapper to map our hardcoded soil_color global above.
-    """
-    render_rgba_colormap_legend(SOIL_COLOR)
-
-
-def plot_wastewater(gdf):
-    return map_gdf_single_layer(gdf)
-
-
-def get_soil_rpc(column):
-    """
-    Hardcoded frontend function for selecting a regional planning commission
-    """
-    rpcs = {
-        "Addison County": "ACRPC",
-        "Bennington County": "BCRC",
-        "Chittenden County": "CCRPC",
-        "Central Vermont": "CVRPC",
-        "Lamoille County": "LCPC",
-        "Mount Ascutney": "MARC",
-        "Northeastern Vermont": "NVDA",
-        "Northwest Regional": "NWRPC",
-        "Rutland Regional": "RRPC",
-        "Two Rivers-Ottauquechee": "TRORC",
-        "Windham": "WRC",
-    }
-    rpc = column.selectbox("Regional Planning Comission", options=rpcs.keys(), index=0)
-    return rpcs.get(rpc)

@@ -1,17 +1,11 @@
-from pathlib import Path
-
-import duckdb
 import pandas as pd
 from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
+from app_utils.db import DB
 
 router = APIRouter()
-
-QCEW_PATH = (
-    Path(__file__).resolve().parent / "../../../Data/QCEW/vt_qcew_employment.parquet"
-)
 
 # Preferred stacking order (bottom → top of the chart)
 SECTOR_ORDER = [
@@ -24,9 +18,6 @@ SECTOR_ORDER = [
     "Government",
     "Other Services",
 ]
-
-DB_QCEW = duckdb.connect()
-DB_QCEW.execute(f"CREATE VIEW qcew AS SELECT * FROM read_parquet('{QCEW_PATH}')")
 
 
 @router.post("/load/qcew/employment")
@@ -41,11 +32,11 @@ async def employment_by_sector(request: FilterRequest):
         ORDER BY year, quarter, sector
     """
     if county:
-        rows: pd.DataFrame = DB_QCEW.execute(
+        rows: pd.DataFrame = DB.execute(
             query.format(county_filter="AND County = ?"), [county]
         ).df()
     else:
-        rows = DB_QCEW.execute(query.format(county_filter="")).df()
+        rows = DB.execute(query.format(county_filter="")).df()
 
     if rows.empty:
         return make_response(data=[], metadata=get_metadata("qcew_employment"))

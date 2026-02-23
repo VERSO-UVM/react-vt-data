@@ -4,7 +4,7 @@ Created: 2025-07-29
 Description: layer for all the non-streamlit logic for the flooding page
 """
 
-from app_utils.mapping import add_tooltip_from_dict, map_gdf_single_layer
+from app_utils.mapping import add_tooltip_from_dict
 
 
 def explode_flood_polygons(gdf):
@@ -71,10 +71,6 @@ def add_flood_tooltip(gdf):
         gdf_name="Flooding",
         label_to_col={"Zone": "FLD_ZONE", "Additional Info": "ZONE_SUBTY_DISPLAY"},
     )
-
-
-def plot_flood_gdf(gdf):
-    return map_gdf_single_layer(gdf)
 
 
 def process_flood_gdf(gdf):
