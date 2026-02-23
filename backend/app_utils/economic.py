@@ -7,34 +7,14 @@ Economic Utility Functions
 
 import altair as alt
 import pandas as pd
-import streamlit as st
 
-from app_utils.census import get_geography_title
-from app_utils.color import get_text_color
-
-# import constants
 from app_utils.constants.ACS import (
     ACS_ECON_METRICS,
     FAMILY_INCOME_COLUMNS,
     FAMILY_INCOME_LABELS,
 )
 from app_utils.data_loading import load_metrics
-from app_utils.df_filtering import filter_snapshot_data
-from app_utils.plot import (
-    bar_chart,
-    donut_chart,
-    make_time_series_plot,
-    safe_altair_plot,
-)
-
-
-def economic_snapshot_header():
-    st.subheader("Economic Snapshot")
-    st.markdown(
-        "***Data Source***: U.S. Census Bureau. (2023). DP03: Selected Economic Characteristics - "
-        "County Subdivisions, Vermont. 2019-2023 American Community Survey 5-Year Estimates. "
-        "Retrieved from https://data.census.gov/"
-    )
+from app_utils.plot import make_time_series_plot
 
 
 def unemployment_rate_ts_plot(filtered_unemployment_df, unemployment_df, title_geo):
@@ -69,7 +49,7 @@ def unemployment_rate_ts_plot(filtered_unemployment_df, unemployment_df, title_g
             offset=20,
             labelFont="Helvetica Neue",
         )
-    # If we’re statewide only, skip adding the comparison line and don't show the color legend
+    # If we're statewide only, skip adding the comparison line and don't show the color legend
     else:
         legend = None
 
@@ -174,7 +154,7 @@ def avg_commute_time_ts_plot(filtered_commute_time_df, commute_time_df, title_ge
         legend = alt.Legend(
             orient="top", direction="horizontal", offset=0, labelFont="Helvetica Neue"
         )
-    # If we’re statewide only, skip adding the comparison line and don't show the color legend
+    # If we're statewide only, skip adding the comparison line and don't show the color legend
     else:
         legend = None
 
@@ -323,271 +303,3 @@ def econ_df_metric_dict(filtered_gdf_2023):
     metrics = compute_econ_metrics(filtered_gdf_2023)
     dfs = build_econ_plot_dataframes(filtered_gdf_2023, metrics)
     return metrics, dfs
-
-
-# NOTE: The `st.metric` delta (^change) values are simply placeholders for now (not real data!)
-def economic_snapshot(econ_dfs):
-    # Display the category header with data source
-    economic_snapshot_header()
-
-    # filter the data
-    filtered_dfs, selected_values = filter_snapshot_data(
-        econ_dfs, key_df=econ_dfs["econ_2023"]
-    )
-
-    # Get the title of the geography for plotting
-    title_geo = get_geography_title(selected_values)
-
-    # Based on the system color theme, update the text color (only used in donut plots)
-    text_color = get_text_color(key="economic_snapshot")
-    # Define two callable dictionaries: Metrics and Plot DataFrames
-    metrics, plot_dfs = econ_df_metric_dict(filtered_dfs["econ_2023"])
-
-    ## TODO: maybe better to run all of these with **kwargs, or just all take the same args, idk
-    render_employment(econ_dfs, metrics, filtered_dfs, title_geo)
-    render_health_insurance(metrics, title_geo, plot_dfs, text_color)
-    render_income(metrics, filtered_dfs, title_geo, plot_dfs)
-    render_poverty(metrics, title_geo, plot_dfs, text_color)
-    render_work(econ_dfs, filtered_dfs, title_geo)
-
-
-def render_employment(econ_dfs, metrics, filtered_dfs, title_geo):
-    st.divider()
-    st.subheader("Employment")
-    # Set two columns (Left for metrics, right for line plot)
-    metric_col, chart_col = st.columns([1, 4])
-    metric_col.markdown("\2")
-
-    # Display employment metrics
-    metric_col.metric(
-        label="**Unemployment Rate (2023)**",
-        value=f"{metrics['unemployment_rate'] * 100:.1f}%",
-        delta=f"{0.8}%",
-        delta_color="inverse",
-    )
-    metric_col.metric(
-        label="**Civilian Employment Rate**",
-        value=f"{metrics['pct_employed']:.1f}%",
-        delta=f"{2}%",
-    )
-    metric_col.metric(
-        label="**In Labor Force**",
-        value=f"{metrics['pct_in_labor_force']:.1f}%",
-        delta=f"{-3}%",
-    )
-    metric_col.metric(
-        label="**Females in Labor Force**",
-        value=f"{metrics['pct_female_in_labor_force']:.1f}%",
-        delta=f"{10}%",
-    )
-
-    safe_altair_plot(
-        plot=unemployment_rate_ts_plot(
-            filtered_dfs["unemployment"], econ_dfs["unemployment"], title_geo
-        ),
-        data_type="unemplotment",
-        chart_col=chart_col,
-    )
-    metric_col.markdown("\2")
-
-
-def render_health_insurance(metrics, title_geo, plot_dfs, text_color):
-    st.divider()
-    st.subheader("Health Insurance Coverage")
-    st.markdown("\2")
-
-    # Set two columns (with a middle spacer) for donut chart on the left and metrics on the right
-    h_col1, _, h_col2 = st.columns([10, 2, 10])
-
-    public_private_coverage_df = plot_dfs["public_private_coverage_df"]
-    # Use the `donut_chart` function  to create a tailored chart using info from the dataframe above
-    public_private_pie_chart = donut_chart(
-        source=public_private_coverage_df,
-        colorColumnName="Coverage Type",
-        height=350,
-        width=200,
-        innerRadius=130,
-        fontSize=45,
-        title_size=18,
-        fill="mediumseagreen",
-        title=f"Private Health Coverage | {title_geo}",
-        stat=(1 - metrics["pct_public_hc_coverage"]),
-        text_color=text_color,
-    )
-    # Display the donut chart on the left
-    h_col1.altair_chart(public_private_pie_chart)
-
-    # On the right, display useful insurance metrics
-    h_col2.metric(
-        label="**No Health Coverage**",
-        value=f"{metrics['pct_no_hc_coverage']:.1f}%",
-        delta=f"{0.5}%",
-        delta_color="inverse",
-    )
-    h_col2.metric(
-        label="**No Health Coverage (Age 0-19)**",
-        value=f"{metrics['pct_no_hc_coverage_u19']:.1f}%",
-        delta=f"{-0.4}%",
-        delta_color="inverse",
-    )
-    h_col2.metric(
-        label="**Employed without Health Coverage (19-64)**",
-        value=f"{metrics['pct_employed_no_hc_coverage']:.1f}%",
-        delta=f"{1.8}%",
-        delta_color="inverse",
-    )
-
-
-def render_income(metrics, filtered_dfs, title_geo, plot_dfs):
-    st.divider()
-    st.subheader("Income")
-
-    # Define 4 columns (with left spacer) to display important income metrics
-    _, earn_metric_col1, earn_metric_col2, earn_metric_col3, earn_metric_col4 = (
-        st.columns([0.5, 1, 1, 1, 1])
-    )
-
-    earn_metric_col1.metric(
-        label="**Median Earnings** (All Workers)",
-        value=f"${metrics['median_earnings']:,.0f}",
-        delta=f"{12459:,.0f}",
-    )
-    earn_metric_col2.metric(
-        label="**Median Male Earnings** (FTYR)",
-        value=f"${metrics['male_earnings']:,.0f}",
-        delta=f"{2459:,.0f}",
-    )
-    earn_metric_col3.metric(
-        label="**Median Female Earnings** (FTYR)",
-        value=f"${metrics['female_earnings']:,.0f}",
-        delta=f"{1047:,.0f}",
-    )
-    earn_metric_col4.metric(
-        label="**Gender Wage Gap**",
-        value=f"${metrics['wage_gap']:,.0f}",
-        delta=f"{-749:,.0f}",
-        delta_color="inverse",
-    )
-    st.markdown("\2")
-
-    # Display the median earnings time series plot directly below the metrics
-    safe_altair_plot(
-        plot=median_earnings_ts_plot(filtered_dfs["median_earnings"], title_geo),
-        data_type="median earnings",
-    )
-
-    # Define two columns for metrics on the left and a bar plot on the right
-    income_col1, income_col2 = st.columns([2, 11])
-    income_col1.markdown("\2")
-
-    # On the left, display more useful income metrics
-    income_col1.metric(
-        label="Income Per Capita",
-        value=f"${metrics['income_per_capita']:,.0f}",
-        delta=f"{5492:,.0f}",
-    )
-    income_col1.markdown("\2")
-    income_col1.metric(
-        label="Median Family Income",
-        value=f"${metrics['median_family_income']:,.0f}",
-        delta=f"{4204:,.0f}",
-    )
-
-    # Use the `census_bar_chart` function to create a highly customizable bar chart
-    family_income_dist_chart = bar_chart(
-        source=plot_dfs["family_income_df"],
-        title_geo=title_geo,
-        x_col="Family Income",
-        xType=":N",
-        yType=":Q",
-        y_col="Estimated Families",
-        bar_width=75,
-        title_size=19,
-        title="Family Income Distribution",
-    )
-    # Display the bar chart on the right
-    income_col2.altair_chart(family_income_dist_chart, use_container_width=True)
-
-
-def render_poverty(metrics, title_geo, plot_dfs, text_color):
-    st.divider()
-    st.subheader("Poverty")
-
-    # Define two columns with two donut charts on the left and a barplot on the right
-    pov_col1, pov_col2 = st.columns([2, 3])
-
-    pov_people_df = plot_dfs["pov_people_df"]
-    pov_families_df = plot_dfs["pov_families_df"]
-
-    # Create a donut chart to show the % of people below the poverty level
-    pov_people_pie_chart = donut_chart(
-        source=pov_people_df,
-        colorColumnName="Category",
-        height=250,
-        width=175,
-        innerRadius=85,
-        fontSize=40,
-        title=f"People Below Poverty Level | {title_geo}",
-        stat=metrics["pct_people_below_pov"],
-        text_color=text_color,
-    )
-    # Create a donut chart to show the % of families below the poverty level
-    pov_families_pie_chart = donut_chart(
-        source=pov_families_df,
-        colorColumnName="Category",
-        height=250,
-        width=175,
-        innerRadius=85,
-        fontSize=40,
-        title_size=14,
-        fill="mediumseagreen",
-        title=f"Families Below Poverty Level | {title_geo}",
-        stat=metrics["pct_families_below_pov"],
-        text_color=text_color,
-    )
-
-    # Display the two donut charts
-    pov_col1.markdown("\2")
-    pov_col1.altair_chart(pov_people_pie_chart)
-    pov_col1.altair_chart(pov_families_pie_chart)
-
-    poverty_by_age_df = plot_dfs["poverty_by_age_df"]
-    # Create a highly customizable bar chart using the `census_bar_chart` function
-    pov_by_age_chart = bar_chart(
-        source=poverty_by_age_df,
-        title_geo=title_geo,
-        x_col="Age",
-        y_col="Poverty Rate",
-        xType=":O",
-        yType=":Q",
-        y_axis_format=".0%",
-        y_tooltip_format=".1%",
-        bar_width=130,
-        x_label_angle=0,
-        height=600,
-        title_size=19,
-        x_label_size=13,
-        title="Poverty Rate by Age Group",
-        distribution=False,
-    )
-    # Display the bar chart on the right
-    pov_col2.altair_chart(pov_by_age_chart)
-
-
-def render_work(econ_dfs, filtered_dfs, title_geo):
-    st.divider()
-    st.subheader("Work")
-    st.markdown("\2")
-
-    # Define and display a time series plot of average commute time
-    safe_altair_plot(
-        avg_commute_time_ts_plot(
-            filtered_dfs["commute_time"], econ_dfs["commute_time"], title_geo
-        ),
-        "commute time",
-    )
-
-    safe_altair_plot(
-        commute_habits_ts_plot(filtered_dfs["commute_habits"], title_geo),
-        "commute habit ",
-    )

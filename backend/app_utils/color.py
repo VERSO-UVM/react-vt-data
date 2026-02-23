@@ -9,24 +9,8 @@ import io
 
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import streamlit as st
-from matplotlib.colorbar import ColorbarBase
-
-
-def get_text_color(key):
-    from streamlit_theme import st_theme
-
-    theme_dict = st_theme(key=f"theme_{key}")
-    if theme_dict is not None:
-        theme = theme_dict["base"]
-    else:
-        theme = "light"  # or your fallback default
-    text_color = "white" if theme == "dark" else "black"
-
-    return text_color
 
 
 def get_colornorm_stats(df, cutoff_scalar):
@@ -76,31 +60,6 @@ class TopHoldNorm(mcolors.Normalize):
         return np.clip(result, 0, 1)
 
 
-def render_colorbar(cmap, norm, vmin, vmax, cutoff, style, label="Scale"):
-    fig, ax = plt.subplots(figsize=(5, 0.4))
-
-    cb = ColorbarBase(ax, cmap=cmap, norm=norm, orientation="horizontal")
-    ticks = np.linspace(vmin, cutoff, 5)
-    cb.set_label(label)
-
-    if style == "Holdout":
-        ticks = ticks[:-1]
-        ticks = np.append(ticks, vmax)
-    elif style == "Yellow":
-        cb.set_label("Scale (Outliers in Yellow)")
-    elif style == "Jenk's Natural Breaks":
-        cb.set_label("Jenk's")
-
-    cb.set_ticks(ticks)
-    cb.set_ticklabels([f"{t:.0f}" for t in ticks])
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format="png", bbox_inches="tight")
-    plt.close(fig)
-
-    st.image(buf, use_container_width=True)
-
-
 def map_outlier_yellow(x, cmap, norm, cutoff):
     if x > cutoff:
         return [255, 255, 0, 180]  # Yellow RGBA
@@ -118,9 +77,6 @@ def jenks_color_map(df, n_classes, color):
     values = df["Value"].dropna()
     if values.empty:
         df["color_groups"] = np.nan
-        st.warning(
-            "The variable you are trying to map is an invalid measure. Please select another variable."
-        )
         return {}
 
     # Get Jenks breaks and remove duplicates
@@ -174,25 +130,6 @@ def geojson_add_fill_colors(filtered_geojson, df, column, color_map=None):
             district_type, [150, 150, 150, 180]
         )  ## default grey
     return filtered_geojson, color_map
-
-
-def render_rgba_colormap_legend(color_map, title="Legend"):
-    """
-    Function to render a colormap. Note that this shows everything in the cmap, not just what's being used.
-    """
-    st.markdown(f"### {title}")
-    for label, rgba in color_map.items():
-        rgb_str = f"rgb({rgba[0]}, {rgba[1]}, {rgba[2]})"
-
-        st.markdown(
-            f"""
-            <div style='display: flex; align-items: center; margin-bottom: 4px;'>
-                <div style='width: 16px; height: 16px; background-color: {rgb_str}; margin-right: 8px; border: 1px solid #aaa;'></div>
-                <div>{label}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
 
 def rgba_to_hex(rgba):

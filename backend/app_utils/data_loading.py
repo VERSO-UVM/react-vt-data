@@ -108,13 +108,9 @@ def load_soil_septic_single(rpc):
             simplify_tolerance=0.0001,
         )
     except Exception:
-        import streamlit as st
-
-        st.markdown(
-            "There is no wastewater soil suitability for that RPC at this time",
-            unsafe_allow_html=True,
+        raise FileNotFoundError(
+            f"No wastewater soil suitability data found for RPC: {rpc}"
         )
-        st.stop()
 
 
 def load_soil_septic_multi(rpcs):
