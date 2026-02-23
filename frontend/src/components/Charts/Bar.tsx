@@ -48,9 +48,11 @@ const SamePerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
         <YAxis />
         <Tooltip />
         <Legend />
-        {chart.chartParams.datakeys.map(([datakey, color]) => (
-          <Bar key={datakey} dataKey={datakey} fill={color} />
-        ))}
+        {chart.chartParams?.datakeys.map(
+          ([datakey, color]: [string, string]) => (
+            <Bar key={datakey} dataKey={datakey} fill={color} />
+          ),
+        )}
       </BarChart>
     </ResponsiveContainer>
   );
@@ -66,9 +68,7 @@ const DiffPerXBarChartSVG = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
-  const colors = chart.data.map(
-    (entry: any) => entry[chart.chartParams.color],
-  );
+  const colors = chart.data.map((entry: any) => entry[chart.chartParams!.color]);
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
@@ -94,7 +94,7 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
   if (isPdfMode) return <DiffPerXBarChartSVG chart={chart} />;
 
   const labels = chart.data.map((entry: any) => entry[chart.xField]);
-  const colors = chart.data.map((entry: any) => entry[chart.chartParams.color]);
+  const colors = chart.data.map((entry: any) => entry[chart.chartParams!.color]);
 
   const data = {
     labels,
@@ -145,11 +145,14 @@ const CompareDiffPerXBarChartSVG = <TData,>({
 
   // Determine per-bar primary colors (same logic as Chart.js version)
   let colors: string[];
-  if (chart.chartParams?.color && (chart.data[0] as any)?.[chart.chartParams.color]) {
-    colors = chart.data.map((entry: any) => entry[chart.chartParams.color]);
+  if (
+    chart.chartParams?.color &&
+    (chart.data[0] as any)?.[chart.chartParams.color]
+  ) {
+    colors = chart.data.map((entry: any) => entry[chart.chartParams.color!]);
   } else {
     const schemeName = chart.chartParams?.colorScheme ?? 'schemeCategory10';
-    const colorScale = d3.scaleOrdinal((d3 as any)[schemeName]);
+    const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
     colors = chart.data.map((_: any, i: number) => colorScale(i.toString()));
   }
 
@@ -193,11 +196,14 @@ const CompareDiffPerXBarChart = <TData,>({
   const labels = chart.data.map((entry: any) => entry[chart.xField]);
 
   let colors: string[];
-  if (chart.chartParams?.color && (chart.data[0] as any)?.[chart.chartParams.color]) {
-    colors = chart.data.map((entry: any) => entry[chart.chartParams.color]);
+  if (
+    chart.chartParams?.color &&
+    (chart.data[0] as any)?.[chart.chartParams.color]
+  ) {
+    colors = chart.data.map((entry: any) => entry[chart.chartParams.color!]);
   } else {
     const schemeName = chart.chartParams?.colorScheme || 'schemeCategory10';
-    const colorScale = d3.scaleOrdinal((d3 as any)[schemeName]);
+    const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
     colors = chart.data.map((_, index) => colorScale(index.toString()));
   }
   const compareColors = chart.compareData.map(() => '#999');
@@ -251,7 +257,10 @@ const CompareHBarChartSVG = <TData,>({
 }: {
   chart: CompareDiffChartItem<TData>;
 }) => {
-  const legendLabels = chart.chartParams?.legendLabels ?? ['Primary', 'Comparison'];
+  const legendLabels = chart.chartParams?.legendLabels ?? [
+    'Primary',
+    'Comparison',
+  ];
   const unit = (chart.chartParams as any)?.unit ?? '';
 
   const merged = chart.data.map((entry: any, i: number) => ({
@@ -268,11 +277,13 @@ const CompareHBarChartSVG = <TData,>({
         margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis
-          type="number"
-          tickFormatter={(v: any) => `${v}${unit}`}
+        <XAxis type="number" tickFormatter={(v: any) => `${v}${unit}`} />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={120}
+          tick={{ fontSize: 11 }}
         />
-        <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 11 }} />
         <Tooltip formatter={(v: any) => `${v}${unit}`} />
         <Legend />
         <Bar dataKey={legendLabels[0]} fill="#154734" />

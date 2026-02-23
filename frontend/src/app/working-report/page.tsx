@@ -2,7 +2,6 @@
 
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import html2pdf from 'html2pdf.js';
 import {
   Container,
   Text,
@@ -39,6 +38,8 @@ export default function WorkingReport() {
     if (!chartsRef.current) return;
 
     flushSync(() => setIsPdfMode(true));
+
+    const html2pdf = (await import('html2pdf.js')).default;
 
     const options = {
       margin: 10,

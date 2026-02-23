@@ -18,6 +18,7 @@ export default function IncrementButton() {
         type: 'counter',
         value: 1,
         title: 'counter',
+        data: [],
       });
     }
   };
