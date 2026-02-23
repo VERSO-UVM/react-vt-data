@@ -208,4 +208,5 @@ async def dp_combined_series(request: DPSeriesRequest):
             request.year_max,
         ],
     ).df()
+    metadata = get_metadata("")
     return make_response(data=rows, metadata=None)

@@ -6,6 +6,14 @@ Keys match the route/dataset name convention used throughout the app.
 """
 
 METADATA: dict[str, dict] = {
+    "DP TABLES": {
+        "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates DP Tables",
+        "LastUpdate": "2023",
+        "caveats": [
+            "5-year estimates reflect averages over the survey period, not point-in-time values.",
+            "Lots of inconsistency and variable name changes.",
+        ],
+    },
     "zoning": {
         "source": "Municipal Zoning Records",
         "lastUpdated": "2024-12",

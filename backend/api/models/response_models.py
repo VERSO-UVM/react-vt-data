@@ -24,6 +24,7 @@ class APIResponse(BaseModel):
     )
 
 
+
 def make_response(
     data: pd.DataFrame | gpd.GeoDataFrame | dict | list,
     metadata: dict,
