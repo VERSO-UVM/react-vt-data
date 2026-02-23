@@ -1,176 +1,54 @@
 """
-DuckDB-backed access to the census time-series CSV files.
+DuckDB-backed access to the census time-series tables in vt_data.duckdb.
 
-Each CSV is registered as a view that:
-  - Casts the year column to VARCHAR (matching the behaviour of split_name_col)
-  - Adds Jurisdiction and County columns derived from NAME via regex
-    (replicating split_name_col's regex: r"^(.*?),\s*(.*?) County,")
-
-Use query_timeseries(view_name, filters) to filter any registered view.
+Use query_timeseries(table_name, filters) to filter any registered table.
 """
 
 import logging
-from pathlib import Path
 
-import duckdb
+from app_utils.db import DB
 
 logger = logging.getLogger(__name__)
 
-_DATADIR = Path(__file__).resolve().parent.parent / "Data" / "Census"
-
-DB = duckdb.connect()
-
-# ---------------------------------------------------------------------------
-# Name-parsing SQL snippet (replicates split_name_col regex)
-# ---------------------------------------------------------------------------
-_NAME_COLS = """
-    regexp_extract(NAME, '^(.*?),', 1)           AS "Jurisdiction",
-    regexp_extract(NAME, ',\\s*(.*?) County,', 1) AS "County"
-"""
-
-
-def _csv(filename: str) -> str:
-    return str(_DATADIR / filename)
-
-
-# ---------------------------------------------------------------------------
-# View definitions
-# ---------------------------------------------------------------------------
-_VIEWS: dict[str, tuple[str, set[str]]] = {}
-"""Maps view_name -> (CREATE VIEW sql, set of queryable column names)"""
-
-
-def _register(view_name: str, sql: str, cols: set[str]) -> None:
-    DB.execute(sql)
-    _VIEWS[view_name] = cols
-    logger.debug("Registered timeseries_db view: %s", view_name)
+# Allowed filter columns per table (whitelist guards against injection)
+_VALID_COLS: dict[str, set[str]] = {
+    "unemployment_rate": {
+        "year", "GEOID", "NAME", "Jurisdiction", "County", "Unemployment_Rate"
+    },
+    "median_earnings": {
+        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"
+    },
+    "median_home_value": {
+        "year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"
+    },
+    "median_smoc": {
+        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"
+    },
+    "commute_time": {
+        "year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"
+    },
+    "commute_habits": {
+        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"
+    },
+    "historic_population": {
+        "X_geoid", "NAME", "Jurisdiction", "County", "Year", "Population"
+    },
+}
 
 
-_register(
-    "unemployment_rate",
-    f"""
-    CREATE VIEW unemployment_rate AS
-    SELECT
-        CAST(year AS VARCHAR) AS year,
-        GEOID,
-        NAME,
-        {_NAME_COLS},
-        TRY_CAST(Unemployment_Rate AS DOUBLE) AS Unemployment_Rate
-    FROM read_csv_auto('{_csv("unemployment_rate_by_year.csv")}')
-    """,
-    {"year", "GEOID", "NAME", "Jurisdiction", "County", "Unemployment_Rate"},
-)
-
-_register(
-    "median_earnings",
-    f"""
-    CREATE VIEW median_earnings AS
-    SELECT
-        CAST(year AS VARCHAR) AS year,
-        GEOID,
-        NAME,
-        {_NAME_COLS},
-        variable,
-        TRY_CAST(estimate AS DOUBLE) AS estimate
-    FROM read_csv_auto('{_csv("median_earnings_by_year.csv")}')
-    """,
-    {"year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"},
-)
-
-_register(
-    "median_home_value",
-    f"""
-    CREATE VIEW median_home_value AS
-    SELECT
-        CAST(year AS VARCHAR) AS year,
-        GEOID,
-        NAME,
-        {_NAME_COLS},
-        TRY_CAST(estimate AS DOUBLE) AS estimate
-    FROM read_csv_auto('{_csv("med_home_value_by_year.csv")}')
-    """,
-    {"year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"},
-)
-
-_register(
-    "median_smoc",
-    f"""
-    CREATE VIEW median_smoc AS
-    SELECT
-        CAST(year AS VARCHAR) AS year,
-        GEOID,
-        NAME,
-        {_NAME_COLS},
-        variable,
-        TRY_CAST(estimate AS DOUBLE) AS estimate
-    FROM read_csv_auto('{_csv("med_smoc_by_year.csv")}')
-    """,
-    {"year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"},
-)
-
-_register(
-    "commute_time",
-    f"""
-    CREATE VIEW commute_time AS
-    SELECT
-        CAST(year AS VARCHAR) AS year,
-        GEOID,
-        NAME,
-        {_NAME_COLS},
-        TRY_CAST(estimate AS DOUBLE) AS estimate
-    FROM read_csv_auto('{_csv("commute_time_by_year.csv")}')
-    """,
-    {"year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"},
-)
-
-_register(
-    "commute_habits",
-    f"""
-    CREATE VIEW commute_habits AS
-    SELECT
-        CAST(year AS VARCHAR) AS year,
-        GEOID,
-        NAME,
-        {_NAME_COLS},
-        variable,
-        TRY_CAST(estimate AS DOUBLE) AS estimate
-    FROM read_csv_auto('{_csv("commute_habits_by_year.csv")}')
-    """,
-    {"year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"},
-)
-
-_register(
-    "historic_population",
-    f"""
-    CREATE VIEW historic_population AS
-    SELECT
-        X_geoid,
-        NAME,
-        {_NAME_COLS},
-        CAST("Year" AS VARCHAR) AS "Year",
-        TRY_CAST(Population AS DOUBLE) AS Population
-    FROM read_csv_auto('{_csv("VT_Historic_Population.csv")}')
-    """,
-    {"X_geoid", "NAME", "Jurisdiction", "County", "Year", "Population"},
-)
-
-
-# ---------------------------------------------------------------------------
-# Query helper
-# ---------------------------------------------------------------------------
-def query_timeseries(view_name: str, filters: dict | None = None):
+def query_timeseries(table_name: str, filters: dict | None = None):
     """
-    Query a registered timeseries view with optional column-value filters.
+    Query a timeseries table with optional column-value filters.
 
     Filters are applied as WHERE col IN (...) clauses. Unknown columns are
     silently ignored (safe against injection via whitelist).
 
     Returns a pandas DataFrame.
     """
-    if view_name not in _VIEWS:
-        raise KeyError(f"No timeseries view registered under '{view_name}'")
+    if table_name not in _VALID_COLS:
+        raise KeyError(f"No timeseries table registered under '{table_name}'")
 
-    valid_cols = _VIEWS[view_name]
+    valid_cols = _VALID_COLS[table_name]
     where_clauses: list[str] = []
     params: list = []
 
@@ -178,9 +56,9 @@ def query_timeseries(view_name: str, filters: dict | None = None):
         for col, values in filters.items():
             if col not in valid_cols:
                 logger.warning(
-                    "timeseries_db: skipping unknown filter column '%s' on view '%s'",
+                    "timeseries_db: skipping unknown filter column '%s' on table '%s'",
                     col,
-                    view_name,
+                    table_name,
                 )
                 continue
             if isinstance(values, str):
@@ -190,5 +68,5 @@ def query_timeseries(view_name: str, filters: dict | None = None):
             params.extend(values)
 
     where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
-    sql = f'SELECT * FROM "{view_name}" {where_sql}'
+    sql = f'SELECT * FROM "{table_name}" {where_sql}'
     return DB.execute(sql, params).df()

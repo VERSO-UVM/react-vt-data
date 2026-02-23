@@ -1,91 +1,29 @@
 import logging
-from pathlib import Path
 
-import duckdb
 from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import DPSeriesRequest, FilterRequest, make_response
+from app_utils.db import DB
 
 logger = logging.getLogger(__name__)
-
-router = APIRouter()
-
-# DP-series individual tidy files (no cross-table nulls — used for dp-explorer)
-_dp_dir = Path(__file__).resolve().parent / "../../../Data/Census/ACS_5"
-dp02_path = _dp_dir / "vt_acs5_Social_data_tidy.parquet"
-dp03_path = _dp_dir / "vt_acs5_Economic_data_tidy.parquet"
-dp04_path = _dp_dir / "vt_acs5_Housing_data_tidy.parquet"
-dp05_path = _dp_dir / "vt_acs5_Demographic_data_tidy.parquet"
-
-profile_census_path = (
-    Path(__file__).resolve().parent
-    / "../../../Data/Census/vt_acs5_combined_TIDY.parquet"
-)
-b10_census_path = (
-    Path(__file__).resolve().parent
-    / "../../../Data/Census/ACS_5/vt_acs5_b_demographics_tidy.parquet"
-)
-b15003_census_path = (
-    Path(__file__).resolve().parent
-    / "../../../Data/Census/ACS_5/vt_acs5_b_education_tidy.parquet"
-)
-b_housing_path = (
-    Path(__file__).resolve().parent
-    / "../../../Data/Census/ACS_5/vt_acs5_b_housing_tidy.parquet"
-)
-b_economic_path = (
-    Path(__file__).resolve().parent
-    / "../../../Data/Census/ACS_5/vt_acs5_b_economic_tidy.parquet"
-)
-
-logger.debug(f"ACS_5 profile_census_path = {profile_census_path}")
-logger.debug(f"ACS_5 b10_census_path = {b10_census_path}")
-
-
-DB = duckdb.connect()
-DB.execute(
-    f"CREATE VIEW profile_census AS SELECT * FROM read_parquet('{profile_census_path}')"
-)
-DB.execute(f"CREATE VIEW b10_census AS SELECT * FROM read_parquet('{b10_census_path}')")
-DB.execute(
-    f"CREATE VIEW b15003_education AS SELECT * FROM read_parquet('{b15003_census_path}')"
-)
-DB.execute(f"CREATE VIEW b_housing AS SELECT * FROM read_parquet('{b_housing_path}')")
-DB.execute(f"CREATE VIEW b_economic AS SELECT * FROM read_parquet('{b_economic_path}')")
-
-# Clean union of individual DP table files — zero nulls, no cross-table pollution.
-# Each file contains only its own table's rows so no WHERE Value IS NOT NULL needed.
-DB.execute(f"CREATE VIEW dp02 AS SELECT * FROM read_parquet('{dp02_path}')")
-DB.execute(f"CREATE VIEW dp03 AS SELECT * FROM read_parquet('{dp03_path}')")
-DB.execute(f"CREATE VIEW dp04 AS SELECT * FROM read_parquet('{dp04_path}')")
-DB.execute(f"CREATE VIEW dp05 AS SELECT * FROM read_parquet('{dp05_path}')")
-DB.execute(
-    "CREATE VIEW dp_combined AS "
-    "SELECT * FROM dp02 UNION ALL "
-    "SELECT * FROM dp03 UNION ALL "
-    "SELECT * FROM dp04 UNION ALL "
-    "SELECT * FROM dp05"
-)
-
 
 router = APIRouter()
 
 
 @router.post("/load/acs5-db/tidy/demographics")
 async def tidy_demographics(request: FilterRequest):
-    b_rows = DB.execute(
+    rows = DB.execute(
         """
         SELECT year, Section, Variable, Value, Percent
         FROM b10_census
         WHERE NAME = ?
-        AND CAST(year AS INTEGER) BETWEEN ? AND ?
+          AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year, Section, Variable
-    """,
+        """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = get_metadata("demographics")
-    return make_response(data=b_rows, metadata=metadata)
+    return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
 @router.post("/load/acs5-db/tidy/education")
@@ -95,13 +33,12 @@ async def tidy_education(request: FilterRequest):
         SELECT year, Section, Variable, Value, Percent
         FROM b15003_education
         WHERE NAME = ?
-        AND CAST(year AS INTEGER) BETWEEN ? AND ?
+          AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year, Variable
-    """,
+        """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = get_metadata("education")
-    return make_response(data=rows, metadata=metadata)
+    return make_response(data=rows, metadata=get_metadata("education"))
 
 
 @router.post("/load/acs5-db/tidy/housing")
@@ -111,13 +48,12 @@ async def tidy_housing(request: FilterRequest):
         SELECT year, Section, Variable, Value, Percent
         FROM b_housing
         WHERE NAME = ?
-        AND CAST(year AS INTEGER) BETWEEN ? AND ?
+          AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year, Variable
-    """,
+        """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = get_metadata("housing")
-    return make_response(data=rows, metadata=metadata)
+    return make_response(data=rows, metadata=get_metadata("housing"))
 
 
 @router.post("/load/acs5-db/tidy/labor-force")
@@ -127,17 +63,13 @@ async def tidy_labor_force(request: FilterRequest):
         SELECT year, Section, Variable, Value, Percent
         FROM b_economic
         WHERE NAME = ?
-        AND Section = 'Labor Force'
-        AND CAST(year AS INTEGER) BETWEEN ? AND ?
+          AND Section = 'Labor Force'
+          AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year, Variable
-    """,
+        """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = get_metadata("labor_force")
-    return make_response(data=rows, metadata=metadata)
-
-
-# Housing tenure endpoint removed — not needed (4.3)
+    return make_response(data=rows, metadata=get_metadata("labor_force"))
 
 
 @router.post("/load/acs5-db/tidy/income")
@@ -147,14 +79,13 @@ async def tidy_income(request: FilterRequest):
         SELECT year, Section, Variable, Value, Percent
         FROM b_economic
         WHERE NAME = ?
-        AND Section = 'Income'
-        AND CAST(year AS INTEGER) BETWEEN ? AND ?
+          AND Section = 'Income'
+          AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year, Variable
-    """,
+        """,
         [request.name, request.year_min, request.year_max],
     ).df()
-    metadata = get_metadata("income")
-    return make_response(data=rows, metadata=metadata)
+    return make_response(data=rows, metadata=get_metadata("income"))
 
 
 # ---------------------------------------------------------------------------
@@ -164,10 +95,7 @@ async def tidy_income(request: FilterRequest):
 
 @router.get("/load/acs5-db/dp-combined/tree")
 async def dp_combined_tree():
-    """Return the global set of distinct cascade options across all DP tables.
-    The result is location-independent (same 4,144 combos for every location)
-    and is used to drive the cascading filter UI client-side.
-    """
+    """Return the global set of distinct cascade options across all DP tables."""
     rows = DB.execute(
         """
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
@@ -180,8 +108,8 @@ async def dp_combined_tree():
 
 @router.post("/load/acs5-db/dp-combined/series")
 async def dp_combined_series(request: DPSeriesRequest):
-    """Return the annual time-series for a single (location, table, Category,
-    Subcategory, Variable, Measure) selection.
+    """Return the annual time-series for a single
+    (location, table, Category, Subcategory, Variable, Measure) selection.
     """
     rows = DB.execute(
         """
@@ -208,5 +136,4 @@ async def dp_combined_series(request: DPSeriesRequest):
             request.year_max,
         ],
     ).df()
-    metadata = get_metadata("")
     return make_response(data=rows, metadata=None)
