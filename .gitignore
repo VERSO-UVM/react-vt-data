@@ -39,4 +39,3 @@ yarn-error.log*
 out/
 dist/
 backend/Data/Census/**/*.csv
-*.duckdb
