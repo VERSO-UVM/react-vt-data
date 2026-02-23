@@ -7,13 +7,16 @@ A **React-based Website** for exploring, visualizing, and interpreting Vermont d
 ## Installation & Setup
 
 1. **Clone** this repository:
+  - First, get set up with [large file tracking for git](https://git-lfs.com/)
+  - Then, run the following in your terminal:
 
    ```sh
+   git lfs install 
    git clone https://github.com/FWJK1/react-vt-data
    cd vermont-livability
    ```
 
-2. **Install** python dependencies:
+3. **Install** python dependencies:
    - First, set up [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) if you don't already have it.
    - Then, use conda to set up your python environment
 
