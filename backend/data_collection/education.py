@@ -12,6 +12,8 @@ Six categories matching the Annual Report:
 Output: vt_acs5_b_education_tidy.parquet
 """
 
+from data_collection.census_base import ALL_GEOS
+import argparse
 from backend.data_collection.census_base import GEOS, YEARS, VarGroup, run_scrape
 
 TOTAL = "B15003_001E"
@@ -28,9 +30,15 @@ var_groups = [
              "B15003_017E", "B15003_018E"], [TOTAL]),
     VarGroup("Some College, No Degree", S, [
              "B15003_019E", "B15003_020E"], [TOTAL]),
+    VarGroup("High School Graduate", S, [
+             "B15003_017E", "B15003_018E"], [TOTAL]),
+    VarGroup("Some College, No Degree", S, [
+             "B15003_019E", "B15003_020E"], [TOTAL]),
     VarGroup("Associate's Degree", S, ["B15003_021E"], [TOTAL]),
     VarGroup("Bachelor's Degree", S, ["B15003_022E"], [TOTAL]),
     VarGroup(
+        "Postgraduate Degree", S, ["B15003_023E",
+                                   "B15003_024E", "B15003_025E"], [TOTAL]
         "Postgraduate Degree", S, ["B15003_023E",
                                    "B15003_024E", "B15003_025E"], [TOTAL]
     ),
@@ -41,10 +49,6 @@ fetch_specs = {
 }
 
 if __name__ == "__main__":
-    import argparse
-
-    from data_collection.base import ALL_GEOS
-
     p = argparse.ArgumentParser(
         description="Scrape ACS B-table education data.")
     p.add_argument(
@@ -70,3 +74,6 @@ if __name__ == "__main__":
         selected_geos,
         append=args.append,
     )
+
+    run_scrape(fetch_specs, var_groups,
+               "vt_acs5_b_education_tidy.parquet", YEARS, GEOS)
