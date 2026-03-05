@@ -6,7 +6,7 @@ Tests for data_collection/base.py:
 import pandas as pd
 import pytest
 
-from data_collection.base import VarGroup, compute_tidy_generic, pct
+from backend.data_collection.census_base import VarGroup, compute_tidy_generic, pct
 
 # ---------------------------------------------------------------------------
 # pct()
@@ -80,7 +80,8 @@ def _make_df(**extra_cols):
 class TestComputeTidyGeneric:
     def test_single_group_with_denom(self):
         df = _make_df(B23025_001E=[1000.0], B23025_002E=[650.0])
-        groups = [VarGroup("LFP Rate", "Labor", ["B23025_002E"], ["B23025_001E"])]
+        groups = [VarGroup("LFP Rate", "Labor", [
+                           "B23025_002E"], ["B23025_001E"])]
         result = compute_tidy_generic(df, groups)
 
         assert len(result) == 1

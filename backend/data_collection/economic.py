@@ -20,7 +20,7 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
 Output: vt_acs5_b_economic_tidy.parquet
 """
 
-from data_collection.base import GEOS, YEARS, VarGroup, run_scrape
+from backend.data_collection.census_base import GEOS, YEARS, VarGroup, run_scrape
 
 SL = "Labor Force"
 SI = "Income"
@@ -71,4 +71,5 @@ fetch_specs = {
 }
 
 if __name__ == "__main__":
-    run_scrape(fetch_specs, var_groups, "vt_acs5_b_economic_tidy.parquet", YEARS, GEOS)
+    run_scrape(fetch_specs, var_groups,
+               "vt_acs5_b_economic_tidy.parquet", YEARS, GEOS)

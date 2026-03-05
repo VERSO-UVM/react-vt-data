@@ -15,7 +15,7 @@ Variables match Table 4 of the Annual Report:
 Output: vt_acs5_b_housing_tidy.parquet
 """
 
-from data_collection.base import GEOS, YEARS, VarGroup, run_scrape
+from backend.data_collection.census_base import GEOS, YEARS, VarGroup, run_scrape
 
 S = "Housing"
 
@@ -24,10 +24,12 @@ var_groups = [
     VarGroup("Median Home Value", S, ["B25077_001E"], None),
     # Homeowner vacancy: for-sale vacant / (owner-occupied + for-sale vacant)
     VarGroup(
-        "Homeowner Vacancy Rate", S, ["B25004_004E"], ["B25003_002E", "B25004_004E"]
+        "Homeowner Vacancy Rate", S, ["B25004_004E"], [
+            "B25003_002E", "B25004_004E"]
     ),
     # Rental vacancy: for-rent vacant / (renter-occupied + for-rent vacant)
-    VarGroup("Rental Vacancy Rate", S, ["B25004_002E"], ["B25003_003E", "B25004_002E"]),
+    VarGroup("Rental Vacancy Rate", S, ["B25004_002E"], [
+             "B25003_003E", "B25004_002E"]),
     # Renter-occupied as % of all occupied units
     VarGroup("Renter-Occupied Units", S, ["B25003_003E"], ["B25003_001E"]),
 ]
@@ -40,4 +42,5 @@ fetch_specs = {
 }
 
 if __name__ == "__main__":
-    run_scrape(fetch_specs, var_groups, "vt_acs5_b_housing_tidy.parquet", YEARS, GEOS)
+    run_scrape(fetch_specs, var_groups,
+               "vt_acs5_b_housing_tidy.parquet", YEARS, GEOS)

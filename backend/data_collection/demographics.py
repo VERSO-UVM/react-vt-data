@@ -8,7 +8,7 @@ Fetch ACS 5-Year demographics data for Vermont:
 Output: vt_acs5_b_demographics_tidy.parquet
 """
 
-from data_collection.base import GEOS, YEARS, VarGroup, run_scrape
+from backend.data_collection.census_base import GEOS, YEARS, VarGroup, run_scrape
 
 # ---------------------------------------------------------------------------
 # Age band definitions: (label, male_suffix_range, female_suffix_range)
@@ -51,9 +51,11 @@ var_groups = [
     ],
     # Race (B02001)
     VarGroup("White", "Race", ["B02001_002E"], ["B02001_001E"]),
-    VarGroup("Black or African American", "Race", ["B02001_003E"], ["B02001_001E"]),
+    VarGroup("Black or African American", "Race",
+             ["B02001_003E"], ["B02001_001E"]),
     VarGroup(
-        "American Indian and Alaska Native", "Race", ["B02001_004E"], ["B02001_001E"]
+        "American Indian and Alaska Native", "Race", [
+            "B02001_004E"], ["B02001_001E"]
     ),
     VarGroup("Asian", "Race", ["B02001_005E"], ["B02001_001E"]),
     VarGroup(
@@ -66,7 +68,8 @@ var_groups = [
     VarGroup("Two or more races", "Race", ["B02001_008E"], ["B02001_001E"]),
     # Hispanic (B03003)
     VarGroup(
-        "Hispanic or Latino (of any race)", "Hispanic", ["B03003_003E"], ["B03003_001E"]
+        "Hispanic or Latino (of any race)", "Hispanic", [
+            "B03003_003E"], ["B03003_001E"]
     ),
 ]
 

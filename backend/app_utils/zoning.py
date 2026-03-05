@@ -26,7 +26,7 @@ def clean_zoning_gdf(gdf):
     Function to format columns for tooltip display and prune unneeded columns
     """
 
-    ## replace names
+    # replace names
     gdf["District Type"] = gdf["District Type"].replace(
         {
             "Primarily Residential": "Residential",
@@ -36,7 +36,7 @@ def clean_zoning_gdf(gdf):
         }
     )
 
-    ## format the acres string
+    # format the acres string
     gdf["Acres_fmt"] = gdf["Acres"].map(lambda x: f"{x:,.0f}")
 
     return gdf

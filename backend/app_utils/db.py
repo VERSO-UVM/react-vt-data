@@ -21,4 +21,5 @@ if not _DB_PATH.exists():
     )
 
 DB = duckdb.connect(str(_DB_PATH), read_only=True)
+DB.execute("LOAD spatial;")
 logger.info("Opened DuckDB database: %s", _DB_PATH)
