@@ -11,16 +11,24 @@ venv/
 *zoning.json*
 *tidy.csv*
 
+# Large geodata files — not for version control
+backend/Data/Parcels/
+
+# Local planning/notes files
+claude_todo.md
+claude-work-done.md
+
 
 # build libraries
 *node_modules*
 *.next*
 
 
-# Logss
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+backend/logger/*.log
 
 # Environment files
 .env
