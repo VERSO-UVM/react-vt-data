@@ -39,7 +39,7 @@ const links = [
     ],
   },
   { link: '/working-report', label: 'Working Report' },
-  { link: '/data-export', label: 'Raw Data Export' },
+  { link: '/data-export', label: 'Data Export' },
   // { link: '/scratch', label: 'Scratch' },
   // { link: '/about', label: 'About' },
 ];
