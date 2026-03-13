@@ -40,6 +40,11 @@ const links = [
   },
   { link: '/working-report', label: 'Working Report' },
   { link: '/data-export', label: 'Data Export' },
+  {
+    link: '/tools',
+    label: 'Tools',
+    links: [{ link: '/tools/benefits-estimator', label: 'Benefits Estimator' }],
+  },
   // { link: '/scratch', label: 'Scratch' },
   // { link: '/about', label: 'About' },
 ];
@@ -98,7 +103,7 @@ export default function HeaderMenu() {
 
   return (
     <header className={classes.header}>
-      <Container size="md">
+      <Container size="xl">
         <div className={classes.inner}>
           <Group gap={5} visibleFrom="sm">
             <ProfileModal />
