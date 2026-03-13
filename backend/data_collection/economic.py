@@ -71,5 +71,32 @@ fetch_specs = {
 }
 
 if __name__ == "__main__":
-    run_scrape(fetch_specs, var_groups,
-               "vt_acs5_b_economic_tidy.parquet", YEARS, GEOS)
+    import argparse
+
+    from data_collection.base import ALL_GEOS
+
+    p = argparse.ArgumentParser(
+        description="Scrape ACS B-table economic data.")
+    p.add_argument(
+        "--geos",
+        nargs="+",
+        choices=list(ALL_GEOS),
+        default=list(ALL_GEOS),
+        metavar="GEO",
+        help=f"Geographies to scrape (default: all). Choices: {list(ALL_GEOS)}",
+    )
+    p.add_argument(
+        "--append",
+        action="store_true",
+        help="Merge new rows into existing parquet instead of overwriting.",
+    )
+    args = p.parse_args()
+    selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
+    run_scrape(
+        fetch_specs,
+        var_groups,
+        "vt_acs5_b_economic_tidy.parquet",
+        YEARS,
+        selected_geos,
+        append=args.append,
+    )

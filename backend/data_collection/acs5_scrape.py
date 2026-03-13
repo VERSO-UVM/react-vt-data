@@ -1,17 +1,24 @@
 """
 Fetch ACS 5-Year Data Profile tables (DP02-DP05) for Vermont
-Geographies: counties + county subdivisions
+Geographies: counties + county subdivisions + Vermont statewide + United States
 Years: 2009-2024
 Output: one wide CSV + parquet per table, plus tidy parquet per table
 Credit: Written largely by Claude, with some fine-tuning and troubleshooting by Fitz Koch
+
+Geography selection
+-------------------
+Pass --geos on the CLI to scrape only specific geographic levels.
+Use --append to merge new rows into existing files instead of overwriting.
 """
 
+import argparse
 import time
 
 import pandas as pd
 import requests
 
 from app_utils.census import tidy_census
+from data_collection.base import ALL_GEOS
 
 API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5/profile"
@@ -25,19 +32,19 @@ TABLES = {
 YEARS = list(range(2009, 2025))
 STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
-GEOS = [
-    ("county", "county:*", f"state:{STATE_FIPS}"),
-    ("county_subdivision", "county subdivision:*", f"state:{STATE_FIPS}"),
-]
+
+# Default geos list in (label, for_clause, in_clause) format
+GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
 
 
 def fetch_table(year, table, for_clause, in_clause):
     params = {
         "get": f"group({table}),NAME",
         "for": for_clause,
-        "in": in_clause,
         "key": API_KEY,
     }
+    if in_clause:  # state/national geos have no "in" clause
+        params["in"] = in_clause
     try:
         r = requests.get(BASE_URL.format(year=year), params=params, timeout=30)
         r.raise_for_status()
@@ -62,13 +69,13 @@ def fetch_table(year, table, for_clause, in_clause):
         return None
 
 
-def scrape():
+def scrape(geos: list = GEOS, append: bool = False):
     # Collect raw frames per table
     all_frames = {table: [] for table in TABLES}
 
     for year in YEARS:
         print(f"\n=== {year} ===")
-        for geo_label, for_clause, in_clause in GEOS:
+        for geo_label, for_clause, in_clause in geos:
             for table in TABLES:
                 print(f"  {table} / {geo_label}...")
                 df = fetch_table(year, table, for_clause, in_clause)
@@ -79,21 +86,39 @@ def scrape():
 
     # Save wide + tidy per table
     for table, frames in all_frames.items():
+        if not frames:
+            print(f"  No frames for {table}, skipping.")
+            continue
+
         label = TABLES[table]
         title = f"vt_acs5_{label}_data"
         combined = pd.concat(frames, ignore_index=True, sort=False)
 
         # Key columns to front
-        priority = ID_VARS
-        front = [c for c in priority if c in combined.columns]
+        front = [c for c in ID_VARS if c in combined.columns]
         rest = [c for c in combined.columns if c not in front]
         combined = combined[front + rest]
         combined.sort_values(["year", "geo_type", "NAME"], inplace=True)
         combined.reset_index(drop=True, inplace=True)
 
-        # Save wide
-        combined.to_csv(f"{STORAGE_LOCATION}/{title}.csv", index=False)
-        combined.to_parquet(f"{STORAGE_LOCATION}/{title}.parquet", index=False)
+        wide_parquet_path = f"{STORAGE_LOCATION}/{title}.parquet"
+        wide_csv_path = f"{STORAGE_LOCATION}/{title}.csv"
+
+        if append:
+            new_names = set(combined["NAME"].unique())
+            # --- Wide ---
+            try:
+                existing_wide = pd.read_parquet(wide_parquet_path)
+                existing_wide = existing_wide[~existing_wide["NAME"].isin(new_names)]
+                combined = pd.concat([existing_wide, combined], ignore_index=True)
+                combined.sort_values(["year", "geo_type", "NAME"], inplace=True)
+                combined.reset_index(drop=True, inplace=True)
+                print(f"  Wide append: kept {len(existing_wide):,} existing rows.")
+            except FileNotFoundError:
+                pass
+
+        combined.to_csv(wide_csv_path, index=False)
+        combined.to_parquet(wide_parquet_path, index=False)
         print(f"Saved wide: {title} ({len(combined):,} rows)")
 
         # Tidy: run per-year so column labels are year-accurate
@@ -104,7 +129,6 @@ def scrape():
                 continue
             try:
                 tidy_year = tidy_census(year_df, year=year, id_vars=ID_VARS)
-                # tag which DP table this came from
                 tidy_year["table"] = table
                 tidy_frames.append(tidy_year)
             except Exception as e:
@@ -112,8 +136,14 @@ def scrape():
 
         if tidy_frames:
             tidy = pd.concat(tidy_frames, ignore_index=True)
-            tidy.to_csv(f"{STORAGE_LOCATION}/{title}_tidy.csv", index=False)
-            tidy.to_parquet(f"{STORAGE_LOCATION}/{title}_tidy.parquet", index=False)
+            tidy_parquet_path = f"{STORAGE_LOCATION}/{title}_tidy.parquet"
+            tidy_csv_path = f"{STORAGE_LOCATION}/{title}_tidy.csv"
+
+            # No separate append needed for tidy: it's derived from the
+            # already-merged wide frame, so it naturally contains all geos.
+
+            tidy.to_csv(tidy_csv_path, index=False)
+            tidy.to_parquet(tidy_parquet_path, index=False)
             print(f"Saved tidy: {title}_tidy ({len(tidy):,} rows)")
 
 
@@ -136,5 +166,23 @@ def merge_tidy_tables():
 
 
 if __name__ == "__main__":
-    scrape()
+    p = argparse.ArgumentParser(
+        description="Scrape ACS DP02-DP05 profile tables for Vermont."
+    )
+    p.add_argument(
+        "--geos",
+        nargs="+",
+        choices=list(ALL_GEOS),
+        default=list(ALL_GEOS),
+        metavar="GEO",
+        help=f"Geographies to scrape (default: all). Choices: {list(ALL_GEOS)}",
+    )
+    p.add_argument(
+        "--append",
+        action="store_true",
+        help="Merge new rows into existing parquet instead of overwriting.",
+    )
+    args = p.parse_args()
+    selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
+    scrape(geos=selected_geos, append=args.append)
     merge_tidy_tables()
