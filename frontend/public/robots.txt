@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# The /export endpoints are intended for individual human use only.
+# Please do not scrape or automate downloads from these routes.
+# For large-scale or automated access, use the primary data sources directly:
+#
+#   U.S. Census Bureau ACS 5-Year Data:
+#     https://www.census.gov/data/developers/data-sets/acs-5year.html
+#
+#   Vermont Open Geodata Portal (zoning, parcels, flood):
+#     https://geodata.vermont.gov/
+#
+#   Vermont Agency of Commerce and Community Development:
+#     https://accd.vermont.gov/
+#
+Disallow: /export/
