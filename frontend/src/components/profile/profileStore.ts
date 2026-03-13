@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface Location {
-  type: 'state' | 'county' | 'town' | 'rpc';
+  type: 'state' | 'county' | 'town' | 'rpc' | 'national';
   state?: boolean;
   county?: string | null;
   town?: string | null;
