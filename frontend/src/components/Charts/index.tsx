@@ -193,7 +193,7 @@ export const ChartStack = <TData extends Record<string, any>>({
       if (!ChartComponent) return null;
       if (!chart.data || chart.data.length === 0)
         return (
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Card key={chart.id} shadow="sm" padding="lg" radius="md" withBorder>
             <Text>
               No data available from {`${chart.title}`}
               {chart.description ? ` for ${chart.description}` : ''}.

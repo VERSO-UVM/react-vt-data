@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Grid, Card, Button, Text, Group, Box } from '@mantine/core';
-import Image from 'next/image';
 import Link from 'next/link';
 
 interface LinkItem {
@@ -56,15 +55,15 @@ function MappingCard({ item }: { item: LinkItem }) {
             justifyContent: 'center',
           }}
         >
-          <Image
+          <img
             src={src}
             alt={item.label}
-            width={200}
-            height={140}
             style={{
               objectFit: 'contain',
               maxHeight: '100%',
               maxWidth: '100%',
+              width: 200,
+              height: 140,
             }}
           />
         </Box>
