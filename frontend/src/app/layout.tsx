@@ -12,7 +12,7 @@ const zillaSlab = Zilla_Slab({
 });
 
 export const metadata: Metadata = {
-  title: ' Vermont Data Exploration App',
+  title: 'Vermont Data Collaborative',
   description: 'Vermont Data dashboard built at UVM by VERSO students',
 };
 
