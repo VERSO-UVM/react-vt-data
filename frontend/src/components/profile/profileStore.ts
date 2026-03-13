@@ -29,10 +29,12 @@ interface ProfileStore {
   interests: string[];
   yearMin: number;
   yearMax: number;
+  profileSet: boolean;
   setLocation: (location: Location) => void;
   setComparison: (location: Location) => void;
   setInterests: (interests: string[]) => void;
   setYearRange: (min: number, max: number) => void;
+  setProfileSet: (v: boolean) => void;
 }
 
 export const useProfile = create<ProfileStore>()(
@@ -43,10 +45,12 @@ export const useProfile = create<ProfileStore>()(
       interests: [],
       yearMin: YEAR_MIN_OVERALL,
       yearMax: YEAR_MAX_OVERALL,
+      profileSet: false,
       setLocation: (location) => set({ myLocation: location }),
       setComparison: (location) => set({ comparison: location }),
       setInterests: (interests) => set({ interests }),
       setYearRange: (min, max) => set({ yearMin: min, yearMax: max }),
+      setProfileSet: (v) => set({ profileSet: v }),
     }),
     { name: 'location-storage' },
   ),

@@ -266,7 +266,9 @@ const PdfTableSection = ({ chart }: { chart: ChartItem<any> }) => {
   }
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort() as number[];
-  const variables = Array.from(new Set(data.map((r) => r.Variable))) as string[];
+  const variables = Array.from(
+    new Set(data.map((r) => r.Variable)),
+  ) as string[];
   const renderCell = getCellRenderer(chart.subtype);
 
   const findRow = (variable: string, year: number) =>
