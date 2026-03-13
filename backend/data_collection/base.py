@@ -1,5 +1,5 @@
 """
-Shared utilities for ACS 5-Year Census data scrapers.
+Shared utilities for ACS 5-Year Census B-table scrapers.
 
 Each scraper defines:
   fetch_specs  – dict mapping Census table name → list of variable codes.
@@ -7,6 +7,18 @@ Each scraper defines:
   var_groups   – list of VarGroup, describing how raw columns become tidy output rows.
 
 Then calls run_scrape(fetch_specs, var_groups, output_filename).
+
+Geography selection
+-------------------
+ALL_GEOS maps a short key to (for_clause, in_clause) for the Census API.
+Pass a subset to run_scrape(geos=...) or use --geos on the CLI to scrape
+only specific geographic levels.
+
+Append mode
+-----------
+run_scrape(..., append=True) reads the existing parquet, drops any rows
+whose NAME appears in the newly fetched data (so a re-run of state/national
+replaces rather than duplicates those rows), then writes the merged result.
 """
 
 import time
@@ -23,10 +35,24 @@ STATE_FIPS = "50"
 YEARS = list(range(2009, 2025))
 STORAGE_LOCATION = "Data/Census/ACS_5"
 
-GEOS = [
-    ("county", "county:*", f"state:{STATE_FIPS}"),
-    ("county_subdivision", "county subdivision:*", f"state:{STATE_FIPS}"),
-]
+# ---------------------------------------------------------------------------
+# Geography registry
+# ---------------------------------------------------------------------------
+
+ALL_GEOS: dict[str, tuple[str, str]] = {
+    "county": ("county:*", f"state:{STATE_FIPS}"),
+    "county_subdivision": ("county subdivision:*", f"state:{STATE_FIPS}"),
+    "state": (f"state:{STATE_FIPS}", ""),   # Vermont statewide → NAME = "Vermont"
+    "national": ("us:1", ""),               # US overall       → NAME = "United States"
+}
+
+# Default: all geographies (preserves original scrape order)
+GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
+
+
+# ---------------------------------------------------------------------------
+# Data structures
+# ---------------------------------------------------------------------------
 
 
 @dataclass
@@ -46,15 +72,21 @@ class VarGroup:
     denom: list[str] | None = None
 
 
+# ---------------------------------------------------------------------------
+# Census API fetch
+# ---------------------------------------------------------------------------
+
+
 def fetch(
     year: int, variables: list[str], for_clause: str, in_clause: str
 ) -> pd.DataFrame | None:
     params = {
         "get": ",".join(variables) + ",NAME",
         "for": for_clause,
-        "in": in_clause,
         "key": API_KEY,
     }
+    if in_clause:  # state/national geos have no "in" clause
+        params["in"] = in_clause
     try:
         r = requests.get(BASE_URL.format(year=year), params=params, timeout=30)
         r.raise_for_status()
@@ -68,6 +100,11 @@ def fetch(
     except Exception as e:
         print(f"  SKIP {year} / {for_clause}: {e}")
         return None
+
+
+# ---------------------------------------------------------------------------
+# Tidy computation
+# ---------------------------------------------------------------------------
 
 
 def pct(val: float, total: float) -> float | None:
@@ -104,20 +141,29 @@ def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.Dat
     return pd.DataFrame(rows)
 
 
+# ---------------------------------------------------------------------------
+# Main scrape runner
+# ---------------------------------------------------------------------------
+
+
 def run_scrape(
     fetch_specs: dict[str, list[str]],
     var_groups: list[VarGroup],
     output_filename: str,
     years: list[int] = YEARS,
     geos: list = GEOS,
+    append: bool = False,
 ) -> None:
     """
     Fetch Census data, compute tidy rows, and save as parquet.
 
     fetch_specs:      maps a Census table label (for logging) to its variable codes.
-                      Each entry triggers a separate API call; all are merged by geography.
+                      Each entry triggers a separate API call; all are merged by geo.
     var_groups:       defines how raw fetched columns assemble into tidy output rows.
     output_filename:  file name (not path) saved under STORAGE_LOCATION.
+    geos:             list of (label, for_clause, in_clause) tuples to scrape.
+    append:           if True, merge with existing parquet instead of overwriting.
+                      Rows whose NAME appears in the new data replace old rows.
     """
     all_frames = []
 
@@ -136,9 +182,11 @@ def run_scrape(
                     merged = df.copy()
                     merged["geo_type"] = geo_label
                 else:
-                    merge_cols = ["NAME", "state"] + (
-                        ["county"] if "county" in merged.columns else []
-                    )
+                    # Build merge key from whichever ID columns are present
+                    merge_cols = ["NAME"]
+                    for col in ("state", "county"):
+                        if col in merged.columns and col in df.columns:
+                            merge_cols.append(col)
                     new_var_cols = [c for c in df.columns if c.startswith("B")]
                     merged = merged.merge(
                         df[merge_cols + new_var_cols], on=merge_cols, how="left"
@@ -158,5 +206,20 @@ def run_scrape(
     tidy.reset_index(drop=True, inplace=True)
 
     out = f"{STORAGE_LOCATION}/{output_filename}"
+
+    if append:
+        try:
+            existing = pd.read_parquet(out)
+            # Drop any existing rows for the NAMEs we just fetched, then concat
+            new_names = set(tidy["NAME"].unique())
+            existing = existing[~existing["NAME"].isin(new_names)]
+            tidy = pd.concat([existing, tidy], ignore_index=True)
+            tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
+            tidy.reset_index(drop=True, inplace=True)
+            print(f"Appended — kept {len(existing):,} existing rows, "
+                  f"added/replaced {len(new_names)} NAME(s).")
+        except FileNotFoundError:
+            print(f"No existing file at {out}; writing fresh.")
+
     tidy.to_parquet(out, index=False)
     print(f"\nDone. {len(tidy):,} rows -> {out}")
