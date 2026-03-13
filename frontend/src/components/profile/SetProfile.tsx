@@ -21,17 +21,12 @@ import county_town_names from '@/Data/county_town_names.json';
 
 type CountyKey = keyof typeof county_town_names;
 
-interface ProfileLocationSelectProps {
-  title: string;
-  location: Location;
-  setLocation: (loc: Location) => void;
-}
-
 const getName = (
   type: string,
   county?: string | null,
   town?: string | null,
 ) => {
+  if (type === 'national') return 'United States';
   if (type === 'state') return 'Vermont';
   if (type === 'county' && county) return `${county} County, Vermont`;
   if (type === 'town' && county && town)
@@ -39,10 +34,18 @@ const getName = (
   return 'Unknown';
 };
 
+interface ProfileLocationSelectProps {
+  title: string;
+  location: Location;
+  setLocation: (loc: Location) => void;
+  showNational?: boolean;
+}
+
 const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   title,
   location,
   setLocation,
+  showNational = false,
 }) => {
   const counties = Object.keys(county_town_names) as CountyKey[];
 
@@ -55,7 +58,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         value={location.type}
         onChange={(value) => {
           if (!value) return;
-          const newType = value as 'state' | 'county' | 'town';
+          const newType = value as Location['type'];
           setLocation({
             type: newType,
             state: newType === 'state',
@@ -65,6 +68,9 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
           });
         }}
         data={[
+          ...(showNational
+            ? [{ value: 'national', label: 'American Average (U.S.)' }]
+            : []),
           { value: 'state', label: 'All of Vermont' },
           { value: 'county', label: 'County' },
           { value: 'town', label: 'Town' },
@@ -188,6 +194,7 @@ export const ProfileModal: React.FC = () => {
             title="Comparison"
             location={tempComparison}
             setLocation={setTempComparison}
+            showNational
           />
 
           <Divider />
