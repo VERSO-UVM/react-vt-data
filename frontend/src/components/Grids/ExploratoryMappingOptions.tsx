@@ -8,6 +8,7 @@ import Link from 'next/link';
 interface LinkItem {
   link: string;
   label: string;
+  description?: string;
 }
 
 interface ExploratoryMappingGridProps {
@@ -78,7 +79,7 @@ function MappingCard({ item }: { item: LinkItem }) {
           color: '#555',
         }}
       >
-        Brief description or summary about offerings/use cases.
+        {item.description ?? ''}
       </Text>
 
       <Box style={{ padding: 12 }}>
