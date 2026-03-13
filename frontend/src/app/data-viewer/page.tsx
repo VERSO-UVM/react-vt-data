@@ -158,6 +158,7 @@ export default function DataViewerPage() {
       chartParams: {
         ...chart.chartParams,
         legendLabels: [myLocation.name, comparison.name],
+        defId: chart.id,
       },
       description: chart.title,
       notes: chart.notes,
@@ -225,6 +226,7 @@ export default function DataViewerPage() {
           charts={visibleItems}
           action="add"
           userInterests={interests}
+          defIds={visibleItems.map((c) => c.chartParams?.defId)}
         />
       </Container>
     </>
