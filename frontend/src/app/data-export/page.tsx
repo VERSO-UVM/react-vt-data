@@ -11,18 +11,17 @@ import {
   Divider,
   Group,
   Loader,
-  Radio,
   Select,
   Stack,
   Text,
   Title,
 } from '@mantine/core';
 import { BASE_API_URL } from '@/config';
-
-type AreaLevel = 'state' | 'county' | 'town';
+import { useProfile } from '@/components/profile/profileStore';
 
 interface SourceMeta {
   label: string;
+  group: string;
   description: string;
   primary_source: string;
 }
@@ -32,13 +31,15 @@ interface Locations {
   towns: string[];
 }
 
-const AREA_LEVELS: { value: AreaLevel; label: string }[] = [
-  { value: 'state', label: 'Vermont (all)' },
-  { value: 'county', label: 'County' },
-  { value: 'town', label: 'Town / City' },
-];
+// Shape expected by Mantine Select with groups
+interface SelectGroup {
+  group: string;
+  items: { value: string; label: string }[];
+}
 
 export default function DataExport() {
+  const { myLocation } = useProfile();
+
   const [sources, setSources] = useState<Record<string, SourceMeta>>({});
   const [locations, setLocations] = useState<Locations>({
     counties: [],
@@ -46,16 +47,22 @@ export default function DataExport() {
   });
   const [locationsLoading, setLocationsLoading] = useState(false);
 
-  const [selectedSource, setSelectedSource] = useState<string>('housing');
-  const [areaLevel, setAreaLevel] = useState<AreaLevel>('state');
-  const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
-  const [selectedTown, setSelectedTown] = useState<string | null>(null);
+  // Initialize area selection from the user's saved profile location
+  const [selectedSource, setSelectedSource] = useState<string | null>(
+    'census_housing',
+  );
+  const [selectedCounty, setSelectedCounty] = useState<string | null>(
+    myLocation.type !== 'state' ? (myLocation.county ?? null) : null,
+  );
+  const [selectedTown, setSelectedTown] = useState<string | null>(
+    myLocation.type === 'town' ? (myLocation.town ?? null) : null,
+  );
 
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Load available sources
+  // Load available export sources
   useEffect(() => {
     fetch(`${BASE_API_URL}/export/sources`)
       .then((r) => r.json())
@@ -72,36 +79,43 @@ export default function DataExport() {
         setLocations(data);
         setLocationsLoading(false);
       })
-      .catch(() => {
-        setLocationsLoading(false);
-      });
+      .catch(() => setLocationsLoading(false));
+  }, []);
+
+  // Build grouped options for the source Select
+  const sourceSelectData: SelectGroup[] = Object.entries(sources).reduce<
+    SelectGroup[]
+  >((groups, [key, meta]) => {
+    const group = groups.find((g) => g.group === meta.group);
+    const item = { value: key, label: meta.label };
+    if (group) {
+      group.items.push(item);
+    } else {
+      groups.push({ group: meta.group, items: [item] });
+    }
+    return groups;
   }, []);
 
   function areaDescription(): string {
-    if (areaLevel === 'county' && selectedCounty)
-      return `${selectedCounty} County`;
-    if (areaLevel === 'town' && selectedTown) return selectedTown;
-    return 'Vermont (all jurisdictions)';
+    if (selectedTown) return selectedTown;
+    if (selectedCounty) return `${selectedCounty} County`;
+    return 'Vermont (all)';
   }
 
   async function handleDownload() {
     setError(null);
     setSuccessMsg(null);
 
-    if (areaLevel === 'county' && !selectedCounty) {
-      setError('Please select a county.');
-      return;
-    }
-    if (areaLevel === 'town' && !selectedTown) {
-      setError('Please select a town.');
+    if (!selectedSource) {
+      setError('Please select a data topic.');
       return;
     }
 
     setDownloading(true);
     try {
       const body: Record<string, string | null> = { source: selectedSource };
-      if (areaLevel === 'county') body.county = selectedCounty;
-      if (areaLevel === 'town') body.jurisdiction = selectedTown;
+      if (selectedCounty) body.county = selectedCounty;
+      if (selectedTown) body.jurisdiction = selectedTown;
 
       const res = await fetch(`${BASE_API_URL}/export/csv`, {
         method: 'POST',
@@ -131,7 +145,7 @@ export default function DataExport() {
       URL.revokeObjectURL(url);
 
       const msg = truncated
-        ? `Downloaded ${rowCount} rows (truncated to 10,000 row limit). For the full dataset, see the primary source linked below.`
+        ? `Downloaded ${rowCount} rows (capped at 10,000). For the full dataset, use the primary source linked below.`
         : `Downloaded ${rowCount} rows.`;
       setSuccessMsg(msg);
     } catch (err: unknown) {
@@ -141,13 +155,13 @@ export default function DataExport() {
     }
   }
 
-  const currentSource = sources[selectedSource];
+  const currentSource = selectedSource ? sources[selectedSource] : undefined;
 
   return (
     <>
       <Center pt="xl" mb="xs">
         <Group gap="sm" align="center">
-          <Title order={2}>Raw Data Export</Title>
+          <Title order={2}>Data Export</Title>
           <Badge color="orange" variant="filled" size="lg">
             Beta
           </Badge>
@@ -155,9 +169,10 @@ export default function DataExport() {
       </Center>
       <Center mb="xl">
         <Text c="dimmed" size="sm" maw={560} ta="center">
-          Download Vermont census data as a CSV file. Data is from the U.S.
-          Census Bureau ACS 5-Year estimates. For large-scale or automated
-          access, please use the primary sources directly.
+          Download Vermont data as a CSV file. Variables are exported with
+          human-readable names (e.g. &ldquo;% Owner-Occupied Units&rdquo;)
+          rather than raw census codes. For questions about methodology, see the
+          primary source for each dataset.
         </Text>
       </Center>
 
@@ -184,19 +199,22 @@ export default function DataExport() {
             </Alert>
           )}
 
-          {/* Source selection */}
+          {/* Data topic */}
           <Card withBorder radius="md" p="lg">
             <Text fw={600} mb="md">
               1. Select a data topic
             </Text>
-            <Radio.Group value={selectedSource} onChange={setSelectedSource}>
-              <Stack gap="xs">
-                {Object.entries(sources).map(([key, meta]) => (
-                  <Radio key={key} value={key} label={meta.label} />
-                ))}
-                {Object.keys(sources).length === 0 && <Loader size="sm" />}
-              </Stack>
-            </Radio.Group>
+            {sourceSelectData.length === 0 ? (
+              <Loader size="sm" />
+            ) : (
+              <Select
+                placeholder="Choose a dataset…"
+                data={sourceSelectData}
+                value={selectedSource}
+                onChange={setSelectedSource}
+                searchable
+              />
+            )}
 
             {currentSource && (
               <>
@@ -220,36 +238,33 @@ export default function DataExport() {
 
           {/* Area selection */}
           <Card withBorder radius="md" p="lg">
-            <Text fw={600} mb="md">
+            <Text fw={600} mb="xs">
               2. Select a geographic area
             </Text>
-            <Radio.Group
-              value={areaLevel}
-              onChange={(v) => setAreaLevel(v as AreaLevel)}
-            >
-              <Stack gap="xs" mb="md">
-                {AREA_LEVELS.map(({ value, label }) => (
-                  <Radio key={value} value={value} label={label} />
-                ))}
-              </Stack>
-            </Radio.Group>
-
-            {areaLevel === 'county' && (
+            <Text size="xs" c="dimmed" mb="md">
+              Defaults to your saved profile location. Leave both blank for all
+              of Vermont.
+            </Text>
+            <Stack gap="sm">
               <Select
-                placeholder={locationsLoading ? 'Loading…' : 'Select a county'}
+                label="County (optional)"
+                placeholder={
+                  locationsLoading ? 'Loading…' : 'All counties (statewide)'
+                }
                 data={locations.counties}
                 value={selectedCounty}
-                onChange={setSelectedCounty}
+                onChange={(v) => {
+                  setSelectedCounty(v);
+                  setSelectedTown(null);
+                }}
                 searchable
                 clearable
                 disabled={locationsLoading}
               />
-            )}
-
-            {areaLevel === 'town' && (
               <Select
+                label="Town / City (optional)"
                 placeholder={
-                  locationsLoading ? 'Loading…' : 'Search for a town'
+                  locationsLoading ? 'Loading…' : 'All towns in selected county'
                 }
                 data={locations.towns}
                 value={selectedTown}
@@ -258,7 +273,7 @@ export default function DataExport() {
                 clearable
                 disabled={locationsLoading}
               />
-            )}
+            </Stack>
           </Card>
 
           {/* Summary + download */}
@@ -266,13 +281,14 @@ export default function DataExport() {
             <Text fw={600} mb="xs">
               3. Download
             </Text>
-            <Text size="sm" c="dimmed" mb="md">
+            <Text size="sm" c="dimmed" mb="xs">
               {currentSource?.label ?? '—'} &middot; {areaDescription()}
             </Text>
             <Text size="xs" c="dimmed" mb="md">
-              Downloads are limited to 10,000 rows per file and 10 files per
-              hour. For complete or repeated access, download directly from the
-              primary source listed above.
+              Downloads are capped at 10,000 rows and 10 files per hour. Census
+              ACS exports use human-readable variable labels rather than raw
+              census codes — if you need the original codes for analysis, use
+              the primary source directly.
             </Text>
             <Button
               onClick={handleDownload}

@@ -68,7 +68,9 @@ const DiffPerXBarChartSVG = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
-  const colors = chart.data.map((entry: any) => entry[chart.chartParams!.color]);
+  const colors = chart.data.map(
+    (entry: any) => entry[chart.chartParams!.color],
+  );
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
@@ -94,7 +96,9 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
   if (isPdfMode) return <DiffPerXBarChartSVG chart={chart} />;
 
   const labels = chart.data.map((entry: any) => entry[chart.xField]);
-  const colors = chart.data.map((entry: any) => entry[chart.chartParams!.color]);
+  const colors = chart.data.map(
+    (entry: any) => entry[chart.chartParams!.color],
+  );
 
   const data = {
     labels,

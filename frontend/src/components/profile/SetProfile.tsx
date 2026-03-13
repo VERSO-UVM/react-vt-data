@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Button,
   Divider,
@@ -126,8 +126,16 @@ export const ProfileModal: React.FC = () => {
     yearMin,
     yearMax,
     setYearRange,
+    profileSet,
+    setProfileSet,
   } = useProfile();
   const [opened, setOpened] = useState(false);
+
+  // Open automatically after mount (once the Zustand persist store has
+  // rehydrated from localStorage) if the user hasn't saved a profile yet.
+  useEffect(() => {
+    if (!profileSet) setOpened(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
   const [tempComparison, setTempComparison] = useState<Location>(comparison);
@@ -151,6 +159,7 @@ export const ProfileModal: React.FC = () => {
     setComparison(tempComparison);
     setInterests(tempInterests);
     setYearRange(tempYearRange[0], tempYearRange[1]);
+    setProfileSet(true);
     setOpened(false);
   };
 
@@ -164,6 +173,12 @@ export const ProfileModal: React.FC = () => {
         size="md"
       >
         <Stack gap="md">
+          {!profileSet && (
+            <Text size="sm" c="blue">
+              Select a profile before beginning. Only your location is required;
+              other fields are optional.
+            </Text>
+          )}
           <ProfileLocationSelect
             title="My Location"
             location={tempMyLocation}
