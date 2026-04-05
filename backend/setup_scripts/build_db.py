@@ -16,6 +16,8 @@ QCEW (from Parquet):
 ACS-5 (from Parquet):
     profile_census, b10_census, b15003_education, b_housing, b_economic,
     dp_combined  (materialized union of DP02/03/04/05)
+
+Zoning (from Parquet)
 """
 
 from pathlib import Path
@@ -42,6 +44,10 @@ def _acs5(name: str) -> str:
     return str(DATA / "Census" / "ACS_5" / name)
 
 
+def _zoning(name: str) -> str:
+    return str(DATA / "zoning" / name)
+
+
 def build() -> None:
     if DB_PATH.exists():
         DB_PATH.unlink()
@@ -61,7 +67,7 @@ def build() -> None:
             TRY_CAST(Unemployment_Rate AS DOUBLE) AS Unemployment_Rate
         FROM read_csv_auto('{_csv("unemployment_rate_by_year.csv")}')
     """)
-    print("  [1/14] unemployment_rate")
+    print("  [1/15] unemployment_rate")
 
     con.execute(f"""
         CREATE TABLE median_earnings AS
@@ -72,7 +78,7 @@ def build() -> None:
             TRY_CAST(estimate AS DOUBLE) AS estimate
         FROM read_csv_auto('{_csv("median_earnings_by_year.csv")}')
     """)
-    print("  [2/14] median_earnings")
+    print("  [2/15] median_earnings")
 
     con.execute(f"""
         CREATE TABLE median_home_value AS
@@ -82,7 +88,7 @@ def build() -> None:
             TRY_CAST(estimate AS DOUBLE) AS estimate
         FROM read_csv_auto('{_csv("med_home_value_by_year.csv")}')
     """)
-    print("  [3/14] median_home_value")
+    print("  [3/15] median_home_value")
 
     con.execute(f"""
         CREATE TABLE median_smoc AS
@@ -93,7 +99,7 @@ def build() -> None:
             TRY_CAST(estimate AS DOUBLE) AS estimate
         FROM read_csv_auto('{_csv("med_smoc_by_year.csv")}')
     """)
-    print("  [4/14] median_smoc")
+    print("  [4/15] median_smoc")
 
     con.execute(f"""
         CREATE TABLE commute_time AS
@@ -103,7 +109,7 @@ def build() -> None:
             TRY_CAST(estimate AS DOUBLE) AS estimate
         FROM read_csv_auto('{_csv("commute_time_by_year.csv")}')
     """)
-    print("  [5/14] commute_time")
+    print("  [5/15] commute_time")
 
     con.execute(f"""
         CREATE TABLE commute_habits AS
@@ -114,7 +120,7 @@ def build() -> None:
             TRY_CAST(estimate AS DOUBLE) AS estimate
         FROM read_csv_auto('{_csv("commute_habits_by_year.csv")}')
     """)
-    print("  [6/14] commute_habits")
+    print("  [6/15] commute_habits")
 
     con.execute(f"""
         CREATE TABLE historic_population AS
@@ -124,7 +130,7 @@ def build() -> None:
             TRY_CAST(Population AS DOUBLE) AS Population
         FROM read_csv_auto('{_csv("VT_Historic_Population.csv")}')
     """)
-    print("  [7/14] historic_population")
+    print("  [7/15] historic_population")
 
     # ------------------------------------------------------------------
     # QCEW
@@ -133,7 +139,7 @@ def build() -> None:
         CREATE TABLE qcew AS
         SELECT * FROM read_parquet('{DATA / "QCEW" / "vt_qcew_employment.parquet"}')
     """)
-    print("  [8/14] qcew")
+    print("  [8/15] qcew")
 
     # ------------------------------------------------------------------
     # ACS-5 parquets
@@ -142,31 +148,31 @@ def build() -> None:
         CREATE TABLE profile_census AS
         SELECT * FROM read_parquet('{DATA / "Census" / "vt_acs5_combined_TIDY.parquet"}')
     """)
-    print("  [9/14] profile_census")
+    print("  [9/15] profile_census")
 
     con.execute(f"""
         CREATE TABLE b10_census AS
         SELECT * FROM read_parquet('{_acs5("vt_acs5_b_demographics_tidy.parquet")}')
     """)
-    print("  [10/14] b10_census")
+    print("  [10/15] b10_census")
 
     con.execute(f"""
         CREATE TABLE b15003_education AS
         SELECT * FROM read_parquet('{_acs5("vt_acs5_b_education_tidy.parquet")}')
     """)
-    print("  [11/14] b15003_education")
+    print("  [11/15] b15003_education")
 
     con.execute(f"""
         CREATE TABLE b_housing AS
         SELECT * FROM read_parquet('{_acs5("vt_acs5_b_housing_tidy.parquet")}')
     """)
-    print("  [12/14] b_housing")
+    print("  [12/15] b_housing")
 
     con.execute(f"""
         CREATE TABLE b_economic AS
         SELECT * FROM read_parquet('{_acs5("vt_acs5_b_economic_tidy.parquet")}')
     """)
-    print("  [13/14] b_economic")
+    print("  [13/15] b_economic")
 
     # dp_combined: materialized union of all four DP tables
     con.execute(f"""
@@ -179,7 +185,22 @@ def build() -> None:
         UNION ALL
         SELECT * FROM read_parquet('{_acs5("vt_acs5_Demographic_data_tidy.parquet")}')
     """)
-    print("  [14/14] dp_combined")
+    print("  [14/15] dp_combined")
+
+    # ------------------------------------------------------------------
+    # Zoning parquet
+    # ------------------------------------------------------------------
+
+    con.execute(f"""
+        INSTALL spatial;
+        LOAD spatial;
+    """)
+
+    con.execute(f"""
+        CREATE TABLE zoning AS
+        SELECT * FROM read_parquet('{_zoning("vt_zoning.parquet")}')
+    """)
+    print("  [15/15] zoning")
 
     con.close()
     size_mb = DB_PATH.stat().st_size / 1_048_576
