@@ -5,8 +5,6 @@ Vermont Data App
 Zoning Utility Functions
 """
 
-import pandas as pd
-
 from app_utils.color import add_fill_colors
 from app_utils.mapping import add_tooltip_from_dict
 
