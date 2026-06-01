@@ -322,6 +322,97 @@ export const HousingTrendChart = <TData,>({
   );
 };
 
+
+// ---------------------------------------------------------------------------
+// Economics: Poverty Rate
+// ---------------------------------------------------------------------------
+
+export const PovertyTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+  const cmpName = labels?.[1] ?? 'Comparison';
+
+  const buildPoint = (rows: any[], year: number) => {
+    const find = (label: string) =>
+      rows.find((r) => r.year === year && r.Variable === label)?.Percent ??
+      null;
+    return {
+      'Poverty Rate': find('Poverty Rate'),
+    };
+  };
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year),
+    ...(compareData.length > 0
+      ? {
+          'Poverty Rate (cmp)': buildPoint(compareData, year)['Poverty Rate'],
+        }
+      : {}),
+  }));
+
+  return (
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
+          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="Poverty Rate"
+            stroke="#154734"
+            strokeWidth={2}
+            dot={false}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Poverty Rate (cmp)"
+                name="Poverty Rate"
+                stroke="#e07b39"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ---------------------------------------------------------------------------
 // Generic two-location trend chart for the DP-combined explorer
 // data:        [{year, Value}] for side A
