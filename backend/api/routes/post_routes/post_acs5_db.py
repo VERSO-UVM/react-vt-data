@@ -190,28 +190,57 @@ async def tidy_unemployment_rate(request: FilterRequest):
     if request.name.lower() == "vermont":
         rows = DB.execute(
             """
-            SELECT year, NAME, Unemployment_Rate 
+            SELECT year, Unemployment_Rate AS Value, Unemployment_Rate AS Percent
             FROM unemployment_rate
             WHERE NAME LIKE '%County, Vermont'
               AND CAST(year AS INTEGER) BETWEEN ? AND ?
-            ORDER BY year, Unemployment_Rate
+            ORDER BY year
             """,
             [request.year_min, request.year_max],
         ).df()
         # Average unemployment rate across counties for state level
         if not rows.empty:
-            rows = rows.groupby(['year'], as_index=False).agg({
-                'Unemployment_Rate': 'mean',
-                'NAME': 'first'
-            })
+            rows = rows.groupby(['year'], as_index=False).agg(
+                {'Value': 'mean', 'Percent': 'mean'})
+            rows['NAME'] = 'Vermont'
+    elif request.name.lower().endswith(" county, vermont") and request.name.count(',') == 1:
+        # County-level: aggregate town-level data for the specified county
+        rows = DB.execute(
+            """
+            SELECT year, Unemployment_Rate AS Value, Unemployment_Rate AS Percent
+            FROM unemployment_rate
+            WHERE NAME LIKE ?
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year
+            """,
+            [f"%{request.name}%", request.year_min, request.year_max],
+        ).df()
+        if not rows.empty:
+            rows = rows.groupby(['year'], as_index=False).agg(
+                {'Value': 'mean', 'Percent': 'mean'})
+            rows['NAME'] = request.name
+    elif request.name.count(',') >= 2:
+        # Town-level: names in unemployment_rate include suffixes like "city" or "town"
+        town_name, rest = request.name.split(',', 1)
+        rows = DB.execute(
+            """
+            SELECT year, NAME, Unemployment_Rate AS Value, Unemployment_Rate AS Percent
+            FROM unemployment_rate
+            WHERE NAME LIKE ?
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year
+            """,
+            [f"{town_name.strip()}%{rest.strip()}",
+             request.year_min, request.year_max],
+        ).df()
     else:
         rows = DB.execute(
             """
-            SELECT year, NAME, Unemployment_Rate 
+            SELECT year, NAME, Unemployment_Rate AS Value, Unemployment_Rate AS Percent
             FROM unemployment_rate
             WHERE NAME = ?
               AND CAST(year AS INTEGER) BETWEEN ? AND ?
-            ORDER BY year, Unemployment_Rate
+            ORDER BY year
             """,
             [request.name, request.year_min, request.year_max],
         ).df()

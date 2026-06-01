@@ -343,11 +343,9 @@ export const UnemploymentTrendChart = <TData,>({
   const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
-    const find = (label: string) =>
-      rows.find((r) => r.year === year && r.Variable === label)?.Percent ??
-      null;
+    const row = rows.find((r) => r.year === year);
     return {
-      'Unemployment Rate': find('Unemployment Rate'),
+      'Unemployment Rate': row?.Value ?? null,
     };
   };
 
@@ -400,7 +398,6 @@ export const UnemploymentTrendChart = <TData,>({
     </>
   );
 };
-
 
 // ---------------------------------------------------------------------------
 // Generic two-location trend chart for the DP-combined explorer
