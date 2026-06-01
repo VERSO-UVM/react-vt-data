@@ -22,24 +22,39 @@ SECTOR_ORDER = [
 
 @router.post("/load/qcew/employment")
 async def employment_by_sector(request: FilterRequest):
-    county = (request.filters or {}).get("County", [None])[0]
+    county = (request.filters or {}).get("County", [None])[
+        0] if request.filters else None
 
-    query = """
-        SELECT year, quarter, quarter_label, sector, employment_4qma
-        FROM qcew
-        WHERE sector != 'Total'
-        {county_filter}
-        ORDER BY year, quarter, sector
-    """
-    if county:
-        rows: pd.DataFrame = DB.execute(
-            query.format(county_filter="AND County = ?"), [county]
-        ).df()
+    # For state-level (no county specified), aggregate all counties
+    if not county and (not request.name or request.name.lower() == "vermont"):
+        query = """
+            SELECT year, quarter, quarter_label, sector, employment_4qma
+            FROM qcew
+            WHERE sector != 'Total'
+            ORDER BY year, quarter, sector
+        """
+        rows: pd.DataFrame = DB.execute(query).df()
+    elif county:
+        query = """
+            SELECT year, quarter, quarter_label, sector, employment_4qma
+            FROM qcew
+            WHERE sector != 'Total'
+            AND County = ?
+            ORDER BY year, quarter, sector
+        """
+        rows: pd.DataFrame = DB.execute(query, [county]).df()
     else:
-        rows = DB.execute(query.format(county_filter="")).df()
+        # No county and not Vermont state-level - return empty
+        return make_response(data=[], metadata=get_metadata("qcew_employment"))
 
     if rows.empty:
         return make_response(data=[], metadata=get_metadata("qcew_employment"))
+
+    # For state-level, aggregate by summing employment across counties
+    if not county and (not request.name or request.name.lower() == "vermont"):
+        rows = rows.groupby(['year', 'quarter', 'quarter_label', 'sector'], as_index=False).agg({
+            'employment_4qma': 'sum'
+        })
 
     # Pivot to wide format: one row per quarter_label, one column per sector
     wide = rows.pivot_table(

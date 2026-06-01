@@ -179,6 +179,22 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
+  // Unemployment Rate
+  {
+    id: 'unemployment_rate',
+    title: 'Unemployment Rate — Percent',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/unemployment-rate`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTable',
+    trendChart: 'UnemploymentTrendChart',
+    categories: ['Labor & Economy'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
   // Employment (QCEW quarterly, stacked by sector)
   {
     id: 'employment',

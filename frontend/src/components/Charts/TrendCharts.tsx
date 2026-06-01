@@ -324,10 +324,10 @@ export const HousingTrendChart = <TData,>({
 
 
 // ---------------------------------------------------------------------------
-// Economics: Poverty Rate
+// Economics: Unemployment Rate
 // ---------------------------------------------------------------------------
 
-export const PovertyTrendChart = <TData,>({
+export const UnemploymentTrendChart = <TData,>({
   chart,
 }: {
   chart: ChartItem<TData>;
@@ -347,7 +347,7 @@ export const PovertyTrendChart = <TData,>({
       rows.find((r) => r.year === year && r.Variable === label)?.Percent ??
       null;
     return {
-      'Poverty Rate': find('Poverty Rate'),
+      'Unemployment Rate': find('Unemployment Rate'),
     };
   };
 
@@ -356,7 +356,7 @@ export const PovertyTrendChart = <TData,>({
     ...buildPoint(data, year),
     ...(compareData.length > 0
       ? {
-          'Poverty Rate (cmp)': buildPoint(compareData, year)['Poverty Rate'],
+          'Unemployment Rate (cmp)': buildPoint(compareData, year)['Unemployment Rate'],
         }
       : {}),
   }));
@@ -376,7 +376,7 @@ export const PovertyTrendChart = <TData,>({
           <Legend />
           <Line
             type="monotone"
-            dataKey="Poverty Rate"
+            dataKey="Unemployment Rate"
             stroke="#154734"
             strokeWidth={2}
             dot={false}
@@ -385,8 +385,8 @@ export const PovertyTrendChart = <TData,>({
             <>
               <Line
                 type="monotone"
-                dataKey="Poverty Rate (cmp)"
-                name="Poverty Rate"
+                dataKey="Unemployment Rate (cmp)"
+                name="Unemployment Rate"
                 stroke="#e07b39"
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
@@ -400,17 +400,6 @@ export const PovertyTrendChart = <TData,>({
     </>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
 
 
 // ---------------------------------------------------------------------------
