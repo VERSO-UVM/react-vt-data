@@ -13,6 +13,7 @@ export {
 } from './DemographicsTable';
 export {
   DemographicsTrendChart,
+  MedianAgeTrendChart,
   EducationTrendChart,
   HousingTrendChart,
   UnemploymentTrendChart,

@@ -121,6 +121,82 @@ export const DemographicsTrendChart = <TData,>({
   );
 };
 
+
+// ---------------------------------------------------------------------------
+// Demographics: Median Age Chart
+// ---------------------------------------------------------------------------
+export const MedianAgeTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+  const cmpName = labels?.[1] ?? 'Comparison';
+
+  const buildPoint = (rows: any[], year: number) => {
+    const find = (label: string) =>
+      rows.find((r) => r.year === year && r.Variable === label)?.Value ?? null;
+    return {'Median Age': find('Median Age')};
+  };
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year),
+    ...(compareData.length > 0
+      ? {
+          'Median Age (cmp)': buildPoint(compareData, year)['Median Age'],
+        }
+      : {}),
+  }));
+
+  return (
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']}
+            tickFormatter={(value) => Number(value).toFixed(0)} />
+          <Tooltip formatter={(val: any) => val != null ? `${Number(val).toFixed(1)} years` : '—'}/>
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="Median Age"
+            stroke="#154734"
+            strokeWidth={2}
+            dot={false}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Median Age (cmp)"
+                name="Median Age"
+                stroke="#154734"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // Education: all attainment levels except "Some College, No Degree"
 // ---------------------------------------------------------------------------

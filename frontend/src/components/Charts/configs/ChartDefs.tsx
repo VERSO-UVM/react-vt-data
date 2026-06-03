@@ -91,6 +91,21 @@ export const chartDefs: ChartDef[] = [
     },
   },
   {
+    id: 'median_age',
+    title: 'Median Age',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/demographics/median-age`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    trendChart: 'MedianAgeTrendChart',
+    categories: ['Demographics'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  {
     id: 'education',
     title: 'Educational Attainment — Percent',
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,

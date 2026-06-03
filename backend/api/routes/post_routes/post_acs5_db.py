@@ -45,7 +45,7 @@ async def tidy_demographics(request: FilterRequest):
             """
             SELECT year, Section, Variable, Value, Percent
             FROM b10_census
-            WHERE NAME LIKE '%County, Vermont'
+            WHERE geo_type = 'county'
               AND CAST(year AS INTEGER) BETWEEN ? AND ?
             ORDER BY year, Section, Variable
             """,
@@ -74,7 +74,7 @@ async def tidy_education(request: FilterRequest):
             """
             SELECT year, Section, Variable, Value, Percent
             FROM b15003_education
-            WHERE NAME LIKE '%County, Vermont'
+            WHERE geo_type = 'county'
               AND CAST(year AS INTEGER) BETWEEN ? AND ?
             ORDER BY year, Variable
             """,
@@ -95,7 +95,7 @@ async def tidy_education(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("education"))
 
 
-# Housing
+# Housing (TODO: Fix statewide aggregation for housing variables that are not counts, e.g. median rent)
 @router.post("/load/acs5-db/tidy/housing")
 async def tidy_housing(request: FilterRequest):
     if request.name.lower() == "vermont":
@@ -103,13 +103,13 @@ async def tidy_housing(request: FilterRequest):
             """
             SELECT year, Section, Variable, Value, Percent
             FROM b_housing
-            WHERE NAME LIKE '%County, Vermont'
+            WHERE geo_type = 'county'
               AND CAST(year AS INTEGER) BETWEEN ? AND ?
             ORDER BY year, Variable
             """,
             [request.year_min, request.year_max],
         ).df()
-        rows = _aggregate_to_state(rows)
+        rows = _aggregate_to_state(rows, )
     else:
         rows = DB.execute(
             """
@@ -184,6 +184,36 @@ async def tidy_income(request: FilterRequest):
             [request.name, request.year_min, request.year_max],
         ).df()
     return make_response(data=rows, metadata=get_metadata("income"))
+
+
+# Median Age
+@router.post("/load/acs5-db/tidy/demographics/median-age")
+async def tidy_median_age(request: FilterRequest):
+    # If requesting Vermont (state-level), aggregate all counties
+    if request.name.lower() == "vermont":
+        rows = DB.execute(
+            """
+            SELECT year, Section, Variable, Value
+            FROM b10_census
+            WHERE geo_type = 'county' AND Variable = 'Median Age'
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year, Section, Variable
+            """,
+            [request.year_min, request.year_max],
+        ).df()
+        rows = _aggregate_to_state(rows, average=True)
+    else:
+        rows = DB.execute(
+            """
+            SELECT year, Section, Variable, Value, Percent
+            FROM b10_census
+            WHERE Variable = 'Median Age' AND NAME = ?
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year, Section, Variable
+            """,
+            [request.name, request.year_min, request.year_max],
+        ).df()
+    return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
 # Unemployment Rate
