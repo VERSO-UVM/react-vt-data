@@ -44,6 +44,10 @@ These only render when a table-primary `ChartItem` is toggled to Chart view. The
 **Variables:** `Unemployment Rate` (left axis, Percentage)
 **Plot:** one-line `LineChart` with one Y-axis. Dual-line comparisons are available. 
 
+### `EarningsTrendChart`
+**Variables:** `Median Earnings` (left axis, $ Amount)
+**Plot:** Three-line `LineChart` with one Y-axis. Dual-line comparisons are available. 
+
 ---
 
 ## Employment Area Chart

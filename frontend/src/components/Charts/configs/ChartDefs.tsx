@@ -195,6 +195,22 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
+  // Median Earnings
+  {
+    id: 'earnings',
+    title: 'Median Earnings - Value',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/median-earnings`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    trendChart: 'EarningsTrendChart',
+    categories: ['Labor & Economy'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
   // Employment (QCEW quarterly, stacked by sector)
   {
     id: 'employment',

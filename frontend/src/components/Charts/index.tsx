@@ -16,6 +16,7 @@ export {
   EducationTrendChart,
   HousingTrendChart,
   UnemploymentTrendChart,
+  EarningsTrendChart,
   DPTrendChart,
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';

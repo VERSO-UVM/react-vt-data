@@ -400,6 +400,125 @@ export const UnemploymentTrendChart = <TData,>({
 };
 
 // ---------------------------------------------------------------------------
+// Economics: Median Earnings (Male vs Female vs All Workers)
+// ---------------------------------------------------------------------------
+
+export const EarningsTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+  const cmpName = labels?.[1] ?? 'Comparison';
+
+  const buildPoint = (rows: any[], year: number) => {
+    const find = (label: string) =>
+  rows.find(
+    (r) => String(r.year) === String(year) &&
+           r.Variable === label
+  )?.Value ?? null;
+    return {
+      'Male Full-Time Workers': find('DP03_0093'),
+      'Female Full-Time Workers': find('DP03_0094'),
+      'All Workers': find('DP03_0092'),
+    };
+  };
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year),
+    ...(compareData.length > 0
+      ? {
+          'Male Full-Time Workers (cmp)': buildPoint(compareData, year)['Male Full-Time Workers'],
+          'Female Full-Time Workers (cmp)': buildPoint(compareData, year)['Female Full-Time Workers'],
+          'All Workers (cmp)': buildPoint(compareData, year)['All Workers'],
+        }
+      : {}),
+  }));
+  return (
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']} tickFormatter={(v) => 
+            `$${(v / 1000).toFixed(0)}k`} />
+          <Tooltip formatter={(value: any) => 
+            value != null? `$${Number(value).toLocaleString('en-US', {maximumFractionDigits: 0,})}`: '—'} />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="Male Full-Time Workers"
+            stroke="#1432ab"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="Female Full-Time Workers"
+            stroke="#e03fd0"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="All Workers"
+            stroke="#494b4d60"
+            strokeWidth={2}
+            dot={false}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Male Full-Time Workers (cmp)"
+                name="Male Full-Time Workers (cmp)"
+                stroke="#1432ab"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+              <Line
+                type="monotone"
+                dataKey="Female Full-Time Workers (cmp)"
+                name="Female Full-Time Workers (cmp)"
+                stroke="#e03fd0"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+              <Line
+                type="monotone"
+                dataKey="All Workers (cmp)"
+                name="All Workers (cmp)"
+                stroke="#494b4d60"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Generic two-location trend chart for the DP-combined explorer
 // data:        [{year, Value}] for side A
 // compareData: [{year, Value}] for side B

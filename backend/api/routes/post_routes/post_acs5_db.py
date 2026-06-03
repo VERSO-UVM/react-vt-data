@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _aggregate_to_state(df: pd.DataFrame) -> pd.DataFrame:
+def _aggregate_to_state(df: pd.DataFrame, average=False) -> pd.DataFrame:
     """Aggregate county-level data to state level by summing Value and averaging Percent."""
     if df.empty:
         return df
@@ -21,6 +21,8 @@ def _aggregate_to_state(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
         if col in ['year', 'Section', 'Variable']:
             agg_dict[col] = 'first'
+        elif average and col == 'Value':
+            agg_dict[col] = 'mean'
         elif col == 'Value':
             agg_dict[col] = 'sum'
         elif col == 'Percent':
@@ -245,6 +247,69 @@ async def tidy_unemployment_rate(request: FilterRequest):
             [request.name, request.year_min, request.year_max],
         ).df()
     return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
+
+
+# Median Earnings
+@router.post("/load/acs5-db/tidy/median-earnings")
+async def tidy_median_earnings(request: FilterRequest):
+    if request.name.lower() == "vermont":
+        rows = DB.execute(
+            """
+            SELECT year, estimate AS Value, variable AS Variable
+            FROM median_earnings
+            WHERE NAME LIKE '%County, Vermont'
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year
+            """,
+            [request.year_min, request.year_max],
+        ).df()
+        # Average median earnings across counties for state level
+        if not rows.empty:
+            rows = rows.groupby(['year', 'Variable'], as_index=False).agg(
+                {'Value': 'mean'})
+            rows['NAME'] = 'Vermont'
+    elif request.name.lower().endswith(" county, vermont") and request.name.count(',') == 1:
+        # County-level: aggregate town-level data for the specified county
+        rows = DB.execute(
+            """
+            SELECT year, estimate AS Value, variable AS Variable
+            FROM median_earnings
+            WHERE NAME LIKE ?
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year
+            """,
+            [f"%{request.name}%", request.year_min, request.year_max],
+        ).df()
+        if not rows.empty:
+            rows = rows.groupby(['year', 'Variable'], as_index=False).agg(
+                {'Value': 'mean'})
+            rows['NAME'] = request.name
+    elif request.name.count(',') >= 2:
+        town_name, rest = request.name.split(',', 1)
+        rows = DB.execute(
+            """
+            SELECT year, NAME, estimate AS Value, variable AS Variable
+            FROM median_earnings
+            WHERE NAME LIKE ?
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year
+            """,
+            [f"{town_name.strip()}%{rest.strip()}",
+             request.year_min, request.year_max],
+        ).df()
+    else:
+        rows = DB.execute(
+            """
+            SELECT year, NAME, estimate AS Value, variable AS Variable
+            FROM median_earnings
+            WHERE NAME = ?
+              AND CAST(year AS INTEGER) BETWEEN ? AND ?
+            ORDER BY year
+            """,
+            [request.name, request.year_min, request.year_max],
+        ).df()
+
+    return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 
 # ---------------------------------------------------------------------------
