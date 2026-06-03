@@ -132,7 +132,7 @@ async def tidy_labor_force(request: FilterRequest):
             """
             SELECT year, Section, Variable, Value, Percent
             FROM b_economic
-            WHERE NAME LIKE '%County, Vermont'
+            WHERE geo_type = 'county'
               AND Section = 'Labor Force'
               AND CAST(year AS INTEGER) BETWEEN ? AND ?
             ORDER BY year, Variable
@@ -163,14 +163,14 @@ async def tidy_income(request: FilterRequest):
             """
             SELECT year, Section, Variable, Value, Percent
             FROM b_economic
-            WHERE NAME LIKE '%County, Vermont'
+            WHERE geo_type = 'county'
               AND Section = 'Income'
               AND CAST(year AS INTEGER) BETWEEN ? AND ?
             ORDER BY year, Variable
             """,
             [request.year_min, request.year_max],
         ).df()
-        rows = _aggregate_to_state(rows)
+        rows = _aggregate_to_state(rows, average=True)
     else:
         rows = DB.execute(
             """
