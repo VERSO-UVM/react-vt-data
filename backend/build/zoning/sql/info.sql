@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW info AS 
+CREATE OR REPLACE VIEW raw_info AS 
 SELECT * REPLACE (
     CASE District_Type
         WHEN 'Primarily Residential' THEN 'Residential'

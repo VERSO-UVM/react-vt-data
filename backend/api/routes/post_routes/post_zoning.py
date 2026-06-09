@@ -1,31 +1,22 @@
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
 from api.metadata_registry import get_metadata
 from api.models import APIResponse, FilterRequest, make_response
 from app_utils import data_loading, df_filtering
+from query import get_zoning_aggregated_acres, get_zoning_geojson
 
 router = APIRouter()
 
 
-@router.post("/load/mapping/zoning")
-async def read_zoning_data(request: FilterRequest) -> APIResponse:
-    df = data_loading.masterload(name="zoning")
-    df = df_filtering.filter_from_request(df, request)
-    metadata = get_metadata("zoning")
-    table_data = None
+@router.post("/load/mapping/zoning/standard")
+async def zoning_geojson(request: FilterRequest):
+    data = get_zoning_geojson(request.filters)
+    return Response(content=data, media_type="application/json")
 
-    if request.format == "aggregated_acres":
-        table_data = df.copy()  # leave raw data unfiltered
-        result = (
-            df.groupby("District Type")["Acres"]
-            .sum()
-            .reset_index()
-            .rename(columns={"District Type": "District Type"})
-        )
-        result["hex_color"] = df.groupby("District Type")["hex_color"].first().values
-        return make_response(result, metadata, table_data)
 
-    # Default: return as GeoJSON so geometry is preserved for map rendering
-    return APIResponse(data=json.loads(df.to_json()), tableData=None, metadata=metadata)
+@router.post("load/data/zoning/aggregated")
+async def acreage_response(request: FilterRequest):
+    agg, table = get_zoning_aggregated_acres(request.filters)
+    return make_response(data=agg, metadata=get_metadata("zoning"), tableData=table)

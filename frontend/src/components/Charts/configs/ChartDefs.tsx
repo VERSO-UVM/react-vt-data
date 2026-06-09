@@ -38,7 +38,7 @@ export const chartDefs: ChartDef[] = [
     yField: 'Acres',
     subtype: 'CompareDiffPerXBarChart',
     chartParams: { color: 'hex_color', legendLabels: ['Main', 'Compare'] },
-    url: `${BASE_API_URL}/load/mapping/zoning`,
+    url: `${BASE_API_URL}/load/data/zoning/aggregated`,
     filterKey: 'aggregated_acres',
     notes: 'Acreage is defined as a good time.',
     showCols: [

@@ -76,6 +76,10 @@ def data_load():
 def build_info():
     info_string = ", ".join(info_cols)
     con.execute((sql_path / "info.sql").read_text().format(info_string=info_string))
+    info_df = con.execute("SELECT * FROM raw_info").df()
+    str_cols = info_df.select_dtypes("object").columns
+    info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
+    con.register("info", info_df)
 
 
 def build_geom():
