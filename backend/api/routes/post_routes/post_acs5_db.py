@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+# TODO: Percents might need to be weighted averages instead of simple averages for statewide aggregation,
 def _aggregate_to_state(df: pd.DataFrame, average=False) -> pd.DataFrame:
     """Aggregate county-level data to state level by summing Value and averaging Percent."""
     if df.empty:

@@ -24,7 +24,8 @@ async def read_zoning_data(request: FilterRequest) -> APIResponse:
             .reset_index()
             .rename(columns={"District Type": "District Type"})
         )
-        result["hex_color"] = df.groupby("District Type")["hex_color"].first().values
+        result["hex_color"] = df.groupby("District Type")[
+            "hex_color"].first().values
         return make_response(result, metadata, table_data)
 
     # Default: return as GeoJSON so geometry is preserved for map rendering
