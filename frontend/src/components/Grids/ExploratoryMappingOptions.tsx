@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { Grid, Card, Button, Text, Group, Box } from '@mantine/core';
-import Image from 'next/image';
 import Link from 'next/link';
 
 interface LinkItem {
   link: string;
   label: string;
+  description?: string;
 }
 
 interface ExploratoryMappingGridProps {
@@ -32,42 +32,18 @@ function MappingCard({ item }: { item: LinkItem }) {
       shadow="sm"
       radius="md"
       withBorder
-      style={{ height: 300, display: 'flex', flexDirection: 'column' }}
+      style={{ display: 'flex', flexDirection: 'column' }}
     >
       <h1 style={{ textAlign: 'center', marginTop: 10, fontWeight: 300 }}>
         {item.label}
       </h1>
-      <Card.Section
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
-      >
-        <Box
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Image
-            src={src}
-            alt={item.label}
-            width={200}
-            height={140}
-            style={{
-              objectFit: 'contain',
-              maxHeight: '100%',
-              maxWidth: '100%',
-            }}
-          />
-        </Box>
-      </Card.Section>
+      <Box style={{ height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img
+          src={src}
+          alt={item.label}
+          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+        />
+      </Box>
 
       <Text
         style={{
@@ -78,7 +54,7 @@ function MappingCard({ item }: { item: LinkItem }) {
           color: '#555',
         }}
       >
-        Brief description or summary about offerings/use cases.
+        {item.description ?? ''}
       </Text>
 
       <Box style={{ padding: 12 }}>

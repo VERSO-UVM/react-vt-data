@@ -21,7 +21,7 @@ export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem } from '@/types/cachedCharts';
 import { Badge, Card, Box, Title, Stack, Text, Group } from '@mantine/core';
-import { AddChart, RemoveChart } from './saving';
+import { AddChart, RemoveChart, ToggleChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 import { usePdfMode } from '@/contexts/PdfModeContext';
@@ -32,7 +32,10 @@ interface ChartCardProps<TData extends Record<string, any>> {
   ChartComponent: React.FC<{ chart: ChartItem<TData> }>;
   TrendComponent?: React.FC<{ chart: ChartItem<TData> }>;
   matchedCategories?: string[];
-  action?: 'add' | 'remove';
+  action?: 'add' | 'remove' | 'toggle';
+  defId?: string;
+  isIncluded?: boolean;
+  onToggle?: () => void;
 }
 export const ChartCard = <TData extends Record<string, any>>({
   chart,
@@ -40,6 +43,9 @@ export const ChartCard = <TData extends Record<string, any>>({
   TrendComponent,
   matchedCategories = [],
   action = 'add',
+  defId,
+  isIncluded,
+  onToggle,
 }: ChartCardProps<TData>) => {
   const isPdfMode = usePdfMode();
 
@@ -139,11 +145,17 @@ export const ChartCard = <TData extends Record<string, any>>({
 
       {!isPdfMode && (
         <Group mt="md">
-          {action === 'add' ? (
-            <AddChart chart={chart} />
-          ) : (
+          {action === 'toggle' && defId && onToggle ? (
+            <ToggleChart
+              defId={defId}
+              isIncluded={isIncluded ?? true}
+              onToggle={onToggle}
+            />
+          ) : action === 'add' ? (
+            <AddChart chart={chart} defId={defId} />
+          ) : action === 'remove' ? (
             <RemoveChart chart={chart} />
-          )}
+          ) : null}
         </Group>
       )}
     </Card>
@@ -152,8 +164,12 @@ export const ChartCard = <TData extends Record<string, any>>({
 
 interface ChartStackProps<TData extends Record<string, any>> {
   charts: ChartItem<TData>[];
-  action?: 'add' | 'remove';
+  action?: 'add' | 'remove' | 'toggle';
   userInterests?: string[];
+  // parallel arrays for toggle mode — same length as charts
+  defIds?: string[];
+  onToggle?: (defId: string) => void;
+  isIncludedFn?: (defId: string) => boolean;
 }
 
 import * as allCharts from './index'; // self-import to dynamically access all exports
@@ -162,9 +178,12 @@ export const ChartStack = <TData extends Record<string, any>>({
   charts,
   action = 'add',
   userInterests = [],
+  defIds,
+  onToggle,
+  isIncludedFn,
 }: ChartStackProps<TData>) => (
   <Stack>
-    {charts.map((chart) => {
+    {charts.map((chart, i) => {
       const ChartComponent = allCharts[
         chart.subtype as keyof typeof allCharts
       ] as React.FC<{ chart: ChartItem<TData> }>;
@@ -180,6 +199,11 @@ export const ChartStack = <TData extends Record<string, any>>({
           ? chart.categories.filter((cat) => userInterests.includes(cat))
           : [];
 
+      const defId = defIds?.[i];
+      const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
+      const handleToggle =
+        defId && onToggle ? () => onToggle(defId) : undefined;
+
       // Compact note card — no chart, no 400px box
       if (chart.subtype === 'noteCard')
         return (
@@ -193,7 +217,7 @@ export const ChartStack = <TData extends Record<string, any>>({
       if (!ChartComponent) return null;
       if (!chart.data || chart.data.length === 0)
         return (
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Card key={chart.id} shadow="sm" padding="lg" radius="md" withBorder>
             <Text>
               No data available from {`${chart.title}`}
               {chart.description ? ` for ${chart.description}` : ''}.
@@ -208,6 +232,9 @@ export const ChartStack = <TData extends Record<string, any>>({
           ChartComponent={ChartComponent}
           TrendComponent={TrendComponent}
           matchedCategories={matchedCategories}
+          defId={defId}
+          isIncluded={included}
+          onToggle={handleToggle}
         />
       );
     })}
