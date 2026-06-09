@@ -31,7 +31,8 @@ ZONING_TREE_LABELS = ["County", "Jurisdiction", "District Name"]
 
 
 def get_zoning_geojson(filters: dict | None = None) -> str:
-    where_string = build_where_query_from_filters(filters, ZONING_FILTER_COLS, "zoning")
+    where_string = build_where_query_from_filters(
+        filters, ZONING_FILTER_COLS, "zoning")
     result = DB.execute(
         (sql_path / "geo_query.sql").read_text().format(where_string=where_string)
     ).fetchone()
@@ -48,7 +49,8 @@ def get_zoning_filters():
 def get_zoning_aggregated_acres(
     filters: dict | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    where_string = build_where_query_from_filters(filters, ZONING_FILTER_COLS, "zoning")
+    where_string = build_where_query_from_filters(
+        filters, ZONING_FILTER_COLS, "zoning")
     agg_data = DB.execute(
         (sql_path / "agg_info_table.sql").read_text().format(where_string=where_string)
     ).df()
