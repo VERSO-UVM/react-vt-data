@@ -69,7 +69,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         }}
         data={[
           ...(showNational
-            ? [{ value: 'national', label: 'American Average (U.S.)' }]
+            ? [{ value: 'national', label: 'All of The United States' }]
             : []),
           { value: 'state', label: 'All of Vermont' },
           { value: 'county', label: 'County' },
@@ -134,13 +134,16 @@ export const ProfileModal: React.FC = () => {
     setYearRange,
     profileSet,
     setProfileSet,
+    profileModalOpen,
+    openProfileModal,
+    closeProfileModal,
   } = useProfile();
-  const [opened, setOpened] = useState(false);
 
-  // Open automatically after mount (once the Zustand persist store has
-  // rehydrated from localStorage) if the user hasn't saved a profile yet.
+  const opened = profileModalOpen;
+
+  // Open automatically after mount if the user hasn't saved a profile yet.
   useEffect(() => {
-    if (!profileSet) setOpened(true);
+    if (!profileSet) openProfileModal();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
@@ -157,7 +160,7 @@ export const ProfileModal: React.FC = () => {
     setTempComparison(comparison);
     setTempInterests(interests);
     setTempYearRange([yearMin, yearMax]);
-    setOpened(true);
+    openProfileModal();
   };
 
   const handleSave = () => {
@@ -166,7 +169,7 @@ export const ProfileModal: React.FC = () => {
     setInterests(tempInterests);
     setYearRange(tempYearRange[0], tempYearRange[1]);
     setProfileSet(true);
-    setOpened(false);
+    closeProfileModal();
   };
 
   return (
@@ -174,7 +177,7 @@ export const ProfileModal: React.FC = () => {
       <Button onClick={handleOpen}>Set Profile</Button>
       <Modal
         opened={opened}
-        onClose={() => setOpened(false)}
+        onClose={closeProfileModal}
         title="Set Profile"
         size="md"
       >

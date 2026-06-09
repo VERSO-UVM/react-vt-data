@@ -24,9 +24,9 @@ const MAP_CONFIG: Record<
 > = {
   zoning: {
     title: 'Zoning',
-    initialURL: `${BASE_API_URL}/load/mapping/zoning`,
+    initialURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
     filterURL: `${BASE_API_URL}/load/mapping/zoning/filters`,
-    dataURL: `${BASE_API_URL}/load/mapping/zoning`,
+    dataURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
   },
   'flood-legal': {
     title: 'Flood Insurance',

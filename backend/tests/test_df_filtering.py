@@ -7,7 +7,7 @@ Tests for app_utils/df_filtering.py:
 import pandas as pd
 import pytest
 
-from api.models.filter_models import FilterRequest
+from api.models.request_models import FilterRequest
 from app_utils.df_filtering import FilterState, filter_from_request
 
 # ---------------------------------------------------------------------------

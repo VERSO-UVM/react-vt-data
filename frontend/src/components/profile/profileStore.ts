@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import countyTownNames from '@/Data/county_town_names.json';
+
+const VT_COUNTIES = Object.keys(countyTownNames);
+const randomCounty = () =>
+  VT_COUNTIES[Math.floor(Math.random() * VT_COUNTIES.length)];
 
 export interface Location {
   type: 'state' | 'county' | 'town' | 'rpc' | 'national';
@@ -30,27 +35,33 @@ interface ProfileStore {
   yearMin: number;
   yearMax: number;
   profileSet: boolean;
+  profileModalOpen: boolean;
   setLocation: (location: Location) => void;
   setComparison: (location: Location) => void;
   setInterests: (interests: string[]) => void;
   setYearRange: (min: number, max: number) => void;
   setProfileSet: (v: boolean) => void;
+  openProfileModal: () => void;
+  closeProfileModal: () => void;
 }
 
 export const useProfile = create<ProfileStore>()(
   persist(
     (set) => ({
-      myLocation: { type: 'state', state: true, name: 'Vermont' },
-      comparison: { type: 'county', county: 'Chittenden', name: 'Chittenden' },
+      myLocation: (() => { const c = randomCounty(); return { type: 'county', county: c, name: `${c} County, Vermont` }; })(),
+      comparison: { type: 'state', state: true, name: 'Vermont' },
       interests: [],
       yearMin: YEAR_MIN_OVERALL,
       yearMax: YEAR_MAX_OVERALL,
       profileSet: false,
+      profileModalOpen: false,
       setLocation: (location) => set({ myLocation: location }),
       setComparison: (location) => set({ comparison: location }),
       setInterests: (interests) => set({ interests }),
       setYearRange: (min, max) => set({ yearMin: min, yearMax: max }),
       setProfileSet: (v) => set({ profileSet: v }),
+      openProfileModal: () => set({ profileModalOpen: true }),
+      closeProfileModal: () => set({ profileModalOpen: false }),
     }),
     { name: 'location-storage' },
   ),

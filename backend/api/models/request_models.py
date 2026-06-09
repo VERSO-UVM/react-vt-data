@@ -9,9 +9,6 @@ class FilterRequest(BaseModel):
     name: str | None = None
     year_min: int = 2010
     year_max: int = 2023
-    categories: list[str] | None = None
-    table: str = "DP05"
-    measure: str | None = "Percent"
 
 
 class DPSeriesRequest(BaseModel):

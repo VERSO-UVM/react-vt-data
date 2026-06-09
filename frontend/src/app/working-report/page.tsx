@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   Container,
@@ -10,76 +10,218 @@ import {
   Center,
   Stack,
   Group,
-  Badge,
+  Divider,
+  Box,
 } from '@mantine/core';
-import { useItems } from '@/components/ItemsProvider';
 import { ChartStack } from '@/components/Charts';
-import { useShallow } from 'zustand/shallow';
-import { ChartItem } from '@/types/cachedCharts';
-import { PdfModeContext } from '@/contexts/PdfModeContext';
 import { useProfile } from '@/components/profile/profileStore';
+import {
+  useApplyFilters,
+  buildFilters,
+} from '@/components/FilterUI/useApplyFilters';
+import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { createChartItem, createTableItem } from '@/utils/itemFactory';
+import { useItems } from '@/components/ItemsProvider';
+import { PdfModeContext } from '@/contexts/PdfModeContext';
 
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
   const [isPdfMode, setIsPdfMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const charts = useItems(
-    useShallow((state) => state.items.filter((item) => item.type === 'chart')),
-  ) as ChartItem<any>[];
-  const len = charts.length;
+  const { myLocation, comparison, interests, yearMin, yearMax, openProfileModal } = useProfile();
+  const { excludedIds, toggleExcluded, clearExclusions, excludeById,
+          items: savedItems, clearItems,
+          sessionInitialized, setSessionInitialized,
+          pendingReset, setPendingReset } =
+    useItems();
 
-  const locationName = useProfile((state) => state.myLocation.name);
-
-  // ---------------------------------------------------------------------------
-  // Legacy html2pdf path (kept as fallback)
-  // ---------------------------------------------------------------------------
-  const handleDownloadLegacy = async () => {
-    if (!chartsRef.current) return;
-
-    flushSync(() => setIsPdfMode(true));
-
-    const html2pdf = (await import('html2pdf.js')).default;
-
-    const options = {
-      margin: 10,
-      filename: 'working-report.pdf',
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: {
-        unit: 'mm' as const,
-        format: 'a4',
-        orientation: 'portrait' as const,
-      },
-    };
-
-    await html2pdf().set(options).from(chartsRef.current).save();
-
-    setIsPdfMode(false);
+  // Apply auto-exclude based on interests: exclude any chart whose categories
+  // don't overlap with the user's interests (no-op if interests is empty).
+  const applyInterestExclusions = (currentInterests: string[]) => {
+    if (currentInterests.length === 0) return;
+    chartDefs.forEach((def) => {
+      const matches = def.categories?.some((cat) => currentInterests.includes(cat));
+      if (!matches) excludeById(def.id);
+    });
+    savedItems.forEach((item) => {
+      const matches = (item as any).categories?.some((cat: string) =>
+        currentInterests.includes(cat),
+      );
+      if (!matches) excludeById(item.id);
+    });
   };
 
-  // ---------------------------------------------------------------------------
-  // New @react-pdf/renderer path
-  // ---------------------------------------------------------------------------
+  // On first load of a new browser session, reset inclusions based on profile
+  // interests. sessionStorage clears on tab close.
+  useEffect(() => {
+    if (!sessionInitialized) {
+      clearExclusions();
+      applyInterestExclusions(interests);
+      setSessionInitialized(true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After a manual clear + profile save, re-apply exclusions with new interests.
+  useEffect(() => {
+    if (pendingReset) {
+      applyInterestExclusions(interests);
+      setPendingReset(false);
+    }
+  }, [interests, pendingReset]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------- data fetching (mirrors data-viewer) ----------
+  const [chartData, setChartData] = useState<
+    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
+  >({});
+  const [compareChartData, setCompareChartData] = useState<
+    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
+  >({});
+  const [compareTableData, setCompareTableData] = useState<
+    Record<string, any[]>
+  >({});
+
+  const applyFilters = useApplyFilters();
+  const tableDefs = chartDefs.filter((c) => c.subtype.startsWith('renderTable'));
+  const nonTableDefs = chartDefs.filter(
+    (c) => !c.subtype.startsWith('renderTable'),
+  );
+
+  useEffect(() => {
+    nonTableDefs.forEach((chart: ChartDef) => {
+      const filters = buildFilters(myLocation);
+      const compFilters = buildFilters(comparison);
+      applyFilters(chart.url, filters, chart.filterKey, chart.dataKey, (data, metadata, tableData) =>
+        setChartData((prev) => ({ ...prev, [chart.id]: { data, metadata, tableData } })),
+      );
+      applyFilters(chart.url, compFilters, chart.filterKey, chart.dataKey, (data, metadata, tableData) =>
+        setCompareChartData((prev) => ({ ...prev, [chart.id]: { data, metadata, tableData } })),
+      );
+    });
+  }, [myLocation, comparison]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const seen = new Set<string>();
+    tableDefs.forEach((def) => {
+      const effectiveExtra = def.tableConfig?.extraParams
+        ? { ...def.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+        : { year_min: yearMin, year_max: yearMax };
+      const key = `${def.url}::${JSON.stringify(effectiveExtra)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const siblings = tableDefs.filter((d) => {
+        const extra = d.tableConfig?.extraParams
+          ? { ...d.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+          : { year_min: yearMin, year_max: yearMax };
+        return `${d.url}::${JSON.stringify(extra)}` === key;
+      });
+      applyFilters(def.url, {}, undefined, undefined,
+        (data) => siblings.forEach((d) => setChartData((prev) => ({ ...prev, [d.id]: { data } }))),
+        { name: myLocation.name, ...effectiveExtra },
+      );
+      if (comparison.name) {
+        applyFilters(def.url, {}, undefined, undefined,
+          (data) => siblings.forEach((d) => setCompareTableData((prev) => ({ ...prev, [d.id]: data }))),
+          { name: comparison.name, ...effectiveExtra },
+        );
+      }
+    });
+  }, [myLocation, comparison, yearMin, yearMax]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------- build chart items ----------
+  const isSubcountyLocation = myLocation.type === 'town';
+  const employmentCounty = myLocation.county;
+
+  const charts = nonTableDefs.map((chart) => {
+    if (chart.id === 'employment' && isSubcountyLocation) {
+      return createChartItem({
+        title: myLocation.name,
+        xField: '',
+        yField: '',
+        data: [],
+        subtype: 'noteCard',
+        categories: chart.categories,
+        notes: `County-level data (${employmentCounty} County) — QCEW does not report employment at the town level.`,
+      });
+    }
+    return createChartItem({
+      title: myLocation.name,
+      xField: chart.xField,
+      yField: chart.yField,
+      data: chartData[chart.id]?.data || [],
+      tableData: chartData[chart.id]?.tableData || [],
+      showCols: chart.showCols,
+      metadata: chartData[chart.id]?.metadata || [],
+      compareData: compareChartData[chart.id]?.data || [],
+      compareTableData: compareChartData[chart.id]?.tableData || [],
+      subtype: chart.subtype,
+      chartParams: { ...chart.chartParams, legendLabels: [myLocation.name, comparison.name] },
+      description: chart.title,
+      notes: chart.notes,
+      categories: chart.categories,
+    });
+  });
+
+  const tableItems = tableDefs.map((def) =>
+    createTableItem({
+      title: myLocation.name,
+      description: def.title,
+      data: chartData[def.id]?.data || [],
+      metadata: chartData[def.id]?.metadata || [],
+      compareData: compareTableData[def.id] || [],
+      chartParams: { legendLabels: [myLocation.name, comparison.name] },
+      notes: def.notes,
+      subtype: def.subtype,
+      trendChart: def.trendChart,
+      categories: def.categories,
+    }),
+  );
+
+  // Canonical category order derived from chartDefs (first occurrence wins)
+  const CATEGORY_ORDER: string[] = [];
+  chartDefs.forEach((def) =>
+    def.categories?.forEach((cat) => {
+      if (!CATEGORY_ORDER.includes(cat)) CATEGORY_ORDER.push(cat);
+    }),
+  );
+  const categoryRank = (cats?: string[]) => {
+    if (!cats?.length) return CATEGORY_ORDER.length; // uncategorised goes last
+    const ranks = cats.map((c) => {
+      const i = CATEGORY_ORDER.indexOf(c);
+      return i === -1 ? CATEGORY_ORDER.length : i;
+    });
+    return Math.min(...ranks);
+  };
+
+  // Pair each item with its stable ID (chartDef ID for auto-populated;
+  // item.id for manually saved charts from other pages), then sort by category
+  const savedCharts = savedItems.filter((i) => i.type === 'chart') as any[];
+  const allPairs = [
+    ...nonTableDefs.map((def, i) => ({ defId: def.id, item: charts[i] })),
+    ...tableDefs.map((def, i) => ({ defId: def.id, item: tableItems[i] })),
+    ...savedCharts.map((item: any) => ({ defId: item.id, item })),
+  ].sort((a, b) => categoryRank(a.item.categories) - categoryRank(b.item.categories));
+
+  const isIncluded = (defId: string) => !excludedIds.includes(defId);
+  const includedPairs = allPairs.filter((p) => isIncluded(p.defId));
+  const excludedPairs = allPairs.filter((p) => !isIncluded(p.defId));
+
+  // ---------- PDF ----------
   const handleDownloadPdf = async () => {
     if (!chartsRef.current) return;
     setIsGenerating(true);
-
     try {
-      // Set PDF mode so SVG fallbacks render and scroll containers unclip
       flushSync(() => setIsPdfMode(true));
-
-      // Small delay to let the DOM settle after the re-render
       await new Promise((r) => setTimeout(r, 300));
-
       const { generateReportPdf } = await import('@/lib/pdfReport/generatePdf');
-      await generateReportPdf(charts, chartsRef.current!, locationName);
+      await generateReportPdf(
+        includedPairs.map((p) => p.item),
+        chartsRef.current!,
+        myLocation.name,
+      );
     } catch (err) {
       console.error('[WorkingReport] PDF generation failed:', err);
-      alert(
-        'PDF generation failed — see the browser console for details. ' +
-          'Try the legacy download button as a fallback.',
-      );
+      alert('PDF generation failed — see the browser console for details.');
     } finally {
       setIsPdfMode(false);
       setIsGenerating(false);
@@ -93,38 +235,59 @@ export default function WorkingReport() {
           <Title order={2}>Working Report</Title>
         </Center>
         <Center>
-          <Text c="dimmed">{`There are currently ${len} charts in the report`}</Text>
+          <Text c="dimmed">
+            {`${includedPairs.length} of ${allPairs.length} charts included in report`}
+          </Text>
         </Center>
-
         <Center>
-          <Group gap="sm">
-            <Button
-              size="md"
-              onClick={handleDownloadPdf}
-              loading={isGenerating}
-            >
+          <Group>
+            <Button size="md" onClick={handleDownloadPdf} loading={isGenerating}>
               Download PDF
             </Button>
             <Button
               size="md"
               variant="light"
-              color="gray"
-              onClick={handleDownloadLegacy}
-              loading={isPdfMode && !isGenerating}
+              color="red"
+              onClick={() => { clearItems(); clearExclusions(); setPendingReset(true); openProfileModal(); }}
             >
-              Download PDF (legacy)
+              Clear report
             </Button>
-            <Badge color="blue" variant="light" size="sm">
-              beta
-            </Badge>
           </Group>
         </Center>
 
         <PdfModeContext.Provider value={isPdfMode}>
           <div ref={chartsRef}>
-            <ChartStack charts={charts} action="remove" />
+            <ChartStack
+              charts={includedPairs.map((p) => p.item)}
+              action="toggle"
+              userInterests={interests}
+              defIds={includedPairs.map((p) => p.defId)}
+              onToggle={toggleExcluded}
+              isIncludedFn={isIncluded}
+            />
           </div>
         </PdfModeContext.Provider>
+
+        {excludedPairs.length > 0 && (
+          <>
+            <Divider
+              label="Not included in report"
+              labelPosition="center"
+              mt="xl"
+              size="md"
+            />
+            <Box>
+              <ChartStack
+                charts={excludedPairs.map((p) => p.item)}
+                action="toggle"
+                userInterests={interests}
+                defIds={excludedPairs.map((p) => p.defId)}
+                onToggle={toggleExcluded}
+                isIncludedFn={isIncluded}
+              />
+            </Box>
+          </>
+        )}
       </Stack>
     </Container>
   );
