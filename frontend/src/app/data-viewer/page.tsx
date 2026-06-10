@@ -57,6 +57,7 @@ export default function DataViewerPage() {
             ...prev,
             [chart.id]: { data, metadata, tableData },
           })),
+        { name: myLocation.name, year_min: yearMin, year_max: yearMax },
       );
       applyFilters(
         url,
@@ -68,9 +69,10 @@ export default function DataViewerPage() {
             ...prev,
             [chart.id]: { data, metadata, tableData },
           })),
+        { name: comparison.name, year_min: yearMin, year_max: yearMax },
       );
     });
-  }, [myLocation, comparison]);
+  }, [myLocation, comparison, yearMin, yearMax]);
 
   useEffect(() => {
     const seen = new Set<string>();
