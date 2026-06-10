@@ -18,7 +18,7 @@ import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
-import county_town_names from '@/Data/county_town_names.json';
+import county_town_names from '@/data/county_town_names.json';
 
 // ---------------------------------------------------------------------------
 // Types

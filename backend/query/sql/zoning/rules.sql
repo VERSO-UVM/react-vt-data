@@ -1,4 +1,7 @@
-{cte_filter_block}
+WITH filtered_rules AS (
+    SELECT DISTINCT OBJECT_ID FROM zoning_rules
+    {where_string}
+)
 SELECT json_object(
     'type', 'FeatureCollection',
     'features', json_group_array(feature)
@@ -10,7 +13,7 @@ FROM (
         'properties', json_object(
             'District Type', i.District_Type,
             'Acres', ROUND(i.Acres, 2),
-            'rgba_color', c.rgba::JSON,
+            'rgba_color', c.rgba::JSON,            
             'tooltip', json_object(
                 '__title__', 'Zoning',
                 'District', i.Municipal_Name || ' ' || i.District_Name,
@@ -21,6 +24,6 @@ FROM (
     ) AS feature
     FROM zoning_info i
     JOIN zoning_geom g USING (OBJECT_ID)
+    JOIN filtered_rules r USING (OBJECT_ID)
     LEFT JOIN zoning_colors c ON c.district_type = i.District_Type
-    {join_filter_block}
 )

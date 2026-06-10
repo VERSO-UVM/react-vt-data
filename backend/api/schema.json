@@ -1,0 +1,23 @@
+{
+  "default": {
+    "zoning_info": {
+      "join_key": "OBJECT_ID",
+      "join_type": "inner",
+      "columns": {
+        "County": "County",
+        "Jurisdiction": "Municipal_Name",
+        "District Name": "District_Name",
+        "District Type": "District_Type"
+      }
+    },
+    "zoning_rules": {
+      "join_key": "OBJECT_ID",
+      "join_type": "inner",
+      "columns": {
+        "Usage Type": "use_type",
+        "Rule": "rule",
+        "Value": "val"
+      }
+    }
+  }
+}

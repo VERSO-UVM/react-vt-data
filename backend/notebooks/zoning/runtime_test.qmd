@@ -1,0 +1,325 @@
+---
+title: "zoning sql filtering trial"
+author: Fitz Koch
+date: today
+description:  Tests SQL tables and runtimefiltering logic.
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+bibliography: /home/fitsl/library/zotero/fjk_library.bib
+---
+
+
+# Setup 
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "backend").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+import json
+```
+
+```{python}
+con = duckdb.connect()
+con.execute("LOAD spatial")
+```
+
+```{python}
+type(con)
+```
+
+## Build
+```{python}
+proc_dir = Path("backend/Data/_Processed")
+for path in proc_dir.rglob('*.parquet'):
+    name = f"{path.parent.name}_{path.stem}"  # e.g. "zoning_info"
+    con.execute(f"CREATE VIEW {name} AS SELECT * FROM read_parquet('{path}')")
+```
+
+# Filtering 
+
+```{python}
+FCOLS = {
+    "County": "County",
+    "RPC": "RPC",
+    "Jurisdiction": "Municipal_Name",
+    "District Name": "District_Name",
+    "District Type": "District_Type",
+}
+
+TREE_LABELS = ["County", "Jurisdiction", "District Name"]
+```
+
+
+Try building our filter query we'll insert...: 
+```{python}
+def build_where_query_from_filters(filters: dict | None, colmap) -> str:
+    """
+    frontend-named filters -> (WHERE clause, params).
+    Unknown keys ignored; colmap is source of truth.
+
+    """
+    clauses, params = [], []
+    for label, values in (filters or {}).items():
+        col = colmap.get(label)
+        if col is None:
+            logger.warning("zoning_db: ignoring unknown filter '%s'", label)
+            continue
+        if not values:
+            continue
+        clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
+    return (("WHERE " + " AND ".join(clauses)) if clauses else "")
+```
+
+
+```{python}
+filter_1 = {"County": ["Chittenden"]}
+build_where_query_from_filters({"Jurisdiction": ["Chittenden"]}, FCOLS)
+``` 
+
+
+Then we need to build the filters themselves...
+```{python}
+def _nest(rows: list[tuple]) -> dict:
+    """
+    Fold sorted distinct rows into a nested dict; leaves are None.
+    """
+    tree: dict = {}
+    for row in rows:
+        node = tree
+        for val in row[:-1]:
+            node = node.setdefault(val, {})
+        node.setdefault(row[-1], None)
+    return tree
+
+
+def filter_tree(colmap: dict, tree_labels: list[str]) -> dict:
+    """
+    Cascading filter UI.
+    """
+    cols = [colmap.get(label) for label in tree_labels]
+    select = ", ".join(f'"{col}"' for col in cols)
+    order = ", ".join(str(i + 1) for i in range(len(cols)))
+    rows = con.execute(
+        f"SELECT DISTINCT {select} FROM zoning_info ORDER BY {order}"
+    ).fetchall()
+    return {"tree": _nest(rows), "labels": tree_labels}
+
+
+tree = filter_tree(FCOLS, TREE_LABELS)
+print(json.dumps(tree, indent=2))
+```
+
+As a dataframe, which we'd then serialize, like the old way... 
+```{python}
+def serve_dataframe(filters: dict | None = None):
+    where = build_where_query_from_filters(filters, FCOLS)
+    df = con.execute(
+        f"""--sql
+            SELECT
+                i.County        AS "County",
+                i.Municipal_Name AS "Jurisdiction",
+                i.Municipal_Name || ' ' || i.District_Name AS "Jurisdiction District Name",
+                i.District_Type AS "District Type",
+                ROUND(i.Acres, 2)        AS Acres,
+                c.hex_color     AS hex_color,
+                c.rgba          AS rgba,
+                ST_AsGeoJSON(ST_Simplify(g.geom, 0.0001)) AS geometry
+            FROM zoning_info i
+            JOIN zoning_geom g USING (OBJECT_ID)
+            LEFT JOIN zoning_colors c ON c.district_type = i.District_Type
+            {where} 
+    """,
+    ).df()
+    return df
+
+filter_1 = {"County": ["Chittenden"], "Jurisdiction" : ["Hinesburg"]}
+
+serve_dataframe(filter_1)
+# print(build_where_query_from_filters(filter_1, FCOLS))
+```
+
+Directly as a geojson: 
+```{python}
+def serve_geojson(filters: dict | None = None):
+    where = build_where_query_from_filters(filters, FCOLS)
+    df = con.execute(f"""--sql
+        SELECT json_object(
+            'type', 'FeatureCollection',
+            'features', json_group_array(feature)
+        )::VARCHAR AS fc
+        FROM (
+            SELECT json_object(
+                'type', 'Feature',
+                'geometry', ST_AsGeoJSON(ST_Simplify(g.geom, 0.0001))::JSON,
+                'properties', json_object(
+                    'District Type', i.District_Type,
+                    'Acres', ROUND(i.Acres, 2),
+                    'rgba_color', c.rgba::JSON,            
+                    'tooltip', json_object(
+                        '__title__', 'Zoning',
+                        'District', i.Municipal_Name || ' ' || i.District_Name,
+                        'Type', i.District_Type
+                    )
+                )
+            ) AS feature
+            FROM zoning_info i
+            JOIN zoning_geom g USING (OBJECT_ID)
+            LEFT JOIN zoning_colors c ON c.district_type = i.District_Type
+            {where}
+        )
+    """).fetchone()[0]
+    return df
+```
+
+
+```{python}
+jq = serve_geojson(filter_1)
+print(json.dumps(json.loads(jq), indent=2))
+```
+
+
+# Aggregated 
+
+
+```{python}
+def get_agg_acres(filters):
+    where_string = build_where_query_from_filters(filters, FCOLS)
+    return con.execute(f"""--sql
+        SELECT 
+            i.District_Type                AS      "District Type",
+            ROUND(SUM(i.Acres), 2)                 AS      "Acres",
+            any_value(c.hex_color) AS       hex_color,
+        FROM zoning_info i
+        LEFT JOIN zoning_colors c ON c.district_type = i.DIstrict_Type
+        {where_string}
+        GROUP BY i.District_Type
+    """).df()
+
+
+df = get_agg_acres(filter_1)
+df.head()
+```
+
+
+```{python}
+def get_acre_table(filters):
+    where_string = build_where_query_from_filters(filters, FCOLS)
+    return con.execute(f"""--sql
+        SELECT
+            i.County AS "County",
+            i.Municipal_Name || ' ' || i.District_Name AS "Jurisdiction District Name",
+            i.District_Type AS "District Type",
+            ROUND(i.Acres, 2) AS "Acres",
+            c.hex_color AS hex_color
+        FROM zoning_info i 
+        LEFT JOIN zoning_colors c ON c.district_type = i.District_Type
+        {where_string}
+    """).df()
+
+
+get_acre_table(filter_1)
+```
+
+
+# New Rules Table Tests
+
+
+```{python}
+ZONING_RULE_COLS = {
+    "Value": "val",
+    "Usage Type": "use_type",
+    "Rule" : "rule"
+}
+
+ZONING_RULE_TREE_LABELS = ["Usage Type", "Rule", "Value"]
+```
+
+```{python}
+rules = con.execute("""--sql
+    SELECT * FROM zoning_rules
+""").df()
+
+rules.head()
+```
+
+
+```{python}
+def filter_tree(colmap: dict, tree_labels: list[str], table, connection=con) -> dict:
+    """
+    Cascading filter UI.
+    """
+    cols = [colmap.get(label) for label in tree_labels]
+    select = ", ".join(f'"{col}"' for col in cols)
+    order = ", ".join(str(i + 1) for i in range(len(cols)))
+    rows = connection.execute(
+        f"SELECT DISTINCT {select} FROM {table} ORDER BY {order}"
+    ).fetchall()
+    return {"tree": _nest(rows), "labels": tree_labels}
+
+
+tree = filter_tree(ZONING_RULE_COLS, ZONING_RULE_TREE_LABELS, "zoning_rules")
+print(json.dumps(tree, indent=2))
+```
+
+
+
+```{python}
+_DB_PATH = Path("backend/Data/vt_data.duckdb")
+DB = duckdb.connect(str(_DB_PATH), read_only=True)
+```
+
+```{python}
+df = DB.execute("SELECT * FROM dp_combined").df()
+df.head()
+```
+
+```{python}
+DB.execute("DESCRIBE dp_combined").df()
+
+```
+
+
+```{python}
+DP_COMB_COLS = {
+    "table": "table",
+    "category": "category",
+    "Subcategory": "Subcategory",
+    "Variable": "Variable",
+    "Measure": "Measure",
+}
+
+DP_COMB_TREE_LABELS = list(DP_COMB_COLS.keys())
+print(DP_COMB_TREE_LABELS)
+
+tree = filter_tree(DP_COMB_COLS, DP_COMB_TREE_LABELS, "dp_combined", connection=DB)
+print(json.dumps(tree, indent=2))
+```
+
