@@ -47,7 +47,7 @@ cd vermont-livability
 
 2. Setup your build to access the local API by adding `NEXT_PUBLIC_API_URL=http://localhost:6767` in `frontend.env.local`
 
-3. **Run** the website from **a differnent terminal instance** (from the project root):
+3. **Run** the website from **a different terminal instance** (from the project root):
    ```sh
    cd frontend
    npm run dev

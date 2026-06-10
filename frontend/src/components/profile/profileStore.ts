@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import countyTownNames from '@/Data/county_town_names.json';
+import countyTownNames from '@/data/county_town_names.json';
 
 const VT_COUNTIES = Object.keys(countyTownNames);
 const randomCounty = () =>

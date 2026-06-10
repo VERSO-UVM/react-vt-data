@@ -45,7 +45,7 @@ const links = [
     label: 'Tools',
     links: [{ link: '/tools/benefits-estimator', label: 'Benefits Estimator' }],
   },
-  // { link: '/scratch', label: 'Scratch' },
+  { link: '/scratch', label: 'Scratch' },
   // { link: '/about', label: 'About' },
 ];
 

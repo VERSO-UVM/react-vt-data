@@ -1,7 +1,7 @@
 'use client';
 
 // react
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Map, ViewStateChangeEvent } from 'react-map-gl/maplibre';
 
 // deck, geojson, and maplibre styling
@@ -12,14 +12,6 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 // mantine and ui
 import { Paper, Divider } from '@mantine/core';
-
-// baseline data
-import mlinesRaw from '@/Data/municipalites.json';
-
-const countylines: FeatureCollection = {
-  type: 'FeatureCollection',
-  features: mlinesRaw.features as any,
-};
 
 interface MyMapProps {
   geojson: FeatureCollection | null;
@@ -57,6 +49,18 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
     y: number;
     content: any;
   } | null>(null);
+  const [countylines, setCountylines] = useState<FeatureCollection | null>(
+    null,
+  );
+
+  useEffect(() => {
+    fetch('/data/municipalites.json')
+      .then((res) => res.json())
+      .then((raw) =>
+        setCountylines({ type: 'FeatureCollection', features: raw.features }),
+      )
+      .catch(() => {});
+  }, []);
 
   const onViewStateChange = useCallback((params: any) => {
     const vs = params.viewState;
@@ -101,6 +105,7 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
         },
       }),
     showCountyLines &&
+      countylines &&
       new GeoJsonLayer({
         id: 'county-lines',
         data: countylines,

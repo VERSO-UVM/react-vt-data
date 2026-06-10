@@ -17,7 +17,7 @@ import {
   YEAR_MAX_OVERALL,
   Location,
 } from './profileStore';
-import county_town_names from '@/Data/county_town_names.json';
+import county_town_names from '@/data/county_town_names.json';
 
 type CountyKey = keyof typeof county_town_names;
 

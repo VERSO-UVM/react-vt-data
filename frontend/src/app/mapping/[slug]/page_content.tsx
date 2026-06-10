@@ -25,7 +25,7 @@ const MAP_CONFIG: Record<
   zoning: {
     title: 'Zoning',
     initialURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
-    filterURL: `${BASE_API_URL}/load/mapping/zoning/filters`,
+    filterURL: `${BASE_API_URL}/filters/tree?source=zoning_info`,
     dataURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
   },
   'flood-legal': {
