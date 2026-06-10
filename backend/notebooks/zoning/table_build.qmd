@@ -1,0 +1,401 @@
+---
+title: "zoning sql workthrough"
+author: Fitz Koch
+date: today
+description:  builds SQL tables from zoning data.
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+bibliography: /home/fitsl/library/zotero/fjk_library.bib
+---
+
+
+# Setup 
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "app_utils").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+
+```
+
+```{python}
+con = duckdb.connect()
+```
+
+```{python}
+data_dir= Path("Data") 
+path = data_dir / "zoning" / "vt-zoning-update.fgb"
+df = pyogrio.read_dataframe(path)
+df = crs_set(df)
+
+df.head()
+```
+
+```{python}
+con.execute("INSTALL spatial; LOAD spatial")
+```
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW zoning_raw AS 
+  SELECT * FROM ST_READ('{path}')
+""")
+```
+
+```{python}
+old_path = data_dir / "zoning" / "vt-zoning-update_old.fgb"
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW zoning_old AS 
+  SELECT * FROM ST_READ('{old_path}')
+""")
+```
+
+
+# Data examination
+```{python}
+df = con.execute("SELECT * FROM zoning_raw").df()
+for col in df.columns:
+  print(col)
+```
+
+```{python}
+df['Shape_Area']
+```
+
+# Table splitting
+
+We'll use `OBJECT_ID` as the main hash key. 
+
+Then there are three tables:
+* INFORMATION
+  * OBJECT_ID
+  * identity: how the entity fits into the others
+  * categorization: categories that define the district
+  * summary: 
+* RULES: WIDE 
+  * OBJECT_ID
+  * use_type 
+  * rule
+  * value
+* Geography
+  * OBJECT_ID
+  * geometry
+
+
+## Info
+```{python}
+info_cols = [
+    # identity
+    "OBJECT_ID",
+    "County",
+    "RPC",
+    "Municipal_Name",
+    "GEO_ID",
+    "District_Name",
+    "Abbreviated_District_Name",
+    # categorization
+    "District_Type",
+    "Elderly_Housing_District",
+    # information and summary
+    "Bylaw_Date",
+    "District_Mapped",
+    "Overlay_District",
+    "Base_Density",
+    "Affordable_Housing_District",
+    "Notes",
+]
+
+# convert units of shape area into meters via projection (just in case) then divide to get acres.
+calc_info_cols = [
+    "ST_Area(ST_Transform(geom, 'EPSG:4326', 'EPSG:32145', always_xy := TRUE)) / 4046.86 AS Acres"
+]
+
+info_string = ", ".join(info_cols + calc_info_cols)
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW info AS 
+  SELECT {info_string}
+  FROM zoning_raw
+""")
+```
+
+```{python}
+info = con.execute("SELECT OBJECT_ID, Acres FROM info").df()
+info.head()
+```
+
+```{python}
+old = con.execute("SELECT OBJECTID, Acres FROM zoning_old").df()
+old.head()
+```
+
+Great, they match. Now we just want to rename them to the 'cleaned' district type names in our old `zoning.py`:
+
+```{python}
+info = con.execute("SELECT * FROM info").df()
+district_remapper = {
+    "Primarily Residential": "Residential",
+    "Mixed with Residential": "Mixed",
+    "Nonresidential": "Nonresidential",
+    "Overlay not Affecting Use": "Overlay",
+}
+info["District_Type"] = (
+    info["District_Type"].map(district_remapper).fillna(info["District_Type"])
+)
+info.head()
+```
+
+```{python}
+info.columns
+```
+
+## geometry
+```{python}
+geom_cols = [
+  "OBJECT_ID",
+  "geom"
+]
+
+geo_string = ", ".join(geom_cols)
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW geom AS
+  SELECT {geo_string}
+  FROM zoning_raw
+""")
+
+geo = con.execute("SELECT * FROM geom").df()
+geo.head()
+```
+
+## Rules 
+* RULES: WIDE 
+  * district_id
+  * use_type 
+  * rule
+  * value
+
+We want to pivot the table so that we have multiple lines per district_id, for easy filtering on what rule_cols match it. 
+
+### Getting cols and splitting
+
+```{python}
+dropped_cols = ["Shape_Area", "Shape_Length"]
+rule_cols = set(df.columns.to_list())
+for item in geom_cols + info_cols + calc_info_cols + dropped_cols:
+    if item in rule_cols:
+        rule_cols.remove(item)
+rule_cols = list(rule_cols)
+print(rule_cols)
+```
+
+```{python}
+for col in rule_cols:
+  print(df[col].value_counts(dropna=False))
+  print("---" * 10)
+
+  
+```
+
+Some quick cleaning and parsing:
+1. replace '/' with '_'
+2. split column name into prefix_rule
+3. get value of column name
+
+```{python}
+clean_rule_cols = [col.replace("/", "_") for col in rule_cols]
+```
+
+The use types are basically just the first block...:
+
+```{python}
+use_types = list(set([col.split("_")[0] for col in clean_rule_cols]))
+print(use_types)
+```
+
+But `Affordable` needs to be expanded
+
+```{python}
+use_types = set(use_types)
+use_types.remove("Affordable")
+use_types.add("Affordable_Housing")
+print(use_types)
+```
+
+```{python}
+for col in rule_cols:
+  print(col)
+```
+
+```{python}
+def split_col(col: str):
+    for use_type in use_types:
+        if col.startswith(use_type):
+            rule = col[len(use_type) + 1 :]
+            rule = rule.replace("/", "_")
+            return use_type, rule
+    return False, False
+```
+
+### Pivoting
+We have to cast the columns to be varchars because their type differs:
+```{python}
+rule_strings = [
+    f'CAST("{rule_col}" AS VARCHAR) AS {clean_col}'
+    for rule_col, clean_col in zip(rule_cols, clean_rule_cols)
+]
+rule_string = ", ".join(rule_strings)
+rule_string
+```
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW raw_rules AS
+  SELECT OBJECT_ID, col_name, val
+  FROM zoning_raw
+  UNPIVOT (val FOR col_name IN ({rule_string}))
+""")
+```
+
+We'll rename the columns and prettify it a bit, by splitting the columns as above, then expanding them to be more readable:
+
+```{python}
+rules = con.execute("SELECT * FROM raw_rules").df()
+rules[['use_type', 'rule']] = rules['col_name'].apply(split_col).apply(pd.Series)
+rules = rules.drop(columns='col_name')
+rules.head()
+
+```
+
+
+```{python}
+use_types_remapper = {
+  "F1F" : "1_Family",
+  "F2F" : "2_Family",
+  "F3F" : "3_Family",
+  "F4F" : "4_Family",
+  "ADU": "Acessory_Dwelling_Unit",
+  "PRD" : "Planned_Residential_Development",
+  "PUD" : "Planned_Unit_Development",
+  "Affordable_Housing" : "Affordable_Housing"
+}
+rules['use_type'] = rules['use_type'].map(use_types_remapper).fillna(rules['use_type'])
+rules
+```
+
+
+Now we want to see the rules that aren't just numbers, and see how they compare to the allowance columns:
+
+```{python}
+vals = rules['val'].value_counts().reset_index()
+for idx, (val, count) in vals.iterrows():
+    if not re.match(r'\d+\.?\d*', str(val)):
+        print(val, count)
+```
+
+```{python}
+rules[rules['rule'].str.contains("Allowance")]['val'].value_counts()
+```
+
+They match, so it's just the allowance column that has all these `Prohibited` and `Permitted` conditional style variables. The main thing is to collapse the differing true and false values into one:
+
+
+```{python}
+boolean_remapper = {
+    "No": False,
+    "Prohibited": False,
+    "F": False,
+    "Yes": True,
+    "Permitted": True,
+    "T": True,
+}
+
+rules['val'] = rules['val'].map(boolean_remapper).fillna(rules['val'])
+rules['val'].value_counts().head(15)
+```
+
+Check it's looking how we want:
+
+```{python}
+rules.head(30)
+```
+
+```{python}
+df['District_Type'].value_counts()
+```
+
+Looks good. 
+
+# Extra functionality
+
+The old `zoning.py` script had additional functionality:
+1. Adding fill colors: we'll hardcode this as another SQL table
+2. Adding a tooltip: we'll read the info for the tooltip in the frontend. That's the right seperation of  concerns
+
+
+## Fill Colors
+
+```{python}
+con.execute(f"""--sql
+CREATE TABLE zoning_district_type_colors (
+    district_type   TEXT PRIMARY KEY,
+    hex_color       TEXT NOT NULL,
+    rgba            TEXT NOT NULL  -- '[255,127,14,180]' as JSON-ish text
+);
+
+INSERT INTO zoning_district_type_colors VALUES
+    ('Residential',     '#1f77b4', '[31,119,180,180]'),
+    ('Mixed',           '#ff7f0e', '[255,127,14,180]'),
+    ('Nonresidential',  '#2ca02c', '[44,160,44,180]'),
+    ('Overlay',         '#d62728', '[214,39,40,180]');
+""")
+```
+
+```{python}
+con.execute("SELECT * FROM zoning_district_type_colors").df().head()
+```
+
+
+Now, we convert all of this into a build script. And test the results.
+(Done)
+
+
+# Rules Table Exploration
+
+
+```{python}
+df = con.execute("""
+  SELECT * FROM rules
+""").df()
+
+df.head()
+```

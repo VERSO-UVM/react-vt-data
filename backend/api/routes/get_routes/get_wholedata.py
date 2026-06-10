@@ -48,7 +48,7 @@ async def read_service_areas():
 
 
 # Zoning GET Endpoint (Hardcoded for now)
-@router.get("/load/mapping/zoning")
+@router.get("/load/mapping/zoning/standard")
 async def read_zoning_data():
     data = data_loading.masterload(name="zoning")
     return json.loads(data.to_json())
