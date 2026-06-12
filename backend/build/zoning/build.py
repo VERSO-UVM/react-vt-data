@@ -46,7 +46,7 @@ use_types_remapper = {
     "F2F": "2_Family",
     "F3F": "3_Family",
     "F4F": "4_Family",
-    "ADU": "Acessory_Dwelling_Unit",
+    "ADU": "Accessory_Dwelling_Unit",
     "PRD": "Planned_Residential_Development",
     "PUD": "Planned_Unit_Development",
     "Affordable_Housing": "Affordable_Housing",

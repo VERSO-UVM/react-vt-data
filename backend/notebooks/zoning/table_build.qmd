@@ -89,15 +89,18 @@ for col in df.columns:
   print(col)
 ```
 
+Check on shape area...
 ```{python}
 df['Shape_Area']
 ```
+
+Seems like it's in meters. 
 
 # Table splitting
 
 We'll use `OBJECT_ID` as the main hash key. 
 
-Then there are three tables:
+Then there are three tables, as I see it, by the use case. We'll probably often join Information and Geography together, but I like having them separate so that I can more easily check column names and get a sense where stuff is. 
 * INFORMATION
   * OBJECT_ID
   * identity: how the entity fits into the others
@@ -108,12 +111,13 @@ Then there are three tables:
   * use_type 
   * rule
   * value
-* Geography
+* Geography: this should be kept separate because it's big
   * OBJECT_ID
   * geometry
 
 
 ## Info
+We get the information columns and use them to make a table:
 ```{python}
 info_cols = [
     # identity
@@ -198,7 +202,7 @@ geo.head()
 ```
 
 ## Rules 
-* RULES: WIDE 
+* RULES: LONG format instead of wide. (tidy -- var=column, obs=row, type of obs = table)
   * district_id
   * use_type 
   * rule
@@ -303,7 +307,7 @@ use_types_remapper = {
   "F2F" : "2_Family",
   "F3F" : "3_Family",
   "F4F" : "4_Family",
-  "ADU": "Acessory_Dwelling_Unit",
+  "ADU": "Accessory_Dwelling_Unit",
   "PRD" : "Planned_Residential_Development",
   "PUD" : "Planned_Unit_Development",
   "Affordable_Housing" : "Affordable_Housing"
@@ -316,9 +320,9 @@ rules
 Now we want to see the rules that aren't just numbers, and see how they compare to the allowance columns:
 
 ```{python}
-vals = rules['val'].value_counts().reset_index()
+vals = rules["val"].value_counts().reset_index()
 for idx, (val, count) in vals.iterrows():
-    if not re.match(r'\d+\.?\d*', str(val)):
+    if not re.match(r"\d+\.?\d*", str(val)):
         print(val, count)
 ```
 
@@ -387,15 +391,3 @@ con.execute("SELECT * FROM zoning_district_type_colors").df().head()
 
 Now, we convert all of this into a build script. And test the results.
 (Done)
-
-
-# Rules Table Exploration
-
-
-```{python}
-df = con.execute("""
-  SELECT * FROM rules
-""").df()
-
-df.head()
-```

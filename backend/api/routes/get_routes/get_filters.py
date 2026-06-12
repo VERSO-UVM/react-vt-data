@@ -12,16 +12,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# Schema Orientation:
-
-## primary dataset: the dataset to be joined onto. falls back to "default."
-#       This what the 'main logic' is done to in the SELECT clause of the SQL query.
-####  secondary dataset: the dataset we're using to filter the primary dataset
-###### join_key: the column to join on. see FilterSource in request_models.py
-###### join_type: what type of join, either SQL standard (eg left) or spatial
-###### columns: ORDERED {label, column} pairs.
-#       The order is the filter cascade order; the label is what frontend shows;
-#       the column is what is sent back to the sql
+# Schema Orientation: see design/current/Data_Engineering.md
 
 
 def get_source_meta(primary_dataset: str, filter_dataset: str) -> dict:
@@ -38,8 +29,21 @@ async def get_schema(dataset: str) -> dict:
 
 
 @router.get("/filters/tree")
-async def filter_tree_endpoint(source: str):
-    colmap: dict = schema["default"][source]["columns"]
+async def filter_tree_endpoint(source: str, primary_dataset: str = "default"):
+    """
+    Get the JSON for a cascading filter on the primary_dataset WITH the 'source' as filter dataset.
+    For now, the primary dataset is 'defauilt', which is the fallback for all non-specified datasets.
+
+
+    Args:
+        source (str): The dataset *doing the filtering*.
+        primary_dataset (str): The dataset to be filtered.
+
+    Returns:
+        dict: a JSON dictionary of format
+        key1: {values, each key2: values} and so on iteratively through the columns.
+    """
+    colmap: dict = schema[primary_dataset][source]["columns"]
     return filter_tree(colmap, list(colmap.keys()), source)
 
 
