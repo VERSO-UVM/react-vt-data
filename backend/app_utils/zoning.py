@@ -3,6 +3,8 @@ Open Research Community Accelorator
 Vermont Data App
 
 Zoning Utility Functions
+
+NOTE: this code is deprecated. for learning purposes now, will be deleted.
 """
 
 from app_utils.color import add_fill_colors

@@ -18,6 +18,8 @@ ACS-5 (from Parquet):
     dp_combined  (materialized union of DP02/03/04/05)
 
 Zoning (from Parquet)
+
+NOTE: to be deprecated once the individual `build.py` scripts are built.
 """
 
 from pathlib import Path
