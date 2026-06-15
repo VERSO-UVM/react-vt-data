@@ -67,7 +67,15 @@ def get_acs5_tidy(dataset: str, name: str, year_min: int, year_max: int,
     sql = (sql_path / "acs5_tidy.sql").read_text().format(
         table=config["table"], where_string=where_string)
 
-    return DB.execute(sql).df()
+    result = DB.execute(sql).df()
+
+    if result is None:
+        logger.error(
+            "ACS5 tidy query returned no rows for dataset: %s, name: %s, filters: %s", dataset, name, filters)
+        raise ValueError(
+            f"no results for dataset: {dataset}, name: {name}, filters: {filters}")
+
+    return result
 
 
 def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
@@ -85,6 +93,26 @@ def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
     if result is None:
         logger.error(
             "Unemployment rate query returned no rows for filters: %s", filters)
+        raise ValueError(f"no results for filters: {filters}")
+
+    return result
+
+
+def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
+    where_string = build_where_query_from_filters(
+        filters=filters,
+        colmap=ACS5_FILTER_COLS,
+        table="median_earnings",
+        base_conditions=None)
+
+    sql = (sql_path / "median_earnings.sql").read_text().format(
+        where_string=where_string)
+
+    result = DB.execute(sql).df()
+
+    if result is None:
+        logger.error(
+            "Median earnings query returned no rows for filters: %s", filters)
         raise ValueError(f"no results for filters: {filters}")
 
     return result

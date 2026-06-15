@@ -8,7 +8,7 @@ from api.models import DPSeriesRequest, FilterRequest, make_response
 from app_utils.db import DB
 # TODO: Simplify / Refactor this script using the new query folder functions
 
-from query import get_acs5_tidy, get_unemployment_rate_ts, get_acs5_filters
+from query.acs5 import get_acs5_tidy, get_unemployment_rate_ts, get_median_earnings, get_acs5_filters
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 # TODO: Percents might need to be weighted averages instead of simple averages for statewide aggregation
-# TODO: In DB, add an aggregated statewide VT
+# TODO: In DB, add an aggregated statewide VT row to each table for easier aggregation requests
 
 
 # Demographics
@@ -99,13 +99,13 @@ async def tidy_unemployment_rate(request: FilterRequest):
 
 
 # Median Earnings
-# @router.post("/load/acs5-db/tidy/median-earnings")
-# async def tidy_median_earnings(request: FilterRequest):
-#     rows = get_median_earnings(
-#         name=request.name,
-#         year_min=request.year_min,
-#         year_max=request.year_max)
-#     return make_response(data=rows, metadata=get_metadata("median_earnings"))
+@router.post("/load/acs5-db/tidy/median-earnings")
+async def tidy_median_earnings(request: FilterRequest):
+    rows = get_median_earnings(
+        name=request.name,
+        year_min=request.year_min,
+        year_max=request.year_max)
+    return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 
 # ---------------------------------------------------------------------------
