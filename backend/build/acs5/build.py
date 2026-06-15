@@ -26,15 +26,12 @@ proc_dir = Path("backend/Data/Census/ACS_5")
 data_dir = Path("backend/Data")
 sql_path = Path("backend/build/acs5/sql")
 
+
 # functions:
-
-
 def data_load():
     parquet_files = list((data_dir / "Census" / "ACS_5").glob("*.parquet"))
-
     for file in parquet_files:
         table_name = file.stem
-
         con.execute(f"""
             CREATE OR REPLACE VIEW {table_name}_raw AS
             SELECT *
@@ -44,10 +41,8 @@ def data_load():
 
 def build_tables():
     parquet_files = list((data_dir / "Census" / "ACS_5").glob("*.parquet"))
-
     for file in parquet_files:
         table_name = file.stem
-
         con.execute(f"""
             CREATE OR REPLACE TABLE {table_name} AS
             SELECT *
@@ -59,7 +54,9 @@ def main():
     data_load()
     build_tables()
     proc_dir.mkdir(parents=True, exist_ok=True)
-    tables = ["demographics", "education", "economic", "housing"]
+    tables = ["b10_census", "b15003_education", "b_economic", "b_housing", "dp_combined",
+              "profile_census", "median_earnings", "median_home_value", "median_smoc",
+              "unemployment_rate", "commute_habits", "commute_time"]
     for table in tables:
         con.execute(
             f"""COPY (SELECT * FROM {table}) TO '{proc_dir / f'{table}.parquet'}'
