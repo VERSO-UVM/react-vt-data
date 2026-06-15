@@ -46,32 +46,28 @@ QUERY_CONFIG = {
 }
 
 # frontend filter label -> database column
-ACS5_FILTER_COLS = {"Location": "NAME", }
+ACS5_FILTER_COLS = {"Location": "NAME"}
 ACS5_TREE_LABELS = ["Location"]
 
 
-def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
+def get_acs5_tidy(dataset: str, name: str, year_min: int, year_max: int,
+                  filters: dict | None = None) -> pd.DataFrame:
     config = QUERY_CONFIG.get(dataset)
-    if config is None:
-        raise ValueError(f"Unknown ACS5 dataset: {dataset}")
+    query_filters = {"Location": name, **(filters or {})}
+    base_conditions = list(config["base_conditions"] or [])
+    base_conditions.append(
+        f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}")
 
     where_string = build_where_query_from_filters(
-        filters=filters,
+        filters=query_filters,
         colmap=ACS5_FILTER_COLS,
         table=config["table"],
-        base_conditions=config["base_conditions"])
+        base_conditions=base_conditions)
 
     sql = (sql_path / "acs5_tidy.sql").read_text().format(
         table=config["table"], where_string=where_string)
 
-    result = DB.execute(sql).df()
-
-    if result is None:
-        logger.error("%s query returned no rows for filters: %s",
-                     dataset, filters)
-        raise ValueError(f"no results for filters: {filters}")
-
-    return result
+    return DB.execute(sql).df()
 
 
 def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
