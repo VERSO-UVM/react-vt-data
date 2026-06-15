@@ -45,7 +45,7 @@ QUERY_CONFIG = {
     },
 }
 
-# fronted filter label -> database column
+# frontend filter label -> database column
 ACS5_FILTER_COLS = {"Location": "NAME", }
 ACS5_TREE_LABELS = ["Location"]
 
