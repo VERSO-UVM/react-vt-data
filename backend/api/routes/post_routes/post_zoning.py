@@ -16,14 +16,13 @@ router = APIRouter()
 
 @router.post("/load/mapping/zoning/standard")
 async def zoning_geojson(request: FilterRequest):
-    source = request_to_source(request, "default", "zoning_info")
+    source = request_to_source(request, "zoning_info", "default")
     data = get_zoning_geojson([source])
     return Response(content=data, media_type="application/json")
 
 
 @router.post("/load/data/zoning/aggregated")
-@router.post("/load/data/zoning/aggregated")
 async def acreage_response(request: FilterRequest):
-    source = request_to_source(request, "default", "zoning_info")
+    source = request_to_source(request, "zoning_info", "default")
     agg, table = get_zoning_aggregated_acres([source])
     return make_response(data=agg, metadata=get_metadata("zoning"), tableData=table)

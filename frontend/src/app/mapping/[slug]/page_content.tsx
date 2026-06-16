@@ -1,8 +1,22 @@
 'use client';
+
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import VTMap from '@/components/mapping';
-import { Box, Paper, Select, Switch, Text, Title } from '@mantine/core';
+import {
+  Accordion,
+  Box,
+  Card,
+  Group,
+  LoadingOverlay,
+  Paper,
+  Select,
+  SimpleGrid,
+  Stack,
+  Switch,
+  Text,
+  Title,
+} from '@mantine/core';
 import { BASE_API_URL } from '@/config';
 import FilterContainer from '@/components/FilterUI/Filter_wrap';
 import axios from 'axios';
@@ -34,17 +48,23 @@ const MAP_CONFIG: Record<
   },
   'soil-suitability': {
     title: 'Soil Suitability',
-    // initialURL requires RPC — handled separately below
   },
 };
 
-/** Which GeoJSON property to group by, and optionally which numeric property to sum. */
 const STATS_CONFIG: Record<
   string,
   { categoryKey: string; valueKey: string | null; unit: string }
 > = {
-  zoning: { categoryKey: 'District Type', valueKey: 'Acres', unit: 'acres' },
-  'flood-legal': { categoryKey: 'FLD_ZONE', valueKey: null, unit: 'polygons' },
+  zoning: {
+    categoryKey: 'District Type',
+    valueKey: 'Acres',
+    unit: 'acres',
+  },
+  'flood-legal': {
+    categoryKey: 'FLD_ZONE',
+    valueKey: null,
+    unit: 'polygons',
+  },
   'soil-suitability': {
     categoryKey: 'Suitability',
     valueKey: 'Acres',
@@ -52,61 +72,100 @@ const STATS_CONFIG: Record<
   },
 };
 
+const ZONING_COLORS: Record<string, string> = {
+  Residential: '#1f77b4',
+  Mixed: '#ff7f0e',
+  Nonresidential: '#2ca02c',
+  Overlay: '#d62728',
+};
+
 function computeStats(
   geojson: FeatureCollection | null,
   slug: string,
-): [string, number][] | null {
+): [string, number, number][] | null {
   const cfg = STATS_CONFIG[slug];
   if (!cfg || !geojson?.features?.length) return null;
+
   const groups: Record<string, number> = {};
+  let total = 0;
+
   for (const f of geojson.features) {
     const cat = String(f.properties?.[cfg.categoryKey] ?? 'Unknown');
-    const val = cfg.valueKey ? Number(f.properties?.[cfg.valueKey] ?? 0) : 1;
+    const val = cfg.valueKey
+      ? Number(f.properties?.[cfg.valueKey] ?? 0)
+      : 1;
+
     groups[cat] = (groups[cat] ?? 0) + val;
+    total += val;
   }
-  return Object.entries(groups).sort((a, b) => b[1] - a[1]);
+
+  return Object.entries(groups)
+    .map(([cat, val]) => [cat, val, total] as [string, number, number])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
 }
 
 function formatStatValue(value: number, slug: string): string {
   const cfg = STATS_CONFIG[slug];
-  if (!cfg) return String(value);
-  const n = value.toLocaleString('en-US', { maximumFractionDigits: 0 });
-  if (cfg.valueKey === 'Acres') return `${n} ac`;
-  return `${n} ${cfg.unit}`;
+
+  if (!cfg) {
+    return value.toLocaleString();
+  }
+
+  const formatted = value.toLocaleString('en-US', {
+    maximumFractionDigits: 0,
+  });
+
+  if (cfg.valueKey === 'Acres') {
+    return `${formatted} acres`;
+  }
+
+  return `${formatted}`;
+}
+
+function formatPercent(value: number, total: number): string {
+  return `(${((value / total) * 100).toFixed(1)}%)`;
 }
 
 export default function MappingContent() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
+
   const [data, setData] = useState<any>(null);
   const [rpc, setRpc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showCountyLines, setShowCountyLines] = useState(true);
 
   const config = slug ? MAP_CONFIG[slug] : undefined;
 
-  // Clear state on slug change
   useEffect(() => {
     setData(null);
     setRpc(null);
   }, [slug]);
 
-  // Initial load via GET for slugs that have a direct URL
   useEffect(() => {
     if (!slug || !config?.initialURL) return;
+
+    setLoading(true);
+
     axios
       .get(config.initialURL)
       .then((res) => setData(res.data))
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [slug, config?.initialURL]);
 
-  // Soil-suitability: load when RPC is selected
   useEffect(() => {
     if (!rpc) return;
+
+    setLoading(true);
     setData(null);
+
     axios
       .get(`${BASE_API_URL}/load/mapping/wastewater/soil_septic/${rpc}`)
       .then((res) => setData(res.data))
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [rpc]);
 
   const stats = useMemo(
@@ -114,95 +173,225 @@ export default function MappingContent() {
     [data, slug],
   );
 
+  const totalFeatures = data?.features?.length ?? 0;
+
   return (
     <Box
+      h="calc(100vh - 80px)"
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: 'calc(100vh - 180px)',
         overflow: 'hidden',
       }}
     >
-      {/* Filter / control panel */}
-      <Paper
-        p="md"
-        radius="sm"
-        shadow="xs"
-        mb="sm"
-        style={{
-          borderBottom: '1px solid var(--mantine-color-gray-3)',
-          flexShrink: 0,
-        }}
+      <Group
+        h="100%"
+        align="stretch"
+        gap="md"
+        wrap="nowrap"
       >
-        <Title order={4} mb="xs">
-          {config?.title ?? slug}
-        </Title>
+        {/* Sidebar */}
 
-        <Switch
-          label="Show municipality boundaries"
+        <Paper
+  w={360}
+  p="md"
+  withBorder
+  shadow="xs"
+  style={{
+    overflowY: 'auto',
+    flexShrink: 0,
+  }}
+>
+  <Stack gap="md">
+    <Box>
+      <Title order={2}>
+        {config?.title ?? slug}
+      </Title>
+
+      <Text
+        size="sm"
+        c="dimmed"
+        mt={4}
+      >
+        Explore Vermont spatial datasets and planning information.
+      </Text>
+
+      {totalFeatures > 0 && (
+        <Text
           size="sm"
+          mt="xs"
+          fw={500}
+        >
+          {totalFeatures.toLocaleString()} features loaded
+        </Text>
+      )}
+    </Box>
+
+    {/* Controls */}
+
+    <Paper
+      withBorder
+      p="sm"
+      radius="md"
+      bg="gray.0"
+    >
+      <Stack gap="sm">
+        <Switch
           checked={showCountyLines}
-          onChange={(e) => setShowCountyLines(e.currentTarget.checked)}
-          mb="sm"
+          onChange={(event) =>
+            setShowCountyLines(event.currentTarget.checked)
+          }
+          label="Show municipality boundaries"
         />
 
         {slug === 'soil-suitability' && (
           <Select
             label="Regional Planning Commission"
-            placeholder="Select RPC to load data"
+            placeholder="Select RPC"
             data={SOIL_RPCS}
             value={rpc}
             onChange={setRpc}
+            searchable
           />
         )}
+      </Stack>
+        </Paper>
+
+        {/* Filters */}
 
         {config?.filterURL && config?.dataURL && (
-          <FilterContainer
-            apiURL={config.filterURL}
-            dataURL={config.dataURL}
-            onData={(fetchedData) => setData(fetchedData)}
-          />
+          <Accordion
+            variant="separated"
+            defaultValue="filters"
+          >
+            <Accordion.Item value="filters">
+              <Accordion.Control>
+                Filters
+              </Accordion.Control>
+
+              <Accordion.Panel>
+                <Box
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    width: '100%',
+                  }}
+                >
+                  <FilterContainer
+                    apiURL={config.filterURL}
+                    dataURL={config.dataURL}
+                    onData={(fetchedData) =>
+                      setData(fetchedData)
+                    }
+                  />
+                </Box>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
         )}
 
-        {/* Summary statistics */}
-        {stats && (
-          <Box mt="sm" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {stats.map(([cat, val]) => (
-              <Box
-                key={cat}
-                style={{
-                  background: 'var(--mantine-color-gray-1)',
-                  borderRadius: 6,
-                  padding: '2px 10px',
-                  fontSize: 12,
-                  whiteSpace: 'nowrap',
-                }}
+        {/* Summary */}
+
+        {stats && stats.length > 0 && (
+          <Box>
+            <Group
+              justify="space-between"
+              mb="sm"
+            >
+              <Title order={5}>
+                {config?.title} Summary
+              </Title>
+
+              <Text
+                size="xs"
+                c="dimmed"
               >
-                <Text component="span" fw={600} size="xs">
-                  {cat}
-                </Text>
-                <Text component="span" size="xs" c="dimmed">
-                  {' '}
-                  {formatStatValue(val, slug!)}
-                </Text>
-              </Box>
-            ))}
+              </Text>
+            </Group>
+
+            <Stack gap="xs">
+              {stats.map(([category, value, total]) => (
+                <Card
+                  key={category}
+                  withBorder
+                  radius="md"
+                  p="sm"
+                  style={{
+                    borderLeft:
+                      slug === 'zoning'
+                        ? `6px solid ${
+                            ZONING_COLORS[category] ??
+                            '#ced4da'
+                          }`
+                        : undefined,
+                  }}
+                >
+                  <Group justify="space-between">
+                    <Box style={{ flex: 1 }}>
+                      <Group
+                        gap="xs"
+                        wrap="nowrap"
+                      >
+                        {slug === 'zoning' && (
+                          <Box
+                            style={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: 999,
+                              flexShrink: 0,
+                              background:
+                                ZONING_COLORS[
+                                  category
+                                ] ?? '#adb5bd',
+                            }}
+                          />
+                        )}
+
+                        <Text
+                          size="sm"
+                          fw={500}
+                        >
+                          {category}
+                        </Text>
+                      </Group>
+                    </Box>
+
+                    <Text fw={700} size="sm">
+                      {formatStatValue(value, slug!)}
+                    </Text>
+
+                    <Text size="xs" c="dimmed">
+                      {formatPercent(value, total)}
+                    </Text>
+                  </Group>
+                </Card>
+              ))}
+            </Stack>
           </Box>
         )}
-      </Paper>
+      </Stack>
+    </Paper>
 
-      {/* Map panel — fills all remaining height */}
-      <Box
-        style={{
-          flex: 1,
-          position: 'relative',
-          minHeight: 0,
-          overflow: 'hidden',
-          borderRadius: 'var(--mantine-radius-sm)',
-        }}
-      >
-        <VTMap geojson={data} showCountyLines={showCountyLines} />
-      </Box>
+        {/* Map */}
+
+        <Box
+          style={{
+            flex: 1,
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 8,
+          }}
+        >
+          <LoadingOverlay
+            visible={loading}
+            zIndex={1000}
+          />
+
+          <VTMap
+            geojson={data}
+            showCountyLines={showCountyLines}
+          />
+        </Box>
+      </Group>
     </Box>
   );
 }

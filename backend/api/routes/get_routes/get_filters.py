@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from api.config import schema
 from query import (
     filter_tree,
-    get_acs5_dp_combined_filters,
+    # get_acs5_dp_combined_filters,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,6 @@ async def zoning_filters():
 
 
 # TODO: wireup so this actually gets used.
-@router.get("acs5-db/dp-combined/filters")
-async def dp_combined_filters():
-    return get_acs5_dp_combined_filters()
+# @router.get("acs5-db/dp-combined/filters")
+# async def dp_combined_filters():
+#     return get_acs5_dp_combined_filters()
