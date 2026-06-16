@@ -16,7 +16,7 @@ _VALID_COLS: dict[str, set[str]] = {
         "year", "GEOID", "NAME", "Jurisdiction", "County", "Unemployment_Rate"
     },
     "median_earnings": {
-        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"
+        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "Value"
     },
     "median_home_value": {
         "year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"
@@ -67,6 +67,7 @@ def query_timeseries(table_name: str, filters: dict | None = None):
             where_clauses.append(f'"{col}" IN ({placeholders})')
             params.extend(values)
 
-    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+    where_sql = ("WHERE " + " AND ".join(where_clauses)
+                 ) if where_clauses else ""
     sql = f'SELECT * FROM "{table_name}" {where_sql}'
     return DB.execute(sql, params).df()

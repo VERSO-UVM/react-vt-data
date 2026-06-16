@@ -22,7 +22,7 @@ print(os.getcwd())
 
 # globals
 con = duckdb.connect()
-proc_dir = Path("backend/Data/Census/ACS_5")
+proc_dir = Path("backend/Data/_Processed/acs5")
 data_dir = Path("backend/Data")
 sql_path = Path("backend/build/acs5/sql")
 

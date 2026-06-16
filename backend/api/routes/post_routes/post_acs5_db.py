@@ -8,11 +8,9 @@ from api.models import DPSeriesRequest, FilterRequest, make_response
 from app_utils.db import DB
 # TODO: Simplify / Refactor this script using the new query folder functions
 
-from query.acs5 import get_acs5_tidy, get_unemployment_rate_ts, get_median_earnings, get_acs5_filters
-
+from query.acs5 import get_acs5_tidy, get_unemployment_rate_ts, get_median_earnings
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
@@ -61,7 +59,7 @@ async def tidy_labor_force(request: FilterRequest):
         year_min=request.year_min,
         year_max=request.year_max,
         filters={"Section": "Labor Force"})
-    return make_response(data=rows, metadata=get_metadata("labor-force"))
+    return make_response(data=rows, metadata=get_metadata("labor_force"))
 
 
 # Income
@@ -92,7 +90,7 @@ async def tidy_median_age(request: FilterRequest):
 @router.post("/load/acs5-db/tidy/unemployment-rate")
 async def tidy_unemployment_rate(request: FilterRequest):
     rows = get_unemployment_rate_ts(
-        name=request.name,
+        filters={"Location": request.name},
         year_min=request.year_min,
         year_max=request.year_max)
     return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
@@ -102,7 +100,7 @@ async def tidy_unemployment_rate(request: FilterRequest):
 @router.post("/load/acs5-db/tidy/median-earnings")
 async def tidy_median_earnings(request: FilterRequest):
     rows = get_median_earnings(
-        name=request.name,
+        filters={"Location": request.name},
         year_min=request.year_min,
         year_max=request.year_max)
     return make_response(data=rows, metadata=get_metadata("median_earnings"))

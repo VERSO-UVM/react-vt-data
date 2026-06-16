@@ -1,8 +1,8 @@
 SELECT 
     year, 
     NAME, 
-    Unemployment_Rate AS Value, 
-    Unemployment_Rate AS Percent
-FROM unemployment_rate
+    Value AS Value, 
+    Value AS Percent
+FROM acs5_unemployment_rate
 {where_string}
 ORDER BY year

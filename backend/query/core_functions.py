@@ -21,16 +21,25 @@ def build_where_query_from_filters(
     base_conditions: list[str] | None = None,
 ) -> str:
     clauses = list(base_conditions or [])
+
     for label, values in (filters or {}).items():
         col = colmap.get(label)
+
         if col is None:
             logger.warning(f"{table}: ignoring unknown filter {label}")
             continue
-        if not values:
-            continue
-        clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
 
-    return ("WHERE " + " AND ".join(clauses) if clauses else "")
+        if values is None:
+            continue
+
+        if not isinstance(values, (list, tuple, set)):
+            values = [values]
+
+        clauses.append(
+            f'"{col}" IN ({", ".join(repr(v) for v in values)})'
+        )
+
+    return "WHERE " + " AND ".join(clauses) if clauses else ""
 
 
 def _nest(rows: list[tuple]) -> dict:

@@ -9,38 +9,42 @@
 
 import logging
 from pathlib import Path
-
 import pandas as pd
 
 from query.core_functions import build_where_query_from_filters, filter_tree
 from query.processed_db import DB
+
+# import duckdb
+# _DB_PATH = Path(__file__).resolve().parent.parent / "Data" / "vt_data.duckdb"
+# DB = duckdb.connect(str(_DB_PATH), read_only=True)
+
 
 logger = logging.getLogger(__name__)
 sql_path = Path(__file__).resolve().parent / "sql" / "acs5"
 
 QUERY_CONFIG = {
     "demographics": {
-        "table": "b10_census",
+        "table": "acs5_b10_census",
         "base_conditions": None,
     },
     "education": {
-        "table": "b15003_education",
+        "table": "acs5_b15003_education",
         "base_conditions": None,
     },
     "housing": {
-        "table": "b_housing",
+        "table": "acs5_b_housing",
         "base_conditions": None,
     },
     "labor_force": {
-        "table": "b_economic",
+        "table": "acs5_b_economic",
         "base_conditions": ["Section = 'Labor Force'"],
     },
     "income": {
-        "table": "b_economic",
+        "table": "acs5_b_economic",
         "base_conditions": ["Section = 'Income'"],
     },
     "median_age": {
-        "table": "b10_census",
+        "table": "acs5_b10_census",
         "base_conditions": ["Variable = 'Median Age'"],
     },
 }
@@ -78,42 +82,72 @@ def get_acs5_tidy(dataset: str, name: str, year_min: int, year_max: int,
     return result
 
 
-def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
+def get_unemployment_rate_ts(filters: dict | None = None,
+                             year_min: int | None = None,
+                             year_max: int | None = None) -> pd.DataFrame:
+    query_filters = filters or {}
+
+    base_conditions = []
+
+    if year_min is not None and year_max is not None:
+        base_conditions.append(
+            f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}"
+        )
+
     where_string = build_where_query_from_filters(
-        filters=filters,
+        filters=query_filters,
         colmap=ACS5_FILTER_COLS,
-        table="b_economic",
-        base_conditions=["Section = 'Labor Force'", "Variable = 'Unemployment Rate'"])
+        table="acs5_unemployment_rate",
+        base_conditions=base_conditions
+    )
 
     sql = (sql_path / "unemployment_rate.sql").read_text().format(
-        where_string=where_string)
+        where_string=where_string
+    )
 
     result = DB.execute(sql).df()
 
-    if result is None:
+    if result is None or result.empty:
         logger.error(
-            "Unemployment rate query returned no rows for filters: %s", filters)
-        raise ValueError(f"no results for filters: {filters}")
+            "Unemployment rate query returned no rows for filters=%s year_min=%s year_max=%s",
+            filters, year_min, year_max
+        )
+        raise ValueError("no results for unemployment_rate query")
 
     return result
 
 
-def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
+def get_median_earnings(filters: dict | None = None,
+                        year_min: int | None = None,
+                        year_max: int | None = None) -> pd.DataFrame:
+    query_filters = filters or {}
+
+    base_conditions = []
+
+    if year_min is not None and year_max is not None:
+        base_conditions.append(
+            f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}"
+        )
+
     where_string = build_where_query_from_filters(
-        filters=filters,
+        filters=query_filters,
         colmap=ACS5_FILTER_COLS,
-        table="median_earnings",
-        base_conditions=None)
+        table="acs5_median_earnings",
+        base_conditions=base_conditions
+    )
 
     sql = (sql_path / "median_earnings.sql").read_text().format(
-        where_string=where_string)
+        where_string=where_string
+    )
 
     result = DB.execute(sql).df()
 
-    if result is None:
+    if result is None or result.empty:
         logger.error(
-            "Median earnings query returned no rows for filters: %s", filters)
-        raise ValueError(f"no results for filters: {filters}")
+            "Median earnings query returned no rows for filters=%s year_min=%s year_max=%s",
+            filters, year_min, year_max
+        )
+        raise ValueError("no results for median_earnings query")
 
     return result
 
