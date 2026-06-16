@@ -16,21 +16,32 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-def build_where_query_from_filters(filters: dict | None, colmap, table: str) -> str:
-    """
-    frontend-named filters -> parameterized WHERE clause
-    Unknown keys ignored; colmap is source of truth.
-    """
-    clauses = []
+def build_where_query_from_filters(
+    filters: dict | None,
+    colmap: dict,
+    table: str,
+    base_conditions: list[str] | None = None,
+) -> str:
+    clauses = list(base_conditions or [])
+
     for label, values in (filters or {}).items():
-        col = colmap[label]
+        col = colmap.get(label)
+
         if col is None:
             logger.warning(f"{table}: ignoring unknown filter {label}")
             continue
-        if not values:
+
+        if values is None:
             continue
-        clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
-    return ("WHERE " + " AND ".join(clauses)) if clauses else ""
+
+        if not isinstance(values, (list, tuple, set)):
+            values = [values]
+
+        clauses.append(
+            f'"{col}" IN ({", ".join(repr(v) for v in values)})'
+        )
+
+    return "WHERE " + " AND ".join(clauses) if clauses else ""
 
 
 def _nest(rows: list[tuple]) -> dict:

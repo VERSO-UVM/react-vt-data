@@ -8,10 +8,10 @@ from query import get_zoning_aggregated_acres, get_zoning_geojson
 router = APIRouter()
 
 # TODO: currently these are using a little 'shim' to get around the fact that
-## the frontend isn't actually sending FilterSources.
-## the plan:
-#### build a function that converts a filter_request into the relevant filter_source
-#### convert all frontend logic to send a list of filter requests, and convert them all in first step.
+# the frontend isn't actually sending FilterSources.
+# the plan:
+# build a function that converts a filter_request into the relevant filter_source
+# convert all frontend logic to send a list of filter requests, and convert them all in first step.
 
 
 @router.post("/load/mapping/zoning/standard")
@@ -21,6 +21,7 @@ async def zoning_geojson(request: FilterRequest):
     return Response(content=data, media_type="application/json")
 
 
+@router.post("/load/data/zoning/aggregated")
 @router.post("/load/data/zoning/aggregated")
 async def acreage_response(request: FilterRequest):
     source = request_to_source(request, "default", "zoning_info")

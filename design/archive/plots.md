@@ -40,6 +40,18 @@ These only render when a table-primary `ChartItem` is toggled to Chart view. The
 **Variables:** `Total Housing Units` (left axis, count), `Renter-Occupied Units` (left axis, count), `Median Home Value` (right axis, dollars).
 **Plot:** three-line `LineChart` with dual Y-axes. Left axis formatted with `toLocaleString()`; right axis in `$Xk`.
 
+### `UnemploymentTrendChart`
+**Variables:** `Unemployment Rate` (left axis, Percentage)
+**Plot:** one-line `LineChart` with one Y-axis. Dual-line comparisons are available. 
+
+### `EarningsTrendChart`
+**Variables:** `Median Earnings` (left axis, $ Amount)
+**Plot:** Three-line `LineChart` (Male vs Female vs All Workers) with one Y-axis. Comparisons are available. 
+
+### `MedianAgeTrendChart`
+**Variables:** `Median Age` (left axis, Age in years)
+**Plot:** One-line `LineChart` with one Y-axis. Dual-line comparisons are available. 
+
 ---
 
 ## Employment Area Chart

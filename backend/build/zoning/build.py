@@ -75,7 +75,8 @@ def data_load():
 
 def build_info():
     info_string = ", ".join(info_cols)
-    con.execute((sql_path / "info.sql").read_text().format(info_string=info_string))
+    con.execute(
+        (sql_path / "info.sql").read_text().format(info_string=info_string))
     info_df = con.execute("SELECT * FROM raw_info").df()
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
@@ -105,14 +106,14 @@ def get_rule_cols():
 def split_col(col: str, use_types: set[str]):
     for use_type in use_types:
         if col.startswith(use_type):
-            rule = col[len(use_type) + 1 :]
+            rule = col[len(use_type) + 1:]
             rule = rule.replace("/", "_")
             return use_type, rule
     return False, False
 
 
 def build_rules():
-    ##get basic rule columns, etc.
+    # get basic rule columns, etc.
     rule_cols = get_rule_cols()
     clean_rule_cols = [col.replace("/", "_") for col in rule_cols]
     rule_strings = [
@@ -120,22 +121,24 @@ def build_rules():
         for rule_col, clean_col in zip(rule_cols, clean_rule_cols, strict=True)
     ]
     rule_string = ", ".join(rule_strings)
-    con.execute((sql_path / "rules.sql").read_text().format(rule_string=rule_string))
+    con.execute(
+        (sql_path / "rules.sql").read_text().format(rule_string=rule_string))
     rules = con.execute("SELECT * FROM raw_rules").df()
 
-    ## separate by use type and filter:
+    # separate by use type and filter:
     use_types = set([col.split("_")[0] for col in clean_rule_cols])
     use_types.remove("Affordable")
     use_types.add("Affordable_Housing")
     rules[["use_type", "rule"]] = (
-        rules["col_name"].apply(lambda x: split_col(x, use_types)).apply(pd.Series)
+        rules["col_name"].apply(lambda x: split_col(
+            x, use_types)).apply(pd.Series)
     )
     rules = rules.drop(columns="col_name")
     rules["use_type"] = (
         rules["use_type"].map(use_types_remapper).fillna(rules["use_type"])
     )
 
-    ## remap booleans
+    # remap booleans
     rules["val"] = rules["val"].map(boolean_remapper).fillna(rules["val"])
     con.register("rules", rules)
 

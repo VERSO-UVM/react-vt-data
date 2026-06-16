@@ -61,6 +61,16 @@ METADATA: dict[str, dict] = {
             "Income values are in nominal dollars (not inflation-adjusted across years)."
         ],
     },
+    "unemployment_rate": {
+        "source": (
+            "U.S. Census Bureau, American Community Survey 5-Year Estimates "
+            "(Table B23025)"
+        ),
+        "lastUpdated": "2023",
+        "caveats": [
+            "Estimates for small geographies may have high margins of error."
+        ],
+    },
     "qcew_employment": {
         "source": (
             "U.S. Bureau of Labor Statistics, "

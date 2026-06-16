@@ -90,7 +90,8 @@ class TestExportRequest:
         assert req.county == "Chittenden"
 
     def test_town_filter(self):
-        req = ExportRequest(source="census_demographic", jurisdiction="Burlington")
+        req = ExportRequest(source="census_demographic",
+                            jurisdiction="Burlington")
         assert req.jurisdiction == "Burlington"
 
 
@@ -199,7 +200,8 @@ class TestExportCsvEndpoint:
         assert resp.status_code == 400
 
     def test_no_matching_rows_returns_404(self):
-        resp = self._post({"source": "census_housing", "county": "NoSuchCounty"})
+        resp = self._post(
+            {"source": "census_housing", "county": "NoSuchCounty"})
         assert resp.status_code == 404
 
     def test_row_cap_truncation(self):
@@ -223,7 +225,8 @@ class TestExportCsvEndpoint:
                 }
             },
         ):
-            resp = client.post("/export/csv", json={"source": "census_housing"})
+            resp = client.post(
+                "/export/csv", json={"source": "census_housing"})
         assert resp.status_code == 200
         assert resp.headers.get("X-Truncated") == "true"
         df = pd.read_csv(StringIO(resp.text))
@@ -250,5 +253,6 @@ class TestExportCsvEndpoint:
                 }
             },
         ):
-            resp = client.post("/export/csv", json={"source": "census_housing"})
+            resp = client.post(
+                "/export/csv", json={"source": "census_housing"})
         assert resp.status_code == 503
