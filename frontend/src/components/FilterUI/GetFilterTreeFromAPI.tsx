@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Select, Group } from '@mantine/core';
+import { Select, Group, Stack } from '@mantine/core';
 import axios from 'axios';
 import { useFilter } from './FilterContext';
 
@@ -43,7 +43,7 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
   const getLabel = (level: number) => labels[level] || `Level ${level + 1}`;
 
   return (
-    <Group grow>
+    <Stack gap="sm">
       {Array.from({ length: numLevels }).map((_, level) => (
         <Select
           key={level}
@@ -52,8 +52,9 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
           value={selectedFilters[level] || 'All'}
           onChange={(v) => handleSelect(level, v!)}
           disabled={level > 0 && !selectedFilters[level - 1]}
+          searchable
         />
       ))}
-    </Group>
+    </Stack>
   );
 }
