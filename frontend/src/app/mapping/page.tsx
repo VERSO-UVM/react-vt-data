@@ -1,5 +1,14 @@
+'use client';
+
 import React from 'react';
-import { Title, Center, Container } from '@mantine/core';
+import {
+  Title,
+  Center,
+  Container,
+  Text,
+  SimpleGrid,
+  Paper,
+} from '@mantine/core';
 import ExploratoryMappingGrid from '@/components/Grids/ExploratoryMappingOptions';
 
 export const links = [
@@ -7,37 +16,53 @@ export const links = [
     link: '/mapping/zoning',
     label: 'Zoning',
     description:
-      'Explore zoning classifications by town — residential, commercial, ' +
-      'agricultural, and more — to understand land-use regulations across Vermont.',
+      'Explore zoning classifications by town to understand residential, commercial, agricultural, and mixed-use regulations across Vermont.',
+    badges: ['Land Use', 'Municipal'],
   },
   {
     link: '/mapping/soil-suitability',
     label: 'Soil Suitability',
     description:
-      'View NRCS soil data to assess which parcels are suitable for on-site ' +
-      'septic systems, a key constraint for rural housing development.',
+      'Assess soil limitations and suitability for on-site wastewater systems and rural development.',
+    badges: ['NRCS', 'Septic'],
   },
   {
     link: '/mapping/flood-legal',
     label: 'Flood Insurance',
     description:
-      'Identify parcels within FEMA flood zones and understand flood insurance ' +
-      'requirements that affect financing and development feasibility.',
+      'Identify FEMA flood hazard areas and understand development and insurance implications.',
+    badges: ['FEMA', 'Flood Risk'],
   },
 ];
 
 export default function BaseMappingPage() {
   return (
     <>
-      <Center pt="xl" mb="xl">
-        <Title order={2}>Exploratory Mapping</Title>
+      <Center py={60}>
+        <Container size="lg">
+          <Title order={1} ta="center">
+            Vermont Mapping Explorer
+          </Title>
+
+          <Text
+            ta="center"
+            c="dimmed"
+            size="lg"
+            maw={750}
+            mx="auto"
+            mt="md"
+          >
+            Explore statewide zoning regulations, environmental constraints,
+            and flood hazards through interactive geospatial datasets.
+          </Text>
+        </Container>
       </Center>
 
-      <Container>
+      <Container size="lg">
         <ExploratoryMappingGrid links={links} />
       </Container>
 
-      <span style={{ display: 'block', height: 150 }}></span>
+      <div style={{ height: 100 }} />
     </>
   );
 }

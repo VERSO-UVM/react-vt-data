@@ -1,68 +1,122 @@
 'use client';
 
 import React from 'react';
-import { Grid, Card, Button, Text, Group, Box } from '@mantine/core';
 import Link from 'next/link';
+
+import {
+  Grid,
+  Card,
+  Button,
+  Text,
+  Box,
+  Badge,
+  Group,
+  ThemeIcon,
+} from '@mantine/core';
+
+import {
+  IconMap2,
+  IconDroplet,
+  IconShield,
+} from '@tabler/icons-react';
 
 interface LinkItem {
   link: string;
   label: string;
   description?: string;
+  badges?: string[];
 }
 
 interface ExploratoryMappingGridProps {
   links: LinkItem[];
 }
 
-function standardizeLabel(label: string) {
-  return label
-    .toLowerCase()
-    .trim()
-    .replace(/&/g, 'and')
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-');
+function getIcon(label: string) {
+  switch (label) {
+    case 'Zoning':
+      return IconMap2;
+
+    case 'Soil Suitability':
+      return IconDroplet;
+
+    case 'Flood Insurance':
+      return IconShield;
+
+    default:
+      return IconMap2;
+  }
 }
 
 function MappingCard({ item }: { item: LinkItem }) {
-  const fileName = `${standardizeLabel(item.label)}.png`;
-  const src = `/images/mapping-icons/${fileName}`;
+  const Icon = getIcon(item.label);
 
   return (
     <Card
-      shadow="sm"
-      radius="md"
+      component={Link}
+      href={item.link}
       withBorder
-      style={{ display: 'flex', flexDirection: 'column' }}
+      radius="lg"
+      shadow="sm"
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'all 0.2s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow =
+          'var(--mantine-shadow-lg)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '';
+      }}
     >
-      <h1 style={{ textAlign: 'center', marginTop: 10, fontWeight: 300 }}>
-        {item.label}
-      </h1>
-      <Box style={{ height: 150, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <img
-          src={src}
-          alt={item.label}
-          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-        />
-      </Box>
-
-      <Text
+      <Box
+        py="xl"
         style={{
-          flexGrow: 0,
-          textAlign: 'center',
-          marginTop: 8,
-          marginBottom: 4,
-          color: '#555',
+          display: 'flex',
+          justifyContent: 'center',
         }}
       >
-        {item.description ?? ''}
+        <ThemeIcon size={90} radius="xl" variant="light">
+          <Icon size={48} />
+        </ThemeIcon>
+      </Box>
+
+      <Text fw={600} size="xl" ta="center">
+        {item.label}
       </Text>
 
-      <Box style={{ padding: 12 }}>
-        <Group mb="xs"></Group>
-        <Button component={Link} href={item.link} fullWidth variant="filled">
-          Explore {item.label}
-        </Button>
-      </Box>
+      <Group justify="center" mt="sm" mb="md">
+        {item.badges?.map((badge) => (
+          <Badge key={badge} variant="light">
+            {badge}
+          </Badge>
+        ))}
+      </Group>
+
+      <Text
+        c="dimmed"
+        ta="center"
+        style={{
+          flexGrow: 1,
+        }}
+      >
+        {item.description}
+      </Text>
+
+      <Button
+        component={Link}
+        href={item.link}
+        fullWidth
+        mt="xl"
+        radius="md"
+      >
+        Explore {item.label}
+      </Button>
     </Card>
   );
 }
@@ -70,12 +124,15 @@ function MappingCard({ item }: { item: LinkItem }) {
 export default function ExploratoryMappingGrid({
   links,
 }: ExploratoryMappingGridProps) {
-  if (!links || links.length === 0) return null;
+  if (!links?.length) return null;
 
   return (
-    <Grid gutter="md">
+    <Grid justify="center" gutter="xl">
       {links.map((item) => (
-        <Grid.Col key={item.link} span={{ base: 12, sm: 6, md: 4 }}>
+        <Grid.Col
+          key={item.link}
+          span={{ base: 12, sm: 6, md: 4 }}
+        >
           <MappingCard item={item} />
         </Grid.Col>
       ))}
