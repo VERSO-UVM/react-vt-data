@@ -113,6 +113,18 @@ def compile_filters(sources: list[FilterSource]) -> tuple[str, str]:
 
 def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> str:
     cte_filter_block, join_filter_block = compile_filters(sources)
+
+    # Generate where_string for legacy SQL files that use it
+    where_string = ""
+    if sources:
+        clauses = []
+        for col, values in (sources[0].filters or {}).items():
+            clauses.append(
+                f'"{col}" IN ({", ".join(repr(v) for v in values)})')
+        where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+
     return sql_path.read_text().format(
-        cte_filter_block=cte_filter_block, join_filter_block=join_filter_block
+        cte_filter_block=cte_filter_block,
+        join_filter_block=join_filter_block,
+        where_string=where_string
     )
