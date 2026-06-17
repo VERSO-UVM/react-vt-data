@@ -1,21 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Center,
-  Container,
-  Divider,
-  Group,
-  Loader,
-  Select,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Badge, Button, Card, Center, Container,
+         Divider, Group, Loader, Select, Stack, Text, Title,
+         ThemeIcon, Paper} from '@mantine/core';
+import { IconDownload, IconDatabase, IconMap } from '@tabler/icons-react';
 import { BASE_API_URL } from '@/config';
 import { useProfile } from '@/components/profile/profileStore';
 
@@ -31,7 +20,6 @@ interface Locations {
   towns: string[];
 }
 
-// Shape expected by Mantine Select with groups
 interface SelectGroup {
   group: string;
   items: { value: string; label: string }[];
@@ -45,9 +33,7 @@ export default function DataExport() {
     counties: [],
     towns: [],
   });
-  const [locationsLoading, setLocationsLoading] = useState(false);
 
-  // Initialize area selection from the user's saved profile location
   const [selectedSource, setSelectedSource] = useState<string | null>(
     'census_housing',
   );
@@ -62,44 +48,46 @@ export default function DataExport() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Load available export sources
+  /* ---------------- LOAD SOURCES ---------------- */
   useEffect(() => {
     fetch(`${BASE_API_URL}/export/sources`)
       .then((r) => r.json())
       .then(setSources)
-      .catch(() => setError('Could not load available data sources.'));
+      .catch(() => setError('Could not load data sources.'));
   }, []);
 
-  // Load county/town lists once
+  /* ---------------- LOAD LOCATIONS ---------------- */
   useEffect(() => {
-    setLocationsLoading(true);
     fetch(`${BASE_API_URL}/export/locations`)
       .then((r) => r.json())
-      .then((data: Locations) => {
-        setLocations(data);
-        setLocationsLoading(false);
-      })
-      .catch(() => setLocationsLoading(false));
+      .then(setLocations)
+      .catch(() => {});
   }, []);
 
-  // Build grouped options for the source Select
-  const sourceSelectData: SelectGroup[] = Object.entries(sources).reduce<
-    SelectGroup[]
-  >((groups, [key, meta]) => {
-    const group = groups.find((g) => g.group === meta.group);
-    const item = { value: key, label: meta.label };
-    if (group) {
-      group.items.push(item);
-    } else {
-      groups.push({ group: meta.group, items: [item] });
-    }
+  /* ---------------- GROUPED SELECT ---------------- */
+  const sourceSelectData: SelectGroup[] = useMemo(() => {
+    const groups: SelectGroup[] = [];
+
+    Object.entries(sources).forEach(([key, meta]) => {
+      let group = groups.find((g) => g.group === meta.group);
+
+      if (!group) {
+        group = { group: meta.group, items: [] };
+        groups.push(group);
+      }
+
+      group.items.push({ value: key, label: meta.label });
+    });
+
     return groups;
-  }, []);
+  }, [sources]);
 
-  function areaDescription(): string {
+  const currentSource = selectedSource ? sources[selectedSource] : undefined;
+
+  function areaLabel() {
     if (selectedTown) return selectedTown;
     if (selectedCounty) return `${selectedCounty} County`;
-    return 'Vermont (all)';
+    return 'Vermont (statewide)';
   }
 
   async function handleDownload() {
@@ -107,13 +95,17 @@ export default function DataExport() {
     setSuccessMsg(null);
 
     if (!selectedSource) {
-      setError('Please select a data topic.');
+      setError('Please select a dataset.');
       return;
     }
 
     setDownloading(true);
+
     try {
-      const body: Record<string, string | null> = { source: selectedSource };
+      const body: Record<string, string | null> = {
+        source: selectedSource,
+      };
+
       if (selectedCounty) body.county = selectedCounty;
       if (selectedTown) body.jurisdiction = selectedTown;
 
@@ -124,184 +116,182 @@ export default function DataExport() {
       });
 
       if (!res.ok) {
-        const detail = await res
-          .json()
-          .catch(() => ({ detail: res.statusText }));
-        throw new Error(detail.detail ?? res.statusText);
+        const detail = await res.json().catch(() => ({}));
+        throw new Error(detail.detail ?? 'Download failed');
       }
-
-      const truncated = res.headers.get('X-Truncated') === 'true';
-      const rowCount = res.headers.get('X-Row-Count');
-      const disposition = res.headers.get('Content-Disposition') ?? '';
-      const filenameMatch = disposition.match(/filename="([^"]+)"/);
-      const filename = filenameMatch?.[1] ?? 'vt-data-export.csv';
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
+
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = `${selectedSource}_export.csv`;
       a.click();
+
       URL.revokeObjectURL(url);
 
-      const msg = truncated
-        ? `Downloaded ${rowCount} rows (capped at 10,000). For the full dataset, use the primary source linked below.`
-        : `Downloaded ${rowCount} rows.`;
-      setSuccessMsg(msg);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Download failed.');
+      setSuccessMsg('Download complete.');
+    } catch (e: any) {
+      setError(e.message ?? 'Download failed.');
     } finally {
       setDownloading(false);
     }
   }
 
-  const currentSource = selectedSource ? sources[selectedSource] : undefined;
-
+  /* ---------------- UI ---------------- */
   return (
-    <>
-      <Center pt="xl" mb="xs">
-        <Group gap="sm" align="center">
-          <Title order={2}>Data Export</Title>
-          <Badge color="orange" variant="filled" size="lg">
-            Beta
-          </Badge>
-        </Group>
-      </Center>
-      <Center mb="xl">
-        <Text c="dimmed" size="sm" maw={560} ta="center">
-          Download Vermont data as a CSV file. Variables are exported with
-          human-readable names (e.g. &ldquo;% Owner-Occupied Units&rdquo;)
-          rather than raw census codes. For questions about methodology, see the
-          primary source for each dataset.
-        </Text>
-      </Center>
+    <Container size="sm" py="xl">
 
-      <Container size="sm">
-        <Stack gap="lg">
-          {error && (
-            <Alert
-              color="red"
-              title="Error"
-              onClose={() => setError(null)}
-              withCloseButton
-            >
-              {error}
-            </Alert>
-          )}
-          {successMsg && (
-            <Alert
-              color="green"
-              title="Download complete"
-              onClose={() => setSuccessMsg(null)}
-              withCloseButton
-            >
-              {successMsg}
-            </Alert>
-          )}
+      {/* HEADER */}
+      <Center mb="lg">
+        <Stack align="center" gap={6}>
+          <Group gap="sm">
+            <Title order={2}>Data Export</Title>
+            <Badge color="blue" variant="light">
+              Beta
+            </Badge>
+          </Group>
 
-          {/* Data topic */}
-          <Card withBorder radius="md" p="lg">
-            <Text fw={600} mb="md">
-              1. Select a data topic
-            </Text>
-            {sourceSelectData.length === 0 ? (
-              <Loader size="sm" />
-            ) : (
-              <Select
-                placeholder="Choose a dataset…"
-                data={sourceSelectData}
-                value={selectedSource}
-                onChange={setSelectedSource}
-                searchable
-              />
-            )}
-
-            {currentSource && (
-              <>
-                <Divider my="sm" />
-                <Text size="sm" c="dimmed">
-                  {currentSource.description}
-                </Text>
-                <Text size="xs" c="dimmed" mt={4}>
-                  Primary source:{' '}
-                  <a
-                    href={currentSource.primary_source}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {currentSource.primary_source}
-                  </a>
-                </Text>
-              </>
-            )}
-          </Card>
-
-          {/* Area selection */}
-          <Card withBorder radius="md" p="lg">
-            <Text fw={600} mb="xs">
-              2. Select a geographic area
-            </Text>
-            <Text size="xs" c="dimmed" mb="md">
-              Defaults to your saved profile location. Leave both blank for all
-              of Vermont.
-            </Text>
-            <Stack gap="sm">
-              <Select
-                label="County (optional)"
-                placeholder={
-                  locationsLoading ? 'Loading…' : 'All counties (statewide)'
-                }
-                data={locations.counties}
-                value={selectedCounty}
-                onChange={(v) => {
-                  setSelectedCounty(v);
-                  setSelectedTown(null);
-                }}
-                searchable
-                clearable
-                disabled={locationsLoading}
-              />
-              <Select
-                label="Town / City (optional)"
-                placeholder={
-                  locationsLoading ? 'Loading…' : 'All towns in selected county'
-                }
-                data={locations.towns}
-                value={selectedTown}
-                onChange={setSelectedTown}
-                searchable
-                clearable
-                disabled={locationsLoading}
-              />
-            </Stack>
-          </Card>
-
-          {/* Summary + download */}
-          <Card withBorder radius="md" p="lg">
-            <Text fw={600} mb="xs">
-              3. Download
-            </Text>
-            <Text size="sm" c="dimmed" mb="xs">
-              {currentSource?.label ?? '—'} &middot; {areaDescription()}
-            </Text>
-            <Text size="xs" c="dimmed" mb="md">
-              Downloads are capped at 10,000 rows and 10 files per hour. Census
-              ACS exports use human-readable variable labels rather than raw
-              census codes — if you need the original codes for analysis, use
-              the primary source directly.
-            </Text>
-            <Button
-              onClick={handleDownload}
-              loading={downloading}
-              disabled={!currentSource}
-              size="md"
-              fullWidth
-            >
-              Download CSV
-            </Button>
-          </Card>
+          <Text size="sm" c="dimmed" maw={520} ta="center">
+            Download structured Vermont datasets as CSV. Data is cleaned and
+            labeled for analysis (not raw census codes).
+          </Text>
         </Stack>
-      </Container>
-    </>
+      </Center>
+
+      {/* ALERTS */}
+      <Stack gap="sm" mb="md">
+        {error && (
+          <Alert color="red" onClose={() => setError(null)} withCloseButton>
+            {error}
+          </Alert>
+        )}
+        {successMsg && (
+          <Alert
+            color="green"
+            onClose={() => setSuccessMsg(null)}
+            withCloseButton
+          >
+            {successMsg}
+          </Alert>
+        )}
+      </Stack>
+
+      {/* STEP 1 */}
+      <Card withBorder radius="md" p="lg" mb="md">
+        <Group mb="sm">
+          <ThemeIcon variant="light" color="blue">
+            <IconDatabase size={16} />
+          </ThemeIcon>
+          <Text fw={600}>1. Select dataset</Text>
+        </Group>
+
+        {sourceSelectData.length === 0 ? (
+          <Loader size="sm" />
+        ) : (
+          <Select
+            placeholder="Choose a dataset"
+            data={sourceSelectData}
+            value={selectedSource}
+            onChange={setSelectedSource}
+            searchable
+          />
+        )}
+
+        {currentSource && (
+          <>
+            <Divider my="sm" />
+            <Text size="sm">{currentSource.description}</Text>
+
+            <Text size="xs" c="dimmed" mt="xs">
+              Source:{' '}
+              <a
+                href={currentSource.primary_source}
+                target="_blank"
+                rel="noreferrer"
+              >
+                documentation
+              </a>
+            </Text>
+          </>
+        )}
+      </Card>
+
+      {/* STEP 2 */}
+      <Card withBorder radius="md" p="lg" mb="md">
+        <Group mb="sm">
+          <ThemeIcon variant="light" color="blue">
+            <IconMap size={16} />
+          </ThemeIcon>
+          <Text fw={600}>2. Geographic scope</Text>
+        </Group>
+
+        <Text size="xs" c="dimmed" mb="md">
+          Defaults to your profile location. Leave blank for statewide data.
+        </Text>
+
+        <Stack gap="sm">
+          <Select
+            label="County"
+            placeholder="All counties"
+            data={locations.counties}
+            value={selectedCounty}
+            onChange={(v) => {
+              setSelectedCounty(v);
+              setSelectedTown(null);
+            }}
+            searchable
+            clearable
+          />
+
+          <Select
+            label="Town"
+            placeholder="All towns"
+            data={locations.towns}
+            value={selectedTown}
+            onChange={setSelectedTown}
+            searchable
+            clearable
+          />
+        </Stack>
+
+        <Paper mt="md" p="sm" radius="md" bg="gray.0">
+          <Text size="sm">
+            <b>Selected:</b> {areaLabel()}
+          </Text>
+        </Paper>
+      </Card>
+
+      {/* STEP 3 */}
+      <Card
+        withBorder
+        radius="md"
+        p="lg"
+        style={{
+          borderLeft: '4px solid #339af0',
+        }}
+      >
+        <Group mb="xs">
+          <ThemeIcon variant="light" color="blue">
+            <IconDownload size={16} />
+          </ThemeIcon>
+          <Text fw={600}>3. Export data</Text>
+        </Group>
+
+        <Text size="sm" c="dimmed" mb="md">
+          Downloads are limited to 10,000 rows per request for performance.
+        </Text>
+
+        <Button
+          onClick={handleDownload}
+          loading={downloading}
+          fullWidth
+          size="md"
+        >
+          Download CSV
+        </Button>
+      </Card>
+
+    </Container>
   );
 }

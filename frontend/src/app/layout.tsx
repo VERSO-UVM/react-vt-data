@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import { Zilla_Slab } from 'next/font/google';
+
+import '@mantine/core/styles.css';
 import './globals.css';
+
 import { MantineProvider, Container } from '@mantine/core';
+
 import HeaderMenu from '../components/HeaderMenu';
 import { theme } from './theme';
 
@@ -26,17 +30,16 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/icons8-maple-leaf-48.png" />
       </head>
+
       <body className={`${zillaSlab.variable} antialiased`}>
         <MantineProvider theme={theme}>
-          <div className="layout-wrapper">
             <HeaderMenu />
-            <Container
-              size="xl"
-              style={{ backgroundColor: 'white', borderRadius: 8 }}
-            >
-              <main style={{ marginTop: 20 }}>{children}</main>
-            </Container>
-          </div>
+              <Container
+                size="xl"
+                py="lg"
+              >
+                <main>{children}</main>
+              </Container>
         </MantineProvider>
       </body>
     </html>
