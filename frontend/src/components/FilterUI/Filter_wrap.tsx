@@ -1,4 +1,4 @@
-import { Stack } from '@mantine/core';
+import { Stack, Group, Button } from '@mantine/core';
 import GenericFilter from './GetFilterTreeFromAPI';
 import ApplyButton from './LocalFilterButton';
 import { useFilter } from './FilterContext';
@@ -14,15 +14,25 @@ export default function FilterContainer({
   dataURL,
   onData,
 }: FilterContainerProps) {
-  const { selectedFilters } = useFilter();
+  const { selectedFilters, setSelectedFilters } = useFilter();
   return (
-    <Stack>
+    <Stack gap="md">
       <GenericFilter apiURL={apiURL} />
-      <ApplyButton
-        dataURL={dataURL}
-        onData={onData}
-        disabled={Object.keys(selectedFilters).length === 0}
-      />
+
+      <Group grow>
+        <Button
+          variant="default"
+          onClick={() => setSelectedFilters({})}
+        >
+          Reset
+        </Button>
+
+        <ApplyButton
+          dataURL={dataURL}
+          onData={onData}
+          disabled={Object.keys(selectedFilters).length === 0}
+        />
+      </Group>
     </Stack>
   );
 }

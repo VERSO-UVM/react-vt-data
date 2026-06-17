@@ -53,6 +53,9 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
           onChange={(v) => handleSelect(level, v!)}
           disabled={level > 0 && !selectedFilters[level - 1]}
           searchable
+          comboboxProps={{
+            withinPortal: true,
+          }}
         />
       ))}
     </Stack>
