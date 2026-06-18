@@ -40,7 +40,6 @@ backend/logger/*.log
 # MacOS / IDE files
 .DS_Store
 *.swp
-.vscode/
 .idea/
 
 # Build output

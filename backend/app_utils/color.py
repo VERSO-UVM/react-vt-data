@@ -5,12 +5,7 @@ Vermont Data App
 Color Utility Functions
 """
 
-import io
-
 import matplotlib.cm as cm
-import matplotlib.colors as mcolors
-import numpy as np
-import pandas as pd
 
 
 def get_colornorm_stats(df, cutoff_scalar):
@@ -24,86 +19,11 @@ def get_colornorm_stats(df, cutoff_scalar):
     return vmin, vmax, cutoff
 
 
-class TopHoldNorm(mcolors.Normalize):
-    """
-    Holds out the top x of the color norm for outliers, so they're in the same cmap but just the top `outlier_fraction` of it.
-    """
-
-    def __init__(self, vmin, vmax, cutoff, outlier_fraction=0.1, clip=False):
-        super().__init__(vmin, vmax, clip)
-        self.cutoff = cutoff
-        self.outlier_fraction = outlier_fraction
-        self.vmin = vmin
-        self.vmax = vmax
-
-    def __call__(self, value, clip=None):
-        value = np.array(value)
-        result = np.zeros_like(value, dtype=np.float64)
-
-        norm_main_max = 1 - self.outlier_fraction
-
-        # Normalize main range [vmin, cutoff] to [0, norm_main_max]
-        mask_main = value <= self.cutoff
-        result[mask_main] = (
-            (value[mask_main] - self.vmin) / (self.cutoff - self.vmin) * norm_main_max
-        )
-
-        # Normalize outliers [cutoff, vmax] to [norm_main_max, 1]
-        mask_outlier = value > self.cutoff
-        result[mask_outlier] = (
-            norm_main_max
-            + (value[mask_outlier] - self.cutoff)
-            / (self.vmax - self.cutoff)
-            * self.outlier_fraction
-        )
-
-        return np.clip(result, 0, 1)
-
-
 def map_outlier_yellow(x, cmap, norm, cutoff):
     if x > cutoff:
         return [255, 255, 0, 180]  # Yellow RGBA
     rgba = cmap(norm(x))
     return [int(c * 255) for c in rgba[:3]] + [180]
-
-
-def jenks_color_map(df, n_classes, color):
-    import jenkspy
-    import matplotlib.cm as cm
-    import matplotlib.colors as colors
-    import numpy as np
-
-    # Handle empty or invalid data
-    values = df["Value"].dropna()
-    if values.empty:
-        df["color_groups"] = np.nan
-        return {}
-
-    # Get Jenks breaks and remove duplicates
-    raw_breaks = jenkspy.jenks_breaks(values, n_classes=n_classes)
-    unique_breaks = sorted(set(raw_breaks))
-
-    # Adjust labels to match number of valid bins
-    actual_classes = len(unique_breaks) - 1
-    group_labels = [f"group_{i + 1}" for i in range(actual_classes)]
-
-    # Assign value groups
-    df["color_groups"] = pd.cut(
-        df["Value"], bins=unique_breaks, labels=group_labels, include_lowest=True
-    )
-
-    # Build color map
-    cmap = cm.get_cmap(color)
-    color_vals = np.linspace(0.1, 0.9, actual_classes)
-    jenks_colors = [colors.to_hex(cmap(val)) for val in color_vals]
-
-    # Map to RGBA using your helper function (assumes it exists)
-    jenks_cmap_dict = {
-        label: hex_to_rgb255(hex_color)
-        for label, hex_color in zip(group_labels, jenks_colors, strict=False)
-    }
-
-    return jenks_cmap_dict
 
 
 def hex_to_rgb255(hex_color):
