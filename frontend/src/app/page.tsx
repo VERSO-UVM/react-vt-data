@@ -7,23 +7,27 @@ import { IconMap2, IconChartBar, IconDownload, IconHeartHandshake,
          IconDatabase, IconBuildingCommunity, IconPencil } from '@tabler/icons-react';
 
 import { useProfile } from '@/components/profile/profileStore';
-import Image from 'next/image';
 
-export default function App() {
-  const {
-    myLocation,
-    comparison,
-    interests,
-    yearMin,
-    yearMax,
-    openProfileModal,
-  } = useProfile();
-  
+interface HeroSectionProps {
+  myLocation: any;
+  comparison: any;
+  interests: string[];
+  yearMin: number;
+  yearMax: number;
+  openProfileModal: () => void;
+}
+
+function HeroSection({
+  myLocation,
+  comparison,
+  interests,
+  yearMin,
+  yearMax,
+  openProfileModal,
+}: HeroSectionProps) {
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
-        {/* Hero Section */}
-        <Paper
+    <>
+      <Paper
           radius="xl"
           p={50}
           style={{
@@ -179,9 +183,14 @@ export default function App() {
             </Grid.Col>
           </Grid>
         </Paper>
+    </>
+  );
+}
 
-        {/* Feature Cards */}
-        <div>
+function FeatureCards() {
+  return (
+    <>
+      <div>
           <Center mb="lg">
             <Title order={2}>Explore the Platform</Title>
           </Center>
@@ -323,11 +332,17 @@ export default function App() {
             </Card>
           </SimpleGrid>
         </div>
+    </>
+  );
+}
 
-        {/* Featured Datasets */}
+function FeaturedDatasets() {
+  return (
+    <>
+      {/* Featured Datasets */}
         <Paper withBorder radius="lg" p="xl">
           <Stack gap="lg">
-            <Title order={2}>Featured Data Layers</Title>
+            <Title order={2}>Featured Data</Title>
 
             <SimpleGrid cols={{ base: 2, sm: 4 }}>
               <Badge size="lg" variant="light">
@@ -357,9 +372,15 @@ export default function App() {
             </SimpleGrid>
           </Stack>
         </Paper>
+    </>
+  );
+}
 
-        {/* Platform Value */}
-        <Grid>
+function PlatformValue() {
+  return (
+    <>
+      {/* Paste Platform Value exactly as-is */}
+      <Grid>
           <Grid.Col span={{ base: 12, md: 6 }}>
             <Paper withBorder radius="lg" p="xl" h="100%">
               <Group mb="md">
@@ -395,7 +416,38 @@ export default function App() {
             </Paper>
           </Grid.Col>
         </Grid>
+    </>
+  );
+}
+
+function App() {
+  const {
+    myLocation,
+    comparison,
+    interests,
+    yearMin,
+    yearMax,
+    openProfileModal,
+  } = useProfile();
+
+  return (
+    <Container size="xl" py="xl">
+      <Stack gap="xl">
+        <HeroSection
+          myLocation={myLocation}
+          comparison={comparison}
+          interests={interests}
+          yearMin={yearMin}
+          yearMax={yearMax}
+          openProfileModal={openProfileModal}
+        />
+
+        <FeatureCards />
+        <FeaturedDatasets />
+        <PlatformValue />
       </Stack>
     </Container>
   );
 }
+
+export default App

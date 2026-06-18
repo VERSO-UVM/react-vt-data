@@ -9,6 +9,8 @@ import {
   Stack,
   Text,
   Title,
+  Box,
+  Alert
 } from '@mantine/core';
 import {
   useProfile,
@@ -174,19 +176,33 @@ export const ProfileModal: React.FC = () => {
 
   return (
     <>
-      <Button onClick={handleOpen}>Set Profile</Button>
+      <Button onClick={handleOpen}>My Profile</Button>
       <Modal
         opened={opened}
         onClose={closeProfileModal}
-        title="Set Profile"
+        title="Profile"
         size="md"
-      >
+        radius="xl"
+        padding="xl"
+        centered
+        shadow="xl"
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 3,
+        }}
+        styles={{
+          title: {fontWeight: 600, textAlign: 'center'},
+          body: {overflowX: 'hidden'}}}
+        >
         <Stack gap="md">
           {!profileSet && (
-            <Text size="sm" c="blue">
-              Select a profile before beginning. Only your location is required;
-              other fields are optional.
-            </Text>
+            <Alert
+              variant="light"
+              color="blue"
+              radius="md"
+            >
+              Select a profile before beginning. Only your location is required; other fields are optional.
+            </Alert>
           )}
           <ProfileLocationSelect
             title="My Location"
@@ -225,20 +241,22 @@ export const ProfileModal: React.FC = () => {
               Restrict trend tables and charts to this year range (
               {tempYearRange[0]}–{tempYearRange[1]}).
             </Text>
-            <RangeSlider
-              min={YEAR_MIN_OVERALL}
-              max={YEAR_MAX_OVERALL}
-              step={1}
-              value={tempYearRange}
-              onChange={setTempYearRange}
-              marks={YEAR_MARKS}
-              label={(v) => String(v)}
-              mt="xs"
-              mb="xl"
-            />
+            <Box px="xs">
+              <RangeSlider
+                min={YEAR_MIN_OVERALL}
+                max={YEAR_MAX_OVERALL}
+                step={1}
+                value={tempYearRange}
+                onChange={setTempYearRange}
+                marks={YEAR_MARKS}
+                label={(v) => String(v)}
+                mt="xs"
+                mb="xl"
+              />
+            </Box>
           </div>
 
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave}>Save Profile</Button>
         </Stack>
       </Modal>
     </>
