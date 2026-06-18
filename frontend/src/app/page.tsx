@@ -1,59 +1,453 @@
 'use client';
-import React from 'react';
-import '@mantine/core/styles.css';
 
-import {
-  Paper,
-  Center,
-  Container,
-  Title,
-  Text,
-  Stack,
-  Divider,
-} from '@mantine/core';
+import Link from 'next/link';
+import { Badge, Button, Card, Center, Container, Grid, Group, 
+         Paper, SimpleGrid, Stack, Text, ThemeIcon, Title, Box } from '@mantine/core';
+import { IconMap2, IconChartBar, IconDownload, IconHeartHandshake,
+         IconDatabase, IconBuildingCommunity, IconPencil } from '@tabler/icons-react';
 
-export default function App() {
+import { useProfile } from '@/components/profile/profileStore';
+
+interface HeroSectionProps {
+  myLocation: any;
+  comparison: any;
+  interests: string[];
+  yearMin: number;
+  yearMax: number;
+  openProfileModal: () => void;
+}
+
+function HeroSection({
+  myLocation,
+  comparison,
+  interests,
+  yearMin,
+  yearMax,
+  openProfileModal,
+}: HeroSectionProps) {
   return (
-    <Container size="md" py="xl">
-      <Paper p="xl" shadow="xs" withBorder>
-        <Stack gap="lg">
-          <Center>
-            <Title order={1}>Welcome!</Title>
+    <>
+      <Paper
+          radius="xl"
+          p={50}
+          style={{
+            background:
+              'linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #e7f5ff 100%)',
+            border: '1px solid #dee2e6',
+          }}
+        >
+          <Grid align="center">
+            <Grid.Col span={{ base: 12, md: 7 }}>
+              <Stack gap="md">
+                <Badge size="lg" variant="light">
+                  Vermont Open Data Platform
+                </Badge>
+
+                <Title
+                  order={1}
+                  style={{
+                    fontSize: 'clamp(2.5rem, 5vw, 4rem)',
+                    lineHeight: 1.05,
+                  }}
+                >
+                  Vermont Data Explorer
+                </Title>
+
+                <Text size="lg" c="dimmed" maw={700}>
+                  Explore Vermont through interactive maps, data analysis,
+                  downloadable datasets, and planning tools. Built to help
+                  communities, researchers, planners, and residents better
+                  understand local conditions.
+                </Text>
+
+                <Group mt="md">
+                  <Button
+                    component={Link}
+                    href="/mapping"
+                    size="lg"
+                  >
+                    Explore Maps
+                  </Button>
+
+                  <Button
+                    component={Link}
+                    href="/working-report"
+                    variant="light"
+                    size="lg"
+                  >
+                    Analyze Data
+                  </Button>
+                </Group>
+              </Stack>
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, md: 5 }}>
+              <Paper
+                radius="xl"
+                p="xl"
+                withBorder
+                shadow="sm"
+                style={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: 'white',
+                  height: '100%',
+                }}
+              >
+                {/* Vermont outline */}
+                <img
+                  src="/images/mapping-icons/vermont-outline.jpg"
+                  alt="Vermont outline"
+                  style={{
+                    position: 'absolute',
+                    right: -18,
+                    bottom: 40,
+                    opacity: 1,
+                    pointerEvents: 'none',
+                    width: 235,
+                    height: 260,
+                  }}
+                />
+
+                <Stack
+                  gap="lg"
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                  }}
+                >
+                  <Group justify="space-between">
+                    <Box>
+                      <Title order={4}>Your Profile</Title>
+                    </Box>
+                    <Button
+                      size="sm"
+                      variant="light"
+                      onClick={openProfileModal}
+                      rightSection={<IconPencil size={14} />}
+                    >
+                      Edit
+                    </Button>
+                  </Group>
+                  <Box>
+                    <Text size="xs" c="dimmed" mb={4}>
+                      LOCATION
+                    </Text>
+
+                    <Text fw={600}>{myLocation.name}</Text>
+                  </Box>
+
+                  <Box>
+                    <Text size="xs" c="dimmed" mb={4}>
+                      COMPARISON AREA
+                    </Text>
+
+                    <Text fw={600}>{comparison.name}</Text>
+                  </Box>
+
+                  <Box>
+                    <Text size="xs" c="dimmed" mb={4}>
+                      ANALYSIS PERIOD
+                    </Text>
+
+                    <Text fw={600}>
+                      {yearMin}–{yearMax}
+                    </Text>
+                  </Box>
+
+                  <Box>
+                    <Text size="xs" c="dimmed" mb={6}>
+                      INTERESTS
+                    </Text>
+
+                    <Group gap="xs">
+                      {interests.length > 0 ? (
+                        interests.map((interest) => (
+                          <Badge
+                            key={interest}
+                            size="md"
+                            variant="light"
+                          >
+                            {interest}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Text size="sm" c="dimmed">
+                          No interests selected
+                        </Text>
+                      )}
+                    </Group>
+                  </Box>
+                </Stack>
+              </Paper>
+            </Grid.Col>
+          </Grid>
+        </Paper>
+    </>
+  );
+}
+
+function FeatureCards() {
+  return (
+    <>
+      <div>
+          <Center mb="lg">
+            <Title order={2}>Explore the Platform</Title>
           </Center>
-          <Text>
-            This is the Vermont Data Exploration App, a prototype for a website
-            where you can access, analyze, share, and request open source data
-            about Vermont. We're designing the App to meet your needs, so please
-            look around and remember to give us feedback! Check out the{' '}
-            <em>Exploratory Mapping</em> page to see how the data looks on a
-            map, the <em>Data Analysis</em> page for autogenerated
-            visualizations from the <em> Profile </em> you select. Make sure to
-            try out adding and removing analysis from the{' '}
-            <em>Working Report</em>.
-          </Text>
-          <Divider />
-          <Title order={2}>Usage</Title>
-          <Text>
-            Use the <strong>header menu</strong> above to navigate between the
-            different sections of this app. Each link in the sidebar will take
-            you to a separate page with its own content and tools.
-          </Text>
-          <Title order={2}>Caveats</Title>
-          <Text>
-            The Vermont Data Exploration App is still in a{' '}
-            <em>private prototype</em> phase. Please remember that both the
-            design and content are subject to change.
-          </Text>
-          <Title order={2}>Feedback</Title>
-          <Text>
-            We’d love your feedback. Please take a moment to fill out our{' '}
-            <a href="https://example.com/survey" target="_blank">
-              Short Survey
-            </a>
-            .
-          </Text>
-        </Stack>
-      </Paper>
+
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+            <Card
+              component={Link}
+              href="/mapping/zoning"
+              withBorder
+              radius="lg"
+              shadow="sm"
+              padding="lg"
+              style={{
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'sm';
+              }}
+            >
+              <ThemeIcon size={50} radius="md" variant="light">
+                <IconMap2 size={28} />
+              </ThemeIcon>
+              <Text fw={700} mt="md" >
+                Exploratory Mapping
+              </Text>
+
+              <Text size="sm" c="dimmed" mt="xs">
+                Explore zoning, flood risk, wastewater suitability, and other
+                Vermont spatial datasets.
+              </Text>
+            </Card>
+
+            <Card
+              component={Link}
+              href="/data-comparison"
+              withBorder
+              radius="lg"
+              shadow="sm"
+              padding="lg"
+              style={{
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'sm';
+              }}
+            >
+              <ThemeIcon size={50} radius="md" variant="light">
+                <IconChartBar size={28} />
+              </ThemeIcon>
+
+              <Text fw={700} mt="md">
+                Data Analysis
+              </Text>
+
+              <Text size="sm" c="dimmed" mt="xs">
+                Generate charts, summaries, and comparisons from Vermont
+                datasets.
+              </Text>
+            </Card>
+
+            <Card
+              component={Link}
+              href="/data-export"
+              withBorder
+              radius="lg"
+              shadow="sm"
+              padding="lg"
+              style={{
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'sm';
+              }}
+            >
+              <ThemeIcon size={50} radius="md" variant="light">
+                <IconDownload size={28} />
+              </ThemeIcon>
+
+              <Text fw={700} mt="md">
+                Data Export
+              </Text>
+
+              <Text size="sm" c="dimmed" mt="xs">
+                Download clean, analysis-ready datasets with readable variable
+                names.
+              </Text>
+            </Card>
+
+            <Card
+              component={Link}
+              href="/tools/benefits-estimator"
+              withBorder
+              radius="lg"
+              shadow="sm"
+              padding="lg"
+              style={{
+                cursor: 'pointer',
+                transition: 'all 150ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'sm';
+              }}
+            >
+              <ThemeIcon size={50} radius="md" variant="light">
+                <IconHeartHandshake size={28} />
+              </ThemeIcon>
+
+              <Text fw={700} mt="md">
+                Benefits Estimator
+              </Text>
+
+              <Text size="sm" c="dimmed" mt="xs">
+                Estimate eligibility for Vermont assistance programs and
+                benefits.
+              </Text>
+            </Card>
+          </SimpleGrid>
+        </div>
+    </>
+  );
+}
+
+function FeaturedDatasets() {
+  return (
+    <>
+      {/* Featured Datasets */}
+        <Paper withBorder radius="lg" p="xl">
+          <Stack gap="lg">
+            <Title order={2}>Featured Data</Title>
+
+            <SimpleGrid cols={{ base: 2, sm: 4 }}>
+              <Badge size="lg" variant="light">
+                Zoning
+              </Badge>
+              <Badge size="lg" variant="light">
+                Flood Risk
+              </Badge>
+              <Badge size="lg" variant="light">
+                Wastewater
+              </Badge>
+              <Badge size="lg" variant="light">
+                Housing
+              </Badge>
+              <Badge size="lg" variant="light">
+                Demographics
+              </Badge>
+              <Badge size="lg" variant="light">
+                Economy
+              </Badge>
+              <Badge size="lg" variant="light">
+                Transportation
+              </Badge>
+              <Badge size="lg" variant="light">
+                Community Data
+              </Badge>
+            </SimpleGrid>
+          </Stack>
+        </Paper>
+    </>
+  );
+}
+
+function PlatformValue() {
+  return (
+    <>
+      {/* Paste Platform Value exactly as-is */}
+      <Grid>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Paper withBorder radius="lg" p="xl" h="100%">
+              <Group mb="md">
+                <ThemeIcon variant="light" size="lg">
+                  <IconDatabase />
+                </ThemeIcon>
+
+                <Title order={3}>Integrated Data</Title>
+              </Group>
+
+              <Text c="dimmed">
+                Census, planning, environmental, infrastructure, and community
+                datasets are brought together into a single platform for
+                exploration and analysis.
+              </Text>
+            </Paper>
+          </Grid.Col>
+
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <Paper withBorder radius="lg" p="xl" h="100%">
+              <Group mb="md">
+                <ThemeIcon variant="light" size="lg">
+                  <IconBuildingCommunity />
+                </ThemeIcon>
+
+                <Title order={3}>Built for Vermont</Title>
+              </Group>
+
+              <Text c="dimmed">
+                Designed to support residents, municipalities, planners,
+                researchers, and organizations working throughout Vermont.
+              </Text>
+            </Paper>
+          </Grid.Col>
+        </Grid>
+    </>
+  );
+}
+
+function App() {
+  const {
+    myLocation,
+    comparison,
+    interests,
+    yearMin,
+    yearMax,
+    openProfileModal,
+  } = useProfile();
+
+  return (
+    <Container size="xl" py="xl">
+      <Stack gap="xl">
+        <HeroSection
+          myLocation={myLocation}
+          comparison={comparison}
+          interests={interests}
+          yearMin={yearMin}
+          yearMax={yearMax}
+          openProfileModal={openProfileModal}
+        />
+
+        <FeatureCards />
+        <FeaturedDatasets />
+        <PlatformValue />
+      </Stack>
     </Container>
   );
 }
+
+export default App

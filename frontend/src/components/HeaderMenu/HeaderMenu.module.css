@@ -1,42 +1,54 @@
-/* HeaderMenu.module.css */
 .header {
   position: sticky;
-  top: 0px;
-  background-color: #f5ede0;
+  top: 0;
   z-index: 1000;
-  width: 100vw;
-  margin-left: -16px;
+
+  background: #154734;
+  border-bottom: 1px solid #e9ecef;
+
+  backdrop-filter: blur(8px);
 }
 
 .inner {
-  height: 56px;
+  height: 64px;
+
   display: flex;
   justify-content: space-between;
-  align-items: flex;
+  align-items: center;
 }
 
 .link {
   display: flex;
   align-items: center;
-  height: 100%;
-  border-radius: 4px;
-  padding: 0px 8px;
+
+  height: 40px;
+
+  padding: 0 12px;
+
+  border-radius: 8px;
+
   text-decoration: none;
-  color: #1a1a1a;
-  font-size: var(--mantine-font-size-sm);
-  transition: background-color 0.3s ease;
-  font-family: var(--font-zilla-slab), Georgia, serif;
+
+  color: white;
+
+  font-size: 0.95rem;
+  font-weight: 500;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .link:hover {
-  background-color: #e8ddd0;
+  background: #f1f3f5;
+  color: #212529;
 }
 
 .active {
-  background-color: #e8ddd0;
-  text-decoration: underline;
+  background: white;
+  color: #1971c2;
 }
 
 .linkLabel {
-  margin-right: 5px;
+  margin-right: 4px;
 }

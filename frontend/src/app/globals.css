@@ -1,55 +1,32 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8f9fa;
+  --foreground: #212529;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-serif: var(--font-zilla-slab), Georgia, serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-/* keep body white */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-serif);
+  margin: 0;
 }
 
-/* add wrapper for green sidebars */
 .layout-wrapper {
-  background-color: #154734; /* UVM green */
   min-height: 100vh;
-  padding: 0 16px; /* controls width of green edges */
-  display: absolute;
-  justify-content: center;
+  background: #f8f9fa;
+  padding: 0;
 }
 
 a {
-  color: var(--mantine-color-green-filled);
+  color: var(--mantine-color-blue-6);
   text-decoration: none;
 }
 
 a:hover {
-  text-decoration: none;
-}
-
-/* Formatting the about markdown text*/
-.about-markdown h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.about-markdown p {
-  margin-bottom: 1rem;
-  line-height: 1.6;
+  text-decoration: underline;
 }

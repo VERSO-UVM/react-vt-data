@@ -63,6 +63,8 @@ function MappingCard({ item }: { item: LinkItem }) {
         flexDirection: 'column',
         transition: 'all 0.2s ease',
         cursor: 'pointer',
+        textDecoration: 'none',
+        color: 'inherit',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-4px)';
