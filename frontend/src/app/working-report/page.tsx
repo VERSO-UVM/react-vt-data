@@ -12,6 +12,9 @@ import {
   Group,
   Divider,
   Box,
+  Paper,
+  Grid,
+  Badge
 } from '@mantine/core';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -228,33 +231,120 @@ export default function WorkingReport() {
     }
   };
 
+  function reportSummary() {
+    return(
+      <Grid.Col span={{ base: 12, md: 5 }}>
+        <Paper
+          radius="xl"
+          p="xl"
+          withBorder
+          shadow="sm"
+          // Move position to the right
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'white',
+            height: '100%',
+          }}
+        >
+          <Title order={3} ta="right" mb="xl">Report Summary</Title>
+          <Box>
+            <Text size="xs" c="dimmed" ta="right">
+              LOCATION
+            </Text>
+            <Text fw={600} ta="right">
+              {myLocation.name}
+            </Text>
+          </Box>
+          <Box>
+            <Text size="xs" c="dimmed" ta="right">
+              COMPARED WITH
+            </Text>
+
+            <Text fw={600} ta="right">
+              {comparison.name}
+            </Text>
+          </Box>
+
+          <Box>
+            <Text size="xs" c="dimmed" ta="right">
+              REPORT PERIOD
+            </Text>
+
+            <Text fw={600} ta="right">
+              {yearMin}–{yearMax}
+            </Text>
+          </Box>
+        </Paper>
+      </Grid.Col>
+    )
+  }
+
+  function reportActionButtons() {
+    return(
+      <Group>
+        <Button size="md" onClick={handleDownloadPdf} loading={isGenerating}>
+          Download PDF
+        </Button>
+        <Button
+          size="md"
+          variant="light"
+          color="red"
+          onClick={() => { clearItems(); clearExclusions(); setPendingReset(true); openProfileModal(); }}
+        >
+          Clear report
+        </Button>
+      </Group>
+    )
+  }
+
+
+
+  function reportHeaderCard() {
+    return (
+    <Paper
+          radius="xl"
+          p={20}
+          style={{
+            background:
+              'linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #e7f5ff 100%)',
+            border: '1px solid #dee2e6',
+          }}
+        >
+          <Grid align="center">
+            <Grid.Col span={{ base: 12, md: 7 }}>
+              <Stack gap="md">
+                <Title
+                  order={1}
+                  style={{
+                    fontSize: 'clamp(2rem, 4vw, 4rem)',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Working Report
+                </Title>
+
+                <Text size="lg" c="dimmed" maw={700}>
+                  Tailor your personalized report to your specific interests and needs.
+                </Text>
+                {reportActionButtons()}
+              </Stack>
+            </Grid.Col>
+            {reportSummary()}
+          </Grid>
+        </Paper>
+  );
+  }
+
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
-        <Center>
-          <Title order={2}>Working Report</Title>
-        </Center>
+        {reportHeaderCard()}
         <Center>
           <Text c="dimmed">
             {`${includedPairs.length} of ${allPairs.length} charts included in report`}
           </Text>
         </Center>
-        <Center>
-          <Group>
-            <Button size="md" onClick={handleDownloadPdf} loading={isGenerating}>
-              Download PDF
-            </Button>
-            <Button
-              size="md"
-              variant="light"
-              color="red"
-              onClick={() => { clearItems(); clearExclusions(); setPendingReset(true); openProfileModal(); }}
-            >
-              Clear report
-            </Button>
-          </Group>
-        </Center>
-
         <PdfModeContext.Provider value={isPdfMode}>
           <div ref={chartsRef}>
             <ChartStack
