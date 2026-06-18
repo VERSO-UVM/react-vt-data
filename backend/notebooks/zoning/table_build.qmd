@@ -29,7 +29,7 @@ import sys, os
 from pathlib import Path
 
 _project_root = Path.cwd()
-while not (_project_root / "app_utils").exists():
+while not (_project_root / "api").exists():
     _project_root = _project_root.parent
 os.chdir(_project_root)
 print(os.getcwd())
