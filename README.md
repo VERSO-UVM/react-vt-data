@@ -18,13 +18,22 @@ cd vermont-livability
 ```
 
 3. **Install** python dependencies:
-   - First, set up [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) if you don't already have it.
-   - Then, use conda to set up your python environment
+   - First, set up (uv)[https://docs.astral.sh/uv/] if you don't already have it.
+   - Then run `uv sync` from the backend to make sure everything will work for you. This is strictly not necessary but will help identify issues early. 
 
    ```sh
    cd backend
-   conda env create -f environment.yml
+   uv sync
    ```
+
+   - Then, remember to prefix `uv run` to any python code you want to run. For example:
+
+   ```sh
+   cd backend
+   uv run uvicorn api.main:app --reload --port 6767
+   ```
+
+   - If you need to add any python packages later, use `uv add` from the `backend` directory.  
 
 4. **Install** backend react dependencies:
    - First, set up [npm](https://docs.npmjs.com/cli/v6/commands/npm)
@@ -41,8 +50,7 @@ cd vermont-livability
 
    ```sh
    cd backend
-   conda activate leahy-data
-   uvicorn api.main:app --reload --port 6767
+   uv run uvicorn api.main:app --reload --port 6767
    ```
 
 2. Setup your build to access the local API by adding `NEXT_PUBLIC_API_URL=http://localhost:6767` in `frontend.env.local`

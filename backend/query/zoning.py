@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pandas as pd
 
+from api.models import FilterSource
 from query.core_functions import (
     sql_filter_block,
 )
 from query.processed_db import DB
-from api.models import FilterSource
 
 logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql" / "zoning"
