@@ -1,7 +1,7 @@
 """
 run from root/backend
 
-uvicorn api.main:app --reload --port 6767
+uv run uvicorn api.main:app --reload --port 6767
 
 Then go to: http://localhost:6767/
 """
