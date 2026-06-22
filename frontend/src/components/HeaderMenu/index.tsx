@@ -9,6 +9,7 @@ import {
   Container,
   Group,
   Menu,
+  Text
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
@@ -19,14 +20,14 @@ const links = [
   { link: '/', label: 'Home' },
   {
     link: '/mapping',
-    label: 'Exploratory Mapping',
+    label: 'Mapping',
     links: [
       { link: '/mapping/zoning', label: 'Zoning' },
       { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
-  // { link: '/data-viewer', label: 'Data Analysis' }, // accessible via Working Report
+  { link: '/data-viewer', label: 'Analysis' }, // accessible via Working Report
   {
     link: '/data-comparison',
     label: 'Data Comparison',
@@ -38,7 +39,7 @@ const links = [
       { link: '/data-comparison/b-tables', label: 'Detailed Table Comparison' },
     ],
   },
-  { link: '/working-report', label: 'Working Report' },
+  { link: '/working-report', label: 'Report' },
   { link: '/data-export', label: 'Data Export' },
   {
     link: '/tools',
@@ -46,7 +47,7 @@ const links = [
     links: [{ link: '/tools/benefits-estimator', label: 'Benefits Estimator' }],
   },
   { link: '/scratch', label: 'Scratch' },
-  // { link: '/about', label: 'About' },
+  { link: '/about', label: 'About' },
 ];
 
 export default function HeaderMenu() {
@@ -71,7 +72,13 @@ export default function HeaderMenu() {
         <Menu
           key={link.label}
           trigger="hover"
-          transitionProps={{ exitDuration: 0 }}
+          shadow="xl"
+          radius="lg"
+          offset={10}
+          transitionProps={{
+            transition: 'pop-top-left',
+            duration: 150,
+          }}
           withinPortal
         >
           <Menu.Target>
@@ -105,7 +112,15 @@ export default function HeaderMenu() {
     <header className={classes.header}>
       <Container size="xl">
         <div className={classes.inner}>
-          <Group gap={5} visibleFrom="sm">
+          <Group gap={"xs"} visibleFrom="xs">
+            <Text
+              fw={800}
+              size="sm"
+              variant="gradient"
+              gradient={{ from: 'blue', to: 'cyan' }}
+            >
+              Logo
+            </Text>
             <ProfileModal />
             {items}
           </Group>

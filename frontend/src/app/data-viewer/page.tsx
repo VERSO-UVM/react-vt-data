@@ -1,22 +1,137 @@
 'use client';
 
 import {
+  Badge,
+  Box,
   Center,
   Container,
+  Grid,
   Group,
+  Paper,
   SegmentedControl,
+  Stack,
   Text,
   Title,
 } from '@mantine/core';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
+import { DataViewerSidebar } from '@/components/Sidebar/DataViewerSidebar'
 import {
   useApplyFilters,
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
 import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+
+function ViewerSummary({ 
+  myLocation, 
+  comparison, 
+  yearMin, 
+  yearMax 
+}: { 
+  myLocation: any; 
+  comparison: any; 
+  yearMin: number; 
+  yearMax: number 
+}) {
+    return(
+      <Grid.Col span={{ base: 12, md: 5 }}>
+        <Paper
+          radius="xl"
+          p="xl"
+          withBorder
+          shadow="sm"
+          // Move position to the right
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'white',
+            height: '100%',
+          }}
+        >
+          <Title order={3} ta="right" mb="xl">Summary</Title>
+          <Box>
+            <Text size="xs" c="dimmed" ta="right">
+              LOCATION
+            </Text>
+            <Text fw={600} ta="right" size="xl">
+              {myLocation.name}
+            </Text>
+          </Box>
+          <Box>
+            <Text size="xs" c="dimmed" ta="right">
+              COMPARED WITH
+            </Text>
+
+            <Text fw={600} ta="right" size='xl'>
+              {comparison.name}
+            </Text>
+          </Box>
+
+          <Box>
+            <Text size="xs" c="dimmed" ta="right">
+              REPORT PERIOD
+            </Text>
+
+            <Text fw={600} ta="right" size='xl'>
+              {yearMin}–{yearMax}
+            </Text>
+          </Box>
+        </Paper>
+      </Grid.Col>
+    )
+  }
+
+function ViewerHeader({
+  myLocation, 
+  comparison, 
+  yearMin, 
+  yearMax 
+}: { 
+  myLocation: any; 
+  comparison: any; 
+  yearMin: number; 
+  yearMax: number 
+}) {
+    return (
+    <Paper
+          radius="xl"
+          p={20}
+          style={{
+            background:
+              'linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #e7f5ff 100%)',
+            border: '1px solid #dee2e6',
+          }}
+        >
+          <Grid align="center">
+            <Grid.Col span={{ base: 12, md: 7 }}>
+              <Stack gap="md">
+                <Title
+                  order={1}
+                  style={{
+                    fontSize: 'clamp(2rem, 4vw, 4rem)',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Data Viewer
+                </Title>
+
+                <Text size="lg" c="dimmed" maw={700}>
+                  Interactive charts and tables for exploring Vermont communities.
+                </Text>
+              </Stack>
+            </Grid.Col>
+              <ViewerSummary
+                myLocation={myLocation}
+                comparison={comparison}
+                yearMin={yearMin}
+                yearMax={yearMax}
+              />
+          </Grid>
+        </Paper>
+  );
+  }
 
 export default function DataViewerPage() {
   const { myLocation, comparison, interests, yearMin, yearMax } = useProfile();
@@ -38,6 +153,14 @@ export default function DataViewerPage() {
   const nonTableDefs = chartDefs.filter(
     (c) => !c.subtype.startsWith('renderTable'),
   );
+  const sections = [...new Set(chartDefs.flatMap((c) => c.categories ?? []))]
+  .map((category) => ({
+    id: category.toLowerCase().replace(/\s+/g, '-'),
+    label: category,
+    count: chartDefs.filter((c) =>
+      c.categories?.includes(category)
+    ).length,
+  }));
 
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
@@ -191,46 +314,65 @@ export default function DataViewerPage() {
         )
       : allItems;
 
-  return (
+      return (
     <>
-      <Center pt="xl" mb="md">
-        <Title order={2}>Data Analysis</Title>
-      </Center>
-      {interests.length > 0 && (
-        <Group
-          mb="md"
-          justify="flex-end"
-          style={{
-            position: 'sticky',
-            top: 56,
-            zIndex: 100,
-            backgroundColor: 'var(--mantine-color-body)',
-            paddingBlock: 8,
-            paddingInline: 16,
-          }}
-        >
-          <Text size="sm" c="dimmed">
-            {interests.join(', ')}
-          </Text>
-          <SegmentedControl
-            size="sm"
-            value={focusMode}
-            onChange={(v) => setFocusMode(v as 'all' | 'focus')}
-            data={[
-              { label: 'All charts', value: 'all' },
-              { label: 'My focus', value: 'focus' },
-            ]}
-          />
-        </Group>
-      )}
-      <Container size="xl">
+  <Container size="xl" pt="xl" mb="xl">
+    <ViewerHeader
+      myLocation={myLocation}
+      comparison={comparison}
+      yearMin={yearMin}
+      yearMax={yearMax}
+    />
+  </Container>
+
+  <Container size="xl">
+    <Grid align="start">
+      <Grid.Col span={{ base: 12, md: 3 }}>
+        <DataViewerSidebar
+          sections={sections}
+        />
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 12, md: 9 }}>
+        {interests.length > 0 && (
+          <Paper
+            withBorder
+            p="md"
+            radius="lg"
+            mb="md"
+            style={{
+              position: 'sticky',
+              top: 20,
+              zIndex: 100,
+            }}
+          >
+            <Group justify="space-between">
+              <Text size="sm" c="dimmed">
+                {interests.join(', ')}
+              </Text>
+
+              <SegmentedControl
+                size="sm"
+                value={focusMode}
+                onChange={(v) => setFocusMode(v as 'all' | 'focus')}
+                data={[
+                  { label: 'All charts', value: 'all' },
+                  { label: 'My focus', value: 'focus' },
+                ]}
+              />
+            </Group>
+          </Paper>
+        )}
+
         <ChartStack
           charts={visibleItems}
           action="add"
           userInterests={interests}
           defIds={visibleItems.map((c) => c.chartParams?.defId)}
         />
-      </Container>
-    </>
+      </Grid.Col>
+    </Grid>
+  </Container>
+</>
   );
 }
