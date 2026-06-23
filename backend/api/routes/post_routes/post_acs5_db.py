@@ -21,96 +21,55 @@ router = APIRouter()
 # Demographics
 @router.post("/load/acs5-db/tidy/demographics")
 async def tidy_demographics(request: FilterRequest):
-    rows = get_acs5_tidy(
-        dataset="demographics",
-        name=request.name,
-        year_min=request.year_min,
-        year_max=request.year_max,
-    )
+    rows = get_acs5_tidy(dataset="demographics", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
 # Education
 @router.post("/load/acs5-db/tidy/education")
 async def tidy_education(request: FilterRequest):
-    rows = get_acs5_tidy(
-        dataset="education",
-        name=request.name,
-        year_min=request.year_min,
-        year_max=request.year_max,
-    )
+    rows = get_acs5_tidy(dataset="education", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("education"))
 
 
 @router.post("/load/acs5-db/tidy/housing")
 async def tidy_housing(request: FilterRequest):
-    rows = get_acs5_tidy(
-        dataset="housing",
-        name=request.name,
-        year_min=request.year_min,
-        year_max=request.year_max,
-    )
+    rows = get_acs5_tidy(dataset="housing", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("housing"))
 
 
 # Labor Force
 @router.post("/load/acs5-db/tidy/labor-force")
 async def tidy_labor_force(request: FilterRequest):
-    rows = get_acs5_tidy(
-        dataset="labor_force",
-        name=request.name,
-        year_min=request.year_min,
-        year_max=request.year_max,
-        filters={"Section": "Labor Force"},
-    )
+    rows = get_acs5_tidy(dataset="labor_force", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("labor_force"))
 
 
 # Income
 @router.post("/load/acs5-db/tidy/income")
 async def tidy_income(request: FilterRequest):
-    rows = get_acs5_tidy(
-        dataset="income",
-        name=request.name,
-        year_min=request.year_min,
-        year_max=request.year_max,
-        filters={"Section": "Income"},
-    )
+    rows = get_acs5_tidy(dataset="income", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("income"))
 
 
 # Median Age
 @router.post("/load/acs5-db/tidy/demographics/median-age")
 async def tidy_median_age(request: FilterRequest):
-    rows = get_acs5_tidy(
-        dataset="demographics",
-        name=request.name,
-        year_min=request.year_min,
-        year_max=request.year_max,
-        filters={"Section": "Demographics", "Variable": "Median Age"},
-    )
+    rows = get_acs5_tidy(dataset="demographics", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
 # Unemployment Rate
 @router.post("/load/acs5-db/tidy/unemployment-rate")
 async def tidy_unemployment_rate(request: FilterRequest):
-    rows = get_unemployment_rate_ts(
-        filters={"Location": request.name},
-        year_min=request.year_min,
-        year_max=request.year_max,
-    )
+    rows = get_unemployment_rate_ts(filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
 
 
 # Median Earnings
 @router.post("/load/acs5-db/tidy/median-earnings")
 async def tidy_median_earnings(request: FilterRequest):
-    rows = get_median_earnings(
-        filters={"Location": request.name},
-        year_min=request.year_min,
-        year_max=request.year_max,
-    )
+    rows = get_median_earnings(filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 

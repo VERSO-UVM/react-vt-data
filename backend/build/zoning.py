@@ -53,8 +53,6 @@ boolean_remapper = {
 # functions:
 def data_load():
     path = data_dir / "zoning" / "vt-zoning-update.fgb"
-    CON.execute("LOAD spatial")
-
     CON.execute(f"""--sql
         CREATE OR REPLACE VIEW zoning_raw AS 
         SELECT * FROM ST_READ('{path}')

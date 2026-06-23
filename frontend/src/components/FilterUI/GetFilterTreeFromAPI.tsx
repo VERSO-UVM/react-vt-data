@@ -17,7 +17,6 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
     setRange,
   } = useFilter();
   const [tree, setTree] = useState<any>({});
-  const [bounds, setBounds] = useState<[number, number] | null>(null);
 
   // Load tree + labels
   useEffect(() => {
@@ -78,6 +77,8 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
             max={range.bounds[1]}
             value={range.selected ?? range.bounds}
             onChange={(v) => setRange({ ...range, selected: v })}
+            labelAlwaysOn
+            label={(v) => v}
           />
         </div>
       )}

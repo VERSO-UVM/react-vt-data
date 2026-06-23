@@ -67,19 +67,18 @@ export default function BenefitsDisplay({
 }: ResultsProps) {
   return (
     <Container size="sm" py="xl">
-
       {/* HEADER */}
       <Center mb="lg">
         <Stack align="center" gap={4}>
           <Title order={2}>Benefit Results</Title>
           <Text size="sm" c="dimmed" ta="center">
-            Estimated eligibility and monthly benefit amounts based on your inputs
+            Estimated eligibility and monthly benefit amounts based on your
+            inputs
           </Text>
         </Stack>
       </Center>
 
       <Stack gap="lg">
-
         {/* ================= SUMMARY CARD ================= */}
         <Paper withBorder radius="md" p="lg" shadow="xs">
           <Title order={3} mb="sm">
@@ -102,9 +101,7 @@ export default function BenefitsDisplay({
               <Text size="sm" c="dimmed">
                 Net Monthly Income
               </Text>
-              <Text fw={600}>
-                ${processedData.netMonthlyIncome.toFixed(2)}
-              </Text>
+              <Text fw={600}>${processedData.netMonthlyIncome.toFixed(2)}</Text>
             </Group>
           </Stack>
         </Paper>
@@ -125,7 +122,6 @@ export default function BenefitsDisplay({
             ))}
           </Stack>
         </div>
-
       </Stack>
     </Container>
   );

@@ -39,38 +39,38 @@ export default function DataViewerPage() {
     (c) => !c.subtype.startsWith('renderTable'),
   );
 
+
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
       const url = chart.url;
-      const filterKey = chart.filterKey;
-      const dataKey = chart.dataKey;
-      const filters = buildFilters(myLocation);
-      const compFilters = buildFilters(comparison);
+      const filters = buildFilters(myLocation, {
+        col: 'year',
+        selected: [yearMin, yearMax],
+      });
+      const compFilters = buildFilters(comparison, {
+        col: 'year',
+        selected: [yearMin, yearMax],
+      });
 
-      applyFilters(
-        url,
-        filters,
-        filterKey,
-        dataKey,
-        (data, metadata, tableData) =>
+      applyFilters({
+        dataURL: url,
+        filters: filters,
+        onData: (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
             [chart.id]: { data, metadata, tableData },
           })),
-        { name: myLocation.name, year_min: yearMin, year_max: yearMax },
-      );
-      applyFilters(
-        url,
-        compFilters,
-        filterKey,
-        dataKey,
-        (data, metadata, tableData) =>
+      });
+
+      applyFilters({
+        dataURL: url,
+        filters: compFilters,
+        onData: (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
             ...prev,
             [chart.id]: { data, metadata, tableData },
           })),
-        { name: comparison.name, year_min: yearMin, year_max: yearMax },
-      );
+      });
     });
   }, [myLocation, comparison, yearMin, yearMax]);
 
@@ -99,30 +99,30 @@ export default function DataViewerPage() {
         return `${d.url}::${JSON.stringify(extra)}` === key;
       });
       // Primary location fetch
-      applyFilters(
-        def.url,
-        {},
-        undefined,
-        undefined,
-        (data) =>
+      applyFilters({
+        dataURL: def.url,
+        filters: buildFilters(myLocation, {
+          col: 'year',
+          selected: [yearMin, yearMax],
+        }),
+        onData: (data) =>
           siblings.forEach((d) =>
             setChartData((prev) => ({ ...prev, [d.id]: { data } })),
           ),
-        { name: myLocation.name, ...effectiveExtra },
-      );
+      });
       // Comparison location fetch
       if (comparison.name) {
-        applyFilters(
-          def.url,
-          {},
-          undefined,
-          undefined,
-          (data) =>
+        applyFilters({
+          dataURL: def.url,
+          filters: buildFilters(comparison, {
+            col: 'year',
+            selected: [yearMin, yearMax],
+          }),
+          onData: (data) =>
             siblings.forEach((d) =>
               setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
             ),
-          { name: comparison.name, ...effectiveExtra },
-        );
+        });
       }
     });
   }, [myLocation, comparison, yearMin, yearMax]);

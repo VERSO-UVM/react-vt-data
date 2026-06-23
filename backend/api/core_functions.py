@@ -26,7 +26,9 @@ def request_to_source(
         FilterSource: _description_
     """
     src_schema = schema[primary_table][sec_table]
-    colmap = src_schema["columns"]
+    # Discrete columns and range columns are both addressed by label; merge them
+    # so a request can carry e.g. {"County": [...], "Percent": {min, max}}.
+    colmap = {**src_schema["columns"], **src_schema.get("range", {})}
     return FilterSource(
         source=sec_table,
         filters={colmap[k]: v for k, v in request.filters.items() if k in colmap},

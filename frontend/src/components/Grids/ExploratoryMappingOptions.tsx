@@ -14,11 +14,7 @@ import {
   ThemeIcon,
 } from '@mantine/core';
 
-import {
-  IconMap2,
-  IconDroplet,
-  IconShield,
-} from '@tabler/icons-react';
+import { IconMap2, IconDroplet, IconShield } from '@tabler/icons-react';
 
 interface LinkItem {
   link: string;
@@ -68,8 +64,7 @@ function MappingCard({ item }: { item: LinkItem }) {
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow =
-          'var(--mantine-shadow-lg)';
+        e.currentTarget.style.boxShadow = 'var(--mantine-shadow-lg)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
@@ -110,13 +105,7 @@ function MappingCard({ item }: { item: LinkItem }) {
         {item.description}
       </Text>
 
-      <Button
-        component={Link}
-        href={item.link}
-        fullWidth
-        mt="xl"
-        radius="md"
-      >
+      <Button component={Link} href={item.link} fullWidth mt="xl" radius="md">
         Explore {item.label}
       </Button>
     </Card>
@@ -131,10 +120,7 @@ export default function ExploratoryMappingGrid({
   return (
     <Grid justify="center" gutter="xl">
       {links.map((item) => (
-        <Grid.Col
-          key={item.link}
-          span={{ base: 12, sm: 6, md: 4 }}
-        >
+        <Grid.Col key={item.link} span={{ base: 12, sm: 6, md: 4 }}>
           <MappingCard item={item} />
         </Grid.Col>
       ))}

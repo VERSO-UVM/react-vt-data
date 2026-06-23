@@ -8,3 +8,4 @@ ROOT = (
 BACKEND = ROOT.parent  # backend/
 data_dir = BACKEND / "Data"
 CON = duckdb.connect()
+CON.execute("LOAD spatial")

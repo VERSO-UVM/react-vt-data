@@ -14,7 +14,7 @@ import {
   Box,
   Paper,
   Grid,
-  Badge
+  Badge,
 } from '@mantine/core';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -32,19 +32,35 @@ export default function WorkingReport() {
   const [isPdfMode, setIsPdfMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const { myLocation, comparison, interests, yearMin, yearMax, openProfileModal } = useProfile();
-  const { excludedIds, toggleExcluded, clearExclusions, excludeById,
-          items: savedItems, clearItems,
-          sessionInitialized, setSessionInitialized,
-          pendingReset, setPendingReset } =
-    useItems();
+  const {
+    myLocation,
+    comparison,
+    interests,
+    yearMin,
+    yearMax,
+    openProfileModal,
+  } = useProfile();
+  const {
+    excludedIds,
+    toggleExcluded,
+    clearExclusions,
+    excludeById,
+    items: savedItems,
+    clearItems,
+    sessionInitialized,
+    setSessionInitialized,
+    pendingReset,
+    setPendingReset,
+  } = useItems();
 
   // Apply auto-exclude based on interests: exclude any chart whose categories
   // don't overlap with the user's interests (no-op if interests is empty).
   const applyInterestExclusions = (currentInterests: string[]) => {
     if (currentInterests.length === 0) return;
     chartDefs.forEach((def) => {
-      const matches = def.categories?.some((cat) => currentInterests.includes(cat));
+      const matches = def.categories?.some((cat) =>
+        currentInterests.includes(cat),
+      );
       if (!matches) excludeById(def.id);
     });
     savedItems.forEach((item) => {
@@ -85,48 +101,90 @@ export default function WorkingReport() {
   >({});
 
   const applyFilters = useApplyFilters();
-  const tableDefs = chartDefs.filter((c) => c.subtype.startsWith('renderTable'));
+  const tableDefs = chartDefs.filter((c) =>
+    c.subtype.startsWith('renderTable'),
+  );
   const nonTableDefs = chartDefs.filter(
     (c) => !c.subtype.startsWith('renderTable'),
   );
 
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
-      const filters = buildFilters(myLocation);
-      const compFilters = buildFilters(comparison);
-      applyFilters(chart.url, filters, chart.filterKey, chart.dataKey, (data, metadata, tableData) =>
-        setChartData((prev) => ({ ...prev, [chart.id]: { data, metadata, tableData } })),
-      );
-      applyFilters(chart.url, compFilters, chart.filterKey, chart.dataKey, (data, metadata, tableData) =>
-        setCompareChartData((prev) => ({ ...prev, [chart.id]: { data, metadata, tableData } })),
-      );
+      const filters = buildFilters(myLocation, {
+        col: 'year',
+        selected: [yearMin, yearMax],
+      });
+      const compFilters = buildFilters(comparison, {
+        col: 'year',
+        selected: [yearMin, yearMax],
+      });
+      applyFilters({
+        dataURL: chart.url,
+        filters,
+        onData: (data, metadata, tableData) =>
+          setChartData((prev) => ({
+            ...prev,
+            [chart.id]: { data, metadata, tableData },
+          })),
+      });
+      applyFilters({
+        dataURL: chart.url,
+        filters: compFilters,
+        onData: (data, metadata, tableData) =>
+          setCompareChartData((prev) => ({
+            ...prev,
+            [chart.id]: { data, metadata, tableData },
+          })),
+      });
     });
-  }, [myLocation, comparison]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [myLocation, comparison, yearMin, yearMax]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const seen = new Set<string>();
     tableDefs.forEach((def) => {
       const effectiveExtra = def.tableConfig?.extraParams
-        ? { ...def.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+        ? {
+            ...def.tableConfig.extraParams,
+            year_min: yearMin,
+            year_max: yearMax,
+          }
         : { year_min: yearMin, year_max: yearMax };
       const key = `${def.url}::${JSON.stringify(effectiveExtra)}`;
       if (seen.has(key)) return;
       seen.add(key);
       const siblings = tableDefs.filter((d) => {
         const extra = d.tableConfig?.extraParams
-          ? { ...d.tableConfig.extraParams, year_min: yearMin, year_max: yearMax }
+          ? {
+              ...d.tableConfig.extraParams,
+              year_min: yearMin,
+              year_max: yearMax,
+            }
           : { year_min: yearMin, year_max: yearMax };
         return `${d.url}::${JSON.stringify(extra)}` === key;
       });
-      applyFilters(def.url, {}, undefined, undefined,
-        (data) => siblings.forEach((d) => setChartData((prev) => ({ ...prev, [d.id]: { data } }))),
-        { name: myLocation.name, ...effectiveExtra },
-      );
+      applyFilters({
+        dataURL: def.url,
+        filters: buildFilters(myLocation, {
+          col: 'year',
+          selected: [yearMin, yearMax],
+        }),
+        onData: (data) =>
+          siblings.forEach((d) =>
+            setChartData((prev) => ({ ...prev, [d.id]: { data } })),
+          ),
+      });
       if (comparison.name) {
-        applyFilters(def.url, {}, undefined, undefined,
-          (data) => siblings.forEach((d) => setCompareTableData((prev) => ({ ...prev, [d.id]: data }))),
-          { name: comparison.name, ...effectiveExtra },
-        );
+        applyFilters({
+          dataURL: def.url,
+          filters: buildFilters(comparison, {
+            col: 'year',
+            selected: [yearMin, yearMax],
+          }),
+          onData: (data) =>
+            siblings.forEach((d) =>
+              setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
+            ),
+        });
       }
     });
   }, [myLocation, comparison, yearMin, yearMax]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -158,7 +216,10 @@ export default function WorkingReport() {
       compareData: compareChartData[chart.id]?.data || [],
       compareTableData: compareChartData[chart.id]?.tableData || [],
       subtype: chart.subtype,
-      chartParams: { ...chart.chartParams, legendLabels: [myLocation.name, comparison.name] },
+      chartParams: {
+        ...chart.chartParams,
+        legendLabels: [myLocation.name, comparison.name],
+      },
       description: chart.title,
       notes: chart.notes,
       categories: chart.categories,
@@ -203,7 +264,9 @@ export default function WorkingReport() {
     ...nonTableDefs.map((def, i) => ({ defId: def.id, item: charts[i] })),
     ...tableDefs.map((def, i) => ({ defId: def.id, item: tableItems[i] })),
     ...savedCharts.map((item: any) => ({ defId: item.id, item })),
-  ].sort((a, b) => categoryRank(a.item.categories) - categoryRank(b.item.categories));
+  ].sort(
+    (a, b) => categoryRank(a.item.categories) - categoryRank(b.item.categories),
+  );
 
   const isIncluded = (defId: string) => !excludedIds.includes(defId);
   const includedPairs = allPairs.filter((p) => isIncluded(p.defId));
@@ -232,7 +295,7 @@ export default function WorkingReport() {
   };
 
   function reportSummary() {
-    return(
+    return (
       <Grid.Col span={{ base: 12, md: 5 }}>
         <Paper
           radius="xl"
@@ -247,7 +310,9 @@ export default function WorkingReport() {
             height: '100%',
           }}
         >
-          <Title order={3} ta="right" mb="xl">Report Summary</Title>
+          <Title order={3} ta="right" mb="xl">
+            Report Summary
+          </Title>
           <Box>
             <Text size="xs" c="dimmed" ta="right">
               LOCATION
@@ -277,11 +342,11 @@ export default function WorkingReport() {
           </Box>
         </Paper>
       </Grid.Col>
-    )
+    );
   }
 
   function reportActionButtons() {
-    return(
+    return (
       <Group>
         <Button size="md" onClick={handleDownloadPdf} loading={isGenerating}>
           Download PDF
@@ -290,50 +355,54 @@ export default function WorkingReport() {
           size="md"
           variant="light"
           color="red"
-          onClick={() => { clearItems(); clearExclusions(); setPendingReset(true); openProfileModal(); }}
+          onClick={() => {
+            clearItems();
+            clearExclusions();
+            setPendingReset(true);
+            openProfileModal();
+          }}
         >
           Clear report
         </Button>
       </Group>
-    )
+    );
   }
-
-
 
   function reportHeaderCard() {
     return (
-    <Paper
-          radius="xl"
-          p={20}
-          style={{
-            background:
-              'linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #e7f5ff 100%)',
-            border: '1px solid #dee2e6',
-          }}
-        >
-          <Grid align="center">
-            <Grid.Col span={{ base: 12, md: 7 }}>
-              <Stack gap="md">
-                <Title
-                  order={1}
-                  style={{
-                    fontSize: 'clamp(2rem, 4vw, 4rem)',
-                    lineHeight: 1.1,
-                  }}
-                >
-                  Working Report
-                </Title>
+      <Paper
+        radius="xl"
+        p={20}
+        style={{
+          background:
+            'linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #e7f5ff 100%)',
+          border: '1px solid #dee2e6',
+        }}
+      >
+        <Grid align="center">
+          <Grid.Col span={{ base: 12, md: 7 }}>
+            <Stack gap="md">
+              <Title
+                order={1}
+                style={{
+                  fontSize: 'clamp(2rem, 4vw, 4rem)',
+                  lineHeight: 1.1,
+                }}
+              >
+                Working Report
+              </Title>
 
-                <Text size="lg" c="dimmed" maw={700}>
-                  Tailor your personalized report to your specific interests and needs.
-                </Text>
-                {reportActionButtons()}
-              </Stack>
-            </Grid.Col>
-            {reportSummary()}
-          </Grid>
-        </Paper>
-  );
+              <Text size="lg" c="dimmed" maw={700}>
+                Tailor your personalized report to your specific interests and
+                needs.
+              </Text>
+              {reportActionButtons()}
+            </Stack>
+          </Grid.Col>
+          {reportSummary()}
+        </Grid>
+      </Paper>
+    );
   }
 
   return (

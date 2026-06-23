@@ -46,16 +46,3 @@ async def filter_tree_endpoint(source: str, primary_dataset: str = "default"):
     colmap: dict = schema[primary_dataset][source]["columns"]
     rangemap: dict = schema[primary_dataset][source].get("range", {})
     return filter_tree(colmap, list(colmap.keys()), source, rangemap=rangemap)
-
-
-@router.get("/load/mapping/zoning/filters")
-async def zoning_filters():
-    colmap = schema["default"]["zoning_info"]["columns"]
-    print(colmap)
-    return filter_tree(colmap, list(colmap.keys()), "zoning_info")
-
-
-# TODO: wireup so this actually gets used.
-# @router.get("acs5-db/dp-combined/filters")
-# async def dp_combined_filters():
-#     return get_acs5_dp_combined_filters()

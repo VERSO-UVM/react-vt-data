@@ -16,30 +16,32 @@ from query.processed_db import DB
 logger = logging.getLogger(__name__)
 
 
-def build_where_query_from_filters(
-    filters: dict | None,
-    colmap: dict,
-    table: str,
-    base_conditions: list[str] | None = None,
-) -> str:
-    clauses = list(base_conditions or [])
+def filter_clauses(filters: dict | None) -> list[str]:
+    """Compile a {column: value} mapping into SQL boolean clauses.
 
-    for label, values in (filters or {}).items():
-        col = colmap.get(label)
-
-        if col is None:
-            logger.warning(f"{table}: ignoring unknown filter {label}")
+    Shared "filter source" clause logic used by both the FilterSource CTE/join
+    path (compile_cte) and the direct single-table where-builder (sql_filter_block's
+    {where_string}). Values are either a discrete list (-> IN) or a RangeFilter
+    (-> >= / <=). Range comparisons TRY_CAST the column to DOUBLE so they work on
+    numeric columns and numbers stored as text (e.g. the ACS "year" column).
+    """
+    clauses: list[str] = []
+    for col, values in (filters or {}).items():
+        if values is None:
             continue
 
-        if values is None:
+        if isinstance(values, RangeFilter):
+            if values.min is not None:
+                clauses.append(f'TRY_CAST("{col}" AS DOUBLE) >= {values.min}')
+            if values.max is not None:
+                clauses.append(f'TRY_CAST("{col}" AS DOUBLE) <= {values.max}')
             continue
 
         if not isinstance(values, (list, tuple, set)):
             values = [values]
-
         clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
 
-    return "WHERE " + " AND ".join(clauses) if clauses else ""
+    return clauses
 
 
 def _nest(rows: list[tuple]) -> dict:
@@ -84,15 +86,7 @@ def filter_tree(
 
 
 def compile_cte(filter_source: FilterSource) -> str:
-    clauses = []
-    for col, values in (filter_source.filters or {}).items():
-        if isinstance(values, RangeFilter):
-            if values.min is not None:
-                clauses.append(f'"{col}" >= {values.min}')
-            if values.max is not None:
-                clauses.append(f'"{col}" <= {values.max}')
-        else:
-            clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
+    clauses = filter_clauses(filter_source.filters)
     where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     return f"""--sql
         SELECT DISTINCT {filter_source.join_key} FROM {filter_source.source}
@@ -131,16 +125,19 @@ def compile_filters(sources: list[FilterSource]) -> tuple[str, str]:
 def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> str:
     cte_filter_block, join_filter_block = compile_filters(sources)
 
-    # Generate where_string for legacy SQL files that use it
+    # Direct single-table filtering: templates that use {where_string} (instead of
+    # CTE/join) apply the first source's filters straight to the main query. {table}
+    # resolves to that source so one template can serve multiple tables (e.g. ACS).
     where_string = ""
+    table = ""
     if sources:
-        clauses = []
-        for col, values in (sources[0].filters or {}).items():
-            clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
+        clauses = filter_clauses(sources[0].filters)
         where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        table = sources[0].source
 
     return sql_path.read_text().format(
         cte_filter_block=cte_filter_block,
         join_filter_block=join_filter_block,
         where_string=where_string,
+        table=table,
     )

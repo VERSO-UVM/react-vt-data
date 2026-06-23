@@ -217,3 +217,4 @@ As a first pass, we can do filtering on:
 2. Measure
 3. Value
   Where the value frontend then gives abilities to select in a range. We can easily wire this up in the future to be restricted to [min, max] of values for the column. 
+
