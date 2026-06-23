@@ -1,0 +1,101 @@
+---
+title: "wastewater sql workthrough"
+author: Atticus Tarleton
+date: today
+description:  builds SQL tables from wastewater data.
+format:
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute:
+  cache: true
+editor:
+    render-on-save: true
+---
+
+
+# Setup
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+
+```
+
+```{python}
+con = duckdb.connect()
+```
+
+## Checking soil suitability data is stored and pretty clean
+- it is stored, however there are a few columns that appear redundant and/or unused
+```{python}
+data_dir= Path("Data")
+path = data_dir / "soil-suitability" / "ACRPC_Soil_Septic.fgb"
+df = pyogrio.read_dataframe(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+
+## Checking what wastewater looks like
+note, this does not look quite right
+```{python}
+path = data_dir / "wastewater" / "VermontServiceArea.geojson"
+df = gpd.read_file(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+and for the other geojson.
+
+Notes about this wwtf geojson
+- a lot of the columns seem redundant and like they should not be in there
+- data does not line up with the wastewater treatment parquet
+- the same issues are present in the above wastewater geojson as well
+```{python}
+path = data_dir / "wastewater" / "VermontWWTF.geojson"
+df = gpd.read_file(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+
+
+### Now doing this with the parquet file to see that things line up
+note: this is different from the geojsons, they look much cleaner
+```{python}
+path = data_dir / "wastewater" / "ww_treatment_facilities.parquet"
+df = gpd.read_parquet(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
