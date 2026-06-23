@@ -25,7 +25,8 @@ async def tidy_demographics(request: FilterRequest):
         dataset="demographics",
         name=request.name,
         year_min=request.year_min,
-        year_max=request.year_max)
+        year_max=request.year_max,
+    )
     return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
@@ -36,7 +37,8 @@ async def tidy_education(request: FilterRequest):
         dataset="education",
         name=request.name,
         year_min=request.year_min,
-        year_max=request.year_max)
+        year_max=request.year_max,
+    )
     return make_response(data=rows, metadata=get_metadata("education"))
 
 
@@ -46,7 +48,8 @@ async def tidy_housing(request: FilterRequest):
         dataset="housing",
         name=request.name,
         year_min=request.year_min,
-        year_max=request.year_max)
+        year_max=request.year_max,
+    )
     return make_response(data=rows, metadata=get_metadata("housing"))
 
 
@@ -58,7 +61,8 @@ async def tidy_labor_force(request: FilterRequest):
         name=request.name,
         year_min=request.year_min,
         year_max=request.year_max,
-        filters={"Section": "Labor Force"})
+        filters={"Section": "Labor Force"},
+    )
     return make_response(data=rows, metadata=get_metadata("labor_force"))
 
 
@@ -70,7 +74,8 @@ async def tidy_income(request: FilterRequest):
         name=request.name,
         year_min=request.year_min,
         year_max=request.year_max,
-        filters={"Section": "Income"})
+        filters={"Section": "Income"},
+    )
     return make_response(data=rows, metadata=get_metadata("income"))
 
 
@@ -82,7 +87,8 @@ async def tidy_median_age(request: FilterRequest):
         name=request.name,
         year_min=request.year_min,
         year_max=request.year_max,
-        filters={"Section": "Demographics", "Variable": "Median Age"})
+        filters={"Section": "Demographics", "Variable": "Median Age"},
+    )
     return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
@@ -92,7 +98,8 @@ async def tidy_unemployment_rate(request: FilterRequest):
     rows = get_unemployment_rate_ts(
         filters={"Location": request.name},
         year_min=request.year_min,
-        year_max=request.year_max)
+        year_max=request.year_max,
+    )
     return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
 
 
@@ -102,7 +109,8 @@ async def tidy_median_earnings(request: FilterRequest):
     rows = get_median_earnings(
         filters={"Location": request.name},
         year_min=request.year_min,
-        year_max=request.year_max)
+        year_max=request.year_max,
+    )
     return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 

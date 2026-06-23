@@ -13,25 +13,56 @@ logger = logging.getLogger(__name__)
 # Allowed filter columns per table (whitelist guards against injection)
 _VALID_COLS: dict[str, set[str]] = {
     "unemployment_rate": {
-        "year", "GEOID", "NAME", "Jurisdiction", "County", "Unemployment_Rate"
+        "year",
+        "GEOID",
+        "NAME",
+        "Jurisdiction",
+        "County",
+        "Unemployment_Rate",
     },
     "median_earnings": {
-        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "Value"
+        "year",
+        "GEOID",
+        "NAME",
+        "Jurisdiction",
+        "County",
+        "variable",
+        "Value",
     },
     "median_home_value": {
-        "year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"
+        "year",
+        "GEOID",
+        "NAME",
+        "Jurisdiction",
+        "County",
+        "estimate",
     },
     "median_smoc": {
-        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"
+        "year",
+        "GEOID",
+        "NAME",
+        "Jurisdiction",
+        "County",
+        "variable",
+        "estimate",
     },
-    "commute_time": {
-        "year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"
-    },
+    "commute_time": {"year", "GEOID", "NAME", "Jurisdiction", "County", "estimate"},
     "commute_habits": {
-        "year", "GEOID", "NAME", "Jurisdiction", "County", "variable", "estimate"
+        "year",
+        "GEOID",
+        "NAME",
+        "Jurisdiction",
+        "County",
+        "variable",
+        "estimate",
     },
     "historic_population": {
-        "X_geoid", "NAME", "Jurisdiction", "County", "Year", "Population"
+        "X_geoid",
+        "NAME",
+        "Jurisdiction",
+        "County",
+        "Year",
+        "Population",
     },
 }
 
@@ -67,7 +98,6 @@ def query_timeseries(table_name: str, filters: dict | None = None):
             where_clauses.append(f'"{col}" IN ({placeholders})')
             params.extend(values)
 
-    where_sql = ("WHERE " + " AND ".join(where_clauses)
-                 ) if where_clauses else ""
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
     sql = f'SELECT * FROM "{table_name}" {where_sql}'
     return DB.execute(sql, params).df()

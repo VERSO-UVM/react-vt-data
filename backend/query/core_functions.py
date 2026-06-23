@@ -8,10 +8,10 @@
 """
 
 import logging
-
-from query.processed_db import DB
-from api.models import FilterSource
 from pathlib import Path
+
+from api.models import FilterResponse, FilterSource, RangeDescriptor, RangeFilter
+from query.processed_db import DB
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,7 @@ def build_where_query_from_filters(
         if not isinstance(values, (list, tuple, set)):
             values = [values]
 
-        clauses.append(
-            f'"{col}" IN ({", ".join(repr(v) for v in values)})'
-        )
+        clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
 
     return "WHERE " + " AND ".join(clauses) if clauses else ""
 
@@ -57,11 +55,14 @@ def _nest(rows: list[tuple]) -> dict:
     return tree
 
 
-def filter_tree(colmap: dict, tree_labels: list[str], table: str, db=DB) -> dict:
+def filter_tree(
+    colmap: dict, tree_labels: list[str], table: str, db=DB, rangemap: dict = {}
+) -> FilterResponse:
     """
     Info for cascading filter UI.
     TODO: Right now, we pass in separate db.
     When we consolidate all SQL to one source/place, we'll update this to be just one.
+    TODO: update to not pass in tree_labels but just use from schema
     """
     cols = [colmap.get(label) for label in tree_labels]
     select = ", ".join(f'"{col}"' for col in cols)
@@ -69,13 +70,33 @@ def filter_tree(colmap: dict, tree_labels: list[str], table: str, db=DB) -> dict
     rows = db.execute(
         f"SELECT DISTINCT {select} FROM {table} ORDER BY {order}"
     ).fetchall()
-    return {"tree": _nest(rows), "labels": tree_labels}
+    tree = _nest(rows)
+    if rangemap:
+        ranges = []
+        range_label, range_col = next(iter(rangemap.items()))
+        res = db.execute(f"""--sql
+            SELECT MIN("{range_col}"), MAX("{range_col}") FROM {table}
+        """).fetchone()
+        if res and res[0] is not None:
+            ranges.append(
+                RangeDescriptor(
+                    range_label=range_label, range_col=range_col, bounds=res
+                )
+            )
+            return FilterResponse(tree=tree, labels=tree_labels, ranges=ranges)
+    return FilterResponse(tree=tree, labels=tree_labels)
 
 
 def compile_cte(filter_source: FilterSource) -> str:
     clauses = []
     for col, values in (filter_source.filters or {}).items():
-        clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
+        if isinstance(values, RangeFilter):
+            if values.min is not None:
+                clauses.append(f'"{col}" >= {values.min}')
+            if values.max is not None:
+                clauses.append(f'"{col}" <= {values.max}')
+        else:
+            clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
     where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     return f"""--sql
         SELECT DISTINCT {filter_source.join_key} FROM {filter_source.source}
@@ -119,12 +140,11 @@ def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> str:
     if sources:
         clauses = []
         for col, values in (sources[0].filters or {}).items():
-            clauses.append(
-                f'"{col}" IN ({", ".join(repr(v) for v in values)})')
+            clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
         where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
     return sql_path.read_text().format(
         cte_filter_block=cte_filter_block,
         join_filter_block=join_filter_block,
-        where_string=where_string
+        where_string=where_string,
     )

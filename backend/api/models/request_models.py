@@ -27,6 +27,11 @@ class DPSeriesRequest(BaseModel):
 join_types = Literal["inner", "left", "spatial_intersect"]
 
 
+class RangeFilter(BaseModel):
+    min: float | None = None
+    max: float | None = None
+
+
 class FilterSource(BaseModel):
     """
     New class for Filter Request Model.
@@ -46,7 +51,7 @@ class FilterSource(BaseModel):
     """
 
     source: str
-    filters: dict[str, list[str]] = {}
+    filters: dict[str, list[str] | RangeFilter] = {}
     join_key: str = "OBJECT_ID"
     join_type: join_types = "inner"
 

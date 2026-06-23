@@ -100,9 +100,7 @@ EXPORT_SOURCES: dict[str, dict] = {
             "Exported with readable labels rather than raw census codes."
         ),
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP05",
-        "loader": lambda: _load_tidy_census(
-            "census_demographics", "demogs_2023_tidy"
-        ),
+        "loader": lambda: _load_tidy_census("census_demographics", "demogs_2023_tidy"),
     },
     "census_social": {
         "label": "Social",
@@ -303,7 +301,9 @@ async def export_csv(body: ExportRequest, request: Request):
         df = df[df["Jurisdiction"] == body.jurisdiction]
 
     if df.empty:
-        raise HTTPException(status_code=404, detail="No data matched the selected filters.")
+        raise HTTPException(
+            status_code=404, detail="No data matched the selected filters."
+        )
 
     truncated = len(df) > MAX_ROWS_PER_EXPORT
     df = df.head(MAX_ROWS_PER_EXPORT)
@@ -312,7 +312,9 @@ async def export_csv(body: ExportRequest, request: Request):
     df.to_csv(csv_buffer, index=False)
     csv_bytes = csv_buffer.getvalue().encode("utf-8")
 
-    area_slug = (body.jurisdiction or body.county or "vermont").lower().replace(" ", "-")
+    area_slug = (
+        (body.jurisdiction or body.county or "vermont").lower().replace(" ", "-")
+    )
     filename = f"vt-data-{body.source}-{area_slug}.csv"
 
     headers = {

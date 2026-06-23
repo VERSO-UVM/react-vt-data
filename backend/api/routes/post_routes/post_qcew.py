@@ -22,8 +22,9 @@ SECTOR_ORDER = [
 
 @router.post("/load/qcew/employment")
 async def employment_by_sector(request: FilterRequest):
-    county = (request.filters or {}).get("County", [None])[
-        0] if request.filters else None
+    county = (
+        (request.filters or {}).get("County", [None])[0] if request.filters else None
+    )
 
     # For state-level (no county specified), aggregate all counties
     if not county and (not request.name or request.name.lower() == "vermont"):
@@ -52,9 +53,9 @@ async def employment_by_sector(request: FilterRequest):
 
     # For state-level, aggregate by summing employment across counties
     if not county and (not request.name or request.name.lower() == "vermont"):
-        rows = rows.groupby(['year', 'quarter', 'quarter_label', 'sector'], as_index=False).agg({
-            'employment_4qma': 'sum'
-        })
+        rows = rows.groupby(
+            ["year", "quarter", "quarter_label", "sector"], as_index=False
+        ).agg({"employment_4qma": "sum"})
 
     # Pivot to wide format: one row per quarter_label, one column per sector
     wide = rows.pivot_table(

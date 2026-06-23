@@ -7,24 +7,12 @@
     Build script to convert the `zoning_update.fgb` into four SQL tables.
 """
 
-import os
-from pathlib import Path
-
-import duckdb
 import pandas as pd
 
-_project_root = Path.cwd()
-while not (_project_root / "backend").exists():
-    _project_root = _project_root.parent
-os.chdir(_project_root)
-print(os.getcwd())
+from build import BACKEND, CON, data_dir
 
-
-# globals
-con = duckdb.connect()
-proc_dir = Path("backend/Data/_Processed/zoning")
-data_dir = Path("backend/Data")
-sql_path = Path("backend/build/zoning/sql")
+proc_dir = BACKEND / "Data" / "_Processed" / "zoning"
+sql_path = BACKEND / "build" / "sql"
 
 
 # hardcoded specifics:
@@ -65,9 +53,9 @@ boolean_remapper = {
 # functions:
 def data_load():
     path = data_dir / "zoning" / "vt-zoning-update.fgb"
-    con.execute("LOAD spatial")
+    CON.execute("LOAD spatial")
 
-    con.execute(f"""--sql
+    CON.execute(f"""--sql
         CREATE OR REPLACE VIEW zoning_raw AS 
         SELECT * FROM ST_READ('{path}')
     """)
@@ -75,17 +63,18 @@ def data_load():
 
 def build_info():
     info_string = ", ".join(info_cols)
-    con.execute(
-        (sql_path / "info.sql").read_text().format(info_string=info_string))
-    info_df = con.execute("SELECT * FROM raw_info").df()
+    CON.execute(
+        (sql_path / "zoning_info.sql").read_text().format(info_string=info_string)
+    )
+    info_df = CON.execute("SELECT * FROM raw_info").df()
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
-    con.register("info", info_df)
+    CON.register("info", info_df)
 
 
 def build_geom():
     geo_string = ", ".join(geom_cols)
-    con.execute(f"""--sql
+    CON.execute(f"""--sql
         CREATE OR REPLACE VIEW geom AS
         SELECT {geo_string}
         FROM zoning_raw
@@ -94,7 +83,7 @@ def build_geom():
 
 def get_rule_cols():
     dropped_cols = ["Shape_Area", "Shape_Length"]
-    all_cols = con.execute("DESCRIBE zoning_raw").df()["column_name"].tolist()
+    all_cols = CON.execute("DESCRIBE zoning_raw").df()["column_name"].tolist()
     rule_cols = set(all_cols)
     for item in geom_cols + info_cols + ["Acres"] + dropped_cols:
         if item in rule_cols:
@@ -106,7 +95,7 @@ def get_rule_cols():
 def split_col(col: str, use_types: set[str]):
     for use_type in use_types:
         if col.startswith(use_type):
-            rule = col[len(use_type) + 1:]
+            rule = col[len(use_type) + 1 :]
             rule = rule.replace("/", "_")
             return use_type, rule
     return False, False
@@ -121,17 +110,17 @@ def build_rules():
         for rule_col, clean_col in zip(rule_cols, clean_rule_cols, strict=True)
     ]
     rule_string = ", ".join(rule_strings)
-    con.execute(
-        (sql_path / "rules.sql").read_text().format(rule_string=rule_string))
-    rules = con.execute("SELECT * FROM raw_rules").df()
+    CON.execute(
+        (sql_path / "zoning_rules.sql").read_text().format(rule_string=rule_string)
+    )
+    rules = CON.execute("SELECT * FROM raw_rules").df()
 
     # separate by use type and filter:
     use_types = set([col.split("_")[0] for col in clean_rule_cols])
     use_types.remove("Affordable")
     use_types.add("Affordable_Housing")
     rules[["use_type", "rule"]] = (
-        rules["col_name"].apply(lambda x: split_col(
-            x, use_types)).apply(pd.Series)
+        rules["col_name"].apply(lambda x: split_col(x, use_types)).apply(pd.Series)
     )
     rules = rules.drop(columns="col_name")
     rules["use_type"] = (
@@ -140,11 +129,11 @@ def build_rules():
 
     # remap booleans
     rules["val"] = rules["val"].map(boolean_remapper).fillna(rules["val"])
-    con.register("rules", rules)
+    CON.register("rules", rules)
 
 
 def build_color():
-    con.execute((sql_path / "colors.sql").read_text())
+    CON.execute((sql_path / "zoning_colors.sql").read_text())
 
 
 def main():
@@ -155,7 +144,7 @@ def main():
     build_color()
     proc_dir.mkdir(parents=True, exist_ok=True)
     for table in ["info", "geom", "rules", "colors"]:
-        con.execute(
+        CON.execute(
             f"COPY (SELECT * FROM {table}) TO '{proc_dir / f'{table}.parquet'}' "
         )
 

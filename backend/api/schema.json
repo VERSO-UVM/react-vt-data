@@ -18,6 +18,16 @@
         "Rule": "rule",
         "Value": "val"
       }
+    },
+    "cdc_places": {
+      "join_key": "LocationID",
+      "join_type": "inner",
+      "columns": {
+        "Key Indicator": "SME_Highlight",
+        "Category": "Category",
+        "Measure": "Measure"
+      },
+      "range": { "Percent": "Data_Value" }
     }
   }
 }

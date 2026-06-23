@@ -29,8 +29,7 @@ def request_to_source(
     colmap = src_schema["columns"]
     return FilterSource(
         source=sec_table,
-        filters={colmap[k]: v for k,
-                 v in request.filters.items() if k in colmap},
+        filters={colmap[k]: v for k, v in request.filters.items() if k in colmap},
         join_key=src_schema["join_key"],
         join_type=src_schema["join_type"],
     )

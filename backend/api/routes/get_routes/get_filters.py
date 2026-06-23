@@ -44,7 +44,8 @@ async def filter_tree_endpoint(source: str, primary_dataset: str = "default"):
         key1: {values, each key2: values} and so on iteratively through the columns.
     """
     colmap: dict = schema[primary_dataset][source]["columns"]
-    return filter_tree(colmap, list(colmap.keys()), source)
+    rangemap: dict = schema[primary_dataset][source].get("range", {})
+    return filter_tree(colmap, list(colmap.keys()), source, rangemap=rangemap)
 
 
 @router.get("/load/mapping/zoning/filters")

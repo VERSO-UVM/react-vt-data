@@ -7,6 +7,10 @@ type FilterContextType = {
   setSelectedFilters: (sel: Record<number, string>) => void;
   labels: string[];
   setLabels: (labels: string[]) => void;
+  selectedRange: [number, number] | null;
+  setSelectedRange: (range: [number, number]) => void;
+  rangeCol: string | null;
+  setRangeCol: (col: string | null) => void;
   format: string | undefined;
   setFormat: (format: string | undefined) => void;
 };
@@ -19,6 +23,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   >({});
   const [labels, setLabels] = useState<string[]>([]);
   const [format, setFormat] = useState<string | undefined>(undefined);
+  const [selectedRange, setSelectedRange] = useState<[number, number] | null>(
+    null,
+  );
+  const [rangeCol, setRangeCol] = useState<string | null>(null);
 
   return (
     <FilterContext.Provider
@@ -27,8 +35,12 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         setSelectedFilters,
         labels,
         setLabels,
-        setFormat,
+        selectedRange,
+        setSelectedRange,
+        rangeCol,
+        setRangeCol,
         format,
+        setFormat,
       }}
     >
       {children}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Select, Group, Stack } from '@mantine/core';
+import { Select, RangeSlider, Stack, Text } from '@mantine/core';
 import axios from 'axios';
 import { useFilter } from './FilterContext';
 
@@ -8,9 +8,18 @@ type GenericFilterProps = {
 };
 
 export default function GenericFilter({ apiURL }: GenericFilterProps) {
-  const { selectedFilters, setSelectedFilters, labels, setLabels } =
-    useFilter();
+  const {
+    selectedFilters,
+    setSelectedFilters,
+    labels,
+    setLabels,
+    selectedRange,
+    setSelectedRange,
+    rangeCol,
+    setRangeCol,
+  } = useFilter();
   const [tree, setTree] = useState<any>({});
+  const [bounds, setBounds] = useState<[number, number] | null>(null);
 
   // Load tree + labels
   useEffect(() => {
@@ -18,6 +27,10 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
     axios.get(apiURL).then((r) => {
       setTree(r.data.tree);
       setLabels(r.data.labels || []);
+      const range = r.data.range ?? null;
+      setBounds(range);
+      setSelectedRange(range);
+      setRangeCol(r.data.range_col ?? null);
       setSelectedFilters({});
     });
   }, [apiURL, setLabels, setSelectedFilters]);
@@ -58,6 +71,19 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
           }}
         />
       ))}
+      {bounds && (
+        <div>
+          <Text size="sm" fw={500}>
+            {rangeCol}
+          </Text>
+          <RangeSlider
+            min={bounds[0]}
+            max={bounds[1]}
+            value={selectedRange ?? bounds}
+            onChange={setSelectedRange}
+          />
+        </div>
+      )}
     </Stack>
   );
 }

@@ -54,37 +54,48 @@ ACS5_FILTER_COLS = {"Location": "NAME"}
 ACS5_TREE_LABELS = ["Location"]
 
 
-def get_acs5_tidy(dataset: str, name: str, year_min: int, year_max: int,
-                  filters: dict | None = None) -> pd.DataFrame:
+def get_acs5_tidy(
+    dataset: str, name: str, year_min: int, year_max: int, filters: dict | None = None
+) -> pd.DataFrame:
     config = QUERY_CONFIG.get(dataset)
     query_filters = {"Location": name, **(filters or {})}
     base_conditions = list(config["base_conditions"] or [])
-    base_conditions.append(
-        f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}")
+    base_conditions.append(f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}")
 
     where_string = build_where_query_from_filters(
         filters=query_filters,
         colmap=ACS5_FILTER_COLS,
         table=config["table"],
-        base_conditions=base_conditions)
+        base_conditions=base_conditions,
+    )
 
-    sql = (sql_path / "acs5_tidy.sql").read_text().format(
-        table=config["table"], where_string=where_string)
+    sql = (
+        (sql_path / "acs5_tidy.sql")
+        .read_text()
+        .format(table=config["table"], where_string=where_string)
+    )
 
     result = DB.execute(sql).df()
 
     if result is None:
         logger.error(
-            "ACS5 tidy query returned no rows for dataset: %s, name: %s, filters: %s", dataset, name, filters)
+            "ACS5 tidy query returned no rows for dataset: %s, name: %s, filters: %s",
+            dataset,
+            name,
+            filters,
+        )
         raise ValueError(
-            f"no results for dataset: {dataset}, name: {name}, filters: {filters}")
+            f"no results for dataset: {dataset}, name: {name}, filters: {filters}"
+        )
 
     return result
 
 
-def get_unemployment_rate_ts(filters: dict | None = None,
-                             year_min: int | None = None,
-                             year_max: int | None = None) -> pd.DataFrame:
+def get_unemployment_rate_ts(
+    filters: dict | None = None,
+    year_min: int | None = None,
+    year_max: int | None = None,
+) -> pd.DataFrame:
     query_filters = filters or {}
 
     base_conditions = []
@@ -98,11 +109,13 @@ def get_unemployment_rate_ts(filters: dict | None = None,
         filters=query_filters,
         colmap=ACS5_FILTER_COLS,
         table="acs5_unemployment_rate",
-        base_conditions=base_conditions
+        base_conditions=base_conditions,
     )
 
-    sql = (sql_path / "unemployment_rate.sql").read_text().format(
-        where_string=where_string
+    sql = (
+        (sql_path / "unemployment_rate.sql")
+        .read_text()
+        .format(where_string=where_string)
     )
 
     result = DB.execute(sql).df()
@@ -110,16 +123,20 @@ def get_unemployment_rate_ts(filters: dict | None = None,
     if result is None or result.empty:
         logger.error(
             "Unemployment rate query returned no rows for filters=%s year_min=%s year_max=%s",
-            filters, year_min, year_max
+            filters,
+            year_min,
+            year_max,
         )
         raise ValueError("no results for unemployment_rate query")
 
     return result
 
 
-def get_median_earnings(filters: dict | None = None,
-                        year_min: int | None = None,
-                        year_max: int | None = None) -> pd.DataFrame:
+def get_median_earnings(
+    filters: dict | None = None,
+    year_min: int | None = None,
+    year_max: int | None = None,
+) -> pd.DataFrame:
     query_filters = filters or {}
 
     base_conditions = []
@@ -133,11 +150,11 @@ def get_median_earnings(filters: dict | None = None,
         filters=query_filters,
         colmap=ACS5_FILTER_COLS,
         table="acs5_median_earnings",
-        base_conditions=base_conditions
+        base_conditions=base_conditions,
     )
 
-    sql = (sql_path / "median_earnings.sql").read_text().format(
-        where_string=where_string
+    sql = (
+        (sql_path / "median_earnings.sql").read_text().format(where_string=where_string)
     )
 
     result = DB.execute(sql).df()
@@ -145,7 +162,9 @@ def get_median_earnings(filters: dict | None = None,
     if result is None or result.empty:
         logger.error(
             "Median earnings query returned no rows for filters=%s year_min=%s year_max=%s",
-            filters, year_min, year_max
+            filters,
+            year_min,
+            year_max,
         )
         raise ValueError("no results for median_earnings query")
 

@@ -153,8 +153,41 @@ vt_places = con.execute(f"""--sql
 
 ```{python}
 con.execute(f"""--sql
-  CREATE OR REPLACE VIEW cdc_places AS 
+  CREATE OR REPLACE VIEW cdc_places_temp AS 
   SELECT * EXCLUDE (Geolocation,  StateDesc),
+      CASE WHEN 
+        DataValueTypeID = 'CrdPrv' AND Measure IN ({indicators_sql})
+        THEN 1 else 0 END 
+     AS SME_Highlight
+  FROM places_raw
+  WHERE StateAbbr IN ('VT')
+  """)
+
+sme_indicators = con.execute(f"""--sql
+  SELECT * FROM cdc_places_temp
+  WHERE SME_Highlight = 1
+""").df()
+sme_indicators.head()
+```
+
+```{python}
+sme_indicators["Data_Value_Footnote_Symbol"].value_counts(dropna=False)
+```
+
+```{python}
+sme_indicators["DataSource"].value_counts(dropna=False)
+```
+
+So we can just note in the metadata that BRFSS is the source...
+
+
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW cdc_places AS 
+  SELECT * EXCLUDE (
+        Geolocation,  StateDesc, Data_Value_Footnote_Symbol,
+        Data_Value_Footnote, DataSource),
       CASE WHEN 
         DataValueTypeID = 'CrdPrv' AND Measure IN ({indicators_sql})
         THEN 1 else 0 END 
@@ -170,4 +203,17 @@ sme_indicators = con.execute(f"""--sql
 sme_indicators.head()
 ```
 
+We can drop the data value column, because it's not relevant for Vermont. 
+
 Great, the table looks good. We'll move it into a `build` script for processing the data. 
+
+# Schema and Front-End Considerations.
+The question, however, is what our standard filtering will be. We're understanding this to be for a selection based on the _property_, not the location. 
+
+The values are all percents, so they'll be pinned in $[0, 1]$. But we can't rely on this for other tables. 
+
+As a first pass, we can do filtering on: 
+1. Category
+2. Measure
+3. Value
+  Where the value frontend then gives abilities to select in a range. We can easily wire this up in the future to be restricted to [min, max] of values for the column. 

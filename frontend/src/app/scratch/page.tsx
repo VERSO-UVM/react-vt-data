@@ -5,12 +5,6 @@ import { BASE_API_URL } from '@/config';
 import FilterContainer from '@/components/FilterUI/Filter_wrap';
 import { FilterProvider } from '@/components/FilterUI/FilterContext';
 
-interface ZoningTreeRow {
-  usage: string;
-  rule: string;
-  value: string | number | null;
-}
-
 export default function scratch() {
   const [data, setData] = useState<any>(null);
 
@@ -21,7 +15,7 @@ export default function scratch() {
       </Center>
       <FilterProvider>
         <FilterContainer
-          apiURL={`${BASE_API_URL}/filters/tree?source=zoning_rules`}
+          apiURL={`${BASE_API_URL}/filters/tree?source=cdc_places`}
           dataURL={''}
           onData={(fetchedData) => setData(fetchedData)}
         />
