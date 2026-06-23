@@ -6,7 +6,13 @@ import {
   Badge,
   Title,
   Divider,
+  SegmentedControl,
+  TextInput,
+  Checkbox,
+  Box,
 } from '@mantine/core';
+
+import { IconSearch } from '@tabler/icons-react';
 
 interface SidebarSection {
   id: string;
@@ -17,58 +23,79 @@ interface SidebarSection {
 interface DataViewerSidebarProps {
   sections: SidebarSection[];
   activeSection?: string;
+
+  focusMode: 'all' | 'focus';
+  setFocusMode: (value: 'all' | 'focus') => void;
+
+  search: string;
+  onSearchChange: (value: string) => void;
+
+  selectedCategories: string[];
+  onCategoriesChange: (value: string[]) => void;
 }
 
 export function DataViewerSidebar({
   sections,
   activeSection,
+  focusMode,
+  setFocusMode,
+  search,
+  onSearchChange,
+  selectedCategories,
+  onCategoriesChange,
 }: DataViewerSidebarProps) {
   return (
     <Paper
       withBorder
       radius="lg"
       p="md"
-      style={{
-        position: 'sticky',
-        top: 20,
-      }}
     >
       <Stack gap="md">
-        <div>
-          <Title order={4}>Browse</Title>
-        </div>
-        <Divider />
+        <Title order={4}>Filters</Title>
 
-        {sections.map((section) => (
-          <UnstyledButton
-            key={section.id}
-            onClick={() =>
-              document
-                .getElementById(section.id)
-                ?.scrollIntoView({ behavior: 'smooth' })
-            }
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              background:
-                activeSection === section.id
-                  ? 'var(--mantine-color-blue-light)'
-                  : 'transparent',
-            }}
+        <SegmentedControl
+          size="sm"
+          value={focusMode}
+          onChange={(v) =>
+            setFocusMode(v as 'all' | 'focus')
+          }
+          data={[
+            { label: 'All', value: 'all' },
+            { label: 'Focus', value: 'focus' },
+          ]}
+        />
+
+        <TextInput
+          placeholder="Search charts..."
+          value={search}
+          onChange={(e) =>
+            onSearchChange(e.currentTarget.value)
+          }
+          leftSection={<IconSearch size={14} />}
+        />
+
+        <Box>
+          <Text fw={600} mb="xs">
+            Categories
+          </Text>
+
+          <Checkbox.Group
+            value={selectedCategories}
+            onChange={onCategoriesChange}
           >
-            <Text fw={activeSection === section.id ? 600 : 400}>
-              {section.label}
-            </Text>
+            <Stack gap={4}>
+              {sections.map((section) => (
+                <Checkbox
+                  key={section.id}
+                  value={section.label}
+                  label={`${section.label} (${section.count})`}
+                />
+              ))}
+            </Stack>
+          </Checkbox.Group>
+        </Box>
 
-            <Badge
-              variant="light"
-              size="sm"
-              ml="auto"
-            >
-              {section.count}
-            </Badge>
-          </UnstyledButton>
-        ))}
+<Divider />
       </Stack>
     </Paper>
   );

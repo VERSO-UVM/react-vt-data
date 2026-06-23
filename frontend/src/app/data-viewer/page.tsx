@@ -42,7 +42,6 @@ function ViewerSummary({
           p="xl"
           withBorder
           shadow="sm"
-          // Move position to the right
           style={{
             position: 'relative',
             overflow: 'hidden',
@@ -144,6 +143,10 @@ export default function DataViewerPage() {
   const [compareTableData, setCompareTableData] = useState<
     Record<string, any[]>
   >({});
+
+  const [search, setSearch] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
   const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
 
   const applyFilters = useApplyFilters();
@@ -307,12 +310,36 @@ export default function DataViewerPage() {
   );
 
   const allItems = [...charts, ...tableItems];
-  const visibleItems =
-    focusMode === 'focus' && interests.length > 0
-      ? allItems.filter((c) =>
-          c.categories?.some((cat) => interests.includes(cat)),
-        )
-      : allItems;
+  
+  let filteredItems = allItems;
+
+  if (focusMode === 'focus' && interests.length > 0) {
+    filteredItems = filteredItems.filter((c) =>
+      c.categories?.some((cat) => interests.includes(cat)),
+    );
+  }
+
+  if (selectedCategories.length > 0) {
+    filteredItems = filteredItems.filter((c) =>
+      c.categories?.some((cat) =>
+        selectedCategories.includes(cat),
+      ),
+    );
+  }
+
+  if (search.trim()) {
+    const q = search.toLowerCase();
+
+    filteredItems = filteredItems.filter(
+      (c) =>
+        c.description?.toLowerCase().includes(q) ||
+        c.categories?.some((cat) =>
+          cat.toLowerCase().includes(q),
+        ),
+    );
+  }
+
+const visibleItems = filteredItems;
 
       return (
     <>
@@ -328,42 +355,25 @@ export default function DataViewerPage() {
   <Container size="xl">
     <Grid align="start">
       <Grid.Col span={{ base: 12, md: 3 }}>
+        <div
+          style={{
+            position: 'sticky',
+            top: 20,
+          }}
+        >
         <DataViewerSidebar
           sections={sections}
+          focusMode={focusMode}
+          setFocusMode={setFocusMode}
+          search={search}
+          onSearchChange={setSearch}
+          selectedCategories={selectedCategories}
+          onCategoriesChange={setSelectedCategories}
         />
+        </div>
       </Grid.Col>
 
       <Grid.Col span={{ base: 12, md: 9 }}>
-        {interests.length > 0 && (
-          <Paper
-            withBorder
-            p="md"
-            radius="lg"
-            mb="md"
-            style={{
-              position: 'sticky',
-              top: 20,
-              zIndex: 100,
-            }}
-          >
-            <Group justify="space-between">
-              <Text size="sm" c="dimmed">
-                {interests.join(', ')}
-              </Text>
-
-              <SegmentedControl
-                size="sm"
-                value={focusMode}
-                onChange={(v) => setFocusMode(v as 'all' | 'focus')}
-                data={[
-                  { label: 'All charts', value: 'all' },
-                  { label: 'My focus', value: 'focus' },
-                ]}
-              />
-            </Group>
-          </Paper>
-        )}
-
         <ChartStack
           charts={visibleItems}
           action="add"
