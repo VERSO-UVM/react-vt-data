@@ -13,10 +13,8 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
     setSelectedFilters,
     labels,
     setLabels,
-    selectedRange,
-    setSelectedRange,
-    rangeCol,
-    setRangeCol,
+    range,
+    setRange,
   } = useFilter();
   const [tree, setTree] = useState<any>({});
   const [bounds, setBounds] = useState<[number, number] | null>(null);
@@ -27,11 +25,10 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
     axios.get(apiURL).then((r) => {
       setTree(r.data.tree);
       setLabels(r.data.labels || []);
-      const range = r.data.range ?? null;
-      setBounds(range);
-      setSelectedRange(range);
-      setRangeCol(r.data.range_col ?? null);
-      setSelectedFilters({});
+      const firstRange = r.data.ranges?.[0] ?? null;
+      setRange(
+        firstRange ? { ...firstRange, selected: firstRange.bounds } : null,
+      );
     });
   }, [apiURL, setLabels, setSelectedFilters]);
 
@@ -71,16 +68,16 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
           }}
         />
       ))}
-      {bounds && (
+      {range && (
         <div>
           <Text size="sm" fw={500}>
-            {rangeCol}
+            {range.label}
           </Text>
           <RangeSlider
-            min={bounds[0]}
-            max={bounds[1]}
-            value={selectedRange ?? bounds}
-            onChange={setSelectedRange}
+            min={range.bounds[0]}
+            max={range.bounds[1]}
+            value={range.selected ?? range.bounds}
+            onChange={(v) => setRange({ ...range, selected: v })}
           />
         </div>
       )}

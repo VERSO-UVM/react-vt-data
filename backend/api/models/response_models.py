@@ -8,7 +8,7 @@ logger = setup_api_logger()
 
 
 class APIResponse(BaseModel):
-    """API Response. Note that:
+    """API Response for actual data. Note that:
             data is required
             tableData should only be included if tableData must be differentiated from regular data (eg, for a table view)
             metadata should always be included
@@ -33,8 +33,8 @@ class RangeDescriptor(BaseModel):
         BaseModel (_type_): _description_
     """
 
-    range_label: str
-    range_col: str
+    label: str
+    col: str
     bounds: tuple[float, float]
 
 

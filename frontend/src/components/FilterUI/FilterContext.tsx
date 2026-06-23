@@ -2,15 +2,20 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
+type RangeState = {
+  col: string; // "Data_Value" — what ApplyButton sends
+  label: string; // "Percent" — caption
+  bounds: [number, number]; // full min/max from fetch
+  selected: [number, number]; // user's current pick
+};
+
 type FilterContextType = {
   selectedFilters: Record<number, string>;
   setSelectedFilters: (sel: Record<number, string>) => void;
   labels: string[];
   setLabels: (labels: string[]) => void;
-  selectedRange: [number, number] | null;
-  setSelectedRange: (range: [number, number]) => void;
-  rangeCol: string | null;
-  setRangeCol: (col: string | null) => void;
+  range: RangeState | null;
+  setRange: (range: RangeState | null) => void;
   format: string | undefined;
   setFormat: (format: string | undefined) => void;
 };
@@ -23,10 +28,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   >({});
   const [labels, setLabels] = useState<string[]>([]);
   const [format, setFormat] = useState<string | undefined>(undefined);
-  const [selectedRange, setSelectedRange] = useState<[number, number] | null>(
-    null,
-  );
-  const [rangeCol, setRangeCol] = useState<string | null>(null);
+  const [range, setRange] = useState<RangeState | null>(null);
 
   return (
     <FilterContext.Provider
@@ -35,10 +37,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         setSelectedFilters,
         labels,
         setLabels,
-        selectedRange,
-        setSelectedRange,
-        rangeCol,
-        setRangeCol,
+        range,
+        setRange,
         format,
         setFormat,
       }}

@@ -38,3 +38,8 @@ The schema governs filtering and joining. It is laid out as follows:
         * join_key: the column to join on. see FilterSource in request_models.py
         * join_type: what type of join, either SQL standard (eg left) or spatial
         * columns: ORDERED {label, column} pairs. The order is the filter cascade order; the label is what frontend shows; the column is what is sent back to the sql
+        * range: if the final value shouldn't be a set of categories, but instead a numerical range, then it goes in this column. 
+
+
+## Future
+If needed, the scheme can at some point be updated to instead type each column in the ordered column list, or something like that. 

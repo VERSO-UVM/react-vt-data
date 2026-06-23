@@ -78,11 +78,7 @@ def filter_tree(
             SELECT MIN("{range_col}"), MAX("{range_col}") FROM {table}
         """).fetchone()
         if res and res[0] is not None:
-            ranges.append(
-                RangeDescriptor(
-                    range_label=range_label, range_col=range_col, bounds=res
-                )
-            )
+            ranges.append(RangeDescriptor(label=range_label, col=range_col, bounds=res))
             return FilterResponse(tree=tree, labels=tree_labels, ranges=ranges)
     return FilterResponse(tree=tree, labels=tree_labels)
 
