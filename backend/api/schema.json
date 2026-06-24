@@ -6,8 +6,8 @@
       "columns": {
         "County": "County",
         "Jurisdiction": "Municipal_Name",
-        "District Name": "District_Name",
-        "District Type": "District_Type"
+        "District Type": "District_Type",
+        "District Name": "District_Name"
       }
     },
     "zoning_rules": {

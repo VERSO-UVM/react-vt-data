@@ -8,10 +8,10 @@
 """
 
 import logging
-
-from query.processed_db import DB
-from api.models import FilterSource
 from pathlib import Path
+
+from api.models import FilterSource
+from query.processed_db import DB
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,7 @@ def build_where_query_from_filters(
         if not isinstance(values, (list, tuple, set)):
             values = [values]
 
-        clauses.append(
-            f'"{col}" IN ({", ".join(repr(v) for v in values)})'
-        )
+        clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
 
     return "WHERE " + " AND ".join(clauses) if clauses else ""
 
@@ -119,12 +117,11 @@ def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> str:
     if sources:
         clauses = []
         for col, values in (sources[0].filters or {}).items():
-            clauses.append(
-                f'"{col}" IN ({", ".join(repr(v) for v in values)})')
+            clauses.append(f'"{col}" IN ({", ".join(repr(v) for v in values)})')
         where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
 
     return sql_path.read_text().format(
         cte_filter_block=cte_filter_block,
         join_filter_block=join_filter_block,
-        where_string=where_string
+        where_string=where_string,
     )
