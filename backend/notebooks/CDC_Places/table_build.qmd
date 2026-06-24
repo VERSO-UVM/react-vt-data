@@ -180,8 +180,6 @@ sme_indicators["DataSource"].value_counts(dropna=False)
 
 So we can just note in the metadata that BRFSS is the source...
 
-
-
 ```{python}
 con.execute(f"""--sql
   CREATE OR REPLACE VIEW cdc_places AS 
@@ -205,7 +203,37 @@ sme_indicators.head()
 
 We can drop the data value column, because it's not relevant for Vermont. 
 
+# Binning
+We want to show how these variables inter-relate on a colormap. So we should bin them.
+
+```{python}
+for measure in sme_indicators["Measure"].unique().tolist():
+  a = sme_indicators[sme_indicators["Measure"] == measure]["Data_Value"].value_counts()
+  print(measure, a)
+```
+
+```{python}
+sme_indicators["bin"]= sme_indicators.groupby("Measure")["Data_Value"].transform(
+  lambda s: pd.qcut(s, 5, labels=False, duplicates='drop')
+)
+sme_indicators
+```
+
+
+
+Some of these are pretty small. 
+
 Great, the table looks good. We'll move it into a `build` script for processing the data. 
+
+
+# Check it works
+
+```{python}
+db_full = duckdb.connect("Data/_Processed/all_data.duckdb")
+db_full.execute("SELECT * FROM cdc_places").df().head()
+```
+Great, looks good. 
+
 
 # Schema and Front-End Considerations.
 The question, however, is what our standard filtering will be. We're understanding this to be for a selection based on the _property_, not the location. 

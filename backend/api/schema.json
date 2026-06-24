@@ -25,9 +25,9 @@
       "columns": {
         "Key Indicator": "SME_Highlight",
         "Category": "Category",
-        "Measure": "Measure"
-      },
-      "range": { "Percent": "Data_Value" }
+        "Measure": "Measure",
+        "Prevalence Measure": "Data_Value_Type"
+      }
     }
   }
 }

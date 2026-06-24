@@ -21,12 +21,18 @@ def get_SME_indicatiors() -> str:
     return ", ".join(f"'{i}'" for i in indicators)
 
 
+def bin_measures(df: pd.DataFrame):
+    df["bin"] = df.groupby("Measure")["Data_Value"].transform(
+        lambda s: pd.qcut(s, 3, labels=False, duplicates="drop")
+    )
+    return df
+
+
 def build_tables(indicators: str) -> None:
     path = data_dir / "CDC" / "CDC_Places.csv"
-    CON.execute(f"""--sql
-        CREATE OR REPLACE VIEW places AS
+    df = CON.execute(f"""--sql
         SELECT
-            * EXCLUDE (uv
+            * EXCLUDE (
                 Geolocation,
                 StateDesc,
                 Data_Value_Footnote_Symbol,
@@ -39,7 +45,14 @@ def build_tables(indicators: str) -> None:
                 ELSE FALSE
             END AS SME_Highlight
         FROM read_csv ('{path}')
-  """)
+        WHERE StateAbbr IN ('VT')
+  """).df()
+    df = bin_measures(df)
+    CON.execute("""--sql
+            CREATE OR REPLACE TABLE places
+            AS SELECT * 
+            FROM df            
+        """)
 
 
 def main():

@@ -11,11 +11,11 @@ from pathlib import Path
 
 import duckdb
 
-db = duckdb.connect("backend/Data/_Processed/all_data.duckdb")
+db = duckdb.connect("Data/_Processed/all_data.duckdb")
 db.execute("INSTALL SPATIAL")
 db.execute("LOAD SPATIAL")
 
-for path in Path("backend/Data/_Processed").rglob("*.parquet"):
+for path in Path("Data/_Processed").rglob("*.parquet"):
     name = f"{path.parent.name}_{path.stem}"
     db.execute(
         f"CREATE OR REPLACE TABLE {name} AS SELECT * FROM read_parquet('{path}')"
