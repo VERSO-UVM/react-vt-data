@@ -108,21 +108,27 @@ export default function HeaderMenu() {
     );
   });
 
-  return (
-    <header className={classes.header}>
-      <Container size="xl">
-        <div className={classes.inner}>
-          <Group gap={"xs"} visibleFrom="xs">
-            <Anchor href="/" >
-              <Image src="/images/VDC_logo.jpg" alt="Logo" w={140}
-                     h={50} onClick={() => {}} style={{ cursor: 'pointer' }}/>
-            </Anchor>
-            <ProfileModal />
-            {items}
-          </Group>
-          <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="sm" />
-        </div>
-      </Container>
-    </header>
+    return (
+      <header className={classes.header}>
+        <Container size="xl">
+          <div className={classes.inner}>
+            <Group gap="lg">
+              <Anchor href="/">
+                <Image src="/images/VDC_logo.jpg" alt="Logo" w={140} h={50} style={{ cursor: 'pointer' }} />
+              </Anchor>
+              <ProfileModal />
+            </Group>
+
+            {/* Navigation items separated into their own wrapping group */}
+            <Group gap={4} visibleFrom="md" wrap="wrap" style={{ flex: 1, justifyContent: 'flex-end' }}>
+              {items}
+            </Group>
+
+            {/* Mobile Burger Menu */}
+            <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
+          </div>
+        </Container>
+      </header>
   );
 }
+
