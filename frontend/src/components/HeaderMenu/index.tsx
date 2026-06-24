@@ -5,11 +5,11 @@ import { IconChevronDown } from '@tabler/icons-react';
 import {
   UnstyledButton,
   Burger,
-  Center,
   Container,
   Group,
   Menu,
-  Text
+  Image,
+  Anchor
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
@@ -113,14 +113,10 @@ export default function HeaderMenu() {
       <Container size="xl">
         <div className={classes.inner}>
           <Group gap={"xs"} visibleFrom="xs">
-            <Text
-              fw={800}
-              size="sm"
-              variant="gradient"
-              gradient={{ from: 'blue', to: 'cyan' }}
-            >
-              Logo
-            </Text>
+            <Anchor href="/" >
+              <Image src="/images/VDC_logo.jpg" alt="Logo" w={140}
+                     h={50} onClick={() => {}} style={{ cursor: 'pointer' }}/>
+            </Anchor>
             <ProfileModal />
             {items}
           </Group>
