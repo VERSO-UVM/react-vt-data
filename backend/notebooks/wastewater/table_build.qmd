@@ -111,6 +111,40 @@ df = crs_set(df)
 display(df.head())
 print(f'The number of rows is: {len(df)}')
 ```
+Now, creating new parquet files because the previous ones have no primary key
+
+First is the service areas parquet file
+```{python}
+path = data_dir / "wastewater" / "ww_service_areas.parquet"
+df = gpd.read_parquet(path)
+df = crs_set(df)
+
+df['ID'] = range(1, len(df) + 1)
+new_path = data_dir / "wastewater" / "ww_service_areas_new.parquet"
+df.to_parquet(new_path, index=False)
+df = gpd.read_parquet(new_path)
+df = crs_set(df)
+
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+Next is the treatment facilities parquet file
+```{python}
+path = data_dir / "wastewater" / "ww_treatment_facilities.parquet"
+df = gpd.read_parquet(path)
+df = crs_set(df)
+
+df['ID'] = range(1, len(df) + 1)
+new_path = data_dir / "wastewater" / "ww_treatment_facilities_new.parquet"
+df.to_parquet(new_path, index=False)
+df = gpd.read_parquet(new_path)
+df = crs_set(df)
+
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
 
 
 # Reading the datasets into SQL
@@ -269,7 +303,7 @@ Each wastewater parquet file will be turned into a different table
 
 ### Wastewater Service Areas
 ```{python}
-waste_service_path = wastewater_path / "ww_service_areas.parquet"
+waste_service_path = wastewater_path / "ww_service_areas_new.parquet"
 
 con.execute(f"""--sql
   CREATE OR REPLACE VIEW wastewater_service_areas AS
@@ -284,25 +318,15 @@ for col in df.columns:
 
 display(df.head())
 ```
-Adding a primary key. Pandas syntax is used because it is the easiest way to add a new column
-```{python}
-df['ID'] = range(1, len(df) + 1)
-df.to_parquet(waste_service_path, index=False)
-
-con.execute(f"""--sql
-  CREATE OR REPLACE VIEW wastewater_service_areas AS
-  SELECT * FROM read_parquet('{waste_service_path}')
-""")
-```
 
 Now to separate this into tables
 
 `ID` will be the main hash key
 
-There will be three tables, FACILITY_INFORMATION, MISCELLANEOUS_INFORMATION, and GEOMETRY
-- FACILITY_INFORMATION
+There will be three tables, SERVICE_AREA_INFORMATION, MISCELLANEOUS_INFORMATION, and GEOMETRY
+- SERVICE_AREA_INFORMATION
     - main hash key: `ID`
-    - goal: hold information directly relating to the wastewater facility
+    - goal: hold information directly relating to the wastewater service area
     - columns: ID, TownID, TreatmentFacility, SystemName, SystemOwner, TownName, Municipal_Name, County, RPC
 - MISCELLANEOUS_INFORMATION
     - main hash key: `ID`
@@ -314,7 +338,7 @@ There will be three tables, FACILITY_INFORMATION, MISCELLANEOUS_INFORMATION, and
     - columns: ID, geometry
 
 ```{python}
-facility_info_cols = [
+service_area_info_cols = [
     "ID",
     "TownID",
     "TreatmentFacility",
@@ -342,19 +366,19 @@ geom_cols = [
 ]
 ```
 
-creating the facility information table
+creating the service area information table
 
 ```{python}
-facility_info_string = ", ".join(facility_info_cols)
+service_area_info_string = ", ".join(service_area_info_cols)
 
 con.execute(f"""--sql
-  CREATE OR REPLACE VIEW facility_info AS
-  SELECT {facility_info_string}
+  CREATE OR REPLACE VIEW service_area_info AS
+  SELECT {service_area_info_string}
   FROM wastewater_service_areas
 """)
 
-facility_info = con.execute("SELECT * FROM facility_info").df()
-display(facility_info.head())
+service_area_info = con.execute("SELECT * FROM service_area_info").df()
+display(service_area_info.head())
 ```
 
 creating the miscellaneous information table
@@ -386,3 +410,24 @@ con.execute(f"""--sql
 geom_service_areas = con.execute("SELECT * FROM geom_service_areas").df()
 display(geom_service_areas.head())
 ```
+
+
+### Wastewater Treatment Facilities
+```{python}
+waste_facility_path = wastewater_path / "ww_treatment_facilities_new.parquet"
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW wastewater_treatment_facilities AS
+  SELECT * FROM read_parquet('{waste_facility_path}')
+""")
+```
+
+Examining the dataset and getting the column names
+```{python}
+df = con.execute("SELECT * FROM wastewater_treatment_facilities").df()
+for col in df.columns:
+  print(col)
+
+display(df.head())
+```
+Now to separate this into tables
