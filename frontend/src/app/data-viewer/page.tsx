@@ -1,22 +1,10 @@
 'use client';
 
-import {
-  Badge,
-  Box,
-  Center,
-  Container,
-  Grid,
-  Group,
-  Paper,
-  SegmentedControl,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core';
+import { Box, Grid, ScrollArea, Text, Title, Tabs } from '@mantine/core';
+import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon } from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
-import { DataViewerSidebar } from '@/components/Sidebar/DataViewerSidebar'
 import {
   useApplyFilters,
   buildFilters,
@@ -24,113 +12,77 @@ import {
 import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 
-function ViewerSummary({ 
-  myLocation, 
-  comparison, 
-  yearMin, 
-  yearMax 
-}: { 
-  myLocation: any; 
-  comparison: any; 
-  yearMin: number; 
-  yearMax: number 
-}) {
-    return(
-      <Grid.Col span={{ base: 12, md: 5 }}>
-        <Paper
-          radius="xl"
-          p="xl"
-          withBorder
-          shadow="sm"
-          style={{
-            position: 'relative',
-            overflow: 'hidden',
-            background: 'white',
-            height: '100%',
-          }}
-        >
-          <Title order={3} ta="right" mb="xl">Summary</Title>
-          <Box>
-            <Text size="xs" c="dimmed" ta="right">
-              LOCATION
-            </Text>
-            <Text fw={600} ta="right" size="xl">
-              {myLocation.name}
-            </Text>
-          </Box>
-          <Box>
-            <Text size="xs" c="dimmed" ta="right">
-              COMPARED WITH
-            </Text>
-
-            <Text fw={600} ta="right" size='xl'>
-              {comparison.name}
-            </Text>
-          </Box>
-
-          <Box>
-            <Text size="xs" c="dimmed" ta="right">
-              REPORT PERIOD
-            </Text>
-
-            <Text fw={600} ta="right" size='xl'>
-              {yearMin}–{yearMax}
-            </Text>
-          </Box>
-        </Paper>
+function StatCards() {
+  return (
+    <Grid gutter={40} py="xl">
+      <Grid.Col span={{ base: 6, md: 3 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          10,000
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Population
+        </Text>
       </Grid.Col>
-    )
-  }
 
-function ViewerHeader({
-  myLocation, 
-  comparison, 
-  yearMin, 
-  yearMax 
-}: { 
-  myLocation: any; 
-  comparison: any; 
-  yearMin: number; 
-  yearMax: number 
-}) {
-    return (
-    <Paper
-          radius="xl"
-          p={20}
-          style={{
-            background:
-              'linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #e7f5ff 100%)',
-            border: '1px solid #dee2e6',
-          }}
-        >
-          <Grid align="center">
-            <Grid.Col span={{ base: 12, md: 7 }}>
-              <Stack gap="md">
-                <Title
-                  order={1}
-                  style={{
-                    fontSize: 'clamp(2rem, 4vw, 4rem)',
-                    lineHeight: 1.1,
-                  }}
-                >
-                  Data Viewer
-                </Title>
+      <Grid.Col span={{ base: 6, md: 3 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          $50,000
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Median Income
+        </Text>
+      </Grid.Col>
 
-                <Text size="lg" c="dimmed" maw={700}>
-                  Interactive charts and tables for exploring Vermont communities.
-                </Text>
-              </Stack>
-            </Grid.Col>
-              <ViewerSummary
-                myLocation={myLocation}
-                comparison={comparison}
-                yearMin={yearMin}
-                yearMax={yearMax}
-              />
-          </Grid>
-        </Paper>
+      <Grid.Col span={{ base: 6, md: 3 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          5,248
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Housing Units
+        </Text>
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 6, md: 3 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          54%
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Residential Area
+        </Text>
+      </Grid.Col>
+    </Grid>
   );
-  }
+}
+
+interface Section {id: string; label: string;}
+
+function ChartTabs({sections, activeTab, setActiveTab}: {
+  sections: Section[];
+  activeTab: string | null;
+  setActiveTab: (v: string | null) => void;
+}) {
+  return (
+    <Tabs
+      value={activeTab}
+      onChange={setActiveTab}
+      variant="outline"
+      radius="md"
+      mt={20}
+    >
+      <Tabs.List>
+        {sections.map((section) => (
+          <Tabs.Tab
+            key={section.id}
+            value={section.id}
+          >
+            {section.label}
+          </Tabs.Tab>
+        ))}
+      </Tabs.List>
+    </Tabs>
+  );
+}
+
 
 export default function DataViewerPage() {
   const { myLocation, comparison, interests, yearMin, yearMax } = useProfile();
@@ -144,8 +96,6 @@ export default function DataViewerPage() {
     Record<string, any[]>
   >({});
 
-  const [search, setSearch] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
 
@@ -319,70 +269,62 @@ export default function DataViewerPage() {
     );
   }
 
-  if (selectedCategories.length > 0) {
-    filteredItems = filteredItems.filter((c) =>
-      c.categories?.some((cat) =>
-        selectedCategories.includes(cat),
-      ),
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
+
+  if (activeTab) {
+  const section = sections.find(
+    (s) => s.id === activeTab
+  );
+
+  if (section) {
+    filteredItems = filteredItems.filter((item) =>
+      item.categories?.includes(section.label)
     );
   }
-
-  if (search.trim()) {
-    const q = search.toLowerCase();
-
-    filteredItems = filteredItems.filter(
-      (c) =>
-        c.description?.toLowerCase().includes(q) ||
-        c.categories?.some((cat) =>
-          cat.toLowerCase().includes(q),
-        ),
-    );
-  }
+}
 
 const visibleItems = filteredItems;
 
-      return (
-    <>
-  <Container size="xl" pt="xl" mb="xl">
-    <ViewerHeader
-      myLocation={myLocation}
-      comparison={comparison}
-      yearMin={yearMin}
-      yearMax={yearMax}
-    />
-  </Container>
 
-  <Container size="xl">
-    <Grid align="start">
-      <Grid.Col span={{ base: 12, md: 3 }}>
-        <div
-          style={{
-            position: 'sticky',
-            top: 20,
-          }}
-        >
-        <DataViewerSidebar
-          sections={sections}
-          focusMode={focusMode}
-          setFocusMode={setFocusMode}
-          search={search}
-          onSearchChange={setSearch}
-          selectedCategories={selectedCategories}
-          onCategoriesChange={setSelectedCategories}
-        />
-        </div>
-      </Grid.Col>
 
-      <Grid.Col span={{ base: 12, md: 9 }}>
+return (
+  <Box h="100vh">
+    <Box px={0}>
+      {/* Hero */}
+      <Box pt={32} pb={24} h={250}>
+        <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={8}>
+          Data Viewer
+        </Text>
+
+        <Title fw={600}>
+          {myLocation.name}
+        </Title>
+
+        <Text size="lg" c="dimmed" mt={4}>
+          Compared with {comparison.name}
+        </Text>
+
+        <StatCards />
+      </Box>
+
+      <ChartTabs
+        sections={sections}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
+      {/* Charts */}
+      <Box py="xl">
         <ChartStack
           charts={visibleItems}
           action="add"
           userInterests={interests}
-          defIds={visibleItems.map((c) => c.chartParams?.defId)}
+          defIds={visibleItems.map(
+            (c) => c.chartParams?.defId
+          )}
         />
-      </Grid.Col>
-    </Grid>
-  </Container>
-</>
-  );
+      </Box>
+    </Box>
+  </Box>
+);
 }

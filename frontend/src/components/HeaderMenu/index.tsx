@@ -20,17 +20,17 @@ const links = [
   { link: '/', label: 'Home' },
   {
     link: '/mapping',
-    label: 'Mapping',
+    label: 'Map',
     links: [
       { link: '/mapping/zoning', label: 'Zoning' },
       { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
-  { link: '/data-viewer', label: 'Analysis' }, // accessible via Working Report
+  { link: '/data-viewer', label: 'Analyze' }, // accessible via Working Report
   {
     link: '/data-comparison',
-    label: 'Data Comparison',
+    label: 'Compare',
     links: [
       {
         link: '/data-comparison/dp-explorer',
@@ -42,12 +42,24 @@ const links = [
   { link: '/working-report', label: 'Report' },
   { link: '/data-export', label: 'Data Export' },
   {
-    link: '/tools',
-    label: 'Tools',
-    links: [{ link: '/tools/benefits-estimator', label: 'Benefits Estimator' }],
+    link: '/resources',
+    label: 'Resources',
+    links: [
+      { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
+      // { link: '/resources/github', label: 'GitHub' },
+      // { link: '/resources/tutorial', label: 'Tutorial' },
+    ],
   },
-  { link: '/scratch', label: 'Scratch' },
-  { link: '/about', label: 'About' },
+  // { link: '/scratch', label: 'Scratch' }, // For zoning rules filter development
+  { 
+    link: '/about', 
+    label: 'About',
+    links: [
+      // { link: '/about/team', label: 'Team' },
+      // { link: '/about/faq', label: 'FAQs' },
+      // { link: '/about/contact', label: 'Contact Us' },
+    ]
+  },
 ];
 
 export default function HeaderMenu() {

@@ -47,6 +47,11 @@ async def filter_tree_endpoint(source: str, primary_dataset: str = "default"):
     return filter_tree(colmap, list(colmap.keys()), source)
 
 
+# TODO: Implement the endpoint for getting zoning filter checkboxes.
+
+# Make checkbox_schema.json vs tree_schema.json
+
+
 @router.get("/load/mapping/zoning/filters")
 async def zoning_filters():
     colmap = schema["default"]["zoning_info"]["columns"]
