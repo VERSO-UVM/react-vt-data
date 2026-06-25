@@ -9,29 +9,31 @@
 
 import logging
 from pathlib import Path
+
 import pandas as pd
 
 from api.models import FilterSource, RangeFilter
 from query.core_functions import filter_tree, sql_filter_block
 from query.processed_db import DB
 
-# import duckdb
-# _DB_PATH = Path(__file__).resolve().parent.parent / "Data" / "vt_data.duckdb"
-# DB = duckdb.connect(str(_DB_PATH), read_only=True)
-
-
 logger = logging.getLogger(__name__)
 sql_path = Path(__file__).resolve().parent / "sql" / "acs5"
 
-# Per-dataset fixed filters, expressed as {column: [values]} and folded into the
-# FilterSource (these replace the old raw-SQL base_conditions).
+# Per-dataset FIXED filters, expressed as {column: [values]} and folded into the
+# FilterSource (these replace the old raw-SQL base_conditions)
 QUERY_CONFIG = {
     "demographics": {"table": "acs5_b10_census", "fixed_filters": {}},
     "education": {"table": "acs5_b15003_education", "fixed_filters": {}},
     "housing": {"table": "acs5_b_housing", "fixed_filters": {}},
-    "labor_force": {"table": "acs5_b_economic", "fixed_filters": {"Section": ["Labor Force"]}},
+    "labor_force": {
+        "table": "acs5_b_economic",
+        "fixed_filters": {"Section": ["Labor Force"]},
+    },
     "income": {"table": "acs5_b_economic", "fixed_filters": {"Section": ["Income"]}},
-    "median_age": {"table": "acs5_b10_census", "fixed_filters": {"Variable": ["Median Age"]}},
+    "median_age": {
+        "table": "acs5_b10_census",
+        "fixed_filters": {"Variable": ["Median Age"]},
+    },
 }
 
 # frontend filter label -> database column. Location and the year range both
@@ -96,9 +98,7 @@ def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
     result = DB.execute(sql).df()
 
     if result is None or result.empty:
-        logger.error(
-            "Unemployment rate query returned no rows for filters=%s", filters
-        )
+        logger.error("Unemployment rate query returned no rows for filters=%s", filters)
         raise ValueError("no results for unemployment_rate query")
 
     return result

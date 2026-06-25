@@ -232,6 +232,7 @@ Great, the table looks good. We'll move it into a `build` script for processing 
 db_full = duckdb.connect("Data/_Processed/all_data.duckdb")
 db_full.execute("SELECT * FROM cdc_places").df().head()
 ```
+
 Great, looks good. 
 
 

@@ -19,11 +19,11 @@ logger = logging.getLogger(__name__)
 def filter_clauses(filters: dict | None) -> list[str]:
     """Compile a {column: value} mapping into SQL boolean clauses.
 
-    Shared "filter source" clause logic used by both the FilterSource CTE/join
-    path (compile_cte) and the direct single-table where-builder (sql_filter_block's
-    {where_string}). Values are either a discrete list (-> IN) or a RangeFilter
-    (-> >= / <=). Range comparisons TRY_CAST the column to DOUBLE so they work on
-    numeric columns and numbers stored as text (e.g. the ACS "year" column).
+    Filter values are either:
+        a discrete list -> "IN"
+        a RangeFilter -> ">= / <="
+            NOTE: Range comparisons TRY_CAST the column to DOUBLE so they work on
+            numeric columns and numbers stored as text (e.g. the ACS "year" column).
     """
     clauses: list[str] = []
     for col, values in (filters or {}).items():
@@ -89,7 +89,7 @@ def compile_cte(filter_source: FilterSource) -> str:
     clauses = filter_clauses(filter_source.filters)
     where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     return f"""--sql
-        SELECT DISTINCT {filter_source.join_key} FROM {filter_source.source}
+        SELECT DISTINCT {filter_source.join_key} FROM {filter_source.filter_table}
         {where_string}
     """
 
@@ -133,7 +133,7 @@ def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> str:
     if sources:
         clauses = filter_clauses(sources[0].filters)
         where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
-        table = sources[0].source
+        table = sources[0].filter_table
 
     return sql_path.read_text().format(
         cte_filter_block=cte_filter_block,

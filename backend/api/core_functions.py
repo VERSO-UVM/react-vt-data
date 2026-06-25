@@ -7,8 +7,20 @@
     Core functions used across different API routes.
 """
 
-from api.models import FilterRequest, FilterSource
 from api.config import schema
+from api.models import FilterRequest, FilterSource, FilterSpec
+from api.routes import get_filter_table_metadata
+
+
+def spec_to_source(spec: FilterSpec, target_table: str) -> FilterSource:
+    src_schema = get_filter_table_metadata(target_table, spec.filter_table)
+    colmap = {**src_schema["columns"], **src_schema.get("range", {})}
+    return FilterSource(
+        filter_table=spec.filter_table,
+        filters={colmap[k]: v for k, v in spec.filters.items() if k in colmap},
+        join_key=src_schema["join_key"],
+        join_type=src_schema["join_type"],
+    )
 
 
 def request_to_source(
@@ -30,7 +42,7 @@ def request_to_source(
     # so a request can carry e.g. {"County": [...], "Percent": {min, max}}.
     colmap = {**src_schema["columns"], **src_schema.get("range", {})}
     return FilterSource(
-        source=sec_table,
+        filter_table=sec_table,
         filters={colmap[k]: v for k, v in request.filters.items() if k in colmap},
         join_key=src_schema["join_key"],
         join_type=src_schema["join_type"],

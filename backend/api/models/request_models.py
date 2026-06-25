@@ -17,6 +17,11 @@ class FilterRequest(BaseModel):
     include: list[str] | None = []
 
 
+class FilterSpec(BaseModel):
+    filter_table: str
+    filters: dict[str, list[str] | RangeFilter] = {}
+
+
 class DPSeriesRequest(BaseModel):
     name: str
     table: str
@@ -33,8 +38,9 @@ join_types = Literal["inner", "left", "spatial_intersect"]
 
 class FilterSource(BaseModel):
     """
-    New class for Filter Request Model.
-        source: the table to source from
+    Class *generated* from filterspecs, using the appropriate
+    backend schema (which the API route dictates)
+        filter_table: the table to source filters from
         filters: dictionary list of filters to apply (on that table)
         join_key: the column to join on -- NONE if spatial join
         join_type: what type of join to apply.
@@ -49,7 +55,7 @@ class FilterSource(BaseModel):
         BaseModel (_type_): _description_
     """
 
-    source: str
+    filter_table: str
     filters: dict[str, list[str] | RangeFilter] = {}
     join_key: str = "OBJECT_ID"
     join_type: join_types = "inner"

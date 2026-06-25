@@ -11,6 +11,10 @@ import json
 import logging
 from pathlib import Path
 
+import pandas as pd
+import xycmap
+from matplotlib import pyplot as plt
+
 from api.models import FilterSource
 from query.core_functions import (
     sql_filter_block,
@@ -21,7 +25,7 @@ logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql" / "cdc"
 
 
-def get_cdc_geojson(sources: list[FilterSource]):
+def single_var_geojson(sources: list[FilterSource]):
     sql = sql_filter_block(sql_dir / "places.sql", sources=sources)
     rows = DB.execute(sql).df()
     if rows.empty:
@@ -45,6 +49,56 @@ def get_cdc_geojson(sources: list[FilterSource]):
                 "properties": {
                     "rgba_color": RAMP[int(r.bin)],
                     "tooltip": {"__title__": r.Measure, "value": r.Data_Value},
+                },
+            }
+        )
+    return {"type": "FeatureCollection", "features": features}
+
+
+def widen_dual_var(df, measures):
+    m1 = df[df.Measure == measures[0]][["LocationID", "geometry", "Data_Value", "bin"]]
+    m2 = df[df.Measure == measures[1]][["LocationID", "Data_Value", "bin"]]
+    wide = m1.merge(m2, on="LocationID", suffixes=("_1", "_2"))
+    return wide
+
+
+def build_cmap():
+    # TODO: Make this a constant, don't build it each time.
+    xcmap = plt.cm.Reds
+    ycmap = plt.cm.Blues
+    n = (3, 3)  # x, y
+    cmap = xycmap.mean_xycmap(xcmap=xcmap, ycmap=ycmap, n=n)
+    return cmap
+
+
+def to_rgba(r, cmap):
+    if pd.isna(r["bin_1"]) or pd.isna(r["bin_2"]):
+        return [0, 0, 0, 0]  # transparent for missing
+    rgba = cmap[int(r["bin_2"]), int(r["bin_1"])]
+    return [round(c * 255) for c in rgba]
+
+
+def dual_var_geojson(sources: list[FilterSource]):
+    # sql = sql_filter_block(sql_dir / "places_two_hard.sql", sources=sources)
+    sql = (sql_dir / "places_two_hard.sql").read_text()
+    df = DB.execute(sql).df()
+    measures = df["Measure"].unique()
+    df = widen_dual_var(df, measures)
+    cmap = build_cmap()
+    features = []
+    for r in df.itertuples():
+        color = to_rgba({"bin_1": r.bin_1, "bin_2": r.bin_2}, cmap)
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": json.loads(r.geometry),
+                "properties": {
+                    "rgba_color": color,
+                    "tooltip": {
+                        "__title__": "Variable Comparison",
+                        f"{measures[0]}": r.Data_Value_1,
+                        f"{measures[1]}": r.Data_Value_2,
+                    },
                 },
             }
         )
