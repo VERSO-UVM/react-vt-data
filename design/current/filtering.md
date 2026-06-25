@@ -22,7 +22,7 @@ Instead, we will opt for a series of nested components. * indicates level, numbe
     * Internal state:
         * list of filterspecs, all initially null, built from filterlist with a factory component.
             * FilterSpec = (source, FilterValue[])
-                * FilterValue is either 
+                * FilterValue is either string or range
         * components, built also from filterlist, that update filterspecs
     * Included components
         2. Filter UI.

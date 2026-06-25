@@ -79,6 +79,9 @@ def to_rgba(r, cmap):
 
 
 def dual_var_geojson(sources: list[FilterSource]):
+    """
+    Note: currently just filtering
+    """
     # sql = sql_filter_block(sql_dir / "places_two_hard.sql", sources=sources)
     measures = measures = [
         m for source in sources for m in source.filters.get("Measure", [])

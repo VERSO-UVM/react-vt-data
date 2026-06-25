@@ -37,9 +37,12 @@ The schema governs filtering and joining. It is laid out as follows:
     * filter_table (formerly secondary dataset): the dataset we're using to filter the primary dataset
         * join_key: the column to join on. see FilterSource in request_models.py
         * join_type: what type of join, either SQL standard (eg left) or spatial
+        * value_col: the column where data *values* are stored. 
+        * var_col: the column where *variable names* are stored. 
         * columns: ORDERED {label, column} pairs. The order is the filter cascade order; the label is what frontend shows; the column is what is sent back to the sql
         * range: if the final value shouldn't be a set of categories, but instead a numerical range, then it goes in this column. 
 
+Note that value_col and var_col both are premised on the idea that the dataset is in a **tidy** format: one row per observation, with variable in the 'discriminator; column. 
 
 ## Future
 If needed, the scheme can at some point be updated to instead type each column in the ordered column list, or something like that. 
