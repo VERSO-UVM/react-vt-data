@@ -80,7 +80,11 @@ def to_rgba(r, cmap):
 
 def dual_var_geojson(sources: list[FilterSource]):
     # sql = sql_filter_block(sql_dir / "places_two_hard.sql", sources=sources)
-    sql = (sql_dir / "places_two_hard.sql").read_text()
+    measures = measures = [
+        m for source in sources for m in source.filters.get("Measure", [])
+    ]
+    where_string = f"WHERE Measure IN ({', '.join(repr(m) for m in measures)})"
+    sql = (sql_dir / "places.sql").read_text().format(where_string=where_string)
     df = DB.execute(sql).df()
     measures = df["Measure"].unique()
     df = widen_dual_var(df, measures)

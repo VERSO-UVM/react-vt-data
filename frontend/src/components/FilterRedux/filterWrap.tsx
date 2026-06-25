@@ -37,7 +37,7 @@ export function FilterWrap(params: FilterWrapProps) {
 
   return (
     <div>
-      <Group align="flex=start">
+      <Group align="flex-start">
         {filterList.map((def, i) => {
           const common = {
             spec: specs[i],
