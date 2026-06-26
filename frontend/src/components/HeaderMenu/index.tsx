@@ -5,10 +5,11 @@ import { IconChevronDown } from '@tabler/icons-react';
 import {
   UnstyledButton,
   Burger,
-  Center,
   Container,
   Group,
   Menu,
+  Image,
+  Anchor
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
@@ -19,14 +20,14 @@ const links = [
   { link: '/', label: 'Home' },
   {
     link: '/mapping',
-    label: 'Exploratory Mapping',
+    label: 'Mapping',
     links: [
       { link: '/mapping/zoning', label: 'Zoning' },
       { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
-  // { link: '/data-viewer', label: 'Data Analysis' }, // accessible via Working Report
+  { link: '/data-viewer', label: 'Analysis' }, // accessible via Working Report
   {
     link: '/data-comparison',
     label: 'Data Comparison',
@@ -38,7 +39,7 @@ const links = [
       { link: '/data-comparison/b-tables', label: 'Detailed Table Comparison' },
     ],
   },
-  { link: '/working-report', label: 'Working Report' },
+  { link: '/working-report', label: 'Report' },
   { link: '/data-export', label: 'Data Export' },
   {
     link: '/tools',
@@ -46,7 +47,7 @@ const links = [
     links: [{ link: '/tools/benefits-estimator', label: 'Benefits Estimator' }],
   },
   { link: '/scratch', label: 'Scratch' },
-  // { link: '/about', label: 'About' },
+  { link: '/about', label: 'About' },
 ];
 
 export default function HeaderMenu() {
@@ -71,7 +72,13 @@ export default function HeaderMenu() {
         <Menu
           key={link.label}
           trigger="hover"
-          transitionProps={{ exitDuration: 0 }}
+          shadow="xl"
+          radius="lg"
+          offset={10}
+          transitionProps={{
+            transition: 'pop-top-left',
+            duration: 150,
+          }}
           withinPortal
         >
           <Menu.Target>
@@ -101,17 +108,27 @@ export default function HeaderMenu() {
     );
   });
 
-  return (
-    <header className={classes.header}>
-      <Container size="xl">
-        <div className={classes.inner}>
-          <Group gap={5} visibleFrom="sm">
-            <ProfileModal />
-            {items}
-          </Group>
-          <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="sm" />
-        </div>
-      </Container>
-    </header>
+    return (
+      <header className={classes.header}>
+        <Container size="xl">
+          <div className={classes.inner}>
+            <Group gap="lg">
+              <Anchor href="/">
+                <Image src="/images/VDC_logo.jpg" alt="Logo" w={140} h={50} style={{ cursor: 'pointer' }} />
+              </Anchor>
+              <ProfileModal />
+            </Group>
+
+            {/* Navigation items separated into their own wrapping group */}
+            <Group gap={4} visibleFrom="md" wrap="wrap" style={{ flex: 1, justifyContent: 'flex-end' }}>
+              {items}
+            </Group>
+
+            {/* Mobile Burger Menu */}
+            <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
+          </div>
+        </Container>
+      </header>
   );
 }
+

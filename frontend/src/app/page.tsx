@@ -77,8 +77,7 @@ function HeroSection({
               <Text size="lg" c="dimmed" maw={700}>
                 Explore Vermont through interactive maps, data analysis,
                 downloadable datasets, and planning tools. Built to help
-                communities, researchers, planners, and residents better
-                understand local conditions.
+                communities better understand local conditions.
               </Text>
 
               <Group mt="md">
@@ -234,7 +233,7 @@ function FeatureCards() {
               <IconMap2 size={28} />
             </ThemeIcon>
             <Text fw={700} mt="md">
-              Exploratory Mapping
+              Mapping
             </Text>
 
             <Text size="sm" c="dimmed" mt="xs">

@@ -317,7 +317,7 @@ export default function WorkingReport() {
             <Text size="xs" c="dimmed" ta="right">
               LOCATION
             </Text>
-            <Text fw={600} ta="right">
+            <Text fw={600} ta="right" size="xl">
               {myLocation.name}
             </Text>
           </Box>
@@ -326,7 +326,7 @@ export default function WorkingReport() {
               COMPARED WITH
             </Text>
 
-            <Text fw={600} ta="right">
+            <Text fw={600} ta="right" size="xl">
               {comparison.name}
             </Text>
           </Box>
@@ -336,7 +336,7 @@ export default function WorkingReport() {
               REPORT PERIOD
             </Text>
 
-            <Text fw={600} ta="right">
+            <Text fw={600} ta="right" size="xl">
               {yearMin}–{yearMax}
             </Text>
           </Box>
@@ -397,6 +397,9 @@ export default function WorkingReport() {
                 needs.
               </Text>
               {reportActionButtons()}
+              <Badge size="sm" color="white" c="dimmed">
+                {`${includedPairs.length} of ${allPairs.length} charts included in report`}
+              </Badge>
             </Stack>
           </Grid.Col>
           {reportSummary()}
@@ -409,11 +412,6 @@ export default function WorkingReport() {
     <Container size="xl" py="xl">
       <Stack gap="xl">
         {reportHeaderCard()}
-        <Center>
-          <Text c="dimmed">
-            {`${includedPairs.length} of ${allPairs.length} charts included in report`}
-          </Text>
-        </Center>
         <PdfModeContext.Provider value={isPdfMode}>
           <div ref={chartsRef}>
             <ChartStack

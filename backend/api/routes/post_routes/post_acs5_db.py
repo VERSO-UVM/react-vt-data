@@ -1,14 +1,13 @@
 import logging
 
-import pandas as pd
 from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import DPSeriesRequest, FilterRequest, make_response
 from app_utils.db import DB
-# TODO: Simplify / Refactor this script using the new query folder functions
 
-from query.acs5 import get_acs5_tidy, get_unemployment_rate_ts, get_median_earnings
+# TODO: Simplify / Refactor this script using the new query folder functions
+from query.acs5 import get_acs5_tidy, get_median_earnings, get_unemployment_rate_ts
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
