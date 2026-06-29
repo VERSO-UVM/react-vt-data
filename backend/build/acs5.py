@@ -52,6 +52,7 @@ def main():
         "unemployment_rate",
         "commute_habits",
         "commute_time",
+        "acs_snapshot",
     ]
     for table in tables:
         CON.execute(

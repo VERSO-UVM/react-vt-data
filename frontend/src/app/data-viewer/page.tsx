@@ -37,7 +37,7 @@ function StatCards() {
 
       <Grid.Col span={{ base: 6, md: 2 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Poverty Rate</Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>In Labor Force (16+)</Text>
       </Grid.Col>
       <Grid.Col span={{ base: 6, md: 2 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
