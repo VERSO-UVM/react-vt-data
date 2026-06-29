@@ -484,7 +484,7 @@ miscellaneous_info_cols = [
 geom_cols = [
     "ID",
     "Latitude",
-    "Longitude".
+    "Longitude",
     "geometry"
 ]
 ```
