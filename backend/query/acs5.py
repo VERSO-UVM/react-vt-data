@@ -120,7 +120,7 @@ def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
 
 
 def get_snapshot(filters: dict | None = None) -> pd.DataFrame:
-    source = _acs5_source(table="acs5_snapshot", filters=filters)
+    source = _acs5_source(table="snapshot", filters=filters)
 
     sql = sql_filter_block(sql_path / "snapshot.sql", [source])
 

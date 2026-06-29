@@ -81,7 +81,7 @@ async def tidy_median_earnings(request: FilterRequest):
 @router.post("/load/acs5-db/tidy/snapshot")
 async def tidy_snapshot(request: FilterRequest):
     rows = get_snapshot(filters=request.filters)
-    return make_response(data=rows)
+    return make_response(data=rows, metadata=get_metadata("snapshot"))
 
 
 # ---------------------------------------------------------------------------

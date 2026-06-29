@@ -15,36 +15,92 @@ import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 // Imports needed for stat cards
 import { BASE_API_URL } from '@/config';
 
+type Row = {
+  year: string;
+  NAME: string;
+  Value: number;
+  Variable: string;
+};
+
+type ApiResponse = {
+  data: Row[];
+};
+
 
 function StatCards() {
+  const { myLocation, yearMin, yearMax } = useProfile();
+
+  const [data, setData] = useState<Row[]>([]);
+  const applyFilters = useApplyFilters();
+
+  useEffect(() => {
+    applyFilters({
+      dataURL: `${BASE_API_URL}/load/acs5-db/tidy/snapshot`,
+      filters: buildFilters(myLocation, {
+        col: 'year',
+        selected: [yearMin, yearMax],
+      }),
+      onData: (data) => {
+        setData(data);
+      },
+    });
+  }, [myLocation, yearMin, yearMax]);
+
+  const metrics = data.reduce<Record<string, number>>((acc, d) => {
+    acc[d.Variable] = d.Value;
+    return acc;
+  }, {});
+
+  const formatNumber = (v?: number) =>
+    v === undefined || v === null ? '—' : v.toLocaleString();
 
   return (
     <Grid gutter={40} py="xl">
       <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Population</Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          {formatNumber(metrics['Population (ACS)'])}
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Population
+        </Text>
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Household Income</Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          ${formatNumber(metrics['Median Household Income'])}
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Household Income
+        </Text>
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Median Age</Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          {formatNumber(metrics['Median Age'])}
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Median Age
+        </Text>
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>In Labor Force (16+)</Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          {formatNumber(metrics['Labor Force Participation Rate (16+)'])}
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          In Labor Force (16+)
+        </Text>
       </Grid.Col>
+
       <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Median Home Value</Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          ${formatNumber(metrics['Median Home Value'])}
+        </Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+          Median Home Value
+        </Text>
       </Grid.Col>
     </Grid>
- 
   );
 }
 
