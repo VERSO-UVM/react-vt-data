@@ -118,5 +118,19 @@ def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
     return result
 
 
+def get_snapshot(filters: dict | None = None) -> pd.DataFrame:
+    source = _acs5_source(table="acs5_snapshot", filters=filters)
+
+    sql = sql_filter_block(sql_path / "snapshot.sql", [source])
+
+    result = DB.execute(sql).df()
+
+    if result is None or result.empty:
+        logger.error("Snapshot query returned no rows for filters=%s", filters)
+        raise ValueError("no results for snapshot query")
+
+    return result
+
+
 def get_acs5_filters():
     return filter_tree(ACS5_FILTER_COLS, ACS5_TREE_LABELS, "acs5_info")

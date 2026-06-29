@@ -7,7 +7,12 @@ from api.models import DPSeriesRequest, FilterRequest, make_response
 from app_utils.db import DB
 
 # TODO: Simplify / Refactor this script using the new query folder functions
-from query.acs5 import get_acs5_tidy, get_median_earnings, get_unemployment_rate_ts
+from query.acs5 import (
+    get_acs5_tidy,
+    get_median_earnings,
+    get_snapshot,
+    get_unemployment_rate_ts,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -70,6 +75,13 @@ async def tidy_unemployment_rate(request: FilterRequest):
 async def tidy_median_earnings(request: FilterRequest):
     rows = get_median_earnings(filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("median_earnings"))
+
+
+# Geography Snapshot Variables
+@router.post("/load/acs5-db/tidy/snapshot")
+async def tidy_snapshot(request: FilterRequest):
+    rows = get_snapshot(filters=request.filters)
+    return make_response(data=rows)
 
 
 # ---------------------------------------------------------------------------
