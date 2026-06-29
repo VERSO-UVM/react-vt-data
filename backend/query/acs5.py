@@ -64,7 +64,7 @@ def _acs5_source(
         else:
             src_filters[col] = [val]
     src_filters.update(fixed_filters or {})
-    return FilterSource(source=table, filters=src_filters)
+    return FilterSource(filter_table=table, filters=src_filters)
 
 
 def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:

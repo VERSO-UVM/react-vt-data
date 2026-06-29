@@ -48,8 +48,6 @@ async def filter_tree_endpoint(filter_table: str, target_table: str = "default")
     colmap: dict = meta["columns"]
     rangemap: dict = meta.get("range", {})
     return filter_tree(colmap, list(colmap.keys()), filter_table, rangemap=rangemap)
-    colmap: dict = schema[primary_dataset][source]["columns"]
-    return filter_tree(colmap, list(colmap.keys()), source)
 
 
 # TODO: Implement the endpoint for getting zoning filter checkboxes.

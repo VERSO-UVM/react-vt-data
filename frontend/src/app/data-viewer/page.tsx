@@ -25,70 +25,26 @@ type StatData = {
 
 
 function StatCards() {
-  const [data, setData] = useState<StatData | null>(null);
-  const { myLocation } = useProfile();
-
-  // Grab data for stat cards with "summary" api endpoint
-  useEffect(() => {
-    if (!myLocation) return;
-
-    const fetchData = async () => {
-      try {
-        const res = await fetch (`${BASE_API_URL}/summary?location=${myLocation}`);
-        const jsonData = await res.json();
-        setData(jsonData);
-      } catch (error) {
-        console.error('Error fetching summary data:', error);
-        setData(null);
-      }
-    };
-
-    fetchData();
-  }, [myLocation]);
 
   return (
     <Grid gutter={40} py="xl">
       <Grid.Col span={{ base: 6, md: 3 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          {data?.population.toLocaleString()}
-        </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
-          Population
-        </Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Population</Text>
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 3 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          {data
-            ? data.income.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-                maximumFractionDigits: 0,
-              })
-            : "--"}
-        </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
-          Median Income
-        </Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Median Income</Text>
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 3 }}>
-        <Text size='2rem'>{data?.housingUnits.toLocaleString() ?? "--"}</Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
-          Housing Units
-        </Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
+        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>Housing Units</Text>
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 3 }}>
-        <Text>
-          {data
-            ? data.medianHomeValue.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-                maximumFractionDigits: 0,
-              })
-            : "--"}
-        </Text>
+        <Text size="2rem" fw={700} lh={1} mb={10}>---</Text>
         <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
           Median Home Value
         </Text>
