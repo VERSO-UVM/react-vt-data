@@ -323,3 +323,27 @@ tree = filter_tree(DP_COMB_COLS, DP_COMB_TREE_LABELS, "dp_combined", connection=
 print(json.dumps(tree, indent=2))
 ```
 
+
+```{python}
+con.execute("DESCRIBE zoning_wide").df().head(50)
+```
+
+```{python}
+def filter_options(
+    colmap: dict, labels: list[str], table: str, db=DB
+) -> dict:
+    options = {}
+    for label in labels:
+        col = colmap[label]
+        rows = db.execute(f'SELECT DISTINCT "{col}" FROM {table} ORDER BY 1').fetchall()
+        options[label] = [r[0] for r in rows if r[0] is not None]
+    return options
+```
+
+```{python}
+filter_options(db=con, colmap={"F1F_Allowance":"F1F_Allowance"}, labels=["F1F_Allowance"], table="zoning_wide")
+```
+
+```{python}
+con.execute('SELECT DISTINCT "F1F_Allowance" FROM zoning_wide').df()
+```
