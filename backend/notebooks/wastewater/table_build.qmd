@@ -431,3 +431,120 @@ for col in df.columns:
 display(df.head())
 ```
 Now to separate this into tables
+
+`ID` will be the main hash key
+
+There will be 4 tables, FACILITY_INFORMATION, PERMIT_INFORMATION, MISCELLANEOUS_INFORMATION, and GEOMETRY
+- FACILITY_INFORMATION
+    - main hash key: `ID`
+    - goal: hold information directly related to the capacity and nature of the wastewater treatment facility
+    - columns: ID, FacilityID, DesignHydraulicCapacityInMGD, SeptageReceivedAtThisFacility, WWInventoryURL, FacilityName, TownName, Municipal_Name, County, RPC
+- PERMIT_INFORMATION
+    - main hash key: `ID`
+    - goal: hold information related to the permit of the wastewater treatment facility
+    - columns: ID, PermitID, PermitRecordID, NPDESPermitNumber, PermitLink, PermitteeName
+- MISCELLANEOUS_INFORMATION
+    - main hash key: `ID`
+    - goal: hold other miscellaneous information relating to the wastewater treatment facility that could be useful
+    - columns: ID, SourceFile, GEOIDTXT
+- GEOMETRY
+    - main hash key: `ID`
+    - goal: hold the geometry data describing where the treatment facility is
+    - columns: ID, Latitude, Longitude, geometry
+
+```{python}
+facility_info_cols = [
+    "ID",
+    "FacilityID",
+    "DesignHydraulicCapacityInMGD",
+    "SeptageReceivedAtThisFacility",
+    "WWInventoryURL",
+    "FacilityName",
+    "TownName",
+    "Municipal_Name",
+    "County",
+    "RPC"
+]
+
+permit_info_cols = [
+    "ID",
+    "PermitID",
+    "PermitRecordID",
+    "NPDESPermitNumber",
+    "PermitLink",
+    "PermitteeName"
+]
+
+miscellaneous_info_cols = [
+    "ID",
+    "SourceFile",
+    "GEOIDTXT"
+]
+
+geom_cols = [
+    "ID",
+    "Latitude",
+    "Longitude".
+    "geometry"
+]
+```
+
+creating the facility information table
+
+```{python}
+treatment_facility_info_string = ", ".join(facility_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW treatment_facility_info AS
+  SELECT {treatment_facility_info_string}
+  FROM wastewater_treatment_facilities
+""")
+
+treatment_facility_info = con.execute("SELECT * FROM treatment_facility_info").df()
+display(treatment_facility_info.head())
+```
+
+creating the permit information table
+
+```{python}
+facility_permit_info_string = ", ".join(permit_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW facility_permit_info AS
+  SELECT {facility_permit_info_string}
+  FROM wastewater_treatment_facilities
+""")
+
+facility_permit_info = con.execute("SELECT * FROM facility_permit_info").df()
+display(facility_permit_info.head())
+```
+
+creating the miscellaneous information table
+
+```{python}
+facility_miscellaneous_info_string = ", ".join(miscellaneous_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW facility_miscellaneous_info AS
+  SELECT {facility_miscellaneous_info_string}
+  FROM wastewater_treatment_facilities
+""")
+
+facility_miscellaneous_info = con.execute("SELECT * FROM facility_miscellaneous_info").df()
+display(facility_miscellaneous_info.head())
+```
+
+creating the geometry table
+
+```{python}
+facility_geom_string = ", ".join(geom_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW facility_geom AS
+  SELECT {facility_geom_string}
+  FROM wastewater_treatment_facilities
+""")
+
+facility_geom = con.execute("SELECT * FROM facility_geom").df()
+display(facility_geom.head())
+```
