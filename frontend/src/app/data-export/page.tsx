@@ -1,9 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Badge, Button, Card, Center, Container,
-         Divider, Group, Loader, Select, Stack, Text, Title,
-         ThemeIcon, Paper} from '@mantine/core';
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Center,
+  Container,
+  Divider,
+  Group,
+  Loader,
+  Select,
+  Stack,
+  Text,
+  Title,
+  ThemeIcon,
+  Paper,
+} from '@mantine/core';
 import { IconDownload, IconDatabase, IconMap } from '@tabler/icons-react';
 import { BASE_API_URL } from '@/config';
 import { useProfile } from '@/components/profile/profileStore';
@@ -141,7 +155,6 @@ export default function DataExport() {
   /* ---------------- UI ---------------- */
   return (
     <Container size="sm" py="xl">
-
       {/* HEADER */}
       <Center mb="lg">
         <Stack align="center" gap={6}>
@@ -291,7 +304,6 @@ export default function DataExport() {
           Download CSV
         </Button>
       </Card>
-
     </Container>
   );
 }

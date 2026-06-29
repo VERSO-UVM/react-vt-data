@@ -42,8 +42,8 @@ STORAGE_LOCATION = "Data/Census/ACS_5"
 ALL_GEOS: dict[str, tuple[str, str]] = {
     "county": ("county:*", f"state:{STATE_FIPS}"),
     "county_subdivision": ("county subdivision:*", f"state:{STATE_FIPS}"),
-    "state": (f"state:{STATE_FIPS}", ""),   # Vermont statewide → NAME = "Vermont"
-    "national": ("us:1", ""),               # US overall       → NAME = "United States"
+    "state": (f"state:{STATE_FIPS}", ""),  # Vermont statewide → NAME = "Vermont"
+    "national": ("us:1", ""),  # US overall       → NAME = "United States"
 }
 
 # Default: all geographies (preserves original scrape order)
@@ -216,8 +216,10 @@ def run_scrape(
             tidy = pd.concat([existing, tidy], ignore_index=True)
             tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
             tidy.reset_index(drop=True, inplace=True)
-            print(f"Appended — kept {len(existing):,} existing rows, "
-                  f"added/replaced {len(new_names)} NAME(s).")
+            print(
+                f"Appended — kept {len(existing):,} existing rows, "
+                f"added/replaced {len(new_names)} NAME(s)."
+            )
         except FileNotFoundError:
             print(f"No existing file at {out}; writing fresh.")
 

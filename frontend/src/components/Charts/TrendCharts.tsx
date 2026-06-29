@@ -121,7 +121,6 @@ export const DemographicsTrendChart = <TData,>({
   );
 };
 
-
 // ---------------------------------------------------------------------------
 // Demographics: Median Age Chart
 // ---------------------------------------------------------------------------
@@ -143,7 +142,7 @@ export const MedianAgeTrendChart = <TData,>({
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
       rows.find((r) => r.year === year && r.Variable === label)?.Value ?? null;
-    return {'Median Age': find('Median Age')};
+    return { 'Median Age': find('Median Age') };
   };
 
   const plotData = years.map((year) => ({
@@ -166,9 +165,16 @@ export const MedianAgeTrendChart = <TData,>({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']}
-            tickFormatter={(value) => Number(value).toFixed(0)} />
-          <Tooltip formatter={(val: any) => val != null ? `${Number(val).toFixed(1)} years` : '—'}/>
+          <YAxis
+            tick={{ fontSize: 12 }}
+            domain={['auto', 'auto']}
+            tickFormatter={(value) => Number(value).toFixed(0)}
+          />
+          <Tooltip
+            formatter={(val: any) =>
+              val != null ? `${Number(val).toFixed(1)} years` : '—'
+            }
+          />
           <Legend />
           <Line
             type="monotone"
@@ -398,7 +404,6 @@ export const HousingTrendChart = <TData,>({
   );
 };
 
-
 // ---------------------------------------------------------------------------
 // Economics: Unemployment Rate
 // ---------------------------------------------------------------------------
@@ -430,7 +435,9 @@ export const UnemploymentTrendChart = <TData,>({
     ...buildPoint(data, year),
     ...(compareData.length > 0
       ? {
-          'Unemployment Rate (cmp)': buildPoint(compareData, year)['Unemployment Rate'],
+          'Unemployment Rate (cmp)': buildPoint(compareData, year)[
+            'Unemployment Rate'
+          ],
         }
       : {}),
   }));
@@ -496,10 +503,8 @@ export const EarningsTrendChart = <TData,>({
 
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
-  rows.find(
-    (r) => String(r.year) === String(year) &&
-           r.Variable === label
-  )?.Value ?? null;
+      rows.find((r) => String(r.year) === String(year) && r.Variable === label)
+        ?.Value ?? null;
     return {
       'Male Full-Time Workers': find('DP03_0093'),
       'Female Full-Time Workers': find('DP03_0094'),
@@ -512,8 +517,12 @@ export const EarningsTrendChart = <TData,>({
     ...buildPoint(data, year),
     ...(compareData.length > 0
       ? {
-          'Male Full-Time Workers (cmp)': buildPoint(compareData, year)['Male Full-Time Workers'],
-          'Female Full-Time Workers (cmp)': buildPoint(compareData, year)['Female Full-Time Workers'],
+          'Male Full-Time Workers (cmp)': buildPoint(compareData, year)[
+            'Male Full-Time Workers'
+          ],
+          'Female Full-Time Workers (cmp)': buildPoint(compareData, year)[
+            'Female Full-Time Workers'
+          ],
           'All Workers (cmp)': buildPoint(compareData, year)['All Workers'],
         }
       : {}),
@@ -528,10 +537,18 @@ export const EarningsTrendChart = <TData,>({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']} tickFormatter={(v) => 
-            `$${(v / 1000).toFixed(0)}k`} />
-          <Tooltip formatter={(value: any) => 
-            value != null? `$${Number(value).toLocaleString('en-US', {maximumFractionDigits: 0,})}`: '—'} />
+          <YAxis
+            tick={{ fontSize: 12 }}
+            domain={['auto', 'auto']}
+            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+          />
+          <Tooltip
+            formatter={(value: any) =>
+              value != null
+                ? `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                : '—'
+            }
+          />
           <Legend />
           <Line
             type="monotone"

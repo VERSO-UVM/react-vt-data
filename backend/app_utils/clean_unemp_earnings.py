@@ -3,8 +3,7 @@ from pathlib import Path
 
 
 def clean_unemployment_rate():
-    df = pd.read_csv(
-        Path("backend/Data/_Processed/acs5/unemployment_rate.csv"))
+    df = pd.read_csv(Path("backend/Data/_Processed/acs5/unemployment_rate.csv"))
     # Add a new column for the cleaned unemployment rate
     df["Variable"] = "Unemployment Rate"
 
@@ -28,45 +27,32 @@ def clean_unemployment_rate():
     df["geotype"] = "county_subdivision"
 
     subdivisions = df[
-        df["NAME"].str.contains(
-            "town|city|village|gore",
-            case=False,
-            na=False
-        )
+        df["NAME"].str.contains("town|city|village|gore", case=False, na=False)
     ].copy()
 
-    subdivisions["county"] = (
-        subdivisions["NAME"]
-        .str.extract(r", ([^,]+ County), Vermont")[0]
-    )
+    subdivisions["county"] = subdivisions["NAME"].str.extract(
+        r", ([^,]+ County), Vermont"
+    )[0]
 
-    county_df = (
-        subdivisions
-        .groupby(["year", "county", "Variable"], as_index=False)
-        .agg(Value=("Value", "mean"))
-    )
+    county_df = subdivisions.groupby(
+        ["year", "county", "Variable"], as_index=False
+    ).agg(Value=("Value", "mean"))
 
     county_df["NAME"] = county_df["county"] + ", Vermont"
     county_df["GEOID"] = county_df["NAME"].map(county_names)
     county_df["geotype"] = "county"
 
-    county_df = county_df[
-        ["year", "GEOID", "NAME", "Value", "Variable", "geotype"]
-    ]
+    county_df = county_df[["year", "GEOID", "NAME", "Value", "Variable", "geotype"]]
 
-    vt_df = (
-        county_df
-        .groupby(["year", "Variable"], as_index=False)
-        .agg(Value=("Value", "mean"))
+    vt_df = county_df.groupby(["year", "Variable"], as_index=False).agg(
+        Value=("Value", "mean")
     )
 
     vt_df["NAME"] = "Vermont"
     vt_df["GEOID"] = 50
     vt_df["geotype"] = "state"
 
-    vt_df = vt_df[
-        ["year", "GEOID", "NAME", "Value", "Variable", "geotype"]
-    ]
+    vt_df = vt_df[["year", "GEOID", "NAME", "Value", "Variable", "geotype"]]
 
     result = pd.concat(
         [
@@ -81,8 +67,7 @@ def clean_unemployment_rate():
 
 
 def clean_median_earnings():
-    df = pd.read_parquet(
-        Path("backend/Data/_Processed/acs5/median_earnings.parquet"))
+    df = pd.read_parquet(Path("backend/Data/_Processed/acs5/median_earnings.parquet"))
 
     county_names = {
         "Addison County, Vermont": 50001,
@@ -104,45 +89,32 @@ def clean_median_earnings():
     df["geotype"] = "county_subdivision"
 
     subdivisions = df[
-        df["NAME"].str.contains(
-            "town|city|village|gore",
-            case=False,
-            na=False
-        )
+        df["NAME"].str.contains("town|city|village|gore", case=False, na=False)
     ].copy()
 
-    subdivisions["county"] = (
-        subdivisions["NAME"]
-        .str.extract(r", ([^,]+ County), Vermont")[0]
-    )
+    subdivisions["county"] = subdivisions["NAME"].str.extract(
+        r", ([^,]+ County), Vermont"
+    )[0]
 
-    county_df = (
-        subdivisions
-        .groupby(["year", "county", "Variable"], as_index=False)
-        .agg(Value=("estimate", "mean"))
-    )
+    county_df = subdivisions.groupby(
+        ["year", "county", "Variable"], as_index=False
+    ).agg(Value=("estimate", "mean"))
 
     county_df["NAME"] = county_df["county"] + ", Vermont"
     county_df["GEOID"] = county_df["NAME"].map(county_names)
     county_df["geotype"] = "county"
 
-    county_df = county_df[
-        ["year", "GEOID", "NAME", "Value", "Variable", "geotype"]
-    ]
+    county_df = county_df[["year", "GEOID", "NAME", "Value", "Variable", "geotype"]]
 
-    vt_df = (
-        county_df
-        .groupby(["year", "Variable"], as_index=False)
-        .agg(Value=("Value", "mean"))
+    vt_df = county_df.groupby(["year", "Variable"], as_index=False).agg(
+        Value=("Value", "mean")
     )
 
     vt_df["NAME"] = "Vermont"
     vt_df["GEOID"] = 50
     vt_df["geotype"] = "state"
 
-    vt_df = vt_df[
-        ["year", "GEOID", "NAME", "Value", "Variable", "geotype"]
-    ]
+    vt_df = vt_df[["year", "GEOID", "NAME", "Value", "Variable", "geotype"]]
 
     result = pd.concat(
         [
@@ -153,7 +125,7 @@ def clean_median_earnings():
         ignore_index=True,
     )
 
-    print(result[result['geotype'] == 'state'])
+    print(result[result["geotype"] == "state"])
 
     return result
 
