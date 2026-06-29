@@ -1,7 +1,7 @@
 'use client';
 
-import { Box, Grid, ScrollArea, Text, Title, Tabs } from '@mantine/core';
-import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon } from '@phosphor-icons/react';
+import { Box, Grid, Text, Title, Tabs } from '@mantine/core';
+import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon, Icon } from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -12,12 +12,45 @@ import {
 import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 
+// Imports needed for stat cards
+import { BASE_API_URL } from '@/config';
+
+
+type StatData = {
+    population: number;
+    income: number;
+    housingUnits: number;
+    medianHomeValue: number;
+  };
+
+
 function StatCards() {
+  const [data, setData] = useState<StatData | null>(null);
+  const { myLocation } = useProfile();
+
+  // Grab data for stat cards with "summary" api endpoint
+  useEffect(() => {
+    if (!myLocation) return;
+
+    const fetchData = async () => {
+      try {
+        const res = await fetch (`${BASE_API_URL}/summary?location=${myLocation}`);
+        const jsonData = await res.json();
+        setData(jsonData);
+      } catch (error) {
+        console.error('Error fetching summary data:', error);
+        setData(null);
+      }
+    };
+
+    fetchData();
+  }, [myLocation]);
+
   return (
     <Grid gutter={40} py="xl">
       <Grid.Col span={{ base: 6, md: 3 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>
-          10,000
+          {data?.population.toLocaleString()}
         </Text>
         <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
           Population
@@ -26,7 +59,13 @@ function StatCards() {
 
       <Grid.Col span={{ base: 6, md: 3 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>
-          $50,000
+          {data
+            ? data.income.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+                maximumFractionDigits: 0,
+              })
+            : "--"}
         </Text>
         <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
           Median Income
@@ -34,27 +73,32 @@ function StatCards() {
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 3 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          5,248
-        </Text>
+        <Text size='2rem'>{data?.housingUnits.toLocaleString() ?? "--"}</Text>
         <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
           Housing Units
         </Text>
       </Grid.Col>
 
       <Grid.Col span={{ base: 6, md: 3 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          54%
+        <Text>
+          {data
+            ? data.medianHomeValue.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+                maximumFractionDigits: 0,
+              })
+            : "--"}
         </Text>
         <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
-          Residential Area
+          Median Home Value
         </Text>
       </Grid.Col>
     </Grid>
+ 
   );
 }
 
-interface Section {id: string; label: string;}
+interface Section {id: string; label: string; icon: Icon}
 
 function ChartTabs({sections, activeTab, setActiveTab}: {
   sections: Section[];
@@ -67,6 +111,7 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
       onChange={setActiveTab}
       variant="outline"
       radius="md"
+      defaultValue="Land Use"
       mt={20}
     >
       <Tabs.List>
@@ -74,6 +119,7 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
           <Tabs.Tab
             key={section.id}
             value={section.id}
+            leftSection={<section.icon size={16} />}
           >
             {section.label}
           </Tabs.Tab>
@@ -106,13 +152,20 @@ export default function DataViewerPage() {
   const nonTableDefs = chartDefs.filter(
     (c) => !c.subtype.startsWith('renderTable'),
   );
+
+  const categoryIcons: Record<string, Icon> = {
+    Housing: HouseLineIcon,
+    Demographics: UserListIcon,
+    'Land Use': TreeIcon,
+    Education: GraduationCapIcon,
+    'Labor & Economy': TrendUpIcon,
+  };
+
   const sections = [...new Set(chartDefs.flatMap((c) => c.categories ?? []))]
   .map((category) => ({
     id: category.toLowerCase().replace(/\s+/g, '-'),
     label: category,
-    count: chartDefs.filter((c) =>
-      c.categories?.includes(category)
-    ).length,
+    icon: categoryIcons[category] ?? HouseLineIcon,
   }));
 
   useEffect(() => {
@@ -286,8 +339,6 @@ export default function DataViewerPage() {
 
 const visibleItems = filteredItems;
 
-
-
 return (
   <Box h="100vh">
     <Box px={0}>
@@ -305,7 +356,7 @@ return (
           Compared with {comparison.name}
         </Text>
 
-        <StatCards />
+        <StatCards/>
       </Box>
 
       <ChartTabs

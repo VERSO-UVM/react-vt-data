@@ -117,6 +117,22 @@ async def tidy_median_earnings(request: FilterRequest):
 # DP-series combined explorer (DP02 / DP03 / DP04 / DP05)
 # ---------------------------------------------------------------------------
 
+# Summary fetch for data viewer snapshot
+
+
+# @router.get("/load/summary")
+# async def get_summary(location: str):
+#     """Return a summary for the given loocation and variable list."""
+#     variables = [
+#         "Population (ACS)",
+#         "Median Household Income",
+#         "Median Home Value",
+#         "Total Housing Units",
+#     ]
+#     total_housing_units = DB.execute()
+
+#     return make_response(data=rows, metadata=None)
+
 
 # TODO: Refactor this code to match zoning schema
 @router.get("/load/acs5-db/dp-combined/tree")

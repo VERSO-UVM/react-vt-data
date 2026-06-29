@@ -2,15 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { IconChevronDown } from '@tabler/icons-react';
-import {
-  UnstyledButton,
-  Burger,
-  Container,
-  Group,
-  Menu,
-  Image,
-  Anchor
-} from '@mantine/core';
+import { UnstyledButton, Burger, Container, Group, Menu, Image, Anchor } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
 import Link from 'next/link';
@@ -44,6 +36,8 @@ const links = [
   {
     link: '/resources',
     label: 'Resources',
+    
+    // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
       { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
       // { link: '/resources/github', label: 'GitHub' },
@@ -51,6 +45,8 @@ const links = [
     ],
   },
   // { link: '/scratch', label: 'Scratch' }, // For zoning rules filter development
+  
+  // I outlined future sections of our "About" page below -Ian
   { 
     link: '/about', 
     label: 'About',
