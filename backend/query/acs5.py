@@ -34,6 +34,7 @@ QUERY_CONFIG = {
         "table": "acs5_b10_census",
         "fixed_filters": {"Variable": ["Median Age"]},
     },
+    "snapshot": {"table": "acs5_snapshot", "fixed_filters": {}},
 }
 
 # frontend filter label -> database column. Location and the year range both
