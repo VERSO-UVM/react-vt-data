@@ -1,0 +1,92 @@
+---
+title: "geometry workthrough"
+author: Fitz Koch
+date: today
+description:  builds a dataset to join on for mapping data. 
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+bibliography: /home/fitsl/library/zotero/fjk_library.bib
+---
+
+
+# Setup 
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+
+```
+
+```{python}
+con = duckdb.connect()
+data_dir= Path("Data") 
+con.execute("INSTALL spatial; LOAD spatial")
+
+```
+
+
+# County Lines 
+
+```{python}
+proc_dir = data_dir / "_Processed"
+county_path = data_dir / "vermont" / "countyLines.geojson"
+con.execute(
+    f"CREATE OR REPLACE VIEW counties AS SELECT *  FROM ST_Read('{county_path}')"
+)
+
+desc = con.execute("DESCRIBE counties").df()
+```
+
+
+```{python}
+df = con.execute("SELECT * FROM counties").df()
+df
+```
+
+We want the CNTYGEOID, the CNTYNAME, and the geometry...
+
+```{python}
+con.execute(f"""--sql
+    CREATE OR REPLACE VIEW counties_clean AS
+    SELECT
+        CNTYGEOID AS CountyFIPS,
+        CNTYNAME AS CountyName,
+        geom
+    FROM ST_Read('{county_path}')
+""")
+df = con.execute("SELECT * FROM counties_clean").df()
+df.head()
+```
+
+Matches against wikipedia, so we're good. 

@@ -11,4 +11,4 @@ import json
 from pathlib import Path
 
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.json"
-schema = json.loads(SCHEMA_PATH.read_text())
+schema: dict = json.loads(SCHEMA_PATH.read_text())

@@ -30,7 +30,9 @@ export const useItems = create<ItemsStore>()(
     (set, get) => ({
       excludedIds: [],
       includeById: (defId) =>
-        set((s) => ({ excludedIds: s.excludedIds.filter((id) => id !== defId) })),
+        set((s) => ({
+          excludedIds: s.excludedIds.filter((id) => id !== defId),
+        })),
       excludeById: (defId) =>
         set((s) =>
           s.excludedIds.includes(defId)

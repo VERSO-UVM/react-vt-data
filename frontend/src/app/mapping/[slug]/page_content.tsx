@@ -36,7 +36,7 @@ const MAP_CONFIG: Record<
   zoning: {
     title: 'Zoning',
     initialURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
-    filterURL: `${BASE_API_URL}/filters/tree?source=zoning_info`,
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=zoning_info`,
     dataURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
   },
   'flood-legal': {
@@ -111,12 +111,19 @@ export default function MappingContent() {
   }, [rpc]);
 
   return (
-    <Box h="calc(100vh - 80px)" style={{overflow: 'hidden'}}>
+    <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>
       <Group h="100%" align="stretch" gap="md" wrap="nowrap">
         {/* Sidebar */}
-        <Paper w={360} p="md" withBorder shadow="xs" style={{
-          overflowY: 'auto',
-          flexShrink: 0}}>
+        <Paper
+          w={360}
+          p="md"
+          withBorder
+          shadow="xs"
+          style={{
+            overflowY: 'auto',
+            flexShrink: 0,
+          }}
+        >
           <Stack gap="md">
             <Box>
               <Title order={2}>{config?.title ?? slug}</Title>
@@ -149,20 +156,29 @@ export default function MappingContent() {
               </Stack>
             </Paper>
 
-                {/* Filters */}
-                {config?.filterURL && config?.dataURL && (
-                  <FilterContainer
-                    apiURL={config.filterURL}
-                    dataURL={config.dataURL}
-                    onData={(fetchedData) => setData(fetchedData)}/>)}
-              </Stack>
-            </Paper>
+            {/* Filters */}
+            {config?.filterURL && config?.dataURL && (
+              <FilterContainer
+                apiURL={config.filterURL}
+                dataURL={config.dataURL}
+                onData={(fetchedData) => setData(fetchedData)}
+              />
+            )}
+          </Stack>
+        </Paper>
 
         {/* Map */}
 
-        <Box style={{flex: 1,position: 'relative',overflow: 'hidden',borderRadius: 8}}>
-          <LoadingOverlay visible={loading} zIndex={1000}/>
-          <VTMap geojson={data} showCountyLines={showCountyLines}/>
+        <Box
+          style={{
+            flex: 1,
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 8,
+          }}
+        >
+          <LoadingOverlay visible={loading} zIndex={1000} />
+          <VTMap geojson={data} showCountyLines={showCountyLines} />
         </Box>
       </Group>
     </Box>

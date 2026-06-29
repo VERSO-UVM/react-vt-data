@@ -1,4 +1,5 @@
 {
+  "python.analysis.extraPaths": ["backend"], 
   "editor.codeActionsOnSave": {
     "source.fixAll.ruff": "explicit",
     "source.organizeImports.ruff": "explicit"

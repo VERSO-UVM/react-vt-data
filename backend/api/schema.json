@@ -13,10 +13,24 @@
     "zoning_rules": {
       "join_key": "OBJECT_ID",
       "join_type": "inner",
+      "value_col": "val",
+      "var_col": "rule",
       "columns": {
         "Usage Type": "use_type",
         "Rule": "rule",
         "Value": "val"
+      }
+    },
+    "cdc_places": {
+      "join_key": "LocationID",
+      "join_type": "inner",
+      "value_col": "Data_Value",
+      "var_col": "Measure",
+      "columns": {
+        "Key Indicator": "SME_Highlight",
+        "Category": "Category",
+        "Measure": "Measure",
+        "Prevalence Measure": "Data_Value_Type"
       }
     }
   }

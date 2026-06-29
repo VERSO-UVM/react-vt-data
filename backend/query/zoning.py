@@ -40,10 +40,12 @@ def get_zoning_rules(sources: list[FilterSource]) -> str:
     return result[0]
 
 
-def get_zoning_aggregated_acres(sources: list[FilterSource]) -> tuple[pd.DataFrame, pd.DataFrame]:
+def get_zoning_aggregated_acres(
+    sources: list[FilterSource],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     agg_sql = sql_filter_block(sql_dir / "agg_info_table.sql", sources)
     agg_data = DB.execute(agg_sql).df()
 
     table_sql = sql_filter_block(sql_dir / "info_table.sql", sources)
-    table_data = DB.execute(table_sql).df()  # ← Remove sources argument
+    table_data = DB.execute(table_sql).df()
     return agg_data, table_data

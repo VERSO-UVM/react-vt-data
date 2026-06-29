@@ -1,6 +1,6 @@
 import { Button } from '@mantine/core';
 import { useFilter } from './FilterContext';
-import { useApplyFilters } from './useApplyFilters';
+import { useApplyFilters, FilterValue } from './useApplyFilters';
 
 type ApplyButtonProps = {
   dataURL: string;
@@ -13,18 +13,23 @@ export default function ApplyButton({
   onData,
   disabled,
 }: ApplyButtonProps) {
-  const { selectedFilters, labels, format } = useFilter();
+  const { selectedFilters, labels, range } = useFilter();
   const apply = useApplyFilters();
 
   const handleApply = () => {
-    const filters: Record<string, string[]> = {};
+    const filters: Record<string, FilterValue> = {};
 
     for (const [level, value] of Object.entries(selectedFilters)) {
       const colName = labels[Number(level)];
       if (colName && value && value !== 'All') filters[colName] = [value];
     }
 
-    apply(dataURL, filters, format, undefined, onData);
+    if (range) {
+      // Key by label, not column — the backend shim maps label -> column.
+      filters[range.label] = { min: range.selected[0], max: range.selected[1] };
+    }
+
+    apply({ dataURL: dataURL, filters: filters, onData: onData });
   };
 
   return (

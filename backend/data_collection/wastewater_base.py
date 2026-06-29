@@ -1,4 +1,3 @@
-
 import pandas as pd
 import requests
 from io import BytesIO
@@ -28,6 +27,7 @@ def fetch_service_areas() -> pd.DataFrame | None:
     r.raise_for_status()
     df = read_dataframe(BytesIO(r.content))
     return df
+
 
 # ---------------------------------------------------------------------------
 # Main scrape runner

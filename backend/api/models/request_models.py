@@ -3,14 +3,23 @@ from typing import Literal
 from pydantic import BaseModel, model_validator
 
 
+class RangeFilter(BaseModel):
+    min: float | None = None
+    max: float | None = None
+
+
 class FilterRequest(BaseModel):
-    filters: dict[str, list[str]] = {}
-    format: str | None = "geojson"
+    # filters are keyed by human-readable label (e.g. "County", "Location", "Percent",
+    # "year"). The schema shim (request_to_source) maps label -> backend column and
+    # wraps them into a FilterSource. Values are either a discrete list or a RangeFilter
+    # (location and the year range both travel inside filters).
+    filters: dict[str, list[str] | RangeFilter] = {}
     include: list[str] | None = []
-    # ACS5 fields
-    name: str | None = None
-    year_min: int = 2010
-    year_max: int = 2023
+
+
+class FilterSpec(BaseModel):
+    filter_table: str
+    filters: dict[str, list[str] | RangeFilter] = {}
 
 
 class DPSeriesRequest(BaseModel):
@@ -29,8 +38,9 @@ join_types = Literal["inner", "left", "spatial_intersect"]
 
 class FilterSource(BaseModel):
     """
-    New class for Filter Request Model.
-        source: the table to source from
+    Class *generated* from filterspecs, using the appropriate
+    backend schema (which the API route dictates)
+        filter_table: the table to source filters from
         filters: dictionary list of filters to apply (on that table)
         join_key: the column to join on -- NONE if spatial join
         join_type: what type of join to apply.
@@ -45,8 +55,8 @@ class FilterSource(BaseModel):
         BaseModel (_type_): _description_
     """
 
-    source: str
-    filters: dict[str, list[str]] = {}
+    filter_table: str
+    filters: dict[str, list[str] | RangeFilter] = {}
     join_key: str = "OBJECT_ID"
     join_type: join_types = "inner"
 

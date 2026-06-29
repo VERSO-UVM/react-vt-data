@@ -1,31 +1,49 @@
 'use client';
-import { Center, Title } from '@mantine/core';
+import { Box, Paper, Stack, Title } from '@mantine/core';
 import { useState } from 'react';
 import { BASE_API_URL } from '@/config';
-import FilterContainer from '@/components/FilterUI/Filter_wrap';
-import { FilterProvider } from '@/components/FilterUI/FilterContext';
+import VTMap from '@/components/mapping';
+import { cdc_filtering } from '@/components/FilterRedux/filterDefs';
+import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 
-interface ZoningTreeRow {
-  usage: string;
-  rule: string;
-  value: string | number | null;
-}
-
-export default function scratch() {
-  const [data, setData] = useState<any>(null);
+export default function Scratch() {
+  const [data, setData] = useState<{}>({});
 
   return (
-    <>
-      <Center pt="xl" mb="md">
-        <Title order={2}>Zoning Rule Selection</Title>
-      </Center>
-      <FilterProvider>
-        <FilterContainer
-          apiURL={`${BASE_API_URL}/filters/tree?source=zoning_rules`}
-          dataURL={''}
-          onData={(fetchedData) => setData(fetchedData)}
+    <div
+      style={{
+        display: 'flex',
+        gap: 16,
+        padding: 16,
+        height: 'calc(100vh - 80px)',
+      }}
+    >
+      <Paper
+        withBorder
+        p="md"
+        radius="md"
+        style={{ width: 340, flexShrink: 0, overflowY: 'auto' }}
+      >
+        <Title order={4} mb="sm">
+          Compare Variables
+        </Title>
+        <FilterWrap
+          selectData={setData}
+          dataURL={`${BASE_API_URL}/load/mapping/cdc/places/double_new`}
+          filterList={cdc_filtering}
         />
-      </FilterProvider>
-    </>
+      </Paper>
+      <Box
+        style={{
+          position: 'relative',
+          flex: 1,
+          minHeight: 0,
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}
+      >
+        <VTMap geojson={data} showCountyLines={false} />
+      </Box>
+    </div>
   );
 }

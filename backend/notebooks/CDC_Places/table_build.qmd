@@ -1,0 +1,249 @@
+---
+title: "CDC sql table build"
+author: Fitz Koch
+date: today
+description:  builds SQL tables from zoning data.
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+bibliography: /home/fitsl/library/zotero/fjk_library.bib
+---
+
+# Setup 
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+
+```
+
+## Loading up DB and data
+```{python}
+con = duckdb.connect()
+```
+
+```{python}
+data_dir = Path("Data")
+path = data_dir / "CDC" / "CDC_Places.csv"
+```
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW places_raw AS 
+  SELECT * FROM read_csv('{path}')
+""")
+
+```
+
+# Getting to know the data 
+
+```{python}
+con.execute(f"""--sql 
+  DESCRIBE places_raw
+""").df()
+```
+
+```{python} 
+
+places = con.execute(f"""--sql 
+  SELECT * FROM places_raw
+""").df()
+
+places.head()
+``` 
+ 
+ ```{python}
+ places["Data_Value_Footnote_Symbol"].value_counts(dropna=False)
+ ```
+ Nothing stands out as needing to be cleaned. We can remove the geolocation, and some redundant columns , but that seems okay for now. 
+
+## Vermontify 
+Most of these columns seem relevant, though we only want those that take place in Vermont. 
+
+```{python}
+places.shape
+```
+
+```{python}
+vt_places = con.execute("""--sql
+  SELECT * FROM places_raw
+  WHERE StateAbbr IN ('VT')
+""").df()
+
+print(vt_places.shape)
+vt_places.head()
+```
+
+
+```{python}
+vt_places[["LocationName", "LocationID"]].value_counts().reset_index().sort_values(by="LocationName")
+```
+
+Great, this seems to indicate we have the same data for each county, and, very nicely, with FIPS IDs. Very nice, this will let us merge directly onto mapping data. Now we'll look at the measures...
+
+```{python}
+vt_places[["Measure", "Data_Value_Type"]].value_counts()
+```
+
+There are 28, or 14*2 for each of the counties, one for crude prevalence and one for Age-adjusted prevalence. That makes sense and checks outs 
+
+
+# SME Subselection
+We're particularly interested in a subset sent by SME Michael Moser.
+
+```{python}
+data_notes = pd.read_csv(data_dir / "CDC" / "cdc_notes.csv")
+cdc_notes = data_notes[data_notes["Source"] == "CDC- BRFSS"]
+print(cdc_notes.shape)
+for _, row in cdc_notes.iterrows():
+  print(row["Indicator"], "\t", row["Disposition"], "\t", row["NOTE"])
+```
+
+Seems like Michael is mostly interested in the Crude Prevalence, not the age adjusted values one. 
+
+```{python}
+vt_core = vt_places[vt_places["Measure"].isin(cdc_notes["Indicator"])]
+print(len(vt_core["Measure"].unique()))
+```
+
+Great, we have a match for the sample number of indicators, so everything is matching. We'll add a column to the table for "SME Highlight," and  save it as that. 
+
+```{python}
+indicators = cdc_notes["Indicator"].to_list()
+indicators_sql = ", ".join(f"'{i}'" for i in indicators)
+print(indicators_sql)
+```
+
+```{python}
+vt_places = con.execute(f"""--sql
+  SELECT * FROM places_raw
+  WHERE StateAbbr IN ('VT')
+""").df()
+```
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW cdc_places_temp AS 
+  SELECT * EXCLUDE (Geolocation,  StateDesc),
+      CASE WHEN 
+        DataValueTypeID = 'CrdPrv' AND Measure IN ({indicators_sql})
+        THEN 1 else 0 END 
+     AS SME_Highlight
+  FROM places_raw
+  WHERE StateAbbr IN ('VT')
+  """)
+
+sme_indicators = con.execute(f"""--sql
+  SELECT * FROM cdc_places_temp
+  WHERE SME_Highlight = 1
+""").df()
+sme_indicators.head()
+```
+
+```{python}
+sme_indicators["Data_Value_Footnote_Symbol"].value_counts(dropna=False)
+```
+
+```{python}
+sme_indicators["DataSource"].value_counts(dropna=False)
+```
+
+So we can just note in the metadata that BRFSS is the source...
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW cdc_places AS 
+  SELECT * EXCLUDE (
+        Geolocation,  StateDesc, Data_Value_Footnote_Symbol,
+        Data_Value_Footnote, DataSource),
+      CASE WHEN 
+        DataValueTypeID = 'CrdPrv' AND Measure IN ({indicators_sql})
+        THEN 1 else 0 END 
+     AS SME_Highlight
+  FROM places_raw
+  WHERE StateAbbr IN ('VT')
+  """)
+
+sme_indicators = con.execute(f"""--sql
+  SELECT * FROM cdc_places
+  WHERE SME_Highlight = 1
+""").df()
+sme_indicators.head()
+```
+
+We can drop the data value column, because it's not relevant for Vermont. 
+
+# Binning
+We want to show how these variables inter-relate on a colormap. So we should bin them.
+
+```{python}
+for measure in sme_indicators["Measure"].unique().tolist():
+  a = sme_indicators[sme_indicators["Measure"] == measure]["Data_Value"].value_counts()
+  print(measure, a)
+```
+
+```{python}
+sme_indicators["bin"]= sme_indicators.groupby("Measure")["Data_Value"].transform(
+  lambda s: pd.qcut(s, 5, labels=False, duplicates='drop')
+)
+sme_indicators
+```
+
+
+
+Some of these are pretty small. 
+
+Great, the table looks good. We'll move it into a `build` script for processing the data. 
+
+
+# Check it works
+
+```{python}
+db_full = duckdb.connect("Data/_Processed/all_data.duckdb")
+db_full.execute("SELECT * FROM cdc_places").df().head()
+```
+
+Great, looks good. 
+
+
+# Schema and Front-End Considerations.
+The question, however, is what our standard filtering will be. We're understanding this to be for a selection based on the _property_, not the location. 
+
+The values are all percents, so they'll be pinned in $[0, 1]$. But we can't rely on this for other tables. 
+
+As a first pass, we can do filtering on: 
+1. Category
+2. Measure
+3. Value
+  Where the value frontend then gives abilities to select in a range. We can easily wire this up in the future to be restricted to [min, max] of values for the column. 
+
