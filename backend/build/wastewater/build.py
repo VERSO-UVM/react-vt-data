@@ -244,6 +244,16 @@ def save_wastewater_facility_tables():
         )
 
 
+## Putting everything together
+def main():
+    proc_dir.mkdir(parents=True, exist_ok=True)
+
+    save_wastewater_facility_tables()
+    save_wastewater_service_area_tables()
+    save_wastewater_facility_tables()
+
+if __name__ == "__main__":
+    main()
 
 
 
