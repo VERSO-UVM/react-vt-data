@@ -22,11 +22,6 @@ type Row = {
   Variable: string;
 };
 
-type ApiResponse = {
-  data: Row[];
-};
-
-
 function StatCards() {
   const { myLocation, yearMin, yearMax } = useProfile();
 
