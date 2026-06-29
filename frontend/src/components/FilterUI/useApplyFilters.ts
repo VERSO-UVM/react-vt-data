@@ -5,7 +5,7 @@ export type FilterValue = string[] | { min: number; max: number };
 
 type apiFilterParams = {
   dataURL: string;
-  filters: FilterValue[];
+  filters: Record<string, FilterValue>;
   onData?: (data: any, metadata?: any, tableData?: any) => void;
 };
 

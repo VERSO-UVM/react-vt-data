@@ -16,14 +16,6 @@ import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 import { BASE_API_URL } from '@/config';
 
 
-type StatData = {
-    population: number;
-    income: number;
-    housingUnits: number;
-    medianHomeValue: number;
-  };
-
-
 function StatCards() {
 
   return (
