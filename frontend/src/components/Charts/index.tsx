@@ -54,9 +54,7 @@ export const ChartCard = <TData extends Record<string, any>>({
 
   // Table-primary items (renderTable*) default to table view; charts default to chart view.
   const isTablePrimary = chart.subtype.startsWith('renderTable');
-  const [view, setView] = useState<'chart' | 'table'>(
-    isTablePrimary ? 'table' : 'chart',
-  );
+  const [view, setView] = useState<'chart' | 'table'>('chart');
 
   // Components that manage their own view switching internally opt out here.
   const selfManagesViews = !!chart.chartParams?.noViewSwitch;
