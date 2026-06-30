@@ -85,82 +85,72 @@ export const ChartCard = <TData extends Record<string, any>>({
   const allCategories = chart.categories ?? [];
 
   return (
-    <Card
-      shadow="sm"
-      padding="lg"
-      radius="md"
-      withBorder
-      data-chart-id={chart.id}
-      data-chart-subtype={chart.subtype}
-      style={{
-        ...(isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : {}),
-        // Prevent page-break mid-card when printing / captured by html2pdf
-        breakInside: 'avoid',
-        pageBreakInside: 'avoid',
-      }}
-    >
-      <Box mb="sm">
-        <Group justify="space-between" wrap="nowrap" align="flex-start">
-          <Title order={3}>
-            {chart.description ? ` ${chart.description} for ` : ''}
-            {chart.title}
-          </Title>
-          {allCategories.length > 0 && (
-            <Group gap={4} style={{ flexShrink: 0 }}>
-              {allCategories.map((cat) => (
-                <Badge
-                  key={cat}
-                  color="green"
-                  variant={matchedCategories.includes(cat) ? 'filled' : 'light'}
-                  size="sm"
-                >
-                  {cat}
-                </Badge>
-              ))}
-            </Group>
-          )}
-        </Group>
+  <Card
+    shadow="sm"
+    padding="lg"
+    radius="md"
+    withBorder
+    data-chart-id={chart.id}
+    data-chart-subtype={chart.subtype}
+    style={{
+      ...(isHighlighted ? { borderColor: "#154734", borderWidth: 2 } : {}),
+      // Prevent page-break mid-card when printing / captured by html2pdf
+      breakInside: "avoid",
+      pageBreakInside: "avoid",
+    }}
+  >
+    <Box mb="xs">
+      <Group gap={8} wrap="nowrap" mb={8} w='100%'>
+        <Title order={2} fw={500}>{chart.description}</Title>
+        <Title order={2} fw={200} c="dimmed"> | </Title>
+        <Title order={2} fw={200}>{chart.title}</Title>
+        <Box flex={1}/>
+      
+      <Group align="right" gap={4}> {allCategories.map((cat) => (
+        <Badge key={cat} color="green" variant={matchedCategories.includes(cat) ? "filled" : "light"} size="sm">{cat}</Badge>))}
+      </Group>
         {!isPdfMode && showViewSwitch && (
           <ViewSwitch view={view} setView={setView} />
         )}
-      </Box>
+      </Group>
+    </Box>
 
-      {/* In PDF mode: tables need auto height to unclip; charts keep 400px so
-          ResponsiveContainer (height="100%") has a fixed parent to measure. */}
-      <Box
-        data-chart-box
-        style={
-          isPdfMode
-            ? isTablePrimary
-              ? { height: 'auto', overflow: 'visible' }
-              : { height: 400, overflow: 'visible' }
-            : { height: 400, overflow: 'auto' }
-        }
-      >
-        {content}
-      </Box>
+    {/* In PDF mode: tables need auto height to unclip; charts keep 400px so
+        ResponsiveContainer (height="100%") has a fixed parent to measure. */}
+    <Box
+      data-chart-box
+      style={
+        isPdfMode
+          ? isTablePrimary
+            ? { height: "auto", overflow: "visible" }
+            : { height: 400, overflow: "visible" }
+          : { height: 400, overflow: "auto" }
+      }
+    >
+      {content}
+    </Box>
 
-      <Text size="sm" c="gray.6" mt="md" ta="right">
-        {chart.metadata?.source}
-      </Text>
+    <Text size="sm" c="gray.6" mt="md" ta="right">
+      {chart.metadata?.source}
+    </Text>
 
-      {!isPdfMode && (
-        <Group mt="md">
-          {action === 'toggle' && defId && onToggle ? (
-            <ToggleChart
-              defId={defId}
-              isIncluded={isIncluded ?? true}
-              onToggle={onToggle}
-            />
-          ) : action === 'add' ? (
-            <AddChart chart={chart} defId={defId} />
-          ) : action === 'remove' ? (
-            <RemoveChart chart={chart} />
-          ) : null}
-        </Group>
-      )}
-    </Card>
-  );
+    {!isPdfMode && (
+      <Group mt="md">
+        {action === "toggle" && defId && onToggle ? (
+          <ToggleChart
+            defId={defId}
+            isIncluded={isIncluded ?? true}
+            onToggle={onToggle}
+          />
+        ) : action === "add" ? (
+          <AddChart chart={chart} defId={defId} />
+        ) : action === "remove" ? (
+          <RemoveChart chart={chart} />
+        ) : null}
+      </Group>
+    )}
+  </Card>
+);
 };
 
 interface ChartStackProps<TData extends Record<string, any>> {

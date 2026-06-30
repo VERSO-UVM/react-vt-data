@@ -25,19 +25,18 @@ const CompareNote = ({ name }: { name: string }) => (
 // Demographics: Under 18 vs 65+
 // ---------------------------------------------------------------------------
 
-export const DemographicsTrendChart = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => {
+export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}) => {
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
+    
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
+  
+  const location = labels?.[0] ?? 'Main';
   const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
@@ -48,8 +47,7 @@ export const DemographicsTrendChart = <TData,>({
     const p75plus = find('75 Plus') ?? 0;
     return {
       'Under 18': find('Under 18'),
-      '65+':
-        p65_74 + p75plus > 0 ? Math.round((p65_74 + p75plus) * 10) / 10 : null,
+      '65+':p65_74 + p75plus > 0 ? Math.round((p65_74 + p75plus) * 10) / 10 : null,
     };
   };
 
@@ -76,10 +74,16 @@ export const DemographicsTrendChart = <TData,>({
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
           <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-          <Legend />
+          <Legend 
+            align="right"
+            iconType="line"
+            verticalAlign="bottom"
+            
+          />
           <Line
             type="monotone"
             dataKey="Under 18"
+            name={`Under 18 (${location})`}
             stroke="#154734"
             strokeWidth={2}
             dot={false}
@@ -87,6 +91,7 @@ export const DemographicsTrendChart = <TData,>({
           <Line
             type="monotone"
             dataKey="65+"
+            name={`65+ (${location})`}
             stroke="#e07b39"
             strokeWidth={2}
             dot={false}
@@ -96,7 +101,7 @@ export const DemographicsTrendChart = <TData,>({
               <Line
                 type="monotone"
                 dataKey="Under 18 (cmp)"
-                name="Under 18"
+                name={`Under 18 (${cmpName})`}
                 stroke="#154734"
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
@@ -106,7 +111,7 @@ export const DemographicsTrendChart = <TData,>({
               <Line
                 type="monotone"
                 dataKey="65+ (cmp)"
-                name="65+"
+                name={`65+ (${cmpName})`}
                 stroke="#e07b39"
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
@@ -124,11 +129,7 @@ export const DemographicsTrendChart = <TData,>({
 // ---------------------------------------------------------------------------
 // Demographics: Median Age Chart
 // ---------------------------------------------------------------------------
-export const MedianAgeTrendChart = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => {
+export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}) => {
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -138,6 +139,7 @@ export const MedianAgeTrendChart = <TData,>({
     | [string, string]
     | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
+  const location = labels?.[0] ?? 'Main';
 
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
@@ -175,10 +177,10 @@ export const MedianAgeTrendChart = <TData,>({
               val != null ? `${Number(val).toFixed(1)} years` : '—'
             }
           />
-          <Legend />
           <Line
             type="monotone"
             dataKey="Median Age"
+            name={`${location}`} 
             stroke="#154734"
             strokeWidth={2}
             dot={false}
@@ -188,7 +190,7 @@ export const MedianAgeTrendChart = <TData,>({
               <Line
                 type="monotone"
                 dataKey="Median Age (cmp)"
-                name="Median Age"
+                name={`${cmpName}`}
                 stroke="#154734"
                 strokeWidth={1.5}
                 strokeDasharray="6 4"

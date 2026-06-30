@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Grid, Text, Title, Tabs } from '@mantine/core';
+import { Box, Grid, Text, Title, Tabs, ScrollArea } from '@mantine/core';
 import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon, Icon } from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
@@ -273,6 +273,7 @@ export default function DataViewerPage() {
         notes: `County-level data (${employmentCounty} County) — QCEW does not report employment at the town level.`,
       });
     }
+    
     return createChartItem({
       title: myLocation.name,
       xField: chart.xField,
@@ -359,23 +360,24 @@ return (
 
         <StatCards/>
       </Box>
-
-      <ChartTabs
-        sections={sections}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-      {/* Charts */}
-      <Box py="xl">
-        <ChartStack
-          charts={visibleItems}
-          action="add"
-          userInterests={interests}
-          defIds={visibleItems.map(
-            (c) => c.chartParams?.defId
-          )}
+        <ChartTabs
+          sections={sections}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
-      </Box>
+        {/* Charts */}
+        <Box py="xl">
+          <ScrollArea h="100%">
+            <ChartStack
+              charts={visibleItems}
+              action="add"
+              userInterests={interests}
+              defIds={visibleItems.map(
+                (c) => c.chartParams?.defId
+              )}
+            />
+          </ScrollArea>
+        </Box>
     </Box>
   </Box>
 );

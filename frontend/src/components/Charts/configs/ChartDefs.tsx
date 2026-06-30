@@ -32,7 +32,7 @@ export interface ChartDef {
 export const chartDefs: ChartDef[] = [
   {
     id: 'acreage',
-    title: 'Acreage Chart',
+    title: 'Acreage by Zoning District Type',
     categories: ['Land Use'],
     xField: 'District Type',
     yField: 'Acres',
@@ -63,7 +63,7 @@ export const chartDefs: ChartDef[] = [
   // },
   {
     id: 'demographics',
-    title: 'Demographics — Percent',
+    title: 'Changes in Age Composition',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
     xField: '',
     yField: '',

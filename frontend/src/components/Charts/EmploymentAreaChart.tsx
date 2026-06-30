@@ -177,7 +177,6 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
               formatter={(val: any, name: string) => [fmt(val), name]}
               labelFormatter={(label) => `Quarter: ${label}`}
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
             <Line
               type="monotone"
               dataKey="Total"
