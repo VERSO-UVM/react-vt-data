@@ -1,23 +1,15 @@
 'use client';
 
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, 
+         Tooltip, XAxis, YAxis } from 'recharts';
 import { ChartItem } from '@/types/cachedCharts';
 import { Text } from '@mantine/core';
 
 /** Small label shown above the chart when comparison data is present. */
-const CompareNote = ({ name }: { name: string }) => (
+const CompareNote = ({ name }: { name: string }) => (  
   <Text size="xs" c="dimmed" mb={4}>
     <span style={{ letterSpacing: 2, marginRight: 6 }}>– – –</span>
-    dashed lines = {name}
+    Dashed Lines = {name}
   </Text>
 );
 
@@ -295,13 +287,7 @@ export const EducationTrendChart = <TData,>({
 // Housing: Total Housing Units (left) vs Median Home Value (right, dual axis)
 // ---------------------------------------------------------------------------
 
-const HOUSING_SERIES = [
-  { key: 'Total Housing Units', color: '#154734', axis: 'left' as const },
-  { key: 'Renter-Occupied Units', color: '#e07b39', axis: 'left' as const },
-  { key: 'Median Home Value', color: '#8b5e3c', axis: 'right' as const },
-];
-
-export const HousingTrendChart = <TData,>({
+export const HomeValueTrendChart = <TData,>({
   chart,
 }: {
   chart: ChartItem<TData>;
@@ -316,27 +302,14 @@ export const HousingTrendChart = <TData,>({
     | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
-  const plotData = years.map((year) => {
-    const rows = data.filter((r) => r.year === year);
-    const cmpRows = compareData.filter((r) => r.year === year);
-    const find = (src: any[], label: string) =>
-      src.find((r) => r.Variable === label)?.Value ?? null;
-    const pt: Record<string, any> = { year };
-    for (const { key } of HOUSING_SERIES) {
-      pt[key] = find(rows, key);
-      if (compareData.length > 0) pt[`${key} (cmp)`] = find(cmpRows, key);
-    }
-    return pt;
-  });
+  const buildPoint = (rows: any[], year: number) => {
+    const row = rows.find((r) => r.Variable === 'Median Home Value' && r.year === year);
+    return {'Median Home Value': row?.Value ?? null};};
 
-  const fmtTooltip = (val: any, name: string) => {
-    const base = name.replace(' (cmp)', '');
-    if (base === 'Total Housing Units' || base === 'Renter-Occupied Units')
-      return [val?.toLocaleString() ?? '—', name];
-    if (base === 'Median Home Value')
-      return [`$${val?.toLocaleString() ?? '—'}`, name];
-    return [val, name];
-  };
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year), ...(compareData.length > 0 ? 
+      {'Median Home Value (cmp)': buildPoint(compareData, year)['Median Home Value']}: {})}));
 
   return (
     <>
@@ -344,62 +317,101 @@ export const HousingTrendChart = <TData,>({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
-          margin={{ top: 10, right: 50, left: 20, bottom: 5 }}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis
-            yAxisId="left"
-            tick={{ fontSize: 12 }}
-            tickFormatter={(v) => v.toLocaleString()}
-            label={{
-              value: 'Units',
-              angle: -90,
-              position: 'insideLeft',
-              offset: -5,
-              style: { fontSize: 11 },
-            }}
+          <YAxis unit="$" tick={{ fontSize: 10 }} domain={['auto', 'auto']} 
+                 tickFormatter={(val: any) => val != null ? new Intl.NumberFormat('en-US').format(val) : ''} />
+          <Tooltip formatter={(val: any) => val != null ? `$${new Intl.NumberFormat('en-US').format(val)}`: '—'}/>
+          <Line
+            type="monotone"
+            dataKey="Median Home Value"
+            name={`${labels?.[0] ?? 'Main'}`}
+            stroke="#154734"
+            strokeWidth={2}
+            dot={false}
           />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            tick={{ fontSize: 12 }}
-            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-            label={{
-              value: 'Home Value',
-              angle: 90,
-              position: 'insideRight',
-              offset: 15,
-              style: { fontSize: 11 },
-            }}
-          />
-          <Tooltip formatter={fmtTooltip} />
-          <Legend />
-          {HOUSING_SERIES.map((s) => (
-            <Line
-              key={s.key}
-              yAxisId={s.axis}
-              type="monotone"
-              dataKey={s.key}
-              stroke={s.color}
-              strokeWidth={2}
-              dot={false}
-            />
-          ))}
-          {compareData.length > 0 &&
-            HOUSING_SERIES.map((s) => (
+          {compareData.length > 0 && (
+            <>
               <Line
-                key={`${s.key}-cmp`}
-                yAxisId={s.axis}
                 type="monotone"
-                dataKey={`${s.key} (cmp)`}
-                stroke={s.color}
+                dataKey="Median Home Value (cmp)"
+                name={`${labels?.[1] ?? 'Comparison'}`}
+                stroke="#e07b39"
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
                 dot={false}
                 legendType="none"
               />
-            ))}
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+
+export const HousingUnitsTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+  const cmpName = labels?.[1] ?? 'Comparison';
+
+  const buildPoint = (rows: any[], year: number) => {
+    const row = rows.find((r) => r.Variable === 'Total Housing Units' && r.year === year);
+    return {'Total Housing Units': row?.Value ?? null};};
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year), ...(compareData.length > 0 ? 
+      {'Total Housing Units (cmp)': buildPoint(compareData, year)['Total Housing Units']}: {})}));
+
+  return (
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
+            tickFormatter={(value) => value.toLocaleString()}/>
+          <Tooltip formatter={(value: number) => value.toLocaleString()}/>
+          <Line
+            type="monotone"
+            dataKey="Total Housing Units"
+            name={`${labels?.[0] ?? 'Main'}`}
+            stroke="#154734"
+            strokeWidth={2}
+            dot={false}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Total Housing Units (cmp)"
+                name={`${labels?.[1] ?? 'Comparison'}`}
+                stroke="#e07b39"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
         </LineChart>
       </ResponsiveContainer>
     </>
@@ -455,11 +467,11 @@ export const UnemploymentTrendChart = <TData,>({
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-          <Legend />
+          <Tooltip formatter={(val: any) => val != null ? `${Number(val).toFixed(1)}%` : '—'}/>
           <Line
             type="monotone"
             dataKey="Unemployment Rate"
+            name={`${labels?.[0] ?? 'Main'}`}
             stroke="#154734"
             strokeWidth={2}
             dot={false}
@@ -469,7 +481,7 @@ export const UnemploymentTrendChart = <TData,>({
               <Line
                 type="monotone"
                 dataKey="Unemployment Rate (cmp)"
-                name="Unemployment Rate"
+                name={`${labels?.[1] ?? 'Comparison'}`}
                 stroke="#e07b39"
                 strokeWidth={1.5}
                 strokeDasharray="6 4"

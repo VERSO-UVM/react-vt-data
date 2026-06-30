@@ -15,7 +15,8 @@ export {
   DemographicsTrendChart,
   MedianAgeTrendChart,
   EducationTrendChart,
-  HousingTrendChart,
+  HomeValueTrendChart,
+  HousingUnitsTrendChart,
   UnemploymentTrendChart,
   EarningsTrendChart,
   DPTrendChart,
@@ -90,10 +91,13 @@ export const ChartCard = <TData extends Record<string, any>>({
     padding="lg"
     radius="md"
     withBorder
+    display="flex"
     data-chart-id={chart.id}
     data-chart-subtype={chart.subtype}
     style={{
-      ...(isHighlighted ? { borderColor: "#154734", borderWidth: 2 } : {}),
+      flexDirection: "column",
+      minHeight: 0,
+      ...(isHighlighted ? { borderColor: "#154734", borderWidth: 2} : {}),
       // Prevent page-break mid-card when printing / captured by html2pdf
       breakInside: "avoid",
       pageBreakInside: "avoid",
@@ -118,21 +122,17 @@ export const ChartCard = <TData extends Record<string, any>>({
     {/* In PDF mode: tables need auto height to unclip; charts keep 400px so
         ResponsiveContainer (height="100%") has a fixed parent to measure. */}
     <Box
-      data-chart-box
-      style={
-        isPdfMode
-          ? isTablePrimary
-            ? { height: "auto", overflow: "visible" }
-            : { height: 400, overflow: "visible" }
-          : { height: 400, overflow: "auto" }
-      }
-    >
-      {content}
-    </Box>
-
-    <Text size="sm" c="gray.6" mt="md" ta="right">
-      {chart.metadata?.source}
-    </Text>
+  data-chart-box
+  style={{
+    height: isPdfMode ? (isTablePrimary ? "auto" : 400) : 400,
+    overflow: "visible",
+    flex: "1 1 auto",
+    minHeight: 400,
+  }}
+>
+  {content}
+</Box>
+    <Text size="sm" c="gray.6" mt="md" ta="right">{chart.metadata?.source}</Text>
 
     {!isPdfMode && (
       <Group mt="md">

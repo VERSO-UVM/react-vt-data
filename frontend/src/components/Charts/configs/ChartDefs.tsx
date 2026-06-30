@@ -9,6 +9,7 @@ export interface TableRowDef {
 }
 
 export interface TableConfig {
+  variable?: string;
   extraParams?: Record<string, any>; // year_min, year_max, etc.
 }
 
@@ -78,7 +79,7 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'demographics_estimates',
-    title: 'Demographics — Value',
+    title: 'Demographics Summary Table',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
     xField: '',
     yField: '',
@@ -107,7 +108,7 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'education',
-    title: 'Educational Attainment — Percent',
+    title: 'Educational Attainment Distribution',
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
     xField: '',
     yField: '',
@@ -122,7 +123,7 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'education_estimates',
-    title: 'Educational Attainment — Value',
+    title: 'Educational Attainment Table',
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
     xField: '',
     yField: '',
@@ -134,16 +135,30 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2012, year_max: 2023 },
     },
   },
-  // housing_tenure table removed — endpoint not needed (4.3)
   // Housing
   {
-    id: 'housing',
-    title: 'Housing Stock & Value',
+    id: 'home_value',
+    title: 'Median Home Value',
     url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
     xField: '',
     yField: '',
-    subtype: 'renderTableMixed',
-    trendChart: 'HousingTrendChart',
+    subtype: 'renderTableEstimates',
+    trendChart: 'HomeValueTrendChart',
+    categories: ['Housing'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  {
+    id: 'housing_units',
+    title: 'Total Housing Units',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    trendChart: 'HousingUnitsTrendChart',
     categories: ['Housing'],
     filterKey: '',
     dataKey: '',
@@ -197,7 +212,7 @@ export const chartDefs: ChartDef[] = [
   // Unemployment Rate
   {
     id: 'unemployment_rate',
-    title: 'Unemployment Rate — Percent',
+    title: 'Unemployment Rate',
     url: `${BASE_API_URL}/load/acs5-db/tidy/unemployment-rate`,
     xField: '',
     yField: '',
