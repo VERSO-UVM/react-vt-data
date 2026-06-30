@@ -48,3 +48,21 @@ async def filter_tree_endpoint(filter_table: str, target_table: str = "default")
     colmap: dict = meta["columns"]
     rangemap: dict = meta.get("range", {})
     return filter_tree(colmap, list(colmap.keys()), filter_table, rangemap=rangemap)
+
+
+# TODO: Implement the endpoint for getting zoning filter checkboxes.
+
+# Make checkbox_schema.json vs tree_schema.json
+
+
+@router.get("/load/mapping/zoning/filters")
+async def zoning_filters():
+    colmap = schema["default"]["zoning_info"]["columns"]
+    print(colmap)
+    return filter_tree(colmap, list(colmap.keys()), "zoning_info")
+
+
+# TODO: wireup so this actually gets used.
+# @router.get("acs5-db/dp-combined/filters")
+# async def dp_combined_filters():
+#     return get_acs5_dp_combined_filters()

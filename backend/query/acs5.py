@@ -34,6 +34,7 @@ QUERY_CONFIG = {
         "table": "acs5_b10_census",
         "fixed_filters": {"Variable": ["Median Age"]},
     },
+    "snapshot": {"table": "acs5_snapshot", "fixed_filters": {}},
 }
 
 # frontend filter label -> database column. Location and the year range both
@@ -64,7 +65,7 @@ def _acs5_source(
         else:
             src_filters[col] = [val]
     src_filters.update(fixed_filters or {})
-    return FilterSource(source=table, filters=src_filters)
+    return FilterSource(filter_table=table, filters=src_filters)
 
 
 def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
@@ -114,6 +115,20 @@ def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
     if result is None or result.empty:
         logger.error("Median earnings query returned no rows for filters=%s", filters)
         raise ValueError("no results for median_earnings query")
+
+    return result
+
+
+def get_snapshot(filters: dict | None = None) -> pd.DataFrame:
+    source = _acs5_source(table="snapshot", filters=filters)
+
+    sql = sql_filter_block(sql_path / "snapshot.sql", [source])
+
+    result = DB.execute(sql).df()
+
+    if result is None or result.empty:
+        logger.error("Snapshot query returned no rows for filters=%s", filters)
+        raise ValueError("no results for snapshot query")
 
     return result
 
