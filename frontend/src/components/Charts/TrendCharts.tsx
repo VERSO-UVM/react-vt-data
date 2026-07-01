@@ -204,7 +204,7 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
 
 const EDU_SERIES = [
   { key: 'No High School Diploma', color: '#c0392b' },
-  { key: 'High School Only', color: '#e07b39' },
+  { key: 'High School Graduate', color: '#e07b39' },
   { key: "Associate's Degree", color: '#4c9be8' },
   { key: "Bachelor's Degree", color: '#154734' },
   { key: 'Postgraduate Degree', color: '#7d4caf' },
@@ -277,13 +277,25 @@ export const EducationTrendChart = <TData,>({
               {value} 
             </span>)}/>
           {EDU_SERIES.map((s) => (
-          <Line key={s.key} dataKey={s.key} stroke={s.color} strokeWidth={2}
-                dot={false} hide={hidden.has(s.key)}
+          <Line 
+            key={s.key} 
+            dataKey={s.key} 
+            stroke={s.color} 
+            strokeWidth={2}
+            dot={false} 
+            hide={hidden.has(s.key)}
           />))}
           {compareData.length > 0 && EDU_SERIES.map((s) => (
-              <Line key={`${s.key}-cmp`} dataKey={`${s.key} (cmp)`} stroke={s.color}
-                strokeWidth={1.5} strokeDasharray="6 4" legendType="none" dot={false} hide={hidden.has(s.key)}
-              />))}
+          <Line
+            key={`${s.key}-cmp`} 
+            dataKey={`${s.key} (cmp)`} 
+            stroke={s.color}
+            strokeWidth={1.5} 
+            strokeDasharray="6 4" 
+            legendType="none" 
+            dot={false} 
+            hide={hidden.has(s.key)}
+          />))}
         </LineChart>
       </ResponsiveContainer>
     </>
