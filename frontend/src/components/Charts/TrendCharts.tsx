@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, 
          Tooltip, XAxis, YAxis } from 'recharts';
 import { ChartItem } from '@/types/cachedCharts';
@@ -203,7 +204,7 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
 
 const EDU_SERIES = [
   { key: 'No High School Diploma', color: '#c0392b' },
-  { key: 'High School Graduate', color: '#e07b39' },
+  { key: 'High School Only', color: '#e07b39' },
   { key: "Associate's Degree", color: '#4c9be8' },
   { key: "Bachelor's Degree", color: '#154734' },
   { key: 'Postgraduate Degree', color: '#7d4caf' },
@@ -214,6 +215,20 @@ export const EducationTrendChart = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
+  
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+    
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -244,6 +259,9 @@ export const EducationTrendChart = <TData,>({
   return (
     <>
       {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide education categories.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -253,30 +271,19 @@ export const EducationTrendChart = <TData,>({
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
           <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-          <Legend />
+          <Legend onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value} 
+            </span>)}/>
           {EDU_SERIES.map((s) => (
-            <Line
-              key={s.key}
-              type="monotone"
-              dataKey={s.key}
-              stroke={s.color}
-              strokeWidth={2}
-              dot={false}
-            />
-          ))}
-          {compareData.length > 0 &&
-            EDU_SERIES.map((s) => (
-              <Line
-                key={`${s.key}-cmp`}
-                type="monotone"
-                dataKey={`${s.key} (cmp)`}
-                stroke={s.color}
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            ))}
+          <Line key={s.key} dataKey={s.key} stroke={s.color} strokeWidth={2}
+                dot={false} hide={hidden.has(s.key)}
+          />))}
+          {compareData.length > 0 && EDU_SERIES.map((s) => (
+              <Line key={`${s.key}-cmp`} dataKey={`${s.key} (cmp)`} stroke={s.color}
+                strokeWidth={1.5} strokeDasharray="6 4" legendType="none" dot={false} hide={hidden.has(s.key)}
+              />))}
         </LineChart>
       </ResponsiveContainer>
     </>
@@ -284,9 +291,10 @@ export const EducationTrendChart = <TData,>({
 };
 
 // ---------------------------------------------------------------------------
-// Housing: Total Housing Units (left) vs Median Home Value (right, dual axis)
+// Housing
 // ---------------------------------------------------------------------------
 
+// Median Home Value
 export const HomeValueTrendChart = <TData,>({
   chart,
 }: {
