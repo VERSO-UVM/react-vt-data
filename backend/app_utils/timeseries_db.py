@@ -61,7 +61,7 @@ _VALID_COLS: dict[str, set[str]] = {
         "NAME",
         "Jurisdiction",
         "County",
-        "Year",
+        # "Year",
         "Population",
     },
 }
@@ -78,6 +78,12 @@ def query_timeseries(table_name: str, filters: dict | None = None):
     """
     if table_name not in _VALID_COLS:
         raise KeyError(f"No timeseries table registered under '{table_name}'")
+
+    if table_name == "historic_population" and filters is not None:
+        if "Location" in filters:
+            filters.pop("Jurisdiction", None)
+            filters.pop("County", None)
+            filters["NAME"] = filters.pop("Location")
 
     valid_cols = _VALID_COLS[table_name]
     where_clauses: list[str] = []

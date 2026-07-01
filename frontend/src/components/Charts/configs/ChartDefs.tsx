@@ -78,6 +78,19 @@ export const chartDefs: ChartDef[] = [
     },
   },
   {
+    id: 'demographics_population',
+    title: 'Historic Population Estimates',
+    url: `${BASE_API_URL}/load/census/demographic/historic_population`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates', // signals to the renderer to use TableStack not ChartStack
+    trendChart: 'PopulationTrendChart',
+    categories: ['Demographics'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {},
+  },
+  {
     id: 'demographics_estimates',
     title: 'Demographics Summary Table',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,

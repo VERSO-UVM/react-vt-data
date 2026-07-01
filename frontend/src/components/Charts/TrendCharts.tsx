@@ -119,6 +119,76 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
   );
 };
 
+
+export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+
+  const years = Array.from(
+    new Set([
+      ...data.map((d) => Number(d.year)),
+      ...compareData.map((d) => Number(d.year)),
+    ])
+  ).sort((a, b) => a - b);
+
+  const labels = chart.chartParams?.legendLabels as | [string, string] | undefined; 
+  const location = labels?.[0] ?? 'Main'; 
+  const cmpName = labels?.[1] ?? 'Comparison';
+
+  const plotData = years.map((year) => ({
+    year,
+    Population:
+      data.find((d) => Number(d.year) === year)?.Population ?? null,
+    "Population (cmp)":
+      compareData.find((d) => Number(d.year) === year)?.Population ?? null,
+  }));
+
+  return (
+    <>
+      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={plotData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 10 }} domain={['auto', 'auto']} />
+          <Tooltip/>
+          <Legend 
+            align="right"
+            iconType="line"
+            verticalAlign="bottom"
+            
+          />
+          <Line
+            type="monotone"
+            dataKey="Population"
+            name={`${location}`}
+            stroke="#154734"
+            strokeWidth={2}
+            dot={false}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Population (cmp)"
+                name={`${cmpName}`}
+                stroke="#154734"
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+
+
+
 // ---------------------------------------------------------------------------
 // Demographics: Median Age Chart
 // ---------------------------------------------------------------------------

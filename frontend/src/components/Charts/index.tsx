@@ -13,6 +13,7 @@ export {
 } from './DemographicsTable';
 export {
   DemographicsTrendChart,
+  PopulationTrendChart,
   MedianAgeTrendChart,
   EducationTrendChart,
   HomeValueTrendChart,
