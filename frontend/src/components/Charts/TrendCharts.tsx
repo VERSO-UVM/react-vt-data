@@ -119,7 +119,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
   );
 };
 
-
+// Historic Population
 export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}) => {
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
@@ -150,8 +150,9 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
         <LineChart data={plotData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 10 }} domain={['auto', 'auto']} />
-          <Tooltip/>
+          <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
+            tickFormatter={(value) => value.toLocaleString()}/>
+          <Tooltip formatter={(value: number) => value.toLocaleString()}/>
           <Legend 
             align="right"
             iconType="line"
