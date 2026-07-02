@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from api.core_functions import request_to_source, spec_to_source
 from api.models import FilterRequest, FilterSpec
-from query import dual_var_geojson, single_var_geojson
+from query import dual_var_geojson, get_measure_cutpoints, single_var_geojson
 
 router = APIRouter()
 
@@ -18,6 +18,13 @@ async def cdc_single_geojson(request: FilterRequest):
 async def cdc_double_geojson(request: FilterRequest):
     source = request_to_source(request, "cdc_places", "default")
     data = dual_var_geojson([source])
+    return data
+
+
+@router.post("/load/mapping/cdc/places/bins")
+async def cdc_bins_json(specs: list[FilterSpec]):
+    sources = [spec_to_source(spec, "default") for spec in specs]
+    data = get_measure_cutpoints(sources)
     return data
 
 

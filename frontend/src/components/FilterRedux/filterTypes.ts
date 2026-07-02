@@ -31,9 +31,16 @@ export type apiFilterParams = {
   setValue: (v: Record<string, FilterValue>) => void;
 };
 
+// type to define a cascade/checkbox filter, etc.
+export interface FilterUIProps {
+  style: filterStyle,
+  params: apiFilterParams
+}
+
 ////////// Types for pre-defining filters to hydrate
 type filterStyle = 'Cascade' | 'Checkbox';
 export type filterDef = {
   filter_table: string;
   filter_style: filterStyle;
 };
+

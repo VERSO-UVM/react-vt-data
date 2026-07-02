@@ -286,10 +286,10 @@ db_full.execute("SELECT * FROM cdc_places").df().head()
 
 ```{python}
 db_full.execute("SELECT * FROM cdc_edges").df().head()
-
 ```
 
-Great, looks good.  For the join...
+Great, looks good. 
+
 
 
 # Schema and Front-End Considerations.

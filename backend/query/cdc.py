@@ -109,3 +109,23 @@ def dual_var_geojson(sources: list[FilterSource]):
             }
         )
     return {"type": "FeatureCollection", "features": features}
+
+
+def get_measure_cutpoints(sources: list[FilterSource]):
+    measures = [m for source in sources for m in source.filters.get("Measure", [])]
+    cmap = build_cmap()
+    grid = [[[round(c * 255) for c in cmap[y, x]] for x in range(3)] for y in range(3)]
+    where_string = f"WHERE Measure IN ({', '.join(repr(m) for m in measures)})"
+    sql = f"""--sql
+        SELECT * FROM cdc_edges
+        {where_string}
+    """
+    edges = DB.execute(sql).df()
+    edges_x = (
+        edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()
+    )
+    edges_y = (
+        edges[edges["Measure"] == measures[1]].drop(columns="Measure").iloc[0].tolist()
+    )
+
+    return {"grid": grid, "measures": measures, "edges_x": edges_x, "edges_y": edges_y}

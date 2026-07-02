@@ -8,6 +8,10 @@ import {
   zoning_filtering,
 } from '@/components/FilterRedux/filterDefs';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
+import { Spectral_SC } from 'next/font/google';
+import { assemble } from '@/components/FilterRedux/apiHelpers';
+import { postRequest } from '@/components/FilterRedux/filterRequest';
+import { FilterSpec } from '@/components/FilterRedux/filterTypes';
 
 // export default function Scratch_Zoning() {
 //   const [data, setData] = useState<{}>({});
@@ -52,7 +56,20 @@ import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 // }
 
 export default function Scratch_CDC() {
-  const [data, setData] = useState<{}>({});
+  const [legend, setLegend] = useState<{}>({});
+  const [rows, setRows] = useState<{}>({});
+  const tableURL = `${BASE_API_URL}/load/mapping/cdc/places/double_new`;
+  const legendURL = `${BASE_API_URL}/load/mapping/cdc/places/bins`;
+
+  const handleApply = async (specs: FilterSpec[]) => {
+    const payload = assemble(specs);
+    const [legendData, rowsData] = await Promise.all([
+      postRequest({ dataURL: legendURL, payload }),
+      postRequest({ dataURL: tableURL, payload }),
+    ]);
+    setLegend(legendData);
+    setRows(rowsData);
+  };
 
   return (
     <div
@@ -72,11 +89,7 @@ export default function Scratch_CDC() {
         <Title order={4} mb="sm">
           Compare Variables
         </Title>
-        <FilterWrap
-          selectData={setData}
-          dataURL={`${BASE_API_URL}/load/mapping/cdc/places/double_new`}
-          filterList={cdc_filtering}
-        />
+        <FilterWrap handleApply={handleApply} filterList={cdc_filtering} />
       </Paper>
       <Box
         style={{
@@ -87,7 +100,7 @@ export default function Scratch_CDC() {
           overflow: 'hidden',
         }}
       >
-        <VTMap geojson={data} showCountyLines={false} />
+        <VTMap geojson={rows} showCountyLines={false} />
       </Box>
     </div>
   );

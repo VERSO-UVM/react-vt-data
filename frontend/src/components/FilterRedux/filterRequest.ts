@@ -12,9 +12,9 @@ export async function postRequest(request: request) {
     return res.data;
   } catch (e) {
     if (axios.isAxiosError(e)) {
-      console.error('postRequest failed', e.response?.data);
+      console.error('postRequest failed: ', e.response?.data);
     } else {
-      console.error('postRequest failed', e);
+      console.error('postRequest failed: ', e);
     }
     throw e; // re-throw so caller can stop / show state
   }

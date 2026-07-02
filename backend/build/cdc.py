@@ -26,7 +26,7 @@ def bin_measures(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     edges_by_measure = {}
 
     def bin_group(s: pd.Series):
-        codes, edges = pd.qcut(s, 5, labels=False, retbins=True)
+        codes, edges = pd.qcut(s, 3, labels=False, retbins=True)
         edges_by_measure[s.name] = edges
         return codes
 
