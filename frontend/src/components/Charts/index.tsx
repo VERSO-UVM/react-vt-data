@@ -4,6 +4,7 @@ export {
   DiffPerXBarChart,
   CompareDiffPerXBarChart,
   CompareHBarChart,
+  ZoningAllowanceStackedBarChart
 } from './Bar';
 
 export {

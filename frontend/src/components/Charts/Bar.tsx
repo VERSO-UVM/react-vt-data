@@ -1,4 +1,4 @@
-import React from 'react';
+import { useMemo } from 'react';
 
 // recharts
 import {
@@ -242,6 +242,170 @@ const CompareDiffPerXBarChart = <TData,>({
   return <BarJS data={data} options={options} />;
 };
 
+
+type AllowanceRow = {
+  use_type: string;
+  val: string;
+  Acres: number;
+};
+
+const VAL_GROUPS: Record<string, string> = {
+  True: "Allowed",
+  False: "Prohibited",
+  "Public Hearing": "May be Allowed",
+  "Allowed/Conditional": "May be Allowed",
+  Overlay: "May be Allowed",
+  "Not Mentioned": "Not Mentioned",
+};
+
+const USE_TYPE_ORDER = [
+    "1 Family",
+    "2 Family",
+    "3 Family",
+    "4 Family",
+    "Acessory Dwelling Unit", // NOTE: matches the typo in the source data ("Acessory")
+    "Planned Unit Development",
+    "Planned Residential Development",
+  ];
+
+  const sortUseTypes = (types: string[]) => {
+    return [...types].sort((a, b) => {
+      const ai = USE_TYPE_ORDER.indexOf(a);
+      const bi = USE_TYPE_ORDER.indexOf(b);
+      // Unknown types (not in the fixed list) fall to the end, alphabetically among themselves
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  };
+
+const groupVal = (val: string) => VAL_GROUPS[val] ?? val; // fallback: pass through unknown values as-is
+const VAL_ORDER = ["Allowed", "May be Allowed", "Prohibited", "Not Mentioned"];
+
+const cleanUseType = (useType: string) => useType.replace(/_/g, " ");
+
+const ZoningAllowanceStackedBarChart = <TData,>({
+  chart,
+}: {
+  chart: CompareDiffChartItem<TData>;
+}) => {
+  // const isPdfMode = usePdfMode();
+  // if (isPdfMode) return <ZoningAllowanceStackedBarChartSVG chart={chart} />;
+
+  const mainRows = (chart.data || []) as AllowanceRow[];
+  const compareRows = (chart.compareData || []) as AllowanceRow[];
+
+  // ----------------------------
+  // Pivot long → wide, grouping vals and cleaning use_type labels
+  // ----------------------------
+  type PivotRow = { use_type: string } & Record<string, number | string>;
+  const pivot = (rows: AllowanceRow[]): Record<string, PivotRow> => {
+    const map: Record<string, PivotRow> = {};
+
+    for (const r of rows) {
+      const useType = cleanUseType(r.use_type);
+      const group = groupVal(r.val);
+
+      if (!map[useType]) {
+        map[useType] = { use_type: useType };
+      }
+      map[useType][group] = ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
+    }
+
+    return map;
+  };
+
+  const main = useMemo(() => pivot(mainRows), [mainRows]);
+  const compare = useMemo(() => pivot(compareRows), [compareRows]);
+
+  const labels = useMemo(
+    () => sortUseTypes(Array.from(new Set([...Object.keys(main), ...Object.keys(compare)]))),
+    [main, compare]
+  );
+
+  const stackKeys = VAL_ORDER;
+
+
+  const colorScale = useMemo(
+    () => d3.scaleOrdinal<string, string>((d3 as any).schemeTableau10).domain(stackKeys),
+    [stackKeys]
+  );
+
+  const mutedColor = (hex: string) => {
+    const { r, g, b } = d3.rgb(hex);
+    return `rgba(${r}, ${g}, ${b}, 0.45)`;
+  };
+  
+  
+  const datasets = useMemo(
+    () => [
+      ...stackKeys.map((key) => ({
+        label: `${key} (Current)`,
+        data: labels.map((l) => main[l]?.[key] || 0),
+        stack: "main",
+        backgroundColor: colorScale(key),
+      })),
+
+      ...stackKeys.map((key) => ({
+        label: `${key} (Compare)`,
+        data: labels.map((l) => compare[l]?.[key] || 0),
+        stack: "compare",
+        backgroundColor: mutedColor(colorScale(key)),
+        borderColor: colorScale(key),
+        borderWidth: 1,
+      })),
+    ],
+    [stackKeys, labels, main, compare, colorScale]
+  );
+
+  const data = { labels, datasets };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        labels: {
+          generateLabels: (chart: any) =>
+            stackKeys.map((key, i) => ({
+              text: key,
+              fillStyle: colorScale(key),
+              strokeStyle: colorScale(key),
+              lineWidth: 1,
+              datasetIndex: i,
+            })),
+        },
+        onClick: (_e: any, legendItem: any, legend: any) => {
+          // Toggle both the main and compare dataset for this group together
+          const key = legendItem.text;
+          const chart = legend.chart;
+          chart.data.datasets.forEach((ds: any, idx: number) => {
+            if (ds.label?.startsWith(key)) {
+              const meta = chart.getDatasetMeta(idx);
+              meta.hidden = meta.hidden === null ? !chart.data.datasets[idx].hidden : !meta.hidden;
+            }
+          });
+          chart.update();
+        },
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx: any) =>
+            `${ctx.dataset.label}: ${ctx.raw?.toLocaleString?.() ?? ctx.raw}`,
+        },
+      },
+    },
+    scales: {
+      x: { stacked: true},
+      y: { stacked: true },
+    },
+  };
+
+  return <BarJS data={data} options={options} />;
+};
+
 // ---------------------------------------------------------------------------
 // CompareHBarChart — horizontal grouped bars
 // ---------------------------------------------------------------------------
@@ -359,4 +523,5 @@ export {
   DiffPerXBarChart,
   CompareDiffPerXBarChart,
   CompareHBarChart,
+  ZoningAllowanceStackedBarChart
 };

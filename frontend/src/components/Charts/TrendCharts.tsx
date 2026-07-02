@@ -29,8 +29,6 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
     | [string, string]
     | undefined;
   
-  const location = labels?.[0] ?? 'Main';
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
@@ -57,7 +55,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      {compareData.length > 0 && <CompareNote name={labels?.[1] ?? 'Comparison'} />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -76,7 +74,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
           <Line
             type="monotone"
             dataKey="Under 18"
-            name={`Under 18 (${location})`}
+            name={`Under 18 (${labels?.[0] ?? 'Main'})`}
             stroke="#154734"
             strokeWidth={2}
             dot={false}
@@ -84,7 +82,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
           <Line
             type="monotone"
             dataKey="65+"
-            name={`65+ (${location})`}
+            name={`65+ (${labels?.[0] ?? 'Main'})`}
             stroke="#1c7ed6"
             strokeWidth={2}
             dot={false}
@@ -94,9 +92,9 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
               <Line
                 type="monotone"
                 dataKey="Under 18 (cmp)"
-                name={`Under 18 (${cmpName})`}
+                name={`Under 18 (${labels?.[1] ?? 'Comparison'})`}
                 stroke="#154734"
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="6 4"
                 dot={false}
                 legendType="none"
@@ -104,9 +102,9 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
               <Line
                 type="monotone"
                 dataKey="65+ (cmp)"
-                name={`65+ (${cmpName})`}
+                name={`65+ (${labels?.[1] ?? 'Comparison'})`}
                 stroke="#1c7ed6"
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="6 4"
                 dot={false}
                 legendType="none"
@@ -132,8 +130,6 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
   ).sort((a, b) => a - b);
 
   const labels = chart.chartParams?.legendLabels as | [string, string] | undefined; 
-  const location = labels?.[0] ?? 'Main'; 
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => ({
     year,
@@ -156,7 +152,7 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
           <Line
             type="monotone"
             dataKey="Population"
-            name={`${location}`}
+            name={`${labels?.[0] ?? 'Main'}`}
             stroke="#154734"
             strokeWidth={3}
             dot={false}
@@ -166,7 +162,7 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
               <Line
                 type="monotone"
                 dataKey="Population (cmp)"
-                name={`${cmpName}`}
+                name={`${labels?.[1] ?? 'Comparison'}`}
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
@@ -194,8 +190,6 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
-  const location = labels?.[0] ?? 'Main';
 
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
@@ -235,7 +229,7 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
           <Line
             type="monotone"
             dataKey="Median Age"
-            name={`${location}`} 
+            name={`${labels?.[0] ?? 'Main'}`} 
             stroke="#154734"
             strokeWidth={3}
             dot={false}
@@ -245,7 +239,7 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
               <Line
                 type="monotone"
                 dataKey="Median Age (cmp)"
-                name={`${cmpName}`}
+                name={`${labels?.[1] ?? 'Comparison'}`}
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
@@ -301,7 +295,6 @@ export const EducationTrendChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => {
     const rows = filtered.filter((r) => r.year === year);
@@ -319,7 +312,7 @@ export const EducationTrendChart = <TData,>({
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      {compareData.length > 0 && <CompareNote name={labels?.[1] ?? 'Comparison'} />}
       <Text size="xs" c="dimmed" mb={4}>
         Click legend items to show or hide education categories.
       </Text>
@@ -381,7 +374,6 @@ export const HomeValueTrendChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const row = rows.find((r) => r.Variable === 'Median Home Value' && r.year === year);
@@ -445,7 +437,6 @@ export const HousingTenureAreaChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const row = rows.find((r) => r.Variable === 'Renter-Occupied Units' && r.year === year);
@@ -524,7 +515,6 @@ export const HousingUnitsTrendChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const row = rows.find((r) => r.Variable === 'Total Housing Units' && r.year === year);
@@ -602,7 +592,6 @@ export const UnemploymentTrendChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const row = rows.find((r) => r.year === year);
@@ -679,7 +668,6 @@ export const EarningsTrendChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
     | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
 
   const buildPoint = (rows: any[], year: number) => {
     const find = (label: string) =>
@@ -709,7 +697,7 @@ export const EarningsTrendChart = <TData,>({
   }));
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      {compareData.length > 0 && <CompareNote name={labels?.[1] ?? 'Comparison'} />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}

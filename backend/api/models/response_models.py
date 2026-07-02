@@ -64,16 +64,13 @@ def make_response(
     return APIResponse(data=data, tableData=tableData, metadata=metadata)
 
 
-def serialize_data(
-    data: pd.DataFrame | gpd.GeoDataFrame | dict | list,
-) -> dict | list:
+def serialize_data(data):
     if isinstance(data, gpd.GeoDataFrame):
         df = pd.DataFrame(data.drop(columns="geometry"))
         return df.to_dict(orient="records")
+
     elif isinstance(data, pd.DataFrame):
         data = data.to_dict(orient="records")
+
     logger.debug(f"serialized type: {type(data)}")
-    logger.debug(
-        f"serialized sample: {data[:2] if isinstance(data, list) else 'not a list'}"
-    )
     return data

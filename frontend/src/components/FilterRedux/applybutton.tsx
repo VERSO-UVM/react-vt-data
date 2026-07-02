@@ -17,6 +17,9 @@ export default function ApplyButton(params: ApplyButtonProps) {
     const payload = specs.filter(
       (s) => s.filters && Object.keys(s.filters).length > 0,
     );
+    console.log("🟢 APPLY BUTTON PAYLOAD (RAW):", specs);
+    console.log("🟢 APPLY BUTTON PAYLOAD (SENT):", payload);
+    
     try {
       const data = await postRequest({ dataURL, payload });
       onData(data);

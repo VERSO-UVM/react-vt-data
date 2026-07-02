@@ -50,6 +50,26 @@ export const chartDefs: ChartDef[] = [
       { key: 'hex_color', visible: false },
     ],
   },
+  {
+    id: 'zoning_allowance',
+    title: 'Zoning Allowance by Unit Type',
+    categories: ['Land Use'],
+    xField: 'use_type',
+    yField: 'Acres',
+    subtype: 'ZoningAllowanceStackedBarChart',
+    chartParams: {
+      legendLabels: ['Allowed', 'Conditional', 'Not Allowed', 'Public Hearing'],
+      color: 'hex_color'
+    },
+    url: `${BASE_API_URL}/load/data/zoning/allowances`,
+    filterKey: '',
+    notes: 'Acreage distribution by family allowance (Residential + Mixed use).',
+    showCols: [
+      { key: 'use_type', label: 'Residential Type' },
+      { key: 'val', label: 'Zoning Outcome' },
+      { key: 'Acres', label: 'Total Acres' },
+    ],
+  },
   // tenure bar chart removed — not adding enough information (4.3)
   // {
   //   id: 'tenure',
