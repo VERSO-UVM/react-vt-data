@@ -181,7 +181,7 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'housing_tenure',
-    title: 'Housing Tenure',
+    title: 'Renter-Occupied Unit Rate',
     url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
     xField: '',
     yField: '',

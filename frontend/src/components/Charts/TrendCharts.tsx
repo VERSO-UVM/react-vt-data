@@ -412,7 +412,7 @@ export const HomeValueTrendChart = <TData,>({
             dataKey="Median Home Value"
             name={`${labels?.[0] ?? 'Main'}`}
             stroke="#154734"
-            strokeWidth={2}
+            strokeWidth={3}
             dot={false}
           />
           {compareData.length > 0 && (
@@ -421,9 +421,8 @@ export const HomeValueTrendChart = <TData,>({
                 type="monotone"
                 dataKey="Median Home Value (cmp)"
                 name={`${labels?.[1] ?? 'Comparison'}`}
-                stroke="#e07b39"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
+                stroke="#1c7ed6"
+                strokeWidth={3}
                 dot={false}
                 legendType="none"
               />
@@ -436,7 +435,7 @@ export const HomeValueTrendChart = <TData,>({
 };
 
 
-export const HousingUnitsTrendChart = <TData,>({
+export const HousingTenureAreaChart = <TData,>({
   chart,
 }: {
   chart: ChartItem<TData>;
@@ -453,7 +452,7 @@ export const HousingUnitsTrendChart = <TData,>({
 
   const buildPoint = (rows: any[], year: number) => {
     const row = rows.find((r) => r.Variable === 'Renter-Occupied Units' && r.year === year);
-    return {'Renter-Occupied Units': row?.Value ?? null};};
+    return {'Renter-Occupied Units': row?.Percent ?? null};};
 
   const plotData = years.map((year) => ({
     year,
@@ -470,15 +469,14 @@ export const HousingUnitsTrendChart = <TData,>({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
-            tickFormatter={(value) => value.toLocaleString()}/>
-          <Tooltip formatter={(value: number) => value.toLocaleString()}/>
+          <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} unit="%"/>
+          <Tooltip formatter={(value: number) => value.toLocaleString() + `%`}/>
           <Line
             type="monotone"
             dataKey="Renter-Occupied Units"
             name={`${labels?.[0] ?? 'Main'}`}
             stroke="#154734"
-            strokeWidth={2}
+            strokeWidth={3}
             dot={false}
           />
           {compareData.length > 0 && (
@@ -488,8 +486,7 @@ export const HousingUnitsTrendChart = <TData,>({
                 dataKey="Renter-Occupied Units (cmp)"
                 name={`${labels?.[1] ?? 'Comparison'}`}
                 stroke="#1c7ed6"
-                strokeWidth={2}
-                strokeDasharray="6 4"
+                strokeWidth={3}
                 dot={false}
               />
             </>
@@ -504,11 +501,25 @@ export const HousingUnitsTrendChart = <TData,>({
 // Housing: Housing Tenure
 // ---------------------------------------------------------------------------
 
-export const HousingTenureAreaChart = <TData,>({
+export const HousingUnitsTrendChart = <TData,>({
   chart,
 }: {
   chart: ChartItem<TData>;
 }) => {
+  
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -531,6 +542,9 @@ export const HousingTenureAreaChart = <TData,>({
   return (
     <>
       {compareData.length > 0 && <CompareNote name={cmpName} />}
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -541,13 +555,20 @@ export const HousingTenureAreaChart = <TData,>({
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
             tickFormatter={(value) => value.toLocaleString()}/>
           <Tooltip formatter={(value: number) => value.toLocaleString()}/>
+          <Legend onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Total Housing Units"
             name={`${labels?.[0] ?? 'Main'}`}
             stroke="#154734"
-            strokeWidth={2}
+            strokeWidth={3}
             dot={false}
+            hide={hidden.has('Total Housing Units')}
           />
           {compareData.length > 0 && (
             <>
@@ -556,10 +577,9 @@ export const HousingTenureAreaChart = <TData,>({
                 dataKey="Total Housing Units (cmp)"
                 name={`${labels?.[1] ?? 'Comparison'}`}
                 stroke="#1c7ed6"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
+                strokeWidth={3}
                 dot={false}
-                legendType="none"
+                hide={hidden.has('Total Housing Units (cmp)')}
               />
             </>
           )}
