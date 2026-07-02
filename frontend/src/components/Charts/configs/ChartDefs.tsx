@@ -180,6 +180,21 @@ export const chartDefs: ChartDef[] = [
     },
   },
   {
+    id: 'housing_tenure',
+    title: 'Housing Tenure',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    trendChart: 'HousingTenureAreaChart',
+    categories: ['Housing'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  {
     id: 'housing_estimates',
     title: 'Housing Stock & Value — Value',
     url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,

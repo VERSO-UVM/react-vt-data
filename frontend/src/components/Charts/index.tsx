@@ -18,6 +18,7 @@ export {
   EducationTrendChart,
   HomeValueTrendChart,
   HousingUnitsTrendChart,
+  HousingTenureAreaChart,
   UnemploymentTrendChart,
   EarningsTrendChart,
   DPTrendChart,
