@@ -85,7 +85,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
             type="monotone"
             dataKey="65+"
             name={`65+ (${location})`}
-            stroke="#e07b39"
+            stroke="#1c7ed6"
             strokeWidth={2}
             dot={false}
           />
@@ -105,7 +105,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
                 type="monotone"
                 dataKey="65+ (cmp)"
                 name={`65+ (${cmpName})`}
-                stroke="#e07b39"
+                stroke="#1c7ed6"
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
                 dot={false}
@@ -145,7 +145,6 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={plotData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
@@ -216,7 +215,6 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -266,11 +264,11 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
 // ---------------------------------------------------------------------------
 
 const EDU_SERIES = [
-  { key: 'No High School Diploma', color: '#c0392b' },
-  { key: 'High School Graduate', color: '#e07b39' },
-  { key: "Associate's Degree", color: '#4c9be8' },
-  { key: "Bachelor's Degree", color: '#154734' },
-  { key: 'Postgraduate Degree', color: '#7d4caf' },
+  { key: 'No High School Diploma', color: '#d62828' },
+  { key: 'High School Graduate', color: '#f77f00' },
+  { key: "Associate's Degree", color: '#fcbf49' },
+  { key: "Bachelor's Degree", color: '#003049' },
+  { key: 'Postgraduate Degree', color: '#457b9d' },
 ];
 
 export const EducationTrendChart = <TData,>({
@@ -396,7 +394,6 @@ export const HomeValueTrendChart = <TData,>({
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -461,7 +458,6 @@ export const HousingTenureAreaChart = <TData,>({
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -541,7 +537,6 @@ export const HousingUnitsTrendChart = <TData,>({
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
       <Text size="xs" c="dimmed" mb={4}>
         Click legend items to show or hide locations.
       </Text>
@@ -555,7 +550,8 @@ export const HousingUnitsTrendChart = <TData,>({
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
             tickFormatter={(value) => value.toLocaleString()}/>
           <Tooltip formatter={(value: number) => value.toLocaleString()}/>
-          <Legend onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
             <span style={{ color: hidden.has(value) ? "#999" : "#222",
                           textDecoration: hidden.has(value) ? "line-through" : "none"}}>
               {value}
@@ -629,7 +625,6 @@ export const UnemploymentTrendChart = <TData,>({
 
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
