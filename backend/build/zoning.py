@@ -7,12 +7,17 @@
     Build script to convert the `zoning_update.fgb` into four SQL tables.
 """
 
+import numpy as np
 import pandas as pd
 
 from build import BACKEND, CON, data_dir
 
 proc_dir = BACKEND / "Data" / "_Processed" / "zoning"
 sql_path = BACKEND / "build" / "sql"
+
+
+def func_x(x: np.ndarray) -> int:
+    return 5
 
 
 # hardcoded specifics:

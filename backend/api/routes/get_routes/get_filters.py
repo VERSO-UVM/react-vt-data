@@ -63,8 +63,7 @@ async def filter_options_endpoint(filter_table: str, target_table: str = "defaul
         target_table (str): The dataset to be filtered.
 
     Returns:
-        dict: a JSON dictionary of format
-        key1: {values, each key2: values} and so on iteratively through the columns.
+        options -- structured like {label: [optionA, optionB]}
     """
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]

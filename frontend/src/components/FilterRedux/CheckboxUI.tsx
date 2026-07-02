@@ -32,7 +32,7 @@ export function CheckboxFilter(params: apiFilterParams) {
   const handleToggle = (label: string, selections: string[]) => {
     const newFilters = { ...spec.filters };
     newFilters[label] = selections.length === 0 ? [] : selections;
-    setValue({ ...spec.filters, [label]: selections });
+    setValue(newFilters);
   };
 
   return (
