@@ -19,13 +19,13 @@ import { usePdfMode } from '@/contexts/PdfModeContext';
 
 // Stacking order should match SECTOR_ORDER in post_qcew.py
 const SECTOR_COLORS: Record<string, string> = {
-  'Goods-producing': '#4472c4',
-  'Trade, Transportation & Utilities': '#ed7d31',
-  'Education & Health Services': '#70ad47',
-  'Leisure & Hospitality': '#5b9bd5',
-  'Professional & Business Services': '#ffc000',
-  'Information & Financial Activities': '#9e480e',
-  Government: '#636363',
+  'Goods-producing': '#264653',
+  'Trade, Transportation & Utilities': '#287271',
+  'Education & Health Services': '#2a9d8f',
+  'Leisure & Hospitality': '#8ab17d',
+  'Professional & Business Services': '#e9c46a',
+  'Information & Financial Activities': '#f4a261',
+  Government: '#e76f51',
   'Other Services': '#c0c0c0',
 };
 
@@ -181,7 +181,7 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
               type="monotone"
               dataKey="Total"
               stroke="#154734"
-              strokeWidth={2.5}
+              strokeWidth={3}
               dot={false}
             />
           </LineChart>

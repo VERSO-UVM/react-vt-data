@@ -153,18 +153,13 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
             tickFormatter={(value) => value.toLocaleString()}/>
           <Tooltip formatter={(value: number) => value.toLocaleString()}/>
-          <Legend 
-            align="right"
-            iconType="line"
-            verticalAlign="bottom"
-            
-          />
+          <Legend align="right" iconType="line" verticalAlign="bottom"/>
           <Line
             type="monotone"
             dataKey="Population"
             name={`${location}`}
             stroke="#154734"
-            strokeWidth={2}
+            strokeWidth={3}
             dot={false}
           />
           {compareData.length > 0 && (
@@ -173,11 +168,9 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
                 type="monotone"
                 dataKey="Population (cmp)"
                 name={`${cmpName}`}
-                stroke="#154734"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
+                stroke="#1c7ed6"
+                strokeWidth={3}
                 dot={false}
-                legendType="none"
               />
             </>
           )}
@@ -246,7 +239,7 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
             dataKey="Median Age"
             name={`${location}`} 
             stroke="#154734"
-            strokeWidth={2}
+            strokeWidth={3}
             dot={false}
           />
           {compareData.length > 0 && (
@@ -255,9 +248,8 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
                 type="monotone"
                 dataKey="Median Age (cmp)"
                 name={`${cmpName}`}
-                stroke="#154734"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
+                stroke="#1c7ed6"
+                strokeWidth={3}
                 dot={false}
                 legendType="none"
               />
