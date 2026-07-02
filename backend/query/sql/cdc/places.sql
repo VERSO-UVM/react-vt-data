@@ -5,6 +5,6 @@ SELECT
     p.bin,
     c.CountyFIPS,
     ST_ASGEOJSON(c.geom) AS geometry
-FROM cdc_places p
-LEFT JOIN vermont_counties c ON p.LocationID = c.CountyFIPS
-{where_string}
+FROM cdc_places AS p
+LEFT JOIN vermont_counties AS c ON p.LocationID = c.CountyFIPS
+{{ where_string }}

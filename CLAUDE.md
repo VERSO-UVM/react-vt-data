@@ -28,7 +28,14 @@ npm run format:check # Check formatting without modifying
 uvicorn api.main:app --reload --port 6767  # API server on localhost:6767
 pip install -r requirements.txt            # Install dependencies
 streamlit run Home.py                      # Legacy Streamlit interface (not primary)
+uv run sqlfluff lint query/sql build/sql   # Lint the Jinja SQL templates
+uv run sqlfluff fix query/sql build/sql    # Auto-fix SQL lint issues
 ```
+
+SQL templates under `backend/query/sql/` and `backend/build/sql/` are Jinja
+templates rendered by `app_utils/sql_render.py` (which also holds the
+general-purpose filter compiler). Lint-time template context lives in
+`backend/.sqlfluff`.
 
 ## Architecture
 

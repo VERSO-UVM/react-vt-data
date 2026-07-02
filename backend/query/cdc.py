@@ -16,9 +16,7 @@ import xycmap
 from matplotlib import pyplot as plt
 
 from api.models import FilterSource
-from query.core_functions import (
-    sql_filter_block,
-)
+from app_utils.sql_render import compile_where, sql_filter_block
 from query.processed_db import DB
 
 logger = logging.getLogger(__name__)
@@ -82,12 +80,11 @@ def dual_var_geojson(sources: list[FilterSource]):
     """
     Note: currently just filtering
     """
-    # sql = sql_filter_block(sql_dir / "places_two_hard.sql", sources=sources)
-    measures = measures = [
-        m for source in sources for m in source.filters.get("Measure", [])
-    ]
-    where_string = f"WHERE Measure IN ({', '.join(repr(m) for m in measures)})"
-    sql = (sql_dir / "places.sql").read_text().format(where_string=where_string)
+    # Both measures ride in one merged FilterSource so the shared places.sql
+    # template serves the single- and dual-variable cases alike.
+    measures = [m for source in sources for m in source.filters.get("Measure", [])]
+    merged = FilterSource(filter_table="cdc_places", filters={"Measure": measures})
+    sql = sql_filter_block(sql_dir / "places.sql", [merged])
     df = DB.execute(sql).df()
     df = widen_dual_var(df, measures)
     cmap = build_cmap()
@@ -115,11 +112,8 @@ def get_measure_cutpoints(sources: list[FilterSource]):
     measures = [m for source in sources for m in source.filters.get("Measure", [])]
     cmap = build_cmap()
     grid = [[[round(c * 255) for c in cmap[y, x]] for x in range(3)] for y in range(3)]
-    where_string = f"WHERE Measure IN ({', '.join(repr(m) for m in measures)})"
-    sql = f"""--sql
-        SELECT * FROM cdc_edges
-        {where_string}
-    """
+    where_string = compile_where({"Measure": measures})
+    sql = f"SELECT * FROM cdc_edges {where_string}"
     edges = DB.execute(sql).df()
     edges_x = (
         edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()
