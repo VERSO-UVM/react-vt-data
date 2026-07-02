@@ -12,6 +12,7 @@ import pandas as pd
 from build import BACKEND, CON, data_dir
 
 proc_dir = BACKEND / "Data" / "_Processed" / "cdc"
+TABLES = ["places", "edges"]
 
 
 def get_SME_indicatiors() -> str:
@@ -21,11 +22,22 @@ def get_SME_indicatiors() -> str:
     return ", ".join(f"'{i}'" for i in indicators)
 
 
-def bin_measures(df: pd.DataFrame):
-    df["bin"] = df.groupby("Measure")["Data_Value"].transform(
-        lambda s: pd.qcut(s, 3, labels=False, duplicates="drop")
+def bin_measures(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    edges_by_measure = {}
+
+    def bin_group(s: pd.Series):
+        codes, edges = pd.qcut(s, 5, labels=False, retbins=True)
+        edges_by_measure[s.name] = edges
+        return codes
+
+    df["bin"] = df.groupby("Measure")["Data_Value"].transform(bin_group)
+    edge_df = (
+        pd.DataFrame(edges_by_measure)
+        .transpose()
+        .reset_index()
+        .rename(columns={"index": "Measure"})
     )
-    return df
+    return df, edge_df
 
 
 def build_tables(indicators: str) -> None:
@@ -47,19 +59,24 @@ def build_tables(indicators: str) -> None:
         FROM read_csv ('{path}')
         WHERE StateAbbr IN ('VT')
   """).df()
-    df = bin_measures(df)
+    df, edge_df = bin_measures(df)
     CON.execute("""--sql
             CREATE OR REPLACE TABLE places
             AS SELECT * 
             FROM df            
         """)
+    CON.execute("""--sql
+        CREATE OR REPLACE TABLE edges
+        AS SELECT * 
+        FROM edge_df            
+    """)
 
 
 def main():
     indicators = get_SME_indicatiors()
     build_tables(indicators)
     proc_dir.mkdir(parents=True, exist_ok=True)
-    for table in ["places"]:
+    for table in TABLES:
         CON.execute(
             f"COPY (SELECT * FROM {table}) TO '{proc_dir / f'{table}.parquet'}' "
         )

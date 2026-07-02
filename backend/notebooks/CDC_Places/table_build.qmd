@@ -220,20 +220,76 @@ sme_indicators
 ```
 
 
+Some of these are pretty small, so we'll want a legend. To do that, we need to flag the bin sizes.
 
-Some of these are pretty small. 
+```{python}
+edges_by_measure = {}
 
+
+def bin_group(s):
+    codes, edges = pd.qcut(s, 5, labels=False, duplicates="drop", retbins=True)
+    edges_by_measure[s.name] = edges
+    return codes
+
+
+sme_indicators["bin"] = sme_indicators.groupby("Measure")["Data_Value"].transform(
+    bin_group
+)
+sme_indicators
+```
+
+```{python}
+con.execute("""
+  CREATE OR REPLACE VIEW sme AS 
+  SELECT * FROM sme_indicators
+""")
+```
+
+```{python}
+edges_by_measure
+```
+
+So now we have information for a supplementary 'edges' table.
+
+```{python}
+edge_df = (
+    pd.DataFrame(edges_by_measure)
+    .transpose()
+    .reset_index()
+    .rename(columns={"index": "Measure"})
+)
+edge_df.head()
+con.execute("""
+  CREATE OR REPLACE VIEW cdc_edges AS 
+  SELECT * FROM edge_df
+""")
+
+con.execute("""
+  SELECT s.*, e.* EXCLUDE (Measure) FROM sme s
+  LEFT JOIN cdc_edges e ON s.Measure = e.Measure
+""").df().head()
+```
+
+```{python}
+tables = [r[0] for r in con.execute("SHOW TABLES").fetchall()]
+tables
+```
 Great, the table looks good. We'll move it into a `build` script for processing the data. 
 
 
 # Check it works
 
 ```{python}
-db_full = duckdb.connect("Data/_Processed/all_data.duckdb")
+db_full = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
 db_full.execute("SELECT * FROM cdc_places").df().head()
 ```
 
-Great, looks good. 
+```{python}
+db_full.execute("SELECT * FROM cdc_edges").df().head()
+
+```
+
+Great, looks good.  For the join...
 
 
 # Schema and Front-End Considerations.
