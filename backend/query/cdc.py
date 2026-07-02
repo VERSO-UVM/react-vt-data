@@ -89,7 +89,6 @@ def dual_var_geojson(sources: list[FilterSource]):
     where_string = f"WHERE Measure IN ({', '.join(repr(m) for m in measures)})"
     sql = (sql_dir / "places.sql").read_text().format(where_string=where_string)
     df = DB.execute(sql).df()
-    measures = df["Measure"].unique()
     df = widen_dual_var(df, measures)
     cmap = build_cmap()
     features = []
