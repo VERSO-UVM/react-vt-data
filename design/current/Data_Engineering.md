@@ -44,5 +44,37 @@ The schema governs filtering and joining. It is laid out as follows:
 
 Note that value_col and var_col both are premised on the idea that the dataset is in a **tidy** format: one row per observation, with variable in the 'discriminator; column. 
 
-## Future
-If needed, the scheme can at some point be updated to instead type each column in the ordered column list, or something like that. 
+# Future
+If needed, the scheme can at some point be updated to instead type each column in the ordered column list, or something like that. The hope is that the schema can hold only the "hand controlled" meta data, and that some other function can actually define/type the columns, etc., so that, for example:
+* boolean columns are grouped and returned by checkbox
+* category columns are grouped and returned by cascade
+
+
+
+
+## Example 
+We want to *generate* something like the below. 
+
+```
+{
+  "zoning_full": {
+    "join_key": "OBJECT_ID",
+    "join_type": "inner",
+    "columns": {
+      "County":         { "col": "County",          "type": "category", "group": "district" },
+      "Jurisdiction":   { "col": "Municipal_Name",   "type": "category", "group": "district" },
+      "District Type":  { "col": "District_Type",    "type": "category", "group": "district" },
+
+      "ADU Allowed":           { "col": "ADU_Allowance",                  "type": "bool", "group": "allowance" },
+      "PUD Allowed":           { "col": "PUD_Allowance",                  "type": "bool", "group": "allowance" },
+      "Affordable Allowed":    { "col": "Affordable_Housing_Allowance",   "type": "bool", "group": "allowance" },
+
+      "Elderly Only (ADU)":    { "col": "ADU_Elderly_Housing_Only",       "type": "bool", "group": "occupancy" },
+      "Owner-Occupied (ADU)":  { "col": "ADU_Owner_Occupancy_Required",   "type": "bool", "group": "occupancy" },
+
+      "Max Height (F2F)":      { "col": "F2F_Max_Height",   "type": "range", "group": "dimensional" },
+      "Min Lot Size (F2F)":    { "col": "F2F_Min_Lot_Size", "type": "range", "group": "dimensional" }
+    }
+  }
+}
+```

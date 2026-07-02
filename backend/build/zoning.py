@@ -7,12 +7,17 @@
     Build script to convert the `zoning_update.fgb` into four SQL tables.
 """
 
+import numpy as np
 import pandas as pd
 
 from build import BACKEND, CON, data_dir
 
 proc_dir = BACKEND / "Data" / "_Processed" / "zoning"
 sql_path = BACKEND / "build" / "sql"
+
+
+def func_x(x: np.ndarray) -> int:
+    return 5
 
 
 # hardcoded specifics:
@@ -55,7 +60,8 @@ def data_load():
     path = data_dir / "zoning" / "vt-zoning-update.fgb"
     CON.execute(f"""--sql
         CREATE OR REPLACE VIEW zoning_raw AS 
-        SELECT * FROM ST_READ('{path}')
+        SELECT * EXCLUDE(OGC_FID) 
+        FROM ST_READ('{path}')
     """)
 
 
@@ -130,6 +136,15 @@ def build_rules():
     CON.register("rules", rules)
 
 
+def build_full():
+    drop_cols = ["geom", "Shape_Area", "Shape_Length"]
+    exclude = ", ".join(drop_cols)
+    CON.execute(f"""--sql
+        CREATE OR REPLACE VIEW wide AS
+        SELECT * EXCLUDE ({exclude}) FROM zoning_raw
+    """)
+
+
 def build_color():
     CON.execute((sql_path / "zoning_colors.sql").read_text())
 
@@ -140,8 +155,9 @@ def main():
     build_geom()
     build_rules()
     build_color()
+    build_full()
     proc_dir.mkdir(parents=True, exist_ok=True)
-    for table in ["info", "geom", "rules", "colors"]:
+    for table in ["info", "geom", "rules", "colors", "wide"]:
         CON.execute(
             f"COPY (SELECT * FROM {table}) TO '{proc_dir / f'{table}.parquet'}' "
         )

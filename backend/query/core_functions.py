@@ -57,6 +57,17 @@ def _nest(rows: list[tuple]) -> dict:
     return tree
 
 
+def filter_options(
+    colmap: dict, labels: list[str], table: str, db=DB
+) -> FilterResponse:
+    options = {}
+    for label in labels:
+        col = colmap[label]
+        rows = db.execute(f'SELECT DISTINCT "{col}" FROM {table} ORDER BY 1').fetchall()
+        options[label] = [r[0] for r in rows if r[0] is not None]
+    return FilterResponse(labels=labels, options=options)
+
+
 def filter_tree(
     colmap: dict, tree_labels: list[str], table: str, db=DB, rangemap: dict = {}
 ) -> FilterResponse:

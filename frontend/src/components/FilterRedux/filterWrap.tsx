@@ -7,6 +7,7 @@
  *
  */
 
+import { CheckboxFilter } from './CheckboxUI';
 import { CascadeFilter } from './CascadeUI';
 import { FilterSpec, FilterValue, filterDef } from './filterTypes';
 import { useState } from 'react';
@@ -45,6 +46,8 @@ export function FilterWrap(params: FilterWrapProps) {
           };
           if (def.filter_style === 'Cascade')
             return <CascadeFilter key={i} {...common} />;
+          else def.filter_style === 'Checkbox';
+          return <CheckboxFilter key={i} {...common} />;
         })}
       </Group>
       <ApplyButton dataURL={dataURL} specs={specs} onData={selectData} />

@@ -10,6 +10,20 @@
         "District Name": "District_Name"
       }
     },
+    "zoning_wide": {
+      "join_key": "OBJECT_ID",
+      "join_type": "inner",
+      "columns": {
+        "Accessory Dwelling Unit": "ADU_Allowance",
+        "Single Family": "F1F_Allowance",
+        "Two Family": "F2F_Allowance",
+        "Three Family": "F3F_Allowance",
+        "Four Family": "F4F_Allowance",
+        "Affordable Housing": "Affordable_Housing_Allowance",
+        "Planned Residential Development": "PRD_Allowance",
+        "Planned Unit Development": "PUD_Allowance"
+      }
+    },
     "zoning_rules": {
       "join_key": "OBJECT_ID",
       "join_type": "inner",

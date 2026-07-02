@@ -9,7 +9,7 @@
 ///// Core Filter Objects ///
 
 // filters can be either
-//     lists of strings (values to IN on in sql)
+//     lists of strings AND booleans-as-strings (values to IN on in sql)
 //    (min max) tuples for ranges.
 export type FilterValue = string[] | { min: number; max: number };
 

@@ -8,11 +8,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { FilterSpec, FilterValue, FilterTree } from './filterTypes';
+import { FilterTree, apiFilterParams } from './filterTypes';
 import axios from 'axios';
 import { BASE_API_URL } from '@/config';
 import { Select, Stack } from '@mantine/core';
-import { apiFilterParams } from './filterTypes';
 
 export function CascadeFilter(params: apiFilterParams) {
   const { spec, setValue } = params;
