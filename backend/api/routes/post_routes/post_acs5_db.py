@@ -7,7 +7,12 @@ from api.models import DPSeriesRequest, FilterRequest, make_response
 from app_utils.db import DB
 
 # TODO: Simplify / Refactor this script using the new query folder functions
-from query.acs5 import get_acs5_tidy, get_median_earnings, get_unemployment_rate_ts
+from query.acs5 import (
+    get_acs5_tidy,
+    get_median_earnings,
+    get_snapshot,
+    get_unemployment_rate_ts,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -72,9 +77,32 @@ async def tidy_median_earnings(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 
+# Geography Snapshot Variables
+@router.post("/load/acs5-db/tidy/snapshot")
+async def tidy_snapshot(request: FilterRequest):
+    rows = get_snapshot(filters=request.filters)
+    return make_response(data=rows, metadata=get_metadata("snapshot"))
+
+
 # ---------------------------------------------------------------------------
 # DP-series combined explorer (DP02 / DP03 / DP04 / DP05)
 # ---------------------------------------------------------------------------
+
+# Summary fetch for data viewer snapshot
+
+
+# @router.get("/load/summary")
+# async def get_summary(location: str):
+#     """Return a summary for the given loocation and variable list."""
+#     variables = [
+#         "Population (ACS)",
+#         "Median Household Income",
+#         "Median Home Value",
+#         "Total Housing Units",
+#     ]
+#     total_housing_units = DB.execute()
+
+#     return make_response(data=rows, metadata=None)
 
 
 # TODO: Refactor this code to match zoning schema

@@ -197,7 +197,7 @@ def build() -> None:
     # Zoning parquet
     # ------------------------------------------------------------------
 
-    con.execute(f"""
+    con.execute("""
         INSTALL spatial;
         LOAD spatial;
     """)
@@ -212,7 +212,7 @@ def build() -> None:
     # Wastewater parquets
     # ------------------------------------------------------------------
 
-    con.execute(f"""
+    con.execute("""
         LOAD spatial;
     """)
 

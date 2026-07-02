@@ -47,10 +47,14 @@ from app_utils.data_loading import crs_set
 ```
 
 ```{python}
-con = duckdb.connect("Data/_Processed/all_data.duckdb")
+con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
 con.execute("LOAD spatial")
 df = con.execute("SELECT * FROM cdc_places").df()
 df.head()
+```
+
+```{python}
+con.execute("SHOW TABLES").df()
 ```
 
 # Ideas 

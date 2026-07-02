@@ -23,7 +23,7 @@ export {
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem } from '@/types/cachedCharts';
-import { Badge, Card, Box, Title, Stack, Text, Group } from '@mantine/core';
+import { Badge, Card, Box, Title, Stack, Text, Group, SimpleGrid } from '@mantine/core';
 import { AddChart, RemoveChart, ToggleChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
@@ -204,8 +204,7 @@ export const ChartStack = <TData extends Record<string, any>>({
 
       const defId = defIds?.[i];
       const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
-      const handleToggle =
-        defId && onToggle ? () => onToggle(defId) : undefined;
+      const handleToggle = defId && onToggle ? () => onToggle(defId) : undefined;
 
       // Compact note card — no chart, no 400px box
       if (chart.subtype === 'noteCard')
