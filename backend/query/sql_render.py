@@ -19,6 +19,14 @@
     cannot alter the query. Column and table names still appear literally, but
     those come from server-side schema config, not from requests.
 
+    EG:
+    ```
+    sql, params = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
+    # sql:    ... WHERE "NAME" IN ($1) AND TRY_CAST("year" AS DOUBLE) >= $2 ...
+    # params: ['Vergennes', 2015.0, 2020.0]
+    result = DB.execute(sql, params).df()
+    ```
+
     This module deliberately has no database dependency (`query/__init__.py` is
     kept empty for the same reason) so `build/` -- which runs before the processed
     DB exists -- and the tests can import it.
