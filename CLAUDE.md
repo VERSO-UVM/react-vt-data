@@ -8,7 +8,7 @@ Vermont Data Exploration App — a full-stack web application for visualizing Ve
 
 ## Tips
 
-- Use `conda activate leahy_data` before executing any python commands to try stuff.
+- Use `uv run` to run things.
 
 ## Commands
 

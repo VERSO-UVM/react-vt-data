@@ -2,6 +2,6 @@
   "recommendations": [
     "charliermarsh.ruff",
     "esbenp.prettier-vscode",
-    "dorzey.vscode-sqlfluff"
+    "sqlfluff.vscode-sqlfluff"
   ]
 }

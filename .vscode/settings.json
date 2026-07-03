@@ -10,11 +10,11 @@
   },
   "[sql]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "dorzey.vscode-sqlfluff"
+    "editor.defaultFormatter": "sqlfluff.vscode-sqlfluff"
   },
   "[jinja-sql]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "dorzey.vscode-sqlfluff"
+    "editor.defaultFormatter": "sqlfluff.vscode-sqlfluff"
   },
   "sqlfluff.workingDirectory": "${workspaceFolder}/backend",
   "sqlfluff.executablePath": "${workspaceFolder}/backend/.venv/bin/sqlfluff",
