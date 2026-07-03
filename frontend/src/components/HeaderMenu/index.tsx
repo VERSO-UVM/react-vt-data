@@ -57,16 +57,15 @@ const links = [
     ],
   },
   // { link: '/scratch', label: 'Scratch' }, // For zoning rules filter development
-  
   // I outlined future sections of our "About" page below -Ian
-  { 
-    link: '/about', 
+  {
+    link: '/about',
     label: 'About',
     links: [
       // { link: '/about/team', label: 'Team' },
       // { link: '/about/faq', label: 'FAQs' },
       // { link: '/about/contact', label: 'Contact Us' },
-    ]
+    ],
   },
 ];
 
