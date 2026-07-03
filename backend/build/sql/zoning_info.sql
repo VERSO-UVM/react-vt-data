@@ -10,6 +10,7 @@ SELECT
         END AS District_Type
     )
 FROM (
+<<<<<<< HEAD
     SELECT
         {{ info_string }},
         ST_AREA(
@@ -17,3 +18,10 @@ FROM (
         ) / 4046.86 AS Acres
     FROM zoning_raw
 ) AS with_acres;
+=======
+SELECT 
+    {info_string},
+    ST_Area(ST_Transform(geom, 'EPSG:4326', 'EPSG:32145', always_xy := TRUE)) / 4046.86 AS Acres
+FROM zoning_raw
+);
+>>>>>>> origin/variable-comparison
