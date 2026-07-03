@@ -10,8 +10,8 @@
 import numpy as np
 import pandas as pd
 
-from app_utils.sql_render import render_sql
 from build import BACKEND, CON, data_dir
+from query.sql_render import render_sql
 
 proc_dir = BACKEND / "Data" / "_Processed" / "zoning"
 sql_path = BACKEND / "build" / "sql"

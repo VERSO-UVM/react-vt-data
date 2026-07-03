@@ -16,7 +16,7 @@ import xycmap
 from matplotlib import pyplot as plt
 
 from api.models import FilterSource
-from app_utils.sql_render import compile_where, sql_filter_block
+from query.sql_render import compile_where, sql_filter_block
 from query.processed_db import DB
 
 logger = logging.getLogger(__name__)
@@ -24,8 +24,8 @@ sql_dir = Path(__file__).resolve().parent / "sql" / "cdc"
 
 
 def single_var_geojson(sources: list[FilterSource]):
-    sql = sql_filter_block(sql_dir / "places.sql", sources=sources)
-    rows = DB.execute(sql).df()
+    sql, params = sql_filter_block(sql_dir / "places.sql", sources)
+    rows = DB.execute(sql, params).df()
     if rows.empty:
         logger.error("geo query returned no rows for filters: %s", sources)
         raise ValueError(f"no results for filters: {sources}")
@@ -84,8 +84,8 @@ def dual_var_geojson(sources: list[FilterSource]):
     # template serves the single- and dual-variable cases alike.
     measures = [m for source in sources for m in source.filters.get("Measure", [])]
     merged = FilterSource(filter_table="cdc_places", filters={"Measure": measures})
-    sql = sql_filter_block(sql_dir / "places.sql", [merged])
-    df = DB.execute(sql).df()
+    sql, params = sql_filter_block(sql_dir / "places.sql", [merged])
+    df = DB.execute(sql, params).df()
     df = widen_dual_var(df, measures)
     cmap = build_cmap()
     features = []
@@ -112,9 +112,10 @@ def get_measure_cutpoints(sources: list[FilterSource]):
     measures = [m for source in sources for m in source.filters.get("Measure", [])]
     cmap = build_cmap()
     grid = [[[round(c * 255) for c in cmap[y, x]] for x in range(3)] for y in range(3)]
-    where_string = compile_where({"Measure": measures})
+    params: list = []
+    where_string = compile_where({"Measure": measures}, params)
     sql = f"SELECT * FROM cdc_edges {where_string}"
-    edges = DB.execute(sql).df()
+    edges = DB.execute(sql, params).df()
     edges_x = (
         edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()
     )

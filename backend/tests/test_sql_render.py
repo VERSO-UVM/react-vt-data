@@ -1,9 +1,9 @@
 """
-Tests for app_utils/sql_render.py:
+Tests for query/sql_render.py:
   filter_clauses / compile_where / compile_filters (the general-purpose filter
-  compiler), render_sql / sql_filter_block (Jinja rendering), and sqlfluff checks
-  that every SQL template lints clean and renders to parseable DuckDB SQL with
-  representative filters applied.
+  compiler, emitting $N placeholders and a params list), render_sql /
+  sql_filter_block (Jinja rendering), and sqlfluff checks that every SQL template
+  lints clean and renders to parseable DuckDB SQL with representative filters.
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ import pytest
 from sqlfluff.core import FluffConfig, Linter
 
 from api.models import FilterSource, RangeFilter
-from app_utils.sql_render import (
+from query.sql_render import (
     compile_filters,
     compile_where,
     filter_clauses,
@@ -77,50 +77,78 @@ BUILD_TEMPLATE_CONTEXT = {
 
 class TestFilterClauses:
     def test_in_list(self):
-        assert filter_clauses({"County": ["Addison", "Rutland"]}) == [
-            "\"County\" IN ('Addison', 'Rutland')"
-        ]
+        params: list = []
+        clauses = filter_clauses({"County": ["Addison", "Rutland"]}, params)
+        assert clauses == ['"County" IN ($1, $2)']
+        assert params == ["Addison", "Rutland"]
 
     def test_scalar_becomes_in_list(self):
-        assert filter_clauses({"County": "Addison"}) == ["\"County\" IN ('Addison')"]
+        params: list = []
+        assert filter_clauses({"County": "Addison"}, params) == ['"County" IN ($1)']
+        assert params == ["Addison"]
 
     def test_range(self):
-        clauses = filter_clauses({"year": RangeFilter(min=2015, max=2020)})
+        params: list = []
+        clauses = filter_clauses({"year": RangeFilter(min=2015, max=2020)}, params)
         assert clauses == [
-            'TRY_CAST("year" AS DOUBLE) >= 2015.0',
-            'TRY_CAST("year" AS DOUBLE) <= 2020.0',
+            'TRY_CAST("year" AS DOUBLE) >= $1',
+            'TRY_CAST("year" AS DOUBLE) <= $2',
         ]
+        assert params == [2015.0, 2020.0]
 
     def test_none_values_skipped(self):
-        assert filter_clauses({"County": None}) == []
-        assert filter_clauses(None) == []
+        params: list = []
+        assert filter_clauses({"County": None}, params) == []
+        assert filter_clauses(None, params) == []
+        assert params == []
+
+    def test_numbering_continues_across_calls(self):
+        params: list = []
+        filter_clauses({"a": ["x"]}, params)
+        clauses = filter_clauses({"b": ["y", "z"]}, params)
+        assert clauses == ['"b" IN ($2, $3)']
+        assert params == ["x", "y", "z"]
 
     def test_compile_where(self):
-        assert compile_where(None) == ""
-        where = compile_where({"a": ["x"], "b": ["y"]})
-        assert where == "WHERE \"a\" IN ('x') AND \"b\" IN ('y')"
+        params: list = []
+        assert compile_where(None, params) == ""
+        where = compile_where({"a": ["x"], "b": ["y"]}, params)
+        assert where == 'WHERE "a" IN ($1) AND "b" IN ($2)'
+        assert params == ["x", "y"]
 
 
 class TestCompileFilters:
     def test_empty_sources(self):
-        assert compile_filters([]) == ("", "")
+        assert compile_filters([], []) == ("", "")
 
     def test_inner_join(self):
-        cte, join = compile_filters([CTE_SOURCE])
-        assert cte.startswith("WITH f0 AS (SELECT DISTINCT OBJECT_ID")
+        params: list = []
+        cte, join = compile_filters([CTE_SOURCE], params)
+        assert cte == (
+            "WITH f0 AS (SELECT DISTINCT OBJECT_ID "
+            'FROM zoning_info WHERE "County" IN ($1))'
+        )
         assert join == "JOIN f0 USING (OBJECT_ID)"
+        assert params == ["Addison"]
 
     def test_left_join(self):
         src = CTE_SOURCE.model_copy(update={"join_type": "left"})
-        _, join = compile_filters([src])
+        _, join = compile_filters([src], [])
         assert join == "LEFT JOIN f0 USING (OBJECT_ID)"
 
     def test_spatial_join(self):
         src = FilterSource(
             filter_table="zoning_geom", join_key="geom", join_type="spatial_intersect"
         )
-        _, join = compile_filters([src])
+        _, join = compile_filters([src], [])
         assert join == "JOIN f0 ON ST_Intersects(g.geom, f0.geom)"
+
+    def test_multiple_sources_share_numbering(self):
+        params: list = []
+        cte, _ = compile_filters([CTE_SOURCE, CTE_SOURCE], params)
+        assert '"County" IN ($1)' in cte
+        assert '"County" IN ($2)' in cte
+        assert params == ["Addison", "Addison"]
 
 
 # ---------------------------------------------------------------------------
@@ -130,19 +158,33 @@ class TestCompileFilters:
 
 class TestRendering:
     def test_where_string_injected(self):
-        sql = sql_filter_block(BACKEND / "query/sql/acs5/acs5_tidy.sql", [WHERE_SOURCE])
+        sql, params = sql_filter_block(
+            BACKEND / "query/sql/acs5/acs5_tidy.sql", [WHERE_SOURCE]
+        )
         assert "FROM acs5_b10_census" in sql
-        assert "WHERE \"NAME\" IN ('Vergennes', 'Addison town')" in sql
+        assert 'WHERE "NAME" IN ($1, $2)' in sql
+        assert params == ["Vergennes", "Addison town", 2015.0, 2020.0]
         assert "{{" not in sql and "{%" not in sql
 
     def test_cte_and_join_injected(self):
-        sql = sql_filter_block(BACKEND / "query/sql/zoning/geo_query.sql", [CTE_SOURCE])
+        sql, params = sql_filter_block(
+            BACKEND / "query/sql/zoning/geo_query.sql", [CTE_SOURCE]
+        )
         assert sql.startswith("WITH f0 AS (")
         assert "JOIN f0 USING (OBJECT_ID)" in sql
+        assert params == ["Addison"]
+
+    def test_params_match_used_fragments_only(self):
+        """A CTE-style template must not collect params for the unused WHERE path."""
+        sql, params = sql_filter_block(
+            BACKEND / "query/sql/zoning/geo_query.sql", [CTE_SOURCE]
+        )
+        assert sql.count("$") == len(params) == 1
 
     def test_no_sources_renders_unfiltered(self):
-        sql = sql_filter_block(BACKEND / "query/sql/zoning/info_table.sql", [])
+        sql, params = sql_filter_block(BACKEND / "query/sql/zoning/info_table.sql", [])
         assert "WHERE" not in sql
+        assert params == []
 
     def test_undefined_variable_raises(self):
         from jinja2 import UndefinedError
@@ -176,7 +218,9 @@ def test_templates_pass_sqlfluff():
 
 @pytest.mark.parametrize("template", sorted(QUERY_TEMPLATE_SOURCES))
 def test_rendered_query_sql_parses(template):
-    sql = sql_filter_block(BACKEND / template, QUERY_TEMPLATE_SOURCES[template])
+    sql, _params = sql_filter_block(
+        BACKEND / template, QUERY_TEMPLATE_SOURCES[template]
+    )
     _assert_parses(sql, template)
 
 

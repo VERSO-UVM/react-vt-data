@@ -33,9 +33,10 @@ uv run sqlfluff fix query/sql build/sql    # Auto-fix SQL lint issues
 ```
 
 SQL templates under `backend/query/sql/` and `backend/build/sql/` are Jinja
-templates rendered by `app_utils/sql_render.py` (which also holds the
-general-purpose filter compiler). Lint-time template context lives in
-`backend/.sqlfluff`.
+templates rendered by `query/sql_render.py`, which also holds the
+general-purpose filter compiler (it emits `$N` prepared-statement placeholders
+plus a params list — execute with `DB.execute(sql, params)`). Lint-time
+template context lives in `backend/.sqlfluff`.
 
 ## Architecture
 

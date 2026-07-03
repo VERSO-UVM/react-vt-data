@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from api.core_functions import request_to_source, spec_to_source
 from api.models import FilterRequest, FilterSpec
-from query import dual_var_geojson, get_measure_cutpoints, single_var_geojson
+from query.cdc import dual_var_geojson, get_measure_cutpoints, single_var_geojson
 
 router = APIRouter()
 

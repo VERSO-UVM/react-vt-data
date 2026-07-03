@@ -1,10 +1,4 @@
-# ruff: noqa: F401
-
-# from query.acs5 import get_acs5_dp_combined_filters
-from query.cdc import dual_var_geojson, get_measure_cutpoints, single_var_geojson
-from query.core_functions import filter_options, filter_tree
-from query.processed_db import DB
-from query.zoning import (
-    get_zoning_aggregated_acres,
-    get_zoning_geojson,
-)
+# Intentionally empty. Importing this package must stay side-effect free so that
+# `query.sql_render` can be used by build scripts and tests before the processed
+# DuckDB file exists (`query.processed_db` opens it at import time). Import
+# submodules directly, e.g. `from query.zoning import get_zoning_geojson`.
