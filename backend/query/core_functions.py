@@ -7,7 +7,7 @@
     Shared DB-backed helpers for the query layer (filter option/tree discovery).
 
     The general-purpose filter compiler and Jinja SQL renderer live in
-    `query/sql_render.py`, which has no DB dependency.
+    `sql_render.py`, which has no DB dependency.
 """
 
 import logging

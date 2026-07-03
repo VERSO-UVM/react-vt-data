@@ -2,7 +2,7 @@
 # Run from backend/:  uv run sqlfluff lint query/sql build/sql
 #
 # The [templater:jinja:context] section supplies representative values for the
-# fragments that Python (query/sql_render.py) injects at runtime, so the linter
+# fragments that Python (sql_render.py) injects at runtime, so the linter
 # checks a realistic rendering of each template. The $1/$2 placeholders mirror
 # the numbered prepared-statement parameters the filter compiler emits.
 
@@ -16,7 +16,7 @@ max_line_length = 88
 #   ("District Type") are part of the frontend data contract.
 # ST06: SELECT column order is part of the API response shape.
 # ST07: USING joins are idiomatic DuckDB and what the filter compiler
-#   (query/sql_render.py) generates.
+#   (sql_render.py) generates.
 exclude_rules = CP02, CP03, RF04, RF05, ST06, ST07
 
 # DuckDB preserves identifier case, so quoted aliases that only change case

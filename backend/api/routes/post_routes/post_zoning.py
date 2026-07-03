@@ -3,7 +3,7 @@ from fastapi import APIRouter, Response
 from api.core_functions import request_to_source, spec_to_source
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, FilterSpec, make_response
-from query.zoning import get_zoning_aggregated_acres, get_zoning_geojson
+from query import get_zoning_aggregated_acres, get_zoning_geojson
 
 router = APIRouter()
 

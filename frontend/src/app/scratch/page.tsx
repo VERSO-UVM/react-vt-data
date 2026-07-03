@@ -1,5 +1,6 @@
 'use client';
 import { Box, Divider, Paper, Stack, Title } from '@mantine/core';
+import type { FeatureCollection } from 'geojson';
 import { useState } from 'react';
 import { BASE_API_URL } from '@/config';
 import VTMap from '@/components/mapping';
@@ -56,19 +57,13 @@ import { FilterSpec } from '@/components/FilterRedux/filterTypes';
 // }
 
 export default function Scratch_CDC() {
-  const [legend, setLegend] = useState<{}>({});
-  const [rows, setRows] = useState<{}>({});
-  const tableURL = `${BASE_API_URL}/load/mapping/cdc/places/double_new`;
-  const legendURL = `${BASE_API_URL}/load/mapping/cdc/places/bins`;
+  const [rows, setRows] = useState<FeatureCollection | null>(null);
+  const comparisonURL = `${BASE_API_URL}/load/mapping/cdc/places/comparison`;
 
   const handleApply = async (specs: FilterSpec[]) => {
     const payload = assemble(specs);
-    const [legendData, rowsData] = await Promise.all([
-      postRequest({ dataURL: legendURL, payload }),
-      postRequest({ dataURL: tableURL, payload }),
-    ]);
-    setLegend(legendData);
-    setRows(rowsData);
+    const res = await postRequest({ dataURL: comparisonURL, payload });
+    setRows(res.data); // legend rides along in res.metadata.legend
   };
 
   return (

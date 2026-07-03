@@ -1,5 +1,5 @@
 """
-Tests for query/sql_render.py:
+Tests for sql_render.py:
   filter_clauses / compile_where / compile_filters (the general-purpose filter
   compiler, emitting $N placeholders and a params list), render_sql /
   sql_filter_block (Jinja rendering), and sqlfluff checks that every SQL template
@@ -12,7 +12,7 @@ import pytest
 from sqlfluff.core import FluffConfig, Linter
 
 from api.models import FilterSource, RangeFilter
-from query.sql_render import (
+from sql_render import (
     compile_filters,
     compile_where,
     filter_clauses,

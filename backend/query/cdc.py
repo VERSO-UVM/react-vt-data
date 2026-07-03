@@ -16,7 +16,7 @@ import xycmap
 from matplotlib import pyplot as plt
 
 from api.models import FilterSource
-from query.sql_render import compile_where, sql_filter_block
+from sql_render import compile_where, sql_filter_block
 from query.processed_db import DB
 
 logger = logging.getLogger(__name__)
@@ -76,17 +76,38 @@ def to_rgba(r, cmap):
     return [round(c * 255) for c in rgba]
 
 
-def dual_var_geojson(sources: list[FilterSource]):
+def _measure_cutpoints(measures: list[str]) -> tuple[list[float], list[float]]:
+    """Bin edges for each measure from the precomputed cdc_edges table."""
+    params: list = []
+    where_string = compile_where({"Measure": measures}, params)
+    sql = f"SELECT * FROM cdc_edges {where_string}"
+    edges = DB.execute(sql, params).df()
+    edges_x = (
+        edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()
+    )
+    edges_y = (
+        edges[edges["Measure"] == measures[1]].drop(columns="Measure").iloc[0].tolist()
+    )
+    return edges_x, edges_y
+
+
+def dual_var_comparison(sources: list[FilterSource]) -> tuple[dict, dict]:
+    """GeoJSON + legend for a two-measure bivariate comparison map.
+
+    Returns (geojson, legend). Both are derived from the SAME cmap in one pass,
+    so the legend grid always matches the map's fill colors.
     """
-    Note: currently just filtering
-    """
+    measures = [m for source in sources for m in source.filters.get("Measure", [])]
+    if len(measures) != 2:
+        raise ValueError(f"expected exactly 2 measures, got: {measures}")
+
     # Both measures ride in one merged FilterSource so the shared places.sql
     # template serves the single- and dual-variable cases alike.
-    measures = [m for source in sources for m in source.filters.get("Measure", [])]
     merged = FilterSource(filter_table="cdc_places", filters={"Measure": measures})
     sql, params = sql_filter_block(sql_dir / "places.sql", [merged])
     df = DB.execute(sql, params).df()
     df = widen_dual_var(df, measures)
+
     cmap = build_cmap()
     features = []
     for r in df.itertuples():
@@ -105,22 +126,14 @@ def dual_var_geojson(sources: list[FilterSource]):
                 },
             }
         )
-    return {"type": "FeatureCollection", "features": features}
+    geojson = {"type": "FeatureCollection", "features": features}
 
-
-def get_measure_cutpoints(sources: list[FilterSource]):
-    measures = [m for source in sources for m in source.filters.get("Measure", [])]
-    cmap = build_cmap()
     grid = [[[round(c * 255) for c in cmap[y, x]] for x in range(3)] for y in range(3)]
-    params: list = []
-    where_string = compile_where({"Measure": measures}, params)
-    sql = f"SELECT * FROM cdc_edges {where_string}"
-    edges = DB.execute(sql, params).df()
-    edges_x = (
-        edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()
-    )
-    edges_y = (
-        edges[edges["Measure"] == measures[1]].drop(columns="Measure").iloc[0].tolist()
-    )
-
-    return {"grid": grid, "measures": measures, "edges_x": edges_x, "edges_y": edges_y}
+    edges_x, edges_y = _measure_cutpoints(measures)
+    legend = {
+        "grid": grid,
+        "measures": measures,
+        "edges_x": edges_x,
+        "edges_y": edges_y,
+    }
+    return geojson, legend

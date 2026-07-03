@@ -27,9 +27,10 @@
     result = DB.execute(sql, params).df()
     ```
 
-    This module deliberately has no database dependency (`query/__init__.py` is
-    kept empty for the same reason) so `build/` -- which runs before the processed
-    DB exists -- and the tests can import it.
+    This module lives at the backend root, outside `query/`, on purpose: it is a
+    separate concern with no database dependency, so `build/` -- which runs
+    before the processed DB exists -- and the tests can import it without
+    triggering `query/__init__.py`'s DB connection.
 """
 
 import logging

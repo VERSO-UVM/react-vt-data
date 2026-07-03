@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter
 
 from api.config import schema
-from query.core_functions import filter_options, filter_tree
+from query import filter_options, filter_tree
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
