@@ -97,6 +97,37 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
+  // Education (Bar Graph)
+  {
+    id: 'age_distribution',
+    title: 'Age Distribution',
+    categories: ['Demographics'],
+    xField: 'Variable',
+    yField: 'Percent',
+    subtype: 'CompareDiffPerXBarChart',
+    chartParams: { 
+      legendLabels: ['Main', 'Compare'],
+      fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
+      percentFormat: true,
+      includeCategories: [
+        "Under 18",
+        "18 to 24",
+        "25 to 34",
+        "35 to 44",
+        "45 to 54",
+        "55 to 64",
+        "65 to 74",
+        "75 plus",
+      ]
+    },
+    url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
+    filterKey: '',
+    showCols: [
+      { key: 'NAME' },
+      { key: 'Variable' },
+      { key: 'Percent' },
+    ],
+  },
   {
     id: 'demographics_population',
     title: 'Historic Population Estimates',
@@ -141,7 +172,7 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'education_trend',
-    title: 'Educational Attainment Distribution',
+    title: 'Educational Attainment – Trend',
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
     xField: '',
     yField: '',
@@ -157,7 +188,7 @@ export const chartDefs: ChartDef[] = [
   // Education (Bar Graph)
   {
     id: 'education_distribution',
-    title: 'Educational Attainment Distribution',
+    title: 'Educational Attainment – Distribution',
     categories: ['Education'],
     xField: 'Variable',
     yField: 'Percent',
@@ -252,20 +283,6 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
-  {
-    id: 'labor_force_estimates',
-    title: 'Labor Force Participation — Value',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
-    xField: '',
-    yField: '',
-    subtype: 'renderTableEstimates',
-    categories: ['Labor & Economy'],
-    filterKey: '',
-    dataKey: '',
-    tableConfig: {
-      extraParams: { year_min: 2010, year_max: 2023 },
-    },
-  },
   // Unemployment Rate
   {
     id: 'unemployment_rate',
@@ -309,14 +326,31 @@ export const chartDefs: ChartDef[] = [
     chartParams: { noViewSwitch: true },
     url: `${BASE_API_URL}/load/qcew/employment`,
   },
-  // Income
+  // Median Household Income
   {
-    id: 'income',
-    title: 'Median Household & Per Capita Income',
+    id: 'median_hh_income',
+    title: 'Median Household Income',
     url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
     xField: '',
     yField: '',
     categories: ['Labor & Economy'],
+    trendChart: 'HouseholdIncomeTrendChart',
+    subtype: 'renderTableEstimates',
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  // Per Capita Income
+  {
+    id: 'per_capita_income',
+    title: 'Per Capita Income',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
+    xField: '',
+    yField: '',
+    categories: ['Labor & Economy'],
+    trendChart: 'PerCapitaIncomeTrendChart',
     subtype: 'renderTableEstimates',
     filterKey: '',
     dataKey: '',

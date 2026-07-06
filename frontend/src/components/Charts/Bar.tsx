@@ -135,6 +135,7 @@ interface CompareDiffChartItem<TData> extends ChartItem<TData> {
     colorScheme?: string;
     fixedYear?: number;
     percentFormat?: boolean;
+    includeCategories?: string[];
   };
 }
 
@@ -199,37 +200,49 @@ const CompareDiffPerXBarChart = <TData,>({
   const isPdfMode = usePdfMode();
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
 
-  const labels = chart.data.map((entry: any) => entry[chart.xField]);
+  const includeCategories = chart.chartParams?.includeCategories;
+  const filteredData = includeCategories
+    ? chart.data.filter((entry: any) =>
+        includeCategories.includes(entry[chart.xField])
+      )
+    : chart.data;
+
+  const filteredCompareData = includeCategories
+    ? chart.compareData.filter((entry: any) =>
+        includeCategories.includes(entry[chart.xField])
+      )
+    : chart.compareData;
+  
+  const labels = filteredData.map((entry: any) => entry[chart.xField]);
 
   let colors: string[];
   if (
     chart.chartParams?.color &&
     (chart.data[0] as any)?.[chart.chartParams.color]
   ) {
-    colors = chart.data.map((entry: any) => entry[chart.chartParams.color!]);
+      colors = filteredData.map((entry: any) => entry[chart.chartParams.color!]);
   } else {
-    const schemeName = chart.chartParams?.colorScheme || 'schemeCategory10';
+    const schemeName = chart.chartParams?.colorScheme || 'schemeTableau10';
     const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
-    colors = chart.data.map((_, index) => colorScale(index.toString()));
+    colors = filteredData.map((_, index) => colorScale(index.toString()));
   }
-  const compareColors = chart.compareData.map(() => '#999');
+  const compareColors = filteredCompareData.map(() => '#D3D3D3'); 
 
   const legendLabels = chart.chartParams.legendLabels || [
     chart.yField,
     `${chart.yField} (compare)`,
   ];
-
   const data = {
     labels,
     datasets: [
       {
         label: legendLabels[0],
-        data: chart.data.map((entry: any) => entry[chart.yField]),
+        data: filteredData.map((entry: any) => entry[chart.yField]),
         backgroundColor: colors,
       },
       {
         label: legendLabels[1],
-        data: chart.compareData.map((entry: any) => entry[chart.yField]),
+        data: filteredCompareData.map((entry: any) => entry[chart.yField]),
         backgroundColor: compareColors,
       },
     ],

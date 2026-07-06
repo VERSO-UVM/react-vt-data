@@ -24,6 +24,8 @@ export {
   LaborForceTrendChart,
   LaborForceTrendChartPrimeAge,
   EarningsTrendChart,
+  HouseholdIncomeTrendChart,
+  PerCapitaIncomeTrendChart,
   DPTrendChart,
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';

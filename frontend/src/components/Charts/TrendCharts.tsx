@@ -19,6 +19,25 @@ const CompareNote = ({ name }: { name: string }) => (
 // ---------------------------------------------------------------------------
 
 export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}) => {
+  
+  const AGE_SERIES = [
+    { key: 'Under 18', color: '#154734' },
+    { key: '65+', color: '#1c7ed6' },
+  ];
+  
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -56,6 +75,9 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
   return (
     <>
       {compareData.length > 0 && <CompareNote name={labels?.[1] ?? 'Comparison'} />}
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide age groups.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -65,52 +87,34 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
           <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-          <Legend 
-            align="right"
-            iconType="line"
-            verticalAlign="bottom"
-            
-          />
-          <Line
-            type="monotone"
-            dataKey="Under 18"
-            name={`Under 18`}
-            stroke="#154734"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="65+"
-            name={`65+`}
-            stroke="#1c7ed6"
-            strokeWidth={2}
-            dot={false}
-          />
-          {compareData.length > 0 && (
-            <>
-              <Line
-                type="monotone"
-                dataKey="Under 18 (cmp)"
-                name={`Under 18 (${labels?.[1] ?? 'Comparison'})`}
-                stroke="#154734"
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-              <Line
-                type="monotone"
-                dataKey="65+ (cmp)"
-                name={`65+ (${labels?.[1] ?? 'Comparison'})`}
-                stroke="#1c7ed6"
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            </>
-          )}
+          <Legend align="right" verticalAlign="bottom"
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>)}/>
+          {AGE_SERIES.map((s) => (
+            <Line 
+              key={s.key} 
+              dataKey={s.key} 
+              name={`${s.key} (${labels?.[0] ?? 'Main'})`}
+              stroke={s.color} 
+              strokeWidth={2}
+              dot={false} 
+              hide={hidden.has(s.key)}
+            />))}
+            {compareData.length > 0 && AGE_SERIES.map((s) => (
+            <Line
+              key={`${s.key}-cmp`} 
+              dataKey={`${s.key} (cmp)`}
+              name={`${s.key} (${labels?.[1] ?? 'Comparison'})`}
+              stroke={s.color}
+              strokeWidth={2} 
+              strokeDasharray="6 4" 
+              legendType="none" 
+              dot={false} 
+              hide={hidden.has(s.key)}
+            />))}
         </LineChart>
       </ResponsiveContainer>
     </>
@@ -119,6 +123,20 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
 
 // Historic Population
 export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}) => {
+  
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
 
@@ -141,6 +159,9 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
 
   return (
     <>
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={plotData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
@@ -148,7 +169,13 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
             tickFormatter={(value) => value.toLocaleString()}/>
           <Tooltip formatter={(value: number) => value.toLocaleString()}/>
-          <Legend align="right" iconType="line" verticalAlign="bottom"/>
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Population"
@@ -156,6 +183,7 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
             stroke="#154734"
             strokeWidth={3}
             dot={false}
+            hide={hidden.has('Population')}
           />
           {compareData.length > 0 && (
             <>
@@ -166,6 +194,7 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
+                hide={hidden.has('Population (cmp)')}
               />
             </>
           )}
@@ -182,6 +211,20 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
 // Demographics: Median Age Chart
 // ---------------------------------------------------------------------------
 export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}) => {
+  
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -209,6 +252,9 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
 
   return (
     <>
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -226,6 +272,13 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
               val != null ? `${Number(val).toFixed(1)} years` : '—'
             }
           />
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Median Age"
@@ -233,6 +286,7 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
             stroke="#154734"
             strokeWidth={3}
             dot={false}
+            hide={hidden.has('Median Age')}
           />
           {compareData.length > 0 && (
             <>
@@ -243,7 +297,7 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
-                legendType="none"
+                hide={hidden.has('Median Age (cmp)')}
               />
             </>
           )}
@@ -365,6 +419,19 @@ export const HomeValueTrendChart = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -385,6 +452,9 @@ export const HomeValueTrendChart = <TData,>({
 
   return (
     <>
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -395,6 +465,12 @@ export const HomeValueTrendChart = <TData,>({
           <YAxis unit="$" tick={{ fontSize: 10 }} domain={['auto', 'auto']} 
                  tickFormatter={(val: any) => val != null ? new Intl.NumberFormat('en-US').format(val) : ''} />
           <Tooltip formatter={(val: any) => val != null ? `$${new Intl.NumberFormat('en-US').format(val)}`: '—'}/>
+            <Legend align="right" verticalAlign="bottom" onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Median Home Value"
@@ -402,6 +478,7 @@ export const HomeValueTrendChart = <TData,>({
             stroke="#154734"
             strokeWidth={3}
             dot={false}
+            hide={hidden.has('Median Home Value')}
           />
           {compareData.length > 0 && (
             <>
@@ -412,7 +489,7 @@ export const HomeValueTrendChart = <TData,>({
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
-                legendType="none"
+                hide={hidden.has('Median Home Value (cmp)')}
               />
             </>
           )}
@@ -608,6 +685,20 @@ export const UnemploymentTrendChart = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
+  
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -629,15 +720,16 @@ export const UnemploymentTrendChart = <TData,>({
     ...buildPoint(data, year),
     ...(compareData.length > 0
       ? {
-          'Unemployment Rate (cmp)': buildPoint(compareData, year)[
-            'Unemployment Rate'
-          ],
+          'Unemployment Rate (cmp)': buildPoint(compareData, year)['Unemployment Rate'],
         }
       : {}),
   }));
 
   return (
     <>
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -647,6 +739,13 @@ export const UnemploymentTrendChart = <TData,>({
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
           <Tooltip formatter={(val: any) => val != null ? `${Number(val).toFixed(1)}%` : '—'}/>
+          <Legend align="right" verticalAlign="bottom"
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Unemployment Rate"
@@ -654,6 +753,7 @@ export const UnemploymentTrendChart = <TData,>({
             stroke="#154734"
             strokeWidth={2}
             dot={false}
+            hide={hidden.has('Unemployment Rate')}
           />
           {compareData.length > 0 && (
             <>
@@ -661,11 +761,11 @@ export const UnemploymentTrendChart = <TData,>({
                 type="monotone"
                 dataKey="Unemployment Rate (cmp)"
                 name={`${labels?.[1] ?? 'Comparison'}`}
-                stroke="#e07b39"
+                stroke="#1c7ed6"
                 strokeWidth={2}
                 strokeDasharray="6 4"
                 dot={false}
-                legendType="none"
+                hide={hidden.has('Unemployment Rate (cmp)')}
               />
             </>
           )}
@@ -742,6 +842,9 @@ export const EarningsTrendChart = <TData,>({
   return (
     <>
       {compareData.length > 0 && <CompareNote name={labels?.[1] ?? 'Comparison'} />}
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide income groups.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -761,7 +864,8 @@ export const EarningsTrendChart = <TData,>({
                 : '—'
             }
           />
-          <Legend onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+          <Legend align="right" verticalAlign="bottom"
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
             <span style={{ color: hidden.has(value) ? "#999" : "#222",
                           textDecoration: hidden.has(value) ? "line-through" : "none"}}>
               {value} 
@@ -792,12 +896,202 @@ export const EarningsTrendChart = <TData,>({
   );
 };
 
-// Median Home Value
+export const HouseholdIncomeTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+
+  const buildPoint = (rows: any[], year: number) => {
+    const row = rows.find((r) => r.Variable === 'Median Household Income' && r.year === year);
+    return {'Median Household Income': row?.Value ?? null};};
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year), ...(compareData.length > 0 ? 
+      {'Median Household Income (cmp)': buildPoint(compareData, year)['Median Household Income']}: {})}));
+
+  return (
+    <>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis
+            tick={{ fontSize: 12 }}
+            domain={['auto', 'auto']}
+            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+          />
+          <Tooltip formatter={(value: any) => value != null ? `$${Number(value).toLocaleString(
+            'en-US', { maximumFractionDigits: 0 })}`: '—'}/>
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
+          <Line
+            type="monotone"
+            dataKey="Median Household Income"
+            name={`${labels?.[0] ?? 'Main'}`}
+            stroke="#154734"
+            strokeWidth={3}
+            dot={false}
+            hide={hidden.has('Median Household Income')}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Median Household Income (cmp)"
+                name={`${labels?.[1] ?? 'Comparison'}`}
+                stroke="#1c7ed6"
+                strokeWidth={3}
+                dot={false}
+                hide={hidden.has('Median Household Income (cmp)')}
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+
+export const PerCapitaIncomeTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+
+  const buildPoint = (rows: any[], year: number) => {
+    const row = rows.find((r) => r.Variable === 'Per Capita Income' && r.year === year);
+    return {'Per Capita Income': row?.Value ?? null};};
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year), ...(compareData.length > 0 ? 
+      {'Per Capita Income (cmp)': buildPoint(compareData, year)['Per Capita Income']}: {})}));
+
+  return (
+    <>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis
+            tick={{ fontSize: 12 }}
+            domain={['auto', 'auto']}
+            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+          />
+          <Tooltip formatter={(value: any) => value != null ? `$${Number(value).toLocaleString(
+            'en-US', { maximumFractionDigits: 0 })}`: '—'}/>
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
+          <Line
+            type="monotone"
+            dataKey="Per Capita Income"
+            name={`${labels?.[0] ?? 'Main'}`}
+            stroke="#154734"
+            strokeWidth={3}
+            dot={false}
+            hide={hidden.has('Per Capita Income')}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Per Capita Income (cmp)"
+                name={`${labels?.[1] ?? 'Comparison'}`}
+                stroke="#1c7ed6"
+                strokeWidth={3}
+                dot={false}
+                hide={hidden.has('Per Capita Income (cmp)')}
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+
+
+// Labor Force Participation Rate (16+) and Prime-Age Labor Force Participation Rate (25-54)
 export const LaborForceTrendChart = <TData,>({
   chart,
 }: {
   chart: ChartItem<TData>;
 }) => {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -818,6 +1112,9 @@ export const LaborForceTrendChart = <TData,>({
 
   return (
     <>
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -828,6 +1125,13 @@ export const LaborForceTrendChart = <TData,>({
           <YAxis unit="%" tick={{ fontSize: 10 }} domain={['auto', 'auto']} 
                  tickFormatter={(val: any) => val != null ? `${val}` : '—'} />
           <Tooltip formatter={(val: any) => val != null ? `${val}%` : '—'}/>
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Labor Force Participation Rate (16+)"
@@ -835,6 +1139,7 @@ export const LaborForceTrendChart = <TData,>({
             stroke="#154734"
             strokeWidth={3}
             dot={false}
+            hide={hidden.has('Labor Force Participation Rate (16+)')}
           />
           {compareData.length > 0 && (
             <>
@@ -845,7 +1150,7 @@ export const LaborForceTrendChart = <TData,>({
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
-                legendType="none"
+                hide={hidden.has('Labor Force Participation Rate (16+) (cmp)')}
               />
             </>
           )}
@@ -860,6 +1165,20 @@ export const LaborForceTrendChartPrimeAge = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
+
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -880,6 +1199,9 @@ export const LaborForceTrendChartPrimeAge = <TData,>({
 
   return (
     <>
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -890,6 +1212,13 @@ export const LaborForceTrendChartPrimeAge = <TData,>({
           <YAxis unit="%" tick={{ fontSize: 10 }} domain={['auto', 'auto']} 
                  tickFormatter={(val: any) => val != null ? `${val}` : '—'} />
           <Tooltip formatter={(val: any) => val != null ? `${val}%` : '—'}/>
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Prime-Age Labor Force Participation Rate (25-54)"
@@ -897,6 +1226,7 @@ export const LaborForceTrendChartPrimeAge = <TData,>({
             stroke="#154734"
             strokeWidth={3}
             dot={false}
+            hide={hidden.has('Prime-Age Labor Force Participation Rate (25-54)')}
           />
           {compareData.length > 0 && (
             <>
@@ -907,7 +1237,7 @@ export const LaborForceTrendChartPrimeAge = <TData,>({
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
-                legendType="none"
+                hide={hidden.has('Prime-Age Labor Force Participation Rate (25-54) (cmp)')}
               />
             </>
           )}

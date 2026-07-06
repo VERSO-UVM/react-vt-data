@@ -84,6 +84,19 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
   // Table rows newest-first
   const tableRows = [...dataWithTotal].reverse();
 
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   return (
     <>
       {!isPdfMode && (
@@ -129,7 +142,49 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
               formatter={(val: any, name: string) => [fmt(val), name]}
               labelFormatter={(label) => `Quarter: ${label}`}
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Legend verticalAlign="top" wrapperStyle={{ fontSize: 12 }} content={({ payload }) => (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  paddingBottom: '8px',
+                }}
+              >
+                {payload?.map((entry: any) => {
+                  const key = entry.value;
+                  const isHidden = hidden.has(key);
+
+                  return (
+                    <span
+                      key={key}
+                      onClick={() => toggleSeries(key)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        color: isHidden ? '#999' : '#222',
+                        textDecoration: isHidden ? 'line-through' : 'none',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 12,
+                          height: 12,
+                          background: isHidden ? '#ccc' : entry.color,
+                          marginRight: 6,
+                          borderRadius: 2,
+                        }}
+                      />
+                      {key}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          />
             {sectors.map((s) => (
               <Area
                 key={s}
@@ -141,6 +196,7 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
                 fillOpacity={0.85}
                 dot={false}
                 activeDot={false}
+                hide={hidden.has(s)}
               />
             ))}
           </AreaChart>
