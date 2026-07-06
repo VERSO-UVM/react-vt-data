@@ -154,20 +154,6 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2012, year_max: 2023 },
     },
   },
-  {
-    id: 'education_estimates',
-    title: 'Educational Attainment Table',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
-    xField: '',
-    yField: '',
-    subtype: 'renderTableEstimates',
-    categories: ['Education'],
-    filterKey: '',
-    dataKey: '',
-    tableConfig: {
-      extraParams: { year_min: 2012, year_max: 2023 },
-    },
-  },
   // Housing
   {
     id: 'home_value',
@@ -214,27 +200,29 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
+  // Labor Force
   {
-    id: 'housing_estimates',
-    title: 'Housing Stock & Value — Value',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
+    id: 'labor_force_trend_16plus',
+    title: 'Labor Force Participation (Ages 16+)',
+    url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
     xField: '',
     yField: '',
-    subtype: 'renderTableEstimates',
-    categories: ['Housing'],
+    trendChart: 'LaborForceTrendChart',
+    subtype: 'renderTable',
+    categories: ['Labor & Economy'],
     filterKey: '',
     dataKey: '',
     tableConfig: {
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
-  // Labor Force
   {
-    id: 'labor_force',
-    title: 'Labor Force Participation — Percent',
+    id: 'labor_force_trend_prime_age',
+    title: 'Labor Force Participation (Ages 25-54)',
     url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
     xField: '',
     yField: '',
+    trendChart: 'LaborForceTrendChartPrimeAge',
     subtype: 'renderTable',
     categories: ['Labor & Economy'],
     filterKey: '',

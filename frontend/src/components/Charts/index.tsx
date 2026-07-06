@@ -21,6 +21,8 @@ export {
   HousingUnitsTrendChart,
   HousingTenureAreaChart,
   UnemploymentTrendChart,
+  LaborForceTrendChart,
+  LaborForceTrendChartPrimeAge,
   EarningsTrendChart,
   DPTrendChart,
 } from './TrendCharts';

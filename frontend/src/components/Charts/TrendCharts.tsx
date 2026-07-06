@@ -302,7 +302,7 @@ export const EducationTrendChart = <TData,>({
     for (const { key } of EDU_SERIES) {
       pt[key] = rows.find((r) => r.Variable === key)?.Percent ?? null;
       if (compareData.length > 0) {
-        pt[`${key} (cmp)`] =
+        pt[`${key} (${labels?.[1] ?? 'Comparison'})`] =
           cmpRows.find((r) => r.Variable === key)?.Percent ?? null;
       }
     }
@@ -341,7 +341,7 @@ export const EducationTrendChart = <TData,>({
           {compareData.length > 0 && EDU_SERIES.map((s) => (
           <Line
             key={`${s.key}-cmp`} 
-            dataKey={`${s.key} (cmp)`} 
+            dataKey={`${s.key} (${labels?.[1] ?? 'Comparison'})`} 
             stroke={s.color}
             strokeWidth={1.5} 
             strokeDasharray="6 4" 
@@ -428,6 +428,19 @@ export const HousingTenureAreaChart = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
+
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
@@ -448,6 +461,9 @@ export const HousingTenureAreaChart = <TData,>({
 
   return (
     <>
+      <Text size="xs" c="dimmed" mb={4}>
+        Click legend items to show or hide locations.
+      </Text>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
@@ -457,6 +473,13 @@ export const HousingTenureAreaChart = <TData,>({
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} unit="%"/>
           <Tooltip formatter={(value: number) => value.toLocaleString() + `%`}/>
+          <Legend align="right" verticalAlign="bottom" 
+                  onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value}
+            </span>
+          )} />
           <Line
             type="monotone"
             dataKey="Renter-Occupied Units"
@@ -464,6 +487,7 @@ export const HousingTenureAreaChart = <TData,>({
             stroke="#154734"
             strokeWidth={3}
             dot={false}
+            hide={hidden.has('Renter-Occupied Units')}
           />
           {compareData.length > 0 && (
             <>
@@ -474,6 +498,7 @@ export const HousingTenureAreaChart = <TData,>({
                 stroke="#1c7ed6"
                 strokeWidth={3}
                 dot={false}
+                hide={hidden.has('Renter-Occupied Units (cmp)')}
               />
             </>
           )}
@@ -761,6 +786,131 @@ export const EarningsTrendChart = <TData,>({
             dot={false} 
             hide={hidden.has(s.key)}
           />))}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+// Median Home Value
+export const LaborForceTrendChart = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+
+  const buildPoint = (rows: any[], year: number) => {
+    const row = rows.find((r) => r.Variable === 'Labor Force Participation Rate (16+)' && r.year === year);
+    return {'Labor Force Participation Rate (16+)': row?.Percent ?? null};};
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year), ...(compareData.length > 0 ? 
+      {'Labor Force Participation Rate (16+) (cmp)': buildPoint(compareData, year)['Labor Force Participation Rate (16+)']}: {})}));
+
+  return (
+    <>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis unit="%" tick={{ fontSize: 10 }} domain={['auto', 'auto']} 
+                 tickFormatter={(val: any) => val != null ? `${val}` : '—'} />
+          <Tooltip formatter={(val: any) => val != null ? `${val}%` : '—'}/>
+          <Line
+            type="monotone"
+            dataKey="Labor Force Participation Rate (16+)"
+            name={`${labels?.[0] ?? 'Main'}`}
+            stroke="#154734"
+            strokeWidth={3}
+            dot={false}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Labor Force Participation Rate (16+) (cmp)"
+                name={`${labels?.[1] ?? 'Comparison'}`}
+                stroke="#1c7ed6"
+                strokeWidth={3}
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+export const LaborForceTrendChartPrimeAge = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => {
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    | [string, string]
+    | undefined;
+
+  const buildPoint = (rows: any[], year: number) => {
+    const row = rows.find((r) => r.Variable === 'Prime-Age Labor Force Participation Rate (25-54)' && r.year === year);
+    return {'Prime-Age Labor Force Participation Rate (25-54)': row?.Percent ?? null};};
+
+  const plotData = years.map((year) => ({
+    year,
+    ...buildPoint(data, year), ...(compareData.length > 0 ? 
+      {'Prime-Age Labor Force Participation Rate (25-54) (cmp)': buildPoint(compareData, year)['Prime-Age Labor Force Participation Rate (25-54)']}: {})}));
+
+  return (
+    <>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis unit="%" tick={{ fontSize: 10 }} domain={['auto', 'auto']} 
+                 tickFormatter={(val: any) => val != null ? `${val}` : '—'} />
+          <Tooltip formatter={(val: any) => val != null ? `${val}%` : '—'}/>
+          <Line
+            type="monotone"
+            dataKey="Prime-Age Labor Force Participation Rate (25-54)"
+            name={`${labels?.[0] ?? 'Main'}`}
+            stroke="#154734"
+            strokeWidth={3}
+            dot={false}
+          />
+          {compareData.length > 0 && (
+            <>
+              <Line
+                type="monotone"
+                dataKey="Prime-Age Labor Force Participation Rate (25-54) (cmp)"
+                name={`${labels?.[1] ?? 'Comparison'}`}
+                stroke="#1c7ed6"
+                strokeWidth={3}
+                dot={false}
+                legendType="none"
+              />
+            </>
+          )}
         </LineChart>
       </ResponsiveContainer>
     </>
