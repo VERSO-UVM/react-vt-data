@@ -57,7 +57,7 @@ df.head()
 con.execute("SHOW TABLES").df()
 ```
 
-# Bivariate Colormap
+# Ideas 
 There are two cases -- the user wants a single variable, and the user wants two variables. I think we should probably just separate these endpoints rather than make some flexible case, because everything -- the way we show the info, etc., will flow downstream from that. 
 
 
@@ -125,21 +125,3 @@ gdf.plot(color=gdf["color"].apply(lambda c: [v/255 for v in c]))
 ```
 
 Not exactly stunning, but this should do okay on the front end. Fine tuning the colormap is something we can do later. 
-
-
-# Getting from table
-```{python}
-measure = 'Binge drinking among adults' 
-edges = con.execute("""
-    SELECT * FROM cdc_edges 
-    WHERE Measure IN ('Binge drinking among adults')
- """).df()
-edges.head()
-```
-
-```{python}
-edges_x = edges[edges["Measure"]==measure].drop(columns="Measure").iloc[0].tolist()
-edges_x
-
-```
-

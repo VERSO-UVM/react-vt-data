@@ -48,10 +48,7 @@ interface ProfileStore {
 export const useProfile = create<ProfileStore>()(
   persist(
     (set) => ({
-      myLocation: (() => {
-        const c = randomCounty();
-        return { type: 'county', county: c, name: `${c} County, Vermont` };
-      })(),
+      myLocation: {type: 'state', state: true, name: "Vermont"},
       comparison: { type: 'state', state: true, name: 'Vermont' },
       interests: [],
       yearMin: YEAR_MIN_OVERALL,

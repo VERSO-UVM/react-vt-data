@@ -1,5 +1,6 @@
 'use client';
 import { Box, Divider, Paper, Stack, Title } from '@mantine/core';
+import type { FeatureCollection } from 'geojson';
 import { useState } from 'react';
 import { BASE_API_URL } from '@/config';
 import VTMap from '@/components/mapping';
@@ -8,6 +9,10 @@ import {
   zoning_filtering,
 } from '@/components/FilterRedux/filterDefs';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
+import { Spectral_SC } from 'next/font/google';
+import { assemble } from '@/components/FilterRedux/apiHelpers';
+import { postRequest } from '@/components/FilterRedux/filterRequest';
+import { FilterSpec } from '@/components/FilterRedux/filterTypes';
 
 // export default function Scratch_Zoning() {
 //   const [data, setData] = useState<{}>({});
@@ -52,7 +57,14 @@ import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 // }
 
 export default function Scratch_CDC() {
-  const [data, setData] = useState<{}>({});
+  const [rows, setRows] = useState<FeatureCollection | null>(null);
+  const comparisonURL = `${BASE_API_URL}/load/mapping/cdc/places/comparison`;
+
+  const handleApply = async (specs: FilterSpec[]) => {
+    const payload = assemble(specs);
+    const res = await postRequest({ dataURL: comparisonURL, payload });
+    setRows(res.data); // legend rides along in res.metadata.legend
+  };
 
   return (
     <div
@@ -72,11 +84,7 @@ export default function Scratch_CDC() {
         <Title order={4} mb="sm">
           Compare Variables
         </Title>
-        <FilterWrap
-          selectData={setData}
-          dataURL={`${BASE_API_URL}/load/mapping/cdc/places/double_new`}
-          filterList={cdc_filtering}
-        />
+        <FilterWrap handleApply={handleApply} filterList={cdc_filtering} />
       </Paper>
       <Box
         style={{
@@ -87,7 +95,7 @@ export default function Scratch_CDC() {
           overflow: 'hidden',
         }}
       >
-        <VTMap geojson={data} showCountyLines={false} />
+        <VTMap geojson={rows} showCountyLines={false} />
       </Box>
     </div>
   );
