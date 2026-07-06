@@ -258,6 +258,13 @@ const VAL_GROUPS: Record<string, string> = {
   "Not Mentioned": "Not Mentioned",
 };
 
+const VAL_GROUP_COLORS: Record<string, string> = {
+  Allowed: "#274c77",
+  "May be Allowed": "#6096ba",
+  Prohibited: "#e07a5f",
+  "Not Mentioned": "#c8d3d5",
+};
+
 const USE_TYPE_ORDER = [
     "1 Family",
     "2 Family",
@@ -327,10 +334,11 @@ const ZoningAllowanceStackedBarChart = <TData,>({
   const stackKeys = VAL_ORDER;
 
 
-  const colorScale = useMemo(
-    () => d3.scaleOrdinal<string, string>((d3 as any).schemeTableau10).domain(stackKeys),
-    [stackKeys]
-  );
+  const colorScale = useMemo(() => {
+    const schemeName = chart.chartParams?.colorScheme || 'schemeCategory10';
+    const d3Scale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
+    return d3Scale;
+  }, [chart.chartParams?.colorScheme]);
 
   const mutedColor = (hex: string) => {
     const { r, g, b } = d3.rgb(hex);
