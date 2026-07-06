@@ -133,6 +133,8 @@ interface CompareDiffChartItem<TData> extends ChartItem<TData> {
     color?: string;
     legendLabels?: [string, string];
     colorScheme?: string;
+    fixedYear?: number;
+    percentFormat?: boolean;
   };
 }
 
@@ -234,10 +236,28 @@ const CompareDiffPerXBarChart = <TData,>({
   };
 
   const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: true } },
-  };
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: true },
+    tooltip: {
+      callbacks: {
+        label: (context: any) => {
+          const value = context.parsed.y;
+          return chart.chartParams?.percentFormat ?? false ? `${value}%` : value.toLocaleString();
+        },
+      },
+    },
+  },
+  scales: {
+    y: {
+      ticks: {
+        callback: (value: any) =>
+          chart.chartParams?.percentFormat ?? false ? `${value}%` : value.toLocaleString(),
+      },
+    },
+  },
+};
 
   return <BarJS data={data} options={options} />;
 };

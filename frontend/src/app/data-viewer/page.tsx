@@ -175,11 +175,13 @@ export default function DataViewerPage() {
       const url = chart.url;
       const filters = buildFilters(myLocation, {
         col: 'year',
-        selected: [yearMin, yearMax],
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
-        selected: [yearMin, yearMax],
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
       });
 
       applyFilters({

@@ -140,7 +140,7 @@ export const chartDefs: ChartDef[] = [
     },
   },
   {
-    id: 'education',
+    id: 'education_trend',
     title: 'Educational Attainment Distribution',
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
     xField: '',
@@ -153,6 +153,27 @@ export const chartDefs: ChartDef[] = [
     tableConfig: {
       extraParams: { year_min: 2012, year_max: 2023 },
     },
+  },
+  // Education (Bar Graph)
+  {
+    id: 'education_distribution',
+    title: 'Educational Attainment Distribution',
+    categories: ['Education'],
+    xField: 'Variable',
+    yField: 'Percent',
+    subtype: 'CompareDiffPerXBarChart',
+    chartParams: { 
+      legendLabels: ['Main', 'Compare'],
+      fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
+      percentFormat: true
+    },
+    url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
+    filterKey: '',
+    showCols: [
+      { key: 'NAME' },
+      { key: 'Variable' },
+      { key: 'Percent' },
+    ],
   },
   // Housing
   {
