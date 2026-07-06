@@ -114,6 +114,4 @@ def query_timeseries(table_name: str, filters: dict | None = None):
 
     where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
     sql = f'SELECT * FROM "{table_name}" {where_sql}'
-    print(f"HISTORIC SERIES SQL: {sql}")
-    print(f"PARAMS: {params}")
     return DB.execute(sql, params).df()
