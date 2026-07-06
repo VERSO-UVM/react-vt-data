@@ -256,21 +256,20 @@ export const MedianAgeTrendChart = <TData,>({chart,}: {chart: ChartItem<TData>;}
 // ---------------------------------------------------------------------------
 // Education: all attainment levels except "Some College, No Degree"
 // ---------------------------------------------------------------------------
-
-const EDU_SERIES = [
-  { key: 'No High School Diploma', color: '#d62828' },
-  { key: 'High School Graduate', color: '#f77f00' },
-  { key: "Associate's Degree", color: '#fcbf49' },
-  { key: "Bachelor's Degree", color: '#003049' },
-  { key: 'Postgraduate Degree', color: '#457b9d' },
-];
-
 export const EducationTrendChart = <TData,>({
   chart,
 }: {
   chart: ChartItem<TData>;
 }) => {
-  
+
+  const EDU_SERIES = [
+    { key: 'No High School Diploma', color: '#d62828' },
+    { key: 'High School Graduate', color: '#f77f00' },
+    { key: "Associate's Degree", color: '#fcbf49' },
+    { key: "Bachelor's Degree", color: '#003049' },
+    { key: 'Postgraduate Degree', color: '#457b9d' },
+  ];
+    
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const toggleSeries = (key: string) => {
     setHidden((prev) => {
@@ -638,7 +637,7 @@ export const UnemploymentTrendChart = <TData,>({
                 dataKey="Unemployment Rate (cmp)"
                 name={`${labels?.[1] ?? 'Comparison'}`}
                 stroke="#e07b39"
-                strokeWidth={1.5}
+                strokeWidth={2}
                 strokeDasharray="6 4"
                 dot={false}
                 legendType="none"
@@ -660,10 +659,30 @@ export const EarningsTrendChart = <TData,>({
 }: {
   chart: ChartItem<TData>;
 }) => {
+  
+  const EARN_SERIES = [
+    { key: 'Male Full-Time Workers', color: '#161E54' },
+    { key: 'Female Full-Time Workers', color: '#F16D34' },
+    { key: "All Workers", color: '#9BB0C1' },
+  ];
+  
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+  
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
-
+  const keys = new Set(EARN_SERIES.map((s) => s.key));
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
     | [string, string]
@@ -717,62 +736,31 @@ export const EarningsTrendChart = <TData,>({
                 : '—'
             }
           />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="Male Full-Time Workers"
-            stroke="#1432ab"
+          <Legend onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
+            <span style={{ color: hidden.has(value) ? "#999" : "#222",
+                          textDecoration: hidden.has(value) ? "line-through" : "none"}}>
+              {value} 
+            </span>)}/>
+          {EARN_SERIES.map((s) => (
+          <Line 
+            key={s.key} 
+            dataKey={s.key} 
+            stroke={s.color} 
             strokeWidth={2}
-            dot={false}
-          />
+            dot={false} 
+            hide={hidden.has(s.key)}
+          />))}
+          {compareData.length > 0 && EARN_SERIES.map((s) => (
           <Line
-            type="monotone"
-            dataKey="Female Full-Time Workers"
-            stroke="#e03fd0"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="All Workers"
-            stroke="#494b4d60"
-            strokeWidth={2}
-            dot={false}
-          />
-          {compareData.length > 0 && (
-            <>
-              <Line
-                type="monotone"
-                dataKey="Male Full-Time Workers (cmp)"
-                name="Male Full-Time Workers (cmp)"
-                stroke="#1432ab"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-              <Line
-                type="monotone"
-                dataKey="Female Full-Time Workers (cmp)"
-                name="Female Full-Time Workers (cmp)"
-                stroke="#e03fd0"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-              <Line
-                type="monotone"
-                dataKey="All Workers (cmp)"
-                name="All Workers (cmp)"
-                stroke="#494b4d60"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            </>
-          )}
+            key={`${s.key}-cmp`} 
+            dataKey={`${s.key} (cmp)`} 
+            stroke={s.color}
+            strokeWidth={2} 
+            strokeDasharray="6 4" 
+            legendType="none" 
+            dot={false} 
+            hide={hidden.has(s.key)}
+          />))}
         </LineChart>
       </ResponsiveContainer>
     </>
