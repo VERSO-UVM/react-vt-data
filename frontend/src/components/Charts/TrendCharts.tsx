@@ -74,7 +74,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
           <Line
             type="monotone"
             dataKey="Under 18"
-            name={`Under 18 (${labels?.[0] ?? 'Main'})`}
+            name={`Under 18`}
             stroke="#154734"
             strokeWidth={2}
             dot={false}
@@ -82,7 +82,7 @@ export const DemographicsTrendChart = <TData,>({chart}: {chart: ChartItem<TData>
           <Line
             type="monotone"
             dataKey="65+"
-            name={`65+ (${labels?.[0] ?? 'Main'})`}
+            name={`65+`}
             stroke="#1c7ed6"
             strokeWidth={2}
             dot={false}
