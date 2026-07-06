@@ -334,11 +334,8 @@ const ZoningAllowanceStackedBarChart = <TData,>({
   const stackKeys = VAL_ORDER;
 
 
-  const colorScale = useMemo(() => {
-    const schemeName = chart.chartParams?.colorScheme || 'schemeCategory10';
-    const d3Scale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
-    return d3Scale;
-  }, [chart.chartParams?.colorScheme]);
+  const colorForGroup = (group: string) =>
+    VAL_GROUP_COLORS[group] ?? "#999999";
 
   const mutedColor = (hex: string) => {
     const { r, g, b } = d3.rgb(hex);
@@ -352,19 +349,19 @@ const ZoningAllowanceStackedBarChart = <TData,>({
         label: `${key} (Current)`,
         data: labels.map((l) => main[l]?.[key] || 0),
         stack: "main",
-        backgroundColor: colorScale(key),
+        backgroundColor: colorForGroup(key),
       })),
 
       ...stackKeys.map((key) => ({
         label: `${key} (Compare)`,
         data: labels.map((l) => compare[l]?.[key] || 0),
         stack: "compare",
-        backgroundColor: mutedColor(colorScale(key)),
-        borderColor: colorScale(key),
+        backgroundColor: mutedColor(colorForGroup(key)),
+        borderColor: colorForGroup(key),
         borderWidth: 1,
       })),
     ],
-    [stackKeys, labels, main, compare, colorScale]
+    [stackKeys, labels, main, compare, colorForGroup]
   );
 
   const data = { labels, datasets };
@@ -379,8 +376,8 @@ const ZoningAllowanceStackedBarChart = <TData,>({
           generateLabels: (chart: any) =>
             stackKeys.map((key, i) => ({
               text: key,
-              fillStyle: colorScale(key),
-              strokeStyle: colorScale(key),
+              fillStyle: colorForGroup(key),
+              strokeStyle: colorForGroup(key),
               lineWidth: 1,
               datasetIndex: i,
             })),
