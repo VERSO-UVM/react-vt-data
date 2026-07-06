@@ -8,6 +8,7 @@
 """
 
 # TODO: move the large SQL code to its own files rather than inside here
+# TODO: also, need to go create the consolidated duckDB database
 
 import os
 from pathlib import Path
@@ -24,11 +25,11 @@ print(os.getcwd())
 
 # globals
 con = duckdb.connect()
-proc_dir = Path("backend/Data/_Processed/wastewater")
-data_dir = Path("backend/Data")
+proc_dir = Path("Data/_Processed/wastewater")
+data_dir = Path("Data")
 waste_data_dir = data_dir / "wastewater"
 suitability_data_dir = data_dir / "soil-suitability"
-sql_path = Path("backend/build/wastewater/sql")
+sql_path = Path("build/wastewater/sql")
 
 # hardcoded specifics:
 ## soil suitability table info
@@ -183,7 +184,11 @@ def build_wastewater_service_miscellaneous_info_table():
     """)
 
 def save_wastewater_service_area_tables():
+
     load_wastewater_service_data()
+    build_wastewater_service_info_table()
+    build_wastewater_service_geom_table()
+    build_wastewater_service_miscellaneous_info_table()
 
     for table in ['service_area_info', 'service_area_miscellaneous_info', 'service_area_geom']:
         con.execute(
@@ -237,6 +242,10 @@ def build_wastewater_permit_table():
 
 def save_wastewater_facility_tables():
     load_wastewater_facility_data()
+    build_wastewater_facility_info_table()
+    build_wastewater_facility_geom_table()
+    build_wastewater_facility_miscellaneous_info_table()
+    build_wastewater_permit_table()
 
     for table in ['treatment_facility_info', 'treatment_facility_geom', 'treatment_facility_miscellaneous_info', 'treatment_facility_permit_info']:
         con.execute(
@@ -247,10 +256,12 @@ def save_wastewater_facility_tables():
 ## Putting everything together
 def main():
     proc_dir.mkdir(parents=True, exist_ok=True)
+    con.execute("LOAD spatial")
+
 
     save_wastewater_facility_tables()
     save_wastewater_service_area_tables()
-    save_wastewater_facility_tables()
+    save_suitability_data()
 
 if __name__ == "__main__":
     main()
