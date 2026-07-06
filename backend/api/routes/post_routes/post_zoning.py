@@ -41,9 +41,7 @@ async def acreage_response(request: FilterRequest):
 
 @router.post("/load/data/zoning/allowances")
 async def zoning_allowances(request: FilterRequest):
-    print("🔵 RAW REQUEST:", request)
     source = request_to_source(request, "zoning_info", "default")
-    print("🟣 FILTERSOURCE OUTPUT:", source.filters)
     agg, table = get_zoning_allowances([source])
     return make_response(
         data=agg,

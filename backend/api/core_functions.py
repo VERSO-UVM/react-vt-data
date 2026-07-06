@@ -15,10 +15,6 @@ from api.routes import get_filter_table_metadata
 def spec_to_source(spec: FilterSpec, target_table: str) -> FilterSource:
     src_schema = get_filter_table_metadata(target_table, spec.filter_table)
     colmap = {**src_schema["columns"], **src_schema.get("range", {})}
-
-    print("🟡 ORIGINAL FILTERS:", spec.filters)
-    print("🟡 COLMAP:", colmap)
-
     mapped_filters = {}
     dropped = {}
 
@@ -27,9 +23,6 @@ def spec_to_source(spec: FilterSpec, target_table: str) -> FilterSource:
             mapped_filters[colmap[k]] = v
         else:
             dropped[k] = v
-
-    print("🟠 MAPPED FILTERS:", mapped_filters)
-    print("🔴 DROPPED FILTERS:", dropped)
 
     return FilterSource(
         filter_table=spec.filter_table,

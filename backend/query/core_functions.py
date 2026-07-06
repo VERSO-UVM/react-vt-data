@@ -134,9 +134,6 @@ def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> str:
         clauses = filter_clauses(sources[0].filters)
         where_string = ("WHERE " + " AND ".join(clauses)) if clauses else ""
         table = sources[0].filter_table
-        print("🟣 FILTER SOURCE:", sources)
-        print("🟣 FILTERS:", sources[0].filters)
-        print("🟣 WHERE STRING:", where_string)
 
     return sql_path.read_text().format(
         cte_filter_block=cte_filter_block,
