@@ -50,7 +50,7 @@ function StatCards() {
     v === undefined || v === null ? '—' : v.toLocaleString();
 
   return (
-    <Grid gutter={40} py="xl">
+    <Grid gap='lg' py="xl">
       <Grid.Col span={{ base: 6, md: 2 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Population (ACS)'])}

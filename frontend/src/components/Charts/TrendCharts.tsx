@@ -168,7 +168,7 @@ export const PopulationTrendChart = <TData,>({chart}: {chart: ChartItem<TData>;}
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
             tickFormatter={(value) => value.toLocaleString()}/>
-          <Tooltip formatter={(value: number) => value.toLocaleString()}/>
+          <Tooltip formatter={(value) => {return (Number(value) || 0).toLocaleString();}}/>
           <Legend align="right" verticalAlign="bottom" 
                   onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
             <span style={{ color: hidden.has(value) ? "#999" : "#222",
@@ -549,7 +549,7 @@ export const HousingTenureAreaChart = <TData,>({
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} unit="%"/>
-          <Tooltip formatter={(value: number) => value.toLocaleString() + `%`}/>
+          <Tooltip formatter={(value) => {return (Number(value) || 0).toLocaleString() + '%';}}/>
           <Legend align="right" verticalAlign="bottom" 
                   onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
             <span style={{ color: hidden.has(value) ? "#999" : "#222",
@@ -640,7 +640,7 @@ export const HousingUnitsTrendChart = <TData,>({
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} 
             tickFormatter={(value) => value.toLocaleString()}/>
-          <Tooltip formatter={(value: number) => value.toLocaleString()}/>
+          <Tooltip formatter={(value) => {return (Number(value) || 0).toLocaleString();}}/>
           <Legend align="right" verticalAlign="bottom" 
                   onClick={(e: any) => toggleSeries(e.dataKey)} formatter={(value) => (
             <span style={{ color: hidden.has(value) ? "#999" : "#222",
@@ -1299,7 +1299,7 @@ export const DPTrendChart = <TData,>({
           }
           domain={['auto', 'auto']}
         />
-        <Tooltip formatter={(val: any, name: string) => [fmt(val), name]} />
+        <Tooltip formatter={(value) => {return (Number(value) || 0).toLocaleString();}}/>
         <Legend />
         <Line
           type="monotone"

@@ -122,11 +122,6 @@ export const chartDefs: ChartDef[] = [
     },
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
     filterKey: '',
-    showCols: [
-      { key: 'NAME' },
-      { key: 'Variable' },
-      { key: 'Percent' },
-    ],
   },
   {
     id: 'demographics_population',
@@ -200,11 +195,6 @@ export const chartDefs: ChartDef[] = [
     },
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
     filterKey: '',
-    showCols: [
-      { key: 'NAME' },
-      { key: 'Variable' },
-      { key: 'Percent' },
-    ],
   },
   // Housing
   {
