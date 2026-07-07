@@ -41,9 +41,13 @@ import pyogrio
 from pathlib import Path
 import duckdb
 import re
+import geopandas as gpd
+from shapely import from_geojson
+import xycmap
+from matplotlib import pyplot as plt
+import seaborn as sns
 
 from app_utils.data_loading import crs_set
-
 ```
 
 ```{python}
@@ -61,12 +65,16 @@ con.execute("SHOW TABLES").df()
 There are two cases -- the user wants a single variable, and the user wants two variables. I think we should probably just separate these endpoints rather than make some flexible case, because everything -- the way we show the info, etc., will flow downstream from that. 
 
 
+```{python}
+con.execute("DESCRIBE cdc_places").df()
+```
 
 ```{python}
 single_var_sql = """--sql
     SELECT
         p.LocationID,
         p.Measure,
+        p.Data_Value_Type,
         p.Data_Value,
         p.bin,
         c.CountyFIPS,
@@ -78,7 +86,7 @@ single_var_sql = """--sql
 
 
 ```{python}
-where_string = "WHERE p.Measure IN ('Hearing disability among adults', 'Depression among adults')"
+where_string = "WHERE p.Measure IN ('Hearing disability among adults', 'Depression among adults') AND p.Data_Value_Type IN ('Crude prevalence')"
 res = con.execute(single_var_sql + where_string).df()
 res.head()
 ```
@@ -93,8 +101,7 @@ wide.columns
 ```
 
 ```{python}
-import xycmap
-from matplotlib import pyplot as plt 
+
 xcmap = plt.cm.viridis_r
 ycmap = plt.cm.Blues
 n = (3, 3)  # x, y
@@ -114,14 +121,77 @@ wide["color"] = wide.apply(to_rgba, axis=1)
 wide.head()
 ```
 
+
 Lets take a quick look at how that actually looks...
 
 ```{python}
-import geopandas as gpd
-from shapely import from_geojson   
-
 gdf = gpd.GeoDataFrame(wide, geometry=wide["geometry"].apply(from_geojson))
 gdf.plot(color=gdf["color"].apply(lambda c: [v/255 for v in c]))  
 ```
 
 Not exactly stunning, but this should do okay on the front end. Fine tuning the colormap is something we can do later. 
+
+# Scatter plot, by bin color 
+To look at the sections with a little more detail: 
+
+
+```{python}
+gdf["sns_color"] = gdf["color"].apply(lambda x: tuple([a/255 for a in x]))
+gdf["sns_color"]
+gdf["LocationID"].unique()
+```
+
+```{python}
+plt.scatter(gdf["Data_Value_1"], gdf["Data_Value_2"], c=gdf["sns_color"].tolist())
+```
+
+Doesn't look super fancy, but will be better when there are more data points.
+
+
+# Clustering Features
+
+```{python}
+sme_places = con.execute("""--sql
+    SELECT 
+        LocationID, 
+        Measure, Data_Value, 
+        Data_Value_Type
+    FROM cdc_places
+    WHERE Data_Value_Type IN ('Crude prevalence') 
+            AND SME_Highlight = 1
+""").df()
+# places.head()
+pv = sme_places.pivot(columns="Measure", values="Data_Value", index="LocationID")
+```
+
+## Cluster Plot and Dendogram
+
+```{python}
+sns.clustermap(pv.corr())
+```
+
+### Flat Clusters
+```{python}
+from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.spatial.distance import squareform
+
+corr = pv.corr()
+dist = 1 - corr.abs()  # co-movement distance, sets diag to zero
+Z = linkage(squareform(dist), method="average")
+
+labels = fcluster(Z, t=0.5, criterion="distance")  # k=4 groups
+groups = pd.Series(labels, index=corr.index).sort_values()
+print(groups)
+```
+
+## Parallel Lines Plot
+```{python}
+pvi = (pv - pv.mean()) / pv.std() # standardize cols
+pvi = pvi.reset_index()
+```
+
+```{python}
+pd.plotting.parallel_coordinates(frame=pvi, class_column="LocationID")
+plt.xticks(rotation=90)
+plt.show()
+```

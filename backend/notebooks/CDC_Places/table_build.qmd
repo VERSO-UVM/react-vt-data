@@ -2,7 +2,7 @@
 title: "CDC sql table build"
 author: Fitz Koch
 date: today
-description:  builds SQL tables from zoning data.
+description:  builds SQL tables from cdc places data.
 format: 
   html:
     html-math-method: mathjax
@@ -289,6 +289,44 @@ db_full.execute("SELECT * FROM cdc_edges").df().head()
 ```
 
 Great, looks good. 
+
+# Build the smaller Set
+Foolishly, I didn't see that there's a larger set. So we want to create a new set based on that .
+
+```{python}
+path = data_dir / "CDC" / "PLACES__Local_Data_for_Better_Health,_Census_Tract_Data,_2025_release_20260707.csv"
+```
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW tracts_raw AS 
+  SELECT * FROM read_csv('{path}')
+""")
+tracts = con.execute("SELECT * FROM tracts_raw").df()
+tracts.head()
+```
+
+```{python}
+con.execute("DESCRIBE tracts_raw").df() 
+```
+
+```{python}
+con.execute("DESCRIBE places_raw").df() 
+
+```
+
+```{python}
+tracts[["LocationName", "LocationID"]].value_counts().reset_index()
+```
+
+```{python}
+tracts["Data_Value_Type"].unique()
+```
+
+Okay, cool, so there are 192 different locations (unnamed), and what's more, they are *only* in crude prevalence, which is what want.
+
+We can *bin* them by county for doing analysis that way, but otherwise we'll keep all the columns basically exactly the same. I'm not going to repeat the logic her; just in the build script. 
+
 
 
 

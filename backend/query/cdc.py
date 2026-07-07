@@ -16,8 +16,8 @@ import xycmap
 from matplotlib import pyplot as plt
 
 from api.models import FilterSource
-from sql_render import compile_where, sql_filter_block
 from query.processed_db import DB
+from sql_render import compile_where, sql_filter_block
 
 logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql" / "cdc"
@@ -91,7 +91,9 @@ def _measure_cutpoints(measures: list[str]) -> tuple[list[float], list[float]]:
     return edges_x, edges_y
 
 
-def dual_var_comparison(sources: list[FilterSource]) -> tuple[dict, dict]:
+def dual_var_comparison(
+    sources: list[FilterSource], geoLevel="county_places"
+) -> tuple[dict, dict]:
     """GeoJSON + legend for a two-measure bivariate comparison map.
 
     Returns (geojson, legend). Both are derived from the SAME cmap in one pass,
@@ -103,8 +105,10 @@ def dual_var_comparison(sources: list[FilterSource]) -> tuple[dict, dict]:
 
     # Both measures ride in one merged FilterSource so the shared places.sql
     # template serves the single- and dual-variable cases alike.
-    merged = FilterSource(filter_table="cdc_places", filters={"Measure": measures})
-    sql, params = sql_filter_block(sql_dir / "places.sql", [merged])
+    table = "cdc_county_places" if geoLevel == "county_places" else "cdc_tract_places"
+    merged = FilterSource(filter_table=table, filters={"Measure": measures})
+    sql_path = sql_dir / f"{geoLevel}.sql"
+    sql, params = sql_filter_block(sql_path, [merged])
     df = DB.execute(sql, params).df()
     df = widen_dual_var(df, measures)
 
