@@ -50,7 +50,7 @@ function StatCards() {
     v === undefined || v === null ? '—' : v.toLocaleString();
 
   return (
-    <Grid gap='lg' py="xl">
+    <Grid py="xl">
       <Grid.Col span={{ base: 6, md: 2 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Population (ACS)'])}
@@ -377,6 +377,7 @@ return (
               defIds={visibleItems.map(
                 (c) => c.chartParams?.defId
               )}
+              view="gallery"
             />
           </ScrollArea>
         </Box>

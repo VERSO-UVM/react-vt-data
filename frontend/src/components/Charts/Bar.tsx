@@ -303,16 +303,22 @@ const USE_TYPE_ORDER = [
     "2 Family",
     "3 Family",
     "4 Family",
-    "Acessory Dwelling Unit", // NOTE: matches the typo in the source data ("Acessory")
-    "Planned Unit Development",
-    "Planned Residential Development",
+    // "Acessory Dwelling Unit", // NOTE: matches the typo in the source data ("Acessory")
+    // "Planned Unit Development",
+    // "Planned Residential Development",
   ];
+
+  const INCLUDED_USE_TYPES = new Set([
+    "1_Family",
+    "2_Family",
+    "3_Family",
+    "4_Family",
+  ]);
 
   const sortUseTypes = (types: string[]) => {
     return [...types].sort((a, b) => {
       const ai = USE_TYPE_ORDER.indexOf(a);
       const bi = USE_TYPE_ORDER.indexOf(b);
-      // Unknown types (not in the fixed list) fall to the end, alphabetically among themselves
       if (ai === -1 && bi === -1) return a.localeCompare(b);
       if (ai === -1) return 1;
       if (bi === -1) return -1;
@@ -320,7 +326,7 @@ const USE_TYPE_ORDER = [
     });
   };
 
-const groupVal = (val: string) => VAL_GROUPS[val] ?? val; // fallback: pass through unknown values as-is
+const groupVal = (val: string) => VAL_GROUPS[val] ?? val;
 const VAL_ORDER = ["Allowed", "May be Allowed", "Prohibited", "Not Mentioned"];
 
 const cleanUseType = (useType: string) => useType.replace(/_/g, " ");
@@ -333,8 +339,13 @@ const ZoningAllowanceStackedBarChart = <TData,>({
   // const isPdfMode = usePdfMode();
   // if (isPdfMode) return <ZoningAllowanceStackedBarChartSVG chart={chart} />;
 
-  const mainRows = (chart.data || []) as AllowanceRow[];
-  const compareRows = (chart.compareData || []) as AllowanceRow[];
+  const mainRows = ((chart.data || []) as AllowanceRow[]).filter((r) =>
+    INCLUDED_USE_TYPES.has(r.use_type)
+  );
+
+const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
+    INCLUDED_USE_TYPES.has(r.use_type)
+  );
 
   // ----------------------------
   // Pivot long → wide, grouping vals and cleaning use_type labels
@@ -407,24 +418,42 @@ const ZoningAllowanceStackedBarChart = <TData,>({
         display: true,
         labels: {
           generateLabels: (chart: any) =>
-            stackKeys.map((key, i) => ({
-              text: key,
-              fillStyle: colorForGroup(key),
-              strokeStyle: colorForGroup(key),
-              lineWidth: 1,
-              datasetIndex: i,
-            })),
+            stackKeys.map((key) => {
+              const mainIndex = chart.data.datasets.findIndex(
+                (ds: any) => ds.label === `${key} (Current)`
+              );
+              const compareIndex = chart.data.datasets.findIndex(
+                (ds: any) => ds.label === `${key} (Compare)`
+              );
+
+              const mainMeta = chart.getDatasetMeta(mainIndex);
+              const compareMeta = chart.getDatasetMeta(compareIndex);
+
+              const hidden =
+                (mainMeta.hidden ?? chart.data.datasets[mainIndex].hidden) &&
+                (compareMeta.hidden ?? chart.data.datasets[compareIndex].hidden);
+
+              return {
+                text: key,
+                fillStyle: colorForGroup(key),
+                strokeStyle: colorForGroup(key),
+                lineWidth: 1,
+                hidden,
+                datasetIndex: mainIndex,
+              };
+            }),
         },
         onClick: (_e: any, legendItem: any, legend: any) => {
-          // Toggle both the main and compare dataset for this group together
-          const key = legendItem.text;
           const chart = legend.chart;
+          const key = legendItem.text;
+
           chart.data.datasets.forEach((ds: any, idx: number) => {
             if (ds.label?.startsWith(key)) {
               const meta = chart.getDatasetMeta(idx);
-              meta.hidden = meta.hidden === null ? !chart.data.datasets[idx].hidden : !meta.hidden;
+              meta.hidden = !(meta.hidden ?? false);
             }
           });
+
           chart.update();
         },
       },

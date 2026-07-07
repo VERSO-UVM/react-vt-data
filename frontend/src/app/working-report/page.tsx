@@ -110,25 +110,30 @@ export default function WorkingReport() {
 
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
+      const url = chart.url;
       const filters = buildFilters(myLocation, {
         col: 'year',
-        selected: [yearMin, yearMax],
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
-        selected: [yearMin, yearMax],
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
       });
+
       applyFilters({
-        dataURL: chart.url,
-        filters,
+        dataURL: url,
+        filters: filters,
         onData: (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
             [chart.id]: { data, metadata, tableData },
           })),
       });
+
       applyFilters({
-        dataURL: chart.url,
+        dataURL: url,
         filters: compFilters,
         onData: (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
@@ -137,7 +142,7 @@ export default function WorkingReport() {
           })),
       });
     });
-  }, [myLocation, comparison, yearMin, yearMax]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [myLocation, comparison, yearMin, yearMax]);
 
   useEffect(() => {
     const seen = new Set<string>();

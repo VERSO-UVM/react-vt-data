@@ -52,7 +52,7 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'zoning_allowance',
-    title: 'Zoning Allowance by Unit Type',
+    title: 'Zoning Allowance Acreage by Unit Type',
     categories: ['Land Use'],
     xField: 'use_type',
     yField: 'Acres',
@@ -308,7 +308,7 @@ export const chartDefs: ChartDef[] = [
   // Employment (QCEW quarterly, stacked by sector)
   {
     id: 'employment',
-    title: 'Total Employment — Four-Quarter Moving Average',
+    title: 'Total Employment by Sector',
     categories: ['Labor & Economy'],
     xField: 'quarter_label',
     yField: 'employment_4qma',
