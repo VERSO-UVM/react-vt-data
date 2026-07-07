@@ -85,6 +85,9 @@ def save_suitability_data():
         f"COPY (SELECT * FROM soil_suitability_type_colors) TO '{proc_dir /'soil_suitability'/ f'soil_suitability_colors.parquet'}' "
     )
 
+    info_table_names = []
+    geom_table_names = []
+
     for datafile_path in soil_suit_data_paths:
         table_name = datafile_path.stem
         con.execute(f"""--sql
@@ -93,14 +96,38 @@ def save_suitability_data():
         """)
 
         info_table_name = build_suitability_info_table(table_name)
+        info_table_names.append(info_table_name)
         con.execute(
             f"COPY (SELECT * FROM {info_table_name}) TO '{proc_dir / 'soil_suitability' / f'{info_table_name}.parquet'}' "
         )
 
         geom_table_name = build_suitability_geom_table(table_name)
+        geom_table_names.append(geom_table_name)
         con.execute(
             f"COPY (SELECT * FROM {geom_table_name}) TO '{proc_dir / 'soil_suitability' / f'{geom_table_name}.parquet'}' "
         )
+
+    con.execute(f"""CREATE TABLE geom_soil_suit AS SELECT * FROM {geom_table_names[0]};""")
+    con.execute(f"""CREATE TABLE info_soil_suit AS SELECT * FROM {info_table_names[0]};""")
+
+    for tables in range(len(info_table_names)):
+        if tables != 0:
+            con.execute(f"""INSERT INTO info_soil_suit SELECT * FROM {info_table_names[tables]};""")
+            con.execute(f"""INSERT INTO geom_soil_suit SELECT * FROM {geom_table_names[tables]};""")
+
+    con.execute(f"""CREATE SEQUENCE info_id_sequence START 1;""")
+    con.execute(f"""ALTER TABLE info_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('info_id_sequence');""")
+
+    con.execute(f"""CREATE SEQUENCE geom_id_sequence START 1;""")
+    con.execute(f"""ALTER TABLE geom_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('geom_id_sequence');""")
+
+    con.execute(
+        f"COPY (SELECT * FROM info_soil_suit) TO '{proc_dir / 'soil_suitability' / f'info_soil_suit.parquet'}' "
+    )
+    con.execute(
+        f"COPY (SELECT * FROM geom_soil_suit) TO '{proc_dir / 'soil_suitability' / f'geom_soil_suit.parquet'}' "
+    )
+
 
 
 

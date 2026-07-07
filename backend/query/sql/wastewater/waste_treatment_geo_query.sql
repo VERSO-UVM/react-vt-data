@@ -1,0 +1,27 @@
+{cte_filter_block}
+SELECT json_object(
+    'type', 'FeatureCollection',
+    'features', json_group_array(feature)
+)::VARCHAR AS fc
+FROM (
+    SELECT json_object(
+        'type', 'Feature',
+        'geometry', ST_AsGeoJSON(ST_Simplify(g.geometry, 0.0001))::JSON,
+        'properties', json_object(
+            'Septage Received At Facility', i.SeptageReceivedAtThisFacility,
+            'Design Hydraulic Capacity', i.DesignHydraulicCapacityInMGD
+            'tooltip', json_object(
+                '__title__', 'Wastewater Treatment Facilities',
+                'Regional Planning Commission', i.RPC,
+                'County', i.County
+                'District', i.TownName || ' ' || i.MunicipalName,
+                'Facility Name', i.FacilityName,
+                'Septage Received At Facility', i.SeptageReceivedAtThisFacility,
+                'Design Hydraulic Capacity', i.DesignHydraulicCapacityInMGD
+            )
+        )
+    ) AS feature
+    FROM wastewater_treatment_facilities_treatment_facility_info AS i
+    JOIN wastewater_treatment_facilities_treatment_facility_geom AS g USING (ID)
+    {join_filter_block}
+)

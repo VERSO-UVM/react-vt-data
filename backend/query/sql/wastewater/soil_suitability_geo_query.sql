@@ -1,0 +1,26 @@
+{cte_filter_block}
+SELECT json_object(
+    'type', 'FeatureCollection',
+    'features', json_group_array(feature)
+)::VARCHAR AS fc
+FROM (
+    SELECT json_object(
+        'type', 'Feature',
+        'geometry', ST_AsGeoJSON(ST_Simplify(g.geom, 0.0001))::JSON,
+        'properties', json_object(
+            'Suitability', i.Suitability,
+            'Acres', ROUND(i.Acres, 2),
+            'rgba_color', c.rgba::JSON,
+            'tooltip', json_object(
+                '__title__', 'Septic Tank Soil Suitability',
+                'Jurisdiction', i.Jurisdiction || ' ' || i.RPC,
+                'Suitability Level', i.Suitability,
+                'Acres', ROUND(i.Acres, 2)
+            )
+        )
+    ) AS feature
+    FROM wastewater_soil_suitability_info_soil_suit AS i
+    JOIN wastewater_soil_suitability_geom_soil_suit AS g USING (OBJECT_ID)
+    LEFT JOIN wastewater_soil_suitability_soil_suitability_colors AS c ON c.soil_suitability = i.Suitability
+    {join_filter_block}
+)
