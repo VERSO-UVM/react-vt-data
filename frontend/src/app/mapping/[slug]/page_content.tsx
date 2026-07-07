@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import VTMap from '@/components/mapping';
 import {
   Box,
@@ -48,32 +48,11 @@ const MAP_CONFIG: Record<
   },
 };
 
-const STATS_CONFIG: Record<
-  string,
-  { categoryKey: string; valueKey: string | null; unit: string }
-> = {
-  zoning: {
-    categoryKey: 'District Type',
-    valueKey: 'Acres',
-    unit: 'acres',
-  },
-  'flood-legal': {
-    categoryKey: 'FLD_ZONE',
-    valueKey: null,
-    unit: 'polygons',
-  },
-  'soil-suitability': {
-    categoryKey: 'Suitability',
-    valueKey: 'Acres',
-    unit: 'acres',
-  },
-};
-
 export default function MappingContent() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
 
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<FeatureCollection | null>(null);
   const [rpc, setRpc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCountyLines, setShowCountyLines] = useState(true);
@@ -81,6 +60,7 @@ export default function MappingContent() {
   const config = slug ? MAP_CONFIG[slug] : undefined;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset map state on navigation to another slug
     setData(null);
     setRpc(null);
   }, [slug]);
@@ -88,6 +68,7 @@ export default function MappingContent() {
   useEffect(() => {
     if (!slug || !config?.initialURL) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
     setLoading(true);
 
     axios
@@ -100,6 +81,7 @@ export default function MappingContent() {
   useEffect(() => {
     if (!rpc) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
     setLoading(true);
     setData(null);
 
@@ -161,7 +143,9 @@ export default function MappingContent() {
               <FilterContainer
                 apiURL={config.filterURL}
                 dataURL={config.dataURL}
-                onData={(fetchedData) => setData(fetchedData)}
+                onData={(fetchedData) =>
+                  setData(fetchedData as FeatureCollection)
+                }
               />
             )}
           </Stack>

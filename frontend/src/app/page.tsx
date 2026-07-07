@@ -27,11 +27,11 @@ import {
   IconPencil,
 } from '@tabler/icons-react';
 
-import { useProfile } from '@/components/profile/profileStore';
+import { Location, useProfile } from '@/components/profile/profileStore';
 
 interface HeroSectionProps {
-  myLocation: any;
-  comparison: any;
+  myLocation: Location;
+  comparison: Location;
   interests: string[];
   yearMin: number;
   yearMax: number;

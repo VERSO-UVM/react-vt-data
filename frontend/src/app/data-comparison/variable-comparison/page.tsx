@@ -1,9 +1,10 @@
 'use client';
-import { Box, Paper, Text, Title } from '@mantine/core';
+import { Paper, Text } from '@mantine/core';
 import { useState } from 'react';
 import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';
 import VTMap from '@/components/mapping';
+import MapPageLayout from '@/components/MapPageLayout';
 import { cdc_filtering } from '@/components/FilterRedux/filterDefs';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 import { assemble } from '@/components/FilterRedux/apiHelpers';
@@ -132,7 +133,7 @@ function BivariateLegend({ legend }: { legend: Legend }) {
 export default function VariableComparison() {
   const [legend, setLegend] = useState<Legend | null>(null);
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
-  const comparisonURL = `${BASE_API_URL}/load/mapping/cdc/places/comparison`;
+  const comparisonURL = `${BASE_API_URL}/load/mapping/cdc/places/county_comparison`;
 
   const handleApply = async (specs: FilterSpec[]) => {
     const payload = assemble(specs);
@@ -144,37 +145,16 @@ export default function VariableComparison() {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 16,
-        padding: 16,
-        height: 'calc(100vh - 80px)',
-      }}
-    >
-      <Paper
-        withBorder
-        p="md"
-        radius="md"
-        style={{ width: 340, flexShrink: 0, overflowY: 'auto' }}
-      >
-        <Title order={4} mb="sm">
-          Compare Variables
-        </Title>
-        <FilterWrap handleApply={handleApply} filterList={cdc_filtering} />
-        {legend && <BivariateLegend legend={legend} />}
-      </Paper>
-      <Box
-        style={{
-          position: 'relative',
-          flex: 1,
-          minHeight: 0,
-          borderRadius: 8,
-          overflow: 'hidden',
-        }}
-      >
-        <VTMap geojson={geojson} showCountyLines={false} />
-      </Box>
-    </div>
+    <MapPageLayout
+      title="Compare Variables"
+      sidebar={
+        <>
+          <FilterWrap handleApply={handleApply} filterList={cdc_filtering} />
+          {legend && <BivariateLegend legend={legend} />}
+        </>
+      }
+      map={<VTMap geojson={geojson} showCountyLines={false} />}
+      // add charts/scatterplots/tables for the comparison via the `below` prop
+    />
   );
 }

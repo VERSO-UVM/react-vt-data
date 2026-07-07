@@ -8,7 +8,7 @@
  */
 
 import { FilterSpec, FilterValue, filterDef } from './filterTypes';
-import { Group, Stack, Button } from '@mantine/core';
+import { Group, Stack, Button, Fieldset } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { FilterUI } from './filterUI';
 
@@ -37,7 +37,15 @@ export function FilterWrap(props: FilterWrapProps) {
             setValue: (f: Record<string, FilterValue>) =>
               form.setFieldValue(`specs.${i}.filters`, f),
           };
-          return <FilterUI key={i} style={def.filter_style} params={params} />;
+          return (
+            <Fieldset
+              key={i}
+              legend={def.label ?? `Filter ${i + 1}`}
+              radius="md"
+            >
+              <FilterUI style={def.filter_style} params={params} />
+            </Fieldset>
+          );
         })}
         <Group grow>
           <Button variant="default" type="button" onClick={() => form.reset()}>

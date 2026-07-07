@@ -1,4 +1,4 @@
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, ChartMetadata, ChartParams } from '@/types/cachedCharts';
 import { v4 as uuidv4 } from 'uuid';
 
 import { TableColumnConfig } from '@/types/cachedCharts';
@@ -9,11 +9,11 @@ interface ChartItemConfig<TData> {
   yField: string;
   subtype: string;
   data: TData[];
-  chartParams?: Record<string, any>;
+  chartParams?: ChartParams;
   description?: string;
   compareData?: TData[];
   notes?: string;
-  metadata?: Record<string, any>;
+  metadata?: ChartMetadata;
   compareTableData?: TData[];
   categories?: string[];
 
@@ -48,13 +48,13 @@ export function createTableItem<TData>(config: {
   title: string;
   data: TData[];
   notes?: string;
-  metadata?: Record<string, any>;
+  metadata?: ChartMetadata;
   description?: string;
   subtype?: string;
   trendChart?: string;
   categories?: string[];
   compareData?: TData[];
-  chartParams?: Record<string, any>;
+  chartParams?: ChartParams;
 }): ChartItem<TData> {
   return {
     id: `${config.title.replace(/\s/g, '')}-${uuidv4()}`,

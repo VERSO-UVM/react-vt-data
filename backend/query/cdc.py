@@ -24,7 +24,7 @@ sql_dir = Path(__file__).resolve().parent / "sql" / "cdc"
 
 
 def single_var_geojson(sources: list[FilterSource]):
-    sql, params = sql_filter_block(sql_dir / "places.sql", sources)
+    sql, params = sql_filter_block(sql_dir / "county_places.sql", sources)
     rows = DB.execute(sql, params).df()
     if rows.empty:
         logger.error("geo query returned no rows for filters: %s", sources)

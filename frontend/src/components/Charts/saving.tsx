@@ -2,7 +2,7 @@ import React from 'react';
 import { useItems } from '../ItemsProvider';
 import { useProfile } from '@/components/profile/profileStore';
 import { Button } from '@mantine/core';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 
 // Toggle include/exclude for auto-populated working report charts
 interface ToggleProps {
@@ -27,7 +27,7 @@ export function ToggleChart({ isIncluded, onToggle }: ToggleProps) {
 // storing a copy. Initial inclusion is determined by profile interests — charts
 // whose categories don't match any interest start excluded.
 interface AddChartProps {
-  chart: ChartItem<any>;
+  chart: ChartItem<DataRow>;
   defId?: string;
 }
 export function AddChart({ chart, defId }: AddChartProps) {
@@ -60,7 +60,7 @@ export function AddChart({ chart, defId }: AddChartProps) {
 
 // Remove a manually-saved chart from the working report
 interface RemoveChartProps {
-  chart: ChartItem<any>;
+  chart: ChartItem<DataRow>;
 }
 export function RemoveChart({ chart }: RemoveChartProps) {
   const { removeItem } = useItems();

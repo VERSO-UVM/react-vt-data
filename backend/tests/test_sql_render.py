@@ -48,9 +48,15 @@ QUERY_TEMPLATE_SOURCES = {
     "query/sql/acs5/median_earnings.sql": [WHERE_SOURCE],
     "query/sql/acs5/snapshot.sql": [WHERE_SOURCE],
     "query/sql/acs5/unemployment_rate.sql": [WHERE_SOURCE],
-    "query/sql/cdc/places.sql": [
+    "query/sql/cdc/county_places.sql": [
         FilterSource(
-            filter_table="cdc_places",
+            filter_table="cdc_county_places",
+            filters={"Measure": ["Depression among adults"]},
+        )
+    ],
+    "query/sql/cdc/tract_places.sql": [
+        FilterSource(
+            filter_table="cdc_tract_places",
             filters={"Measure": ["Depression among adults"]},
         )
     ],
@@ -62,6 +68,10 @@ QUERY_TEMPLATE_SOURCES = {
 
 # build templates take plain string context instead of FilterSources
 BUILD_TEMPLATE_CONTEXT = {
+    "build/sql/cdc_places.sql": {
+        "indicators": "'ASTHMA', 'DIABETES'",
+        "path": "dummy.csv",
+    },
     "build/sql/zoning_colors.sql": {},
     "build/sql/zoning_info.sql": {"info_string": "OBJECT_ID, County"},
     "build/sql/zoning_rules.sql": {

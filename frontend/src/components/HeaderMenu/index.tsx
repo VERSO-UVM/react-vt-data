@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { IconChevronDown } from '@tabler/icons-react';
 import {
   UnstyledButton,
   Burger,

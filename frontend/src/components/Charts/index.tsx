@@ -22,15 +22,15 @@ export {
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
-import { ChartItem } from '@/types/cachedCharts';
-import { Badge, Card, Box, Title, Stack, Text, Group, SimpleGrid } from '@mantine/core';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { Badge, Card, Box, Title, Stack, Text, Group } from '@mantine/core';
 import { AddChart, RemoveChart, ToggleChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 
 // ChartCard
-interface ChartCardProps<TData extends Record<string, any>> {
+interface ChartCardProps<TData extends DataRow> {
   chart: ChartItem<TData>;
   ChartComponent: React.FC<{ chart: ChartItem<TData> }>;
   TrendComponent?: React.FC<{ chart: ChartItem<TData> }>;
@@ -40,7 +40,7 @@ interface ChartCardProps<TData extends Record<string, any>> {
   isIncluded?: boolean;
   onToggle?: () => void;
 }
-export const ChartCard = <TData extends Record<string, any>>({
+export const ChartCard = <TData extends DataRow>({
   chart,
   ChartComponent,
   TrendComponent,
@@ -165,19 +165,19 @@ export const ChartCard = <TData extends Record<string, any>>({
   );
 };
 
-interface ChartStackProps<TData extends Record<string, any>> {
+interface ChartStackProps<TData extends DataRow> {
   charts: ChartItem<TData>[];
   action?: 'add' | 'remove' | 'toggle';
   userInterests?: string[];
   // parallel arrays for toggle mode — same length as charts
-  defIds?: string[];
+  defIds?: (string | undefined)[];
   onToggle?: (defId: string) => void;
   isIncludedFn?: (defId: string) => boolean;
 }
 
 import * as allCharts from './index'; // self-import to dynamically access all exports
 
-export const ChartStack = <TData extends Record<string, any>>({
+export const ChartStack = <TData extends DataRow>({
   charts,
   action = 'add',
   userInterests = [],
@@ -204,7 +204,8 @@ export const ChartStack = <TData extends Record<string, any>>({
 
       const defId = defIds?.[i];
       const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
-      const handleToggle = defId && onToggle ? () => onToggle(defId) : undefined;
+      const handleToggle =
+        defId && onToggle ? () => onToggle(defId) : undefined;
 
       // Compact note card — no chart, no 400px box
       if (chart.subtype === 'noteCard')

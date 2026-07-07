@@ -1,6 +1,6 @@
 // TableView.tsx
 
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { Table } from '@mantine/core';
 import { Group, Title, SegmentedControl, ScrollArea } from '@mantine/core';
 
@@ -8,7 +8,7 @@ interface TableViewProps<TData> {
   chart: ChartItem<TData>;
 }
 
-export const TableView = <TData extends Record<string, any>>({
+export const TableView = <TData extends DataRow>({
   chart,
 }: TableViewProps<TData>) => {
   const rows = (chart.tableData || chart.data) as TData[];

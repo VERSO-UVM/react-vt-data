@@ -1,6 +1,6 @@
 // chartDefs.ts\
 import { BASE_API_URL } from '@/config';
-import { TableColumnConfig } from '@/types/cachedCharts';
+import { ChartParams, TableColumnConfig } from '@/types/cachedCharts';
 
 export interface TableRowDef {
   label: string;
@@ -9,7 +9,7 @@ export interface TableRowDef {
 }
 
 export interface TableConfig {
-  extraParams?: Record<string, any>; // year_min, year_max, etc.
+  extraParams?: Record<string, string | number>; // year_min, year_max, etc.
 }
 
 export interface ChartDef {
@@ -20,7 +20,7 @@ export interface ChartDef {
   subtype: string;
   trendChart?: string; // optional trend chart component name for table-primary defs
   categories?: string[]; // topic areas for interest-based filtering
-  chartParams?: any;
+  chartParams?: ChartParams;
   url: string;
   filterKey?: string;
   dataKey?: string;

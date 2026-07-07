@@ -1,7 +1,14 @@
 'use client';
 
 import { Box, Grid, Text, Title, Tabs } from '@mantine/core';
-import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon, Icon } from '@phosphor-icons/react';
+import {
+  HouseLineIcon,
+  UserListIcon,
+  TreeIcon,
+  GraduationCapIcon,
+  TrendUpIcon,
+  Icon,
+} from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -11,6 +18,14 @@ import {
 } from '@/components/FilterUI/useApplyFilters';
 import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { ChartMetadata, DataRow } from '@/types/cachedCharts';
+
+// one chart's backend payload, keyed by chart def id in state below
+type ChartPayload = {
+  data: DataRow[];
+  metadata?: ChartMetadata;
+  tableData?: DataRow[];
+};
 
 // Imports needed for stat cards
 import { BASE_API_URL } from '@/config';
@@ -36,7 +51,7 @@ function StatCards() {
         selected: [yearMin, yearMax],
       }),
       onData: (data) => {
-        setData(data);
+        setData(data as Row[]);
       },
     });
   }, [myLocation, yearMin, yearMax]);
@@ -50,7 +65,7 @@ function StatCards() {
     v === undefined || v === null ? '—' : v.toLocaleString();
 
   return (
-    <Grid gutter={40} py="xl">
+    <Grid gap={40} py="xl">
       <Grid.Col span={{ base: 6, md: 2 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Population (ACS)'])}
@@ -99,9 +114,17 @@ function StatCards() {
   );
 }
 
-interface Section {id: string; label: string; icon: Icon}
+interface Section {
+  id: string;
+  label: string;
+  icon: Icon;
+}
 
-function ChartTabs({sections, activeTab, setActiveTab}: {
+function ChartTabs({
+  sections,
+  activeTab,
+  setActiveTab,
+}: {
   sections: Section[];
   activeTab: string | null;
   setActiveTab: (v: string | null) => void;
@@ -130,21 +153,17 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
   );
 }
 
-
 export default function DataViewerPage() {
   const { myLocation, comparison, interests, yearMin, yearMax } = useProfile();
-  const [chartData, setChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
-  >({});
+  const [chartData, setChartData] = useState<Record<string, ChartPayload>>({});
   const [compareChartData, setCompareChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
+    Record<string, ChartPayload>
   >({});
   const [compareTableData, setCompareTableData] = useState<
-    Record<string, any[]>
+    Record<string, DataRow[]>
   >({});
 
-
-  const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
+  const [focusMode] = useState<'all' | 'focus'>('all');
 
   const applyFilters = useApplyFilters();
   const tableDefs = chartDefs.filter((c) =>
@@ -162,13 +181,13 @@ export default function DataViewerPage() {
     'Labor & Economy': TrendUpIcon,
   };
 
-  const sections = [...new Set(chartDefs.flatMap((c) => c.categories ?? []))]
-  .map((category) => ({
+  const sections = [
+    ...new Set(chartDefs.flatMap((c) => c.categories ?? [])),
+  ].map((category) => ({
     id: category.toLowerCase().replace(/\s+/g, '-'),
     label: category,
     icon: categoryIcons[category] ?? HouseLineIcon,
   }));
-
 
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
@@ -188,7 +207,11 @@ export default function DataViewerPage() {
         onData: (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
 
@@ -198,7 +221,11 @@ export default function DataViewerPage() {
         onData: (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
     });
@@ -237,7 +264,10 @@ export default function DataViewerPage() {
         }),
         onData: (data) =>
           siblings.forEach((d) =>
-            setChartData((prev) => ({ ...prev, [d.id]: { data } })),
+            setChartData((prev) => ({
+              ...prev,
+              [d.id]: { data: data as DataRow[] },
+            })),
           ),
       });
       // Comparison location fetch
@@ -250,7 +280,10 @@ export default function DataViewerPage() {
           }),
           onData: (data) =>
             siblings.forEach((d) =>
-              setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
+              setCompareTableData((prev) => ({
+                ...prev,
+                [d.id]: data as DataRow[],
+              })),
             ),
         });
       }
@@ -282,7 +315,7 @@ export default function DataViewerPage() {
       tableData: chartData[chart.id]?.tableData || [],
       showCols: chart.showCols,
 
-      metadata: chartData[chart.id]?.metadata || [],
+      metadata: chartData[chart.id]?.metadata,
       compareData: compareChartData[chart.id]?.data || [],
       compareTableData: compareChartData[chart.id]?.tableData || [],
 
@@ -303,7 +336,7 @@ export default function DataViewerPage() {
       title: myLocation.name,
       description: def.title,
       data: chartData[def.id]?.data || [],
-      metadata: chartData[def.id]?.metadata || [],
+      metadata: chartData[def.id]?.metadata,
       compareData: compareTableData[def.id] || [],
       chartParams: { legendLabels: [myLocation.name, comparison.name] },
       notes: def.notes,
@@ -314,7 +347,7 @@ export default function DataViewerPage() {
   );
 
   const allItems = [...charts, ...tableItems];
-  
+
   let filteredItems = allItems;
 
   if (focusMode === 'focus' && interests.length > 0) {
@@ -325,58 +358,51 @@ export default function DataViewerPage() {
 
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
-
   if (activeTab) {
-  const section = sections.find(
-    (s) => s.id === activeTab
-  );
+    const section = sections.find((s) => s.id === activeTab);
 
-  if (section) {
-    filteredItems = filteredItems.filter((item) =>
-      item.categories?.includes(section.label)
-    );
+    if (section) {
+      filteredItems = filteredItems.filter((item) =>
+        item.categories?.includes(section.label),
+      );
+    }
   }
-}
 
-const visibleItems = filteredItems;
+  const visibleItems = filteredItems;
 
-return (
-  <Box h="100vh">
-    <Box px={0}>
-      {/* Hero */}
-      <Box pt={32} pb={24} h={250}>
-        <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={8}>
-          Data Viewer
-        </Text>
+  return (
+    <Box h="100vh">
+      <Box px={0}>
+        {/* Hero */}
+        <Box pt={32} pb={24} h={250}>
+          <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={8}>
+            Data Viewer
+          </Text>
 
-        <Title fw={600}>
-          {myLocation.name}
-        </Title>
+          <Title fw={600}>{myLocation.name}</Title>
 
-        <Text size="lg" c="dimmed" mt={4}>
-          Compared with {comparison.name}
-        </Text>
+          <Text size="lg" c="dimmed" mt={4}>
+            Compared with {comparison.name}
+          </Text>
 
-        <StatCards/>
-      </Box>
+          <StatCards />
+        </Box>
 
-      <ChartTabs
-        sections={sections}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-      {/* Charts */}
-      <Box py="xl">
-        <ChartStack
-          charts={visibleItems}
-          action="add"
-          userInterests={interests}
-          defIds={visibleItems.map(
-            (c) => c.chartParams?.defId
-          )}
+        <ChartTabs
+          sections={sections}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
+        {/* Charts */}
+        <Box py="xl">
+          <ChartStack
+            charts={visibleItems}
+            action="add"
+            userInterests={interests}
+            defIds={visibleItems.map((c) => c.chartParams?.defId)}
+          />
+        </Box>
       </Box>
     </Box>
-  </Box>
-);
+  );
 }

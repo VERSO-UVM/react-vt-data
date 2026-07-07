@@ -10,7 +10,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
+
+// tidy ACS-style row consumed by the trend charts
+interface TrendRow extends DataRow {
+  year?: number | string;
+  Variable?: string;
+  Value?: number;
+  Percent?: number;
+}
 import { Text } from '@mantine/core';
 
 /** Small label shown above the chart when comparison data is present. */
@@ -25,22 +33,21 @@ const CompareNote = ({ name }: { name: string }) => (
 // Demographics: Under 18 vs 65+
 // ---------------------------------------------------------------------------
 
-export const DemographicsTrendChart = <TData,>({
+export const DemographicsTrendChart = ({
   chart,
 }: {
-  chart: ChartItem<TData>;
+  chart: ChartItem<TrendRow>;
 }) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
+    [string, string] | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
-  const buildPoint = (rows: any[], year: number) => {
+  const buildPoint = (rows: TrendRow[], year: TrendRow['year']) => {
     const find = (label: string) =>
       rows.find((r) => r.year === year && r.Variable === label)?.Percent ??
       null;
@@ -75,7 +82,7 @@ export const DemographicsTrendChart = <TData,>({
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
+          <Tooltip formatter={(val) => (val != null ? `${val}%` : '—')} />
           <Legend />
           <Line
             type="monotone"
@@ -124,22 +131,21 @@ export const DemographicsTrendChart = <TData,>({
 // ---------------------------------------------------------------------------
 // Demographics: Median Age Chart
 // ---------------------------------------------------------------------------
-export const MedianAgeTrendChart = <TData,>({
+export const MedianAgeTrendChart = ({
   chart,
 }: {
-  chart: ChartItem<TData>;
+  chart: ChartItem<TrendRow>;
 }) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
+    [string, string] | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
-  const buildPoint = (rows: any[], year: number) => {
+  const buildPoint = (rows: TrendRow[], year: TrendRow['year']) => {
     const find = (label: string) =>
       rows.find((r) => r.year === year && r.Variable === label)?.Value ?? null;
     return { 'Median Age': find('Median Age') };
@@ -171,7 +177,7 @@ export const MedianAgeTrendChart = <TData,>({
             tickFormatter={(value) => Number(value).toFixed(0)}
           />
           <Tooltip
-            formatter={(val: any) =>
+            formatter={(val) =>
               val != null ? `${Number(val).toFixed(1)} years` : '—'
             }
           />
@@ -215,28 +221,27 @@ const EDU_SERIES = [
   { key: 'Postgraduate Degree', color: '#7d4caf' },
 ];
 
-export const EducationTrendChart = <TData,>({
+export const EducationTrendChart = ({
   chart,
 }: {
-  chart: ChartItem<TData>;
+  chart: ChartItem<TrendRow>;
 }) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   if (!data || data.length === 0) return null;
 
   const keys = new Set(EDU_SERIES.map((s) => s.key));
-  const filtered = data.filter((r) => keys.has(r.Variable));
-  const cmpFiltered = compareData.filter((r) => keys.has(r.Variable));
+  const filtered = data.filter((r) => keys.has(r.Variable as string));
+  const cmpFiltered = compareData.filter((r) => keys.has(r.Variable as string));
   const years = Array.from(new Set(filtered.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
+    [string, string] | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => {
     const rows = filtered.filter((r) => r.year === year);
     const cmpRows = cmpFiltered.filter((r) => r.year === year);
-    const pt: Record<string, any> = { year };
+    const pt: Record<string, TrendRow['year'] | number | null> = { year };
     for (const { key } of EDU_SERIES) {
       pt[key] = rows.find((r) => r.Variable === key)?.Percent ?? null;
       if (compareData.length > 0) {
@@ -258,7 +263,7 @@ export const EducationTrendChart = <TData,>({
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
+          <Tooltip formatter={(val) => (val != null ? `${val}%` : '—')} />
           <Legend />
           {EDU_SERIES.map((s) => (
             <Line
@@ -299,27 +304,26 @@ const HOUSING_SERIES = [
   { key: 'Median Home Value', color: '#8b5e3c', axis: 'right' as const },
 ];
 
-export const HousingTrendChart = <TData,>({
+export const HousingTrendChart = ({
   chart,
 }: {
-  chart: ChartItem<TData>;
+  chart: ChartItem<TrendRow>;
 }) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
+    [string, string] | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
   const plotData = years.map((year) => {
     const rows = data.filter((r) => r.year === year);
     const cmpRows = compareData.filter((r) => r.year === year);
-    const find = (src: any[], label: string) =>
+    const find = (src: TrendRow[], label: string) =>
       src.find((r) => r.Variable === label)?.Value ?? null;
-    const pt: Record<string, any> = { year };
+    const pt: Record<string, TrendRow['year'] | number | null> = { year };
     for (const { key } of HOUSING_SERIES) {
       pt[key] = find(rows, key);
       if (compareData.length > 0) pt[`${key} (cmp)`] = find(cmpRows, key);
@@ -327,13 +331,15 @@ export const HousingTrendChart = <TData,>({
     return pt;
   });
 
-  const fmtTooltip = (val: any, name: string) => {
-    const base = name.replace(' (cmp)', '');
+  const fmtTooltip = (val: unknown, name: unknown) => {
+    const label = String(name);
+    const base = label.replace(' (cmp)', '');
+    const num = val as number | null | undefined;
     if (base === 'Total Housing Units' || base === 'Renter-Occupied Units')
-      return [val?.toLocaleString() ?? '—', name];
+      return [num?.toLocaleString() ?? '—', label];
     if (base === 'Median Home Value')
-      return [`$${val?.toLocaleString() ?? '—'}`, name];
-    return [val, name];
+      return [`$${num?.toLocaleString() ?? '—'}`, label];
+    return [num, label];
   };
 
   return (
@@ -408,22 +414,21 @@ export const HousingTrendChart = <TData,>({
 // Economics: Unemployment Rate
 // ---------------------------------------------------------------------------
 
-export const UnemploymentTrendChart = <TData,>({
+export const UnemploymentTrendChart = ({
   chart,
 }: {
-  chart: ChartItem<TData>;
+  chart: ChartItem<TrendRow>;
 }) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
+    [string, string] | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
-  const buildPoint = (rows: any[], year: number) => {
+  const buildPoint = (rows: TrendRow[], year: TrendRow['year']) => {
     const row = rows.find((r) => r.year === year);
     return {
       'Unemployment Rate': row?.Value ?? null,
@@ -453,7 +458,7 @@ export const UnemploymentTrendChart = <TData,>({
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
+          <Tooltip formatter={(val) => (val != null ? `${val}%` : '—')} />
           <Legend />
           <Line
             type="monotone"
@@ -486,22 +491,21 @@ export const UnemploymentTrendChart = <TData,>({
 // Economics: Median Earnings (Male vs Female vs All Workers)
 // ---------------------------------------------------------------------------
 
-export const EarningsTrendChart = <TData,>({
+export const EarningsTrendChart = ({
   chart,
 }: {
-  chart: ChartItem<TData>;
+  chart: ChartItem<TrendRow>;
 }) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
+    [string, string] | undefined;
   const cmpName = labels?.[1] ?? 'Comparison';
 
-  const buildPoint = (rows: any[], year: number) => {
+  const buildPoint = (rows: TrendRow[], year: TrendRow['year']) => {
     const find = (label: string) =>
       rows.find((r) => String(r.year) === String(year) && r.Variable === label)
         ?.Value ?? null;
@@ -543,7 +547,7 @@ export const EarningsTrendChart = <TData,>({
             tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
           />
           <Tooltip
-            formatter={(value: any) =>
+            formatter={(value) =>
               value != null
                 ? `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
                 : '—'
@@ -619,13 +623,9 @@ export const EarningsTrendChart = <TData,>({
 // chartParams.measure:      raw measure string (e.g. 'Percent') for formatting
 // ---------------------------------------------------------------------------
 
-export const DPTrendChart = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   const lbls = chart.chartParams?.legendLabels as [string, string] | undefined;
   const primaryName = lbls?.[0] ?? 'Side A';
   const compareName = lbls?.[1] ?? 'Side B';
@@ -635,7 +635,7 @@ export const DPTrendChart = <TData,>({
 
   const allYears = Array.from(
     new Set([...data, ...compareData].map((r) => r.year)),
-  ).sort((a, b) => a - b);
+  ).sort((a, b) => Number(a) - Number(b));
 
   const plotData = allYears.map((year) => ({
     year,
@@ -643,7 +643,7 @@ export const DPTrendChart = <TData,>({
     compare: compareData.find((r) => r.year === year)?.Value ?? null,
   }));
 
-  const fmt = (v: any) =>
+  const fmt = (v: unknown) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
 
   if (!data || data.length === 0) return null;
@@ -663,7 +663,7 @@ export const DPTrendChart = <TData,>({
           }
           domain={['auto', 'auto']}
         />
-        <Tooltip formatter={(val: any, name: string) => [fmt(val), name]} />
+        <Tooltip formatter={(val, name) => [fmt(val), name]} />
         <Legend />
         <Line
           type="monotone"

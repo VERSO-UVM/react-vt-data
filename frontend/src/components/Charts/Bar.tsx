@@ -23,13 +23,17 @@ import {
   BarElement,
   Tooltip as TooltipJS,
   Legend as LegendJS,
+  TooltipItem,
 } from 'chart.js';
 ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 
-const SamePerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
+// d3 color schemes looked up by name (e.g. 'schemeCategory10')
+const d3Schemes = d3 as unknown as Record<string, readonly string[]>;
+
+const SamePerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
@@ -48,11 +52,9 @@ const SamePerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
         <YAxis />
         <Tooltip />
         <Legend />
-        {chart.chartParams?.datakeys.map(
-          ([datakey, color]: [string, string]) => (
-            <Bar key={datakey} dataKey={datakey} fill={color} />
-          ),
-        )}
+        {chart.chartParams?.datakeys?.map(([datakey, color]) => (
+          <Bar key={datakey} dataKey={datakey} fill={color} />
+        ))}
       </BarChart>
     </ResponsiveContainer>
   );
@@ -63,13 +65,9 @@ const SamePerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
 // ---------------------------------------------------------------------------
 
 /** SVG (Recharts) version used when rendering to PDF. */
-const DiffPerXBarChartSVG = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => {
+const DiffPerXBarChartSVG = ({ chart }: { chart: ChartItem<DataRow> }) => {
   const colors = chart.data.map(
-    (entry: any) => entry[chart.chartParams!.color],
+    (entry) => entry[chart.chartParams!.color!] as string,
   );
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -82,7 +80,7 @@ const DiffPerXBarChartSVG = <TData,>({
         <YAxis />
         <Tooltip />
         <Bar dataKey={chart.yField}>
-          {chart.data.map((_: any, index: number) => (
+          {chart.data.map((_, index) => (
             <Cell key={index} fill={colors[index]} />
           ))}
         </Bar>
@@ -91,13 +89,13 @@ const DiffPerXBarChartSVG = <TData,>({
   );
 };
 
-const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
+const DiffPerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => {
   const isPdfMode = usePdfMode();
   if (isPdfMode) return <DiffPerXBarChartSVG chart={chart} />;
 
-  const labels = chart.data.map((entry: any) => entry[chart.xField]);
+  const labels = chart.data.map((entry) => entry[chart.xField]);
   const colors = chart.data.map(
-    (entry: any) => entry[chart.chartParams!.color],
+    (entry) => entry[chart.chartParams!.color!] as string,
   );
 
   const data = {
@@ -105,7 +103,7 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
     datasets: [
       {
         label: chart.yField,
-        data: chart.data.map((entry: any) => entry[chart.yField]),
+        data: chart.data.map((entry) => entry[chart.yField] as number),
         backgroundColor: colors,
       },
     ],
@@ -127,20 +125,21 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
 // CompareDiffPerXBarChart — two datasets, primary with per-bar colors
 // ---------------------------------------------------------------------------
 
-interface CompareDiffChartItem<TData> extends ChartItem<TData> {
-  compareData: TData[];
+interface CompareDiffChartItem extends ChartItem<DataRow> {
+  compareData: DataRow[];
   chartParams: {
     color?: string;
     legendLabels?: [string, string];
     colorScheme?: string;
+    unit?: string;
   };
 }
 
 /** SVG (Recharts) version used when rendering to PDF. */
-const CompareDiffPerXBarChartSVG = <TData,>({
+const CompareDiffPerXBarChartSVG = ({
   chart,
 }: {
-  chart: CompareDiffChartItem<TData>;
+  chart: CompareDiffChartItem;
 }) => {
   const legendLabels = chart.chartParams.legendLabels ?? [
     chart.yField,
@@ -149,22 +148,21 @@ const CompareDiffPerXBarChartSVG = <TData,>({
 
   // Determine per-bar primary colors (same logic as Chart.js version)
   let colors: string[];
-  if (
-    chart.chartParams?.color &&
-    (chart.data[0] as any)?.[chart.chartParams.color]
-  ) {
-    colors = chart.data.map((entry: any) => entry[chart.chartParams.color!]);
+  if (chart.chartParams?.color && chart.data[0]?.[chart.chartParams.color]) {
+    colors = chart.data.map(
+      (entry) => entry[chart.chartParams.color!] as string,
+    );
   } else {
     const schemeName = chart.chartParams?.colorScheme ?? 'schemeCategory10';
-    const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
-    colors = chart.data.map((_: any, i: number) => colorScale(i.toString()));
+    const colorScale = d3.scaleOrdinal<string, string>(d3Schemes[schemeName]);
+    colors = chart.data.map((_, i) => colorScale(i.toString()));
   }
 
   // Merge primary + compare into one array for grouped bars
-  const merged = chart.data.map((entry: any, i: number) => ({
+  const merged = chart.data.map((entry, i) => ({
     [chart.xField]: entry[chart.xField],
     primary: entry[chart.yField],
-    compare: (chart.compareData?.[i] as any)?.[chart.yField] ?? null,
+    compare: chart.compareData?.[i]?.[chart.yField] ?? null,
   }));
 
   return (
@@ -179,7 +177,7 @@ const CompareDiffPerXBarChartSVG = <TData,>({
         <Tooltip />
         <Legend />
         <Bar dataKey="primary" name={legendLabels[0]}>
-          {merged.map((_: any, i: number) => (
+          {merged.map((_, i) => (
             <Cell key={i} fill={colors[i]} />
           ))}
         </Bar>
@@ -189,25 +187,24 @@ const CompareDiffPerXBarChartSVG = <TData,>({
   );
 };
 
-const CompareDiffPerXBarChart = <TData,>({
+const CompareDiffPerXBarChart = ({
   chart,
 }: {
-  chart: CompareDiffChartItem<TData>;
+  chart: CompareDiffChartItem;
 }) => {
   const isPdfMode = usePdfMode();
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
 
-  const labels = chart.data.map((entry: any) => entry[chart.xField]);
+  const labels = chart.data.map((entry) => entry[chart.xField]);
 
   let colors: string[];
-  if (
-    chart.chartParams?.color &&
-    (chart.data[0] as any)?.[chart.chartParams.color]
-  ) {
-    colors = chart.data.map((entry: any) => entry[chart.chartParams.color!]);
+  if (chart.chartParams?.color && chart.data[0]?.[chart.chartParams.color]) {
+    colors = chart.data.map(
+      (entry) => entry[chart.chartParams.color!] as string,
+    );
   } else {
     const schemeName = chart.chartParams?.colorScheme || 'schemeCategory10';
-    const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
+    const colorScale = d3.scaleOrdinal<string, string>(d3Schemes[schemeName]);
     colors = chart.data.map((_, index) => colorScale(index.toString()));
   }
   const compareColors = chart.compareData.map(() => '#999');
@@ -222,12 +219,12 @@ const CompareDiffPerXBarChart = <TData,>({
     datasets: [
       {
         label: legendLabels[0],
-        data: chart.data.map((entry: any) => entry[chart.yField]),
+        data: chart.data.map((entry) => entry[chart.yField] as number),
         backgroundColor: colors,
       },
       {
         label: legendLabels[1],
-        data: chart.compareData.map((entry: any) => entry[chart.yField]),
+        data: chart.compareData.map((entry) => entry[chart.yField] as number),
         backgroundColor: compareColors,
       },
     ],
@@ -256,21 +253,17 @@ const CompareDiffPerXBarChart = <TData,>({
  */
 
 /** SVG (Recharts) version used when rendering to PDF. */
-const CompareHBarChartSVG = <TData,>({
-  chart,
-}: {
-  chart: CompareDiffChartItem<TData>;
-}) => {
+const CompareHBarChartSVG = ({ chart }: { chart: CompareDiffChartItem }) => {
   const legendLabels = chart.chartParams?.legendLabels ?? [
     'Primary',
     'Comparison',
   ];
-  const unit = (chart.chartParams as any)?.unit ?? '';
+  const unit = chart.chartParams?.unit ?? '';
 
-  const merged = chart.data.map((entry: any, i: number) => ({
+  const merged = chart.data.map((entry, i) => ({
     name: entry[chart.xField],
     [legendLabels[0]]: entry[chart.yField],
-    [legendLabels[1]]: (chart.compareData?.[i] as any)?.[chart.yField] ?? null,
+    [legendLabels[1]]: chart.compareData?.[i]?.[chart.yField] ?? null,
   }));
 
   return (
@@ -281,14 +274,14 @@ const CompareHBarChartSVG = <TData,>({
         margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis type="number" tickFormatter={(v: any) => `${v}${unit}`} />
+        <XAxis type="number" tickFormatter={(v) => `${v}${unit}`} />
         <YAxis
           type="category"
           dataKey="name"
           width={120}
           tick={{ fontSize: 11 }}
         />
-        <Tooltip formatter={(v: any) => `${v}${unit}`} />
+        <Tooltip formatter={(v) => `${v}${unit}`} />
         <Legend />
         <Bar dataKey={legendLabels[0]} fill="#154734" />
         <Bar dataKey={legendLabels[1]} fill="#8899aa" />
@@ -297,33 +290,29 @@ const CompareHBarChartSVG = <TData,>({
   );
 };
 
-const CompareHBarChart = <TData,>({
-  chart,
-}: {
-  chart: CompareDiffChartItem<TData>;
-}) => {
+const CompareHBarChart = ({ chart }: { chart: CompareDiffChartItem }) => {
   const isPdfMode = usePdfMode();
   if (isPdfMode) return <CompareHBarChartSVG chart={chart} />;
 
-  const labels = chart.data.map((entry: any) => entry[chart.xField]);
+  const labels = chart.data.map((entry) => entry[chart.xField]);
   const legendLabels = chart.chartParams?.legendLabels || [
     'Primary',
     'Comparison',
   ];
-  const unit = (chart.chartParams as any)?.unit ?? '';
+  const unit = chart.chartParams?.unit ?? '';
 
   const data = {
     labels,
     datasets: [
       {
         label: legendLabels[0],
-        data: chart.data.map((entry: any) => entry[chart.yField]),
+        data: chart.data.map((entry) => entry[chart.yField] as number),
         backgroundColor: '#154734',
       },
       {
         label: legendLabels[1] ?? 'Comparison',
         data: (chart.compareData ?? []).map(
-          (entry: any) => entry[chart.yField],
+          (entry) => entry[chart.yField] as number,
         ),
         backgroundColor: '#8899aa',
       },
@@ -338,14 +327,15 @@ const CompareHBarChart = <TData,>({
       legend: { display: true },
       tooltip: {
         callbacks: {
-          label: (ctx: any) => `${ctx.dataset.label}: ${ctx.raw}${unit}`,
+          label: (ctx: TooltipItem<'bar'>) =>
+            `${ctx.dataset.label}: ${ctx.raw}${unit}`,
         },
       },
     },
     scales: {
       x: {
         ticks: {
-          callback: (value: any) => `${value}${unit}`,
+          callback: (value: number | string) => `${value}${unit}`,
         },
       },
     },

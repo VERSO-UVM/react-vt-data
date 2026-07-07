@@ -145,8 +145,8 @@ export default function DataExport() {
       URL.revokeObjectURL(url);
 
       setSuccessMsg('Download complete.');
-    } catch (e: any) {
-      setError(e.message ?? 'Download failed.');
+    } catch (e) {
+      setError((e as Error).message ?? 'Download failed.');
     } finally {
       setDownloading(false);
     }

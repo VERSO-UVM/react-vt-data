@@ -1,14 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Title,
-  Center,
-  Container,
-  Text,
-  SimpleGrid,
-  Paper,
-} from '@mantine/core';
+import { Title, Center, Container, Text } from '@mantine/core';
 import ExploratoryMappingGrid from '@/components/Grids/ExploratoryMappingOptions';
 
 export const links = [
