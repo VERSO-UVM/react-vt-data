@@ -48,10 +48,12 @@ interface ProfileStore {
 export const useProfile = create<ProfileStore>()(
   persist(
     (set) => ({
-      myLocation: (() => {
-        const c = randomCounty();
-        return { type: 'county', county: c, name: `${c} County, Vermont` };
-      })(),
+      // Default to Chittenden County
+      myLocation: {
+        type: 'county',
+        county: 'Chittenden',
+        name: 'Chittenden County, Vermont',
+      },
       comparison: { type: 'state', state: true, name: 'Vermont' },
       interests: [],
       yearMin: YEAR_MIN_OVERALL,
