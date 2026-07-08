@@ -18,6 +18,45 @@
         "Rule": "rule",
         "Value": "val"
       }
+    },
+    "soil_suit_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "Jurisdiction": "Jurisdiction",
+          "Soil Suitability Level": "Suitability"
+      }
+    },
+    "wastewater_treatment_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "County": "County",
+          "Jurisdiction": "Municipal_Name",
+          "Town": "TownName"
+      }
+    },
+    "wastewater_permit_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "County": "County",
+          "Jurisdiction": "Municipal_Name",
+          "Town": "TownName"
+      }
+    },
+    "wastewater_service_area_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "County": "County",
+          "Jurisdiction": "Municipal_Name",
+          "Town": "TownName"
+      }
     }
   }
 }
