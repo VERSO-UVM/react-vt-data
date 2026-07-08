@@ -133,7 +133,7 @@ function BivariateLegend({ legend }: { legend: Legend }) {
 export default function VariableComparison() {
   const [legend, setLegend] = useState<Legend | null>(null);
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
-  const comparisonURL = `${BASE_API_URL}/load/mapping/cdc/places/county_comparison`;
+  const comparisonURL = `${BASE_API_URL}/load/mapping/cdc/places/tract_comparison`;
 
   const handleApply = async (specs: FilterSpec[]) => {
     const payload = assemble(specs);
