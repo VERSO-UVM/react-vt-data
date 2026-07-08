@@ -50,6 +50,7 @@ interface ChartCardProps<TData extends Record<string, any>> {
   isIncluded?: boolean;
   onToggle?: () => void;
   view?: 'gallery' | 'report';
+  border?: boolean;
 }
 export const ChartCard = <TData extends Record<string, any>>({
   chart,
@@ -61,9 +62,11 @@ export const ChartCard = <TData extends Record<string, any>>({
   isIncluded,
   onToggle,
   view = 'report',
+  border = true
 }: ChartCardProps<TData>) => {
   const isPdfMode = usePdfMode();
   const isGallery = view === 'gallery';
+  const showBorder = border === true
   const [isHovered, setIsHovered] = useState(false);
 
   const isTablePrimary = chart.subtype.startsWith('renderTable');
@@ -98,16 +101,14 @@ export const ChartCard = <TData extends Record<string, any>>({
       : 400;
   
   const [expanded, setExpanded] = useState(false);
-
-
-
+  
   return (
     <>
       <Card
-        shadow="sm"
+        shadow={showBorder? "sm" : undefined}
         padding={isGallery ? 'sm' : 'lg'}
         radius="md"
-        withBorder
+        withBorder={showBorder}
         display="flex"
         data-chart-id={chart.id}
         data-chart-subtype={chart.subtype}
@@ -176,7 +177,7 @@ export const ChartCard = <TData extends Record<string, any>>({
                   whileTap={{ scale: 0.9 }}
                 >
                 {expanded ? (
-                  <CornersInIcon size={30} weight="thin" color="grey" />
+                  <CornersInIcon size={50} weight='thin' color='grey' />
                 ) : (
                   <CornersOutIcon size={30} weight="thin" color="grey" />
                 )}
@@ -248,7 +249,7 @@ export const ChartCard = <TData extends Record<string, any>>({
           onClick={() => setExpanded(false)}
           style={{ zIndex: 1000 }}
         >
-          <CornersInIcon size={30} />
+          <CornersInIcon size={50} weight='thin' color='grey' />
         </ActionIcon>
 
         <ChartCard
@@ -261,6 +262,7 @@ export const ChartCard = <TData extends Record<string, any>>({
           isIncluded={isIncluded}
           onToggle={onToggle}
           view="report"
+          border={false}
         />
       </Modal>
     </>
@@ -295,7 +297,7 @@ export const ChartStack = <TData extends Record<string, any>>({
     : {};
 
   return (
-    <Wrapper {...wrapperProps}>
+    <Wrapper {...wrapperProps} mt={5}>
       {charts.map((chart, i) => {
         const ChartComponent = allCharts[
           chart.subtype as keyof typeof allCharts

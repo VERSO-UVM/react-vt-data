@@ -113,7 +113,7 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
       variant="outline"
       radius="md"
       defaultValue="Land Use"
-      mt={20}
+      mt={0}
     >
       <Tabs.List>
         {sections.map((section) => (
@@ -348,32 +348,32 @@ return (
     <Box px={0}>
       {/* Hero */}
       <Box
-  pos="relative"
-  pt={40}
-  pb={48}
-  px="xl"
-  style={{
-    background: `
-      radial-gradient(
-        ellipse at top,
-        rgba(76,110,245,.10) 0%,
-        rgba(76,110,245,.04) 45%,
-        transparent 90%
-      ),
-      linear-gradient(
-        to bottom,
-        #f6f8fc,
-        #ffffff
-      )
-  `,
-  }}
->
+        pos="relative"
+        pt={40}
+        pb={0}
+        px="xl"
+        style={{
+          background: `
+            radial-gradient(
+              ellipse at top,
+              rgba(76,110,245,.10) 0%,
+              rgba(76,110,245,.04) 45%,
+              transparent 90%
+            ),
+            linear-gradient(
+              to bottom,
+              #f6f8fc,
+              #ffffff
+            )
+        `,
+        }}
+      >
         {/* Background glow */}
         <Box
           style={{
             position: "absolute",
             width: 700,
-            height: 700,
+            height: 500,
             borderRadius: "50%",
             background: "rgba(76,110,245,0.12)",
             filter: "blur(120px)",
@@ -395,33 +395,34 @@ return (
             {myLocation.name}
           </Title>
 
-          <Text size="lg" c="dimmed" mt={4}>
+          <Text size="lg" c="dimmed" mt={8} mb={-10}>
             Compared with {comparison.name}
           </Text>
 
           <StatCards />
+
+          <Box mt={32}>
+            <ChartTabs
+              sections={sections}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </Box>
+          
         </Box>
       </Box>
 
-      <ChartTabs
-        sections={sections}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-
       {/* Charts... */}
-      <Box py="xl">
-          <ScrollArea h="100%">
-            <ChartStack
-              charts={visibleItems}
-              action="add"
-              userInterests={interests}
-              defIds={visibleItems.map(
-                (c) => c.chartParams?.defId
-              )}
-              view="gallery"
-            />
-          </ScrollArea>
+      <Box py="xs">
+          <ChartStack
+            charts={visibleItems}
+            action="add"
+            userInterests={interests}
+            defIds={visibleItems.map(
+              (c) => c.chartParams?.defId
+            )}
+            view="gallery"
+          />
         </Box>
 
     </Box>
