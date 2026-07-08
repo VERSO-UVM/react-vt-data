@@ -347,9 +347,6 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
     INCLUDED_USE_TYPES.has(r.use_type)
   );
 
-  // ----------------------------
-  // Pivot long → wide, grouping vals and cleaning use_type labels
-  // ----------------------------
   type PivotRow = { use_type: string } & Record<string, number | string>;
   const pivot = (rows: AllowanceRow[]): Record<string, PivotRow> => {
     const map: Record<string, PivotRow> = {};
@@ -390,14 +387,14 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
   const datasets = useMemo(
     () => [
       ...stackKeys.map((key) => ({
-        label: `${key} (Current)`,
+        label: `${key}`,
         data: labels.map((l) => main[l]?.[key] || 0),
         stack: "main",
         backgroundColor: colorForGroup(key),
       })),
 
       ...stackKeys.map((key) => ({
-        label: `${key} (Compare)`,
+        label: `${key}`,
         data: labels.map((l) => compare[l]?.[key] || 0),
         stack: "compare",
         backgroundColor: mutedColor(colorForGroup(key)),
@@ -420,10 +417,10 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
           generateLabels: (chart: any) =>
             stackKeys.map((key) => {
               const mainIndex = chart.data.datasets.findIndex(
-                (ds: any) => ds.label === `${key} (Current)`
+                (ds: any) => ds.label === `${key}`
               );
               const compareIndex = chart.data.datasets.findIndex(
-                (ds: any) => ds.label === `${key} (Compare)`
+                (ds: any) => ds.label === `${key}`
               );
 
               const mainMeta = chart.getDatasetMeta(mainIndex);
