@@ -178,6 +178,8 @@ export const SingleSeriesTrendChart = <TData,>({
             stroke={color}
             strokeWidth={lineWidth}
             dot={false}
+            animationBegin={0} 
+            animationDuration={1000} 
             hide={hidden.has(seriesName)}
           />
           {compareData.length > 0 && (
@@ -188,6 +190,8 @@ export const SingleSeriesTrendChart = <TData,>({
               stroke={compareColor}
               strokeWidth={lineWidth}
               dot={false}
+              animationBegin={0} 
+              animationDuration={1000}
               hide={hidden.has(`${seriesName} (cmp)`)}
             />
           )}

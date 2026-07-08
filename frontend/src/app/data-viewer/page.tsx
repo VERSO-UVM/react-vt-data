@@ -110,7 +110,7 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
     <Tabs
       value={activeTab}
       onChange={setActiveTab}
-      variant="outline"
+      variant="default"
       radius="md"
       defaultValue="Land Use"
       mt={0}
