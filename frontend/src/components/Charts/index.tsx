@@ -31,8 +31,9 @@ export {
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem } from '@/types/cachedCharts';
-import { Badge, Card, Box, Title, Stack, Text, Group, SimpleGrid, Button } from '@mantine/core';
-import { CornersOutIcon } from '@phosphor-icons/react';
+import { Badge, Card, Box, Title, Stack, Text, Group, SimpleGrid, ActionIcon, Modal } from '@mantine/core';
+import { CornersOutIcon, CornersInIcon } from '@phosphor-icons/react';
+import * as motion from "motion/react-client"
 import { AddChart, RemoveChart, ToggleChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
@@ -95,112 +96,170 @@ export const ChartCard = <TData extends Record<string, any>>({
     : isGallery
       ? 220
       : 400;
+  
+  const [expanded, setExpanded] = useState(false);
+
+
 
   return (
-    <Card
-      shadow="sm"
-      padding={isGallery ? 'sm' : 'lg'}
-      radius="md"
-      withBorder
-      display="flex"
-      data-chart-id={chart.id}
-      data-chart-subtype={chart.subtype}
-      onMouseEnter={isGallery ? () => setIsHovered(true) : undefined}
-      onMouseLeave={isGallery ? () => setIsHovered(false) : undefined}
-      style={{
-        flexDirection: 'column',
-        minHeight: 0,
-        ...(isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : {}),
-        breakInside: 'avoid',
-        pageBreakInside: 'avoid',
-        ...(isGallery
-          ? {
-              cursor: 'pointer',
-              transition: 'transform 150ms ease, box-shadow 150ms ease',
-              transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-              boxShadow: isHovered
-                ? '0 8px 20px rgba(0,0,0,0.12)'
-                : undefined,
-            }
-          : {})
-      }}
-    >
-      <Box mb={isGallery ? 4 : 'xs'}>
-        <Group gap={8} wrap="nowrap" mb={isGallery ? 4 : 8} w="100%">
-          <Title order={isGallery ? 5 : 2} fw={500} lineClamp={1}>
-            {chart.description}
-          </Title>
-          {!isGallery && (
-            <>
-              <Title order={2} fw={200} c="dimmed"> | </Title>
-              <Title order={2} fw={200}>{chart.title}</Title>
-            </>
-          )}
-          <Box flex={1} />
-
-          {!isGallery && (
-            <Group align="right" gap={4}>
-              {allCategories.map((cat) => (
-                <Badge
-                  key={cat}
-                  color="green"
-                  variant={matchedCategories.includes(cat) ? 'filled' : 'light'}
-                  size="sm"
-                >
-                  {cat}
-                </Badge>
-              ))}
-            </Group>
-          )}
-          {isGallery && (
-            <Group align="right">
-              <Button variant="transparent">
-                <CornersOutIcon size={27} color="dimmed" weight="thin"/>
-              </Button>
-            </Group>
-          )}
-
-          {!isPdfMode && showViewSwitch && (
-            <ViewSwitch view={localView} setView={setLocalView} />
-          )}
-        </Group>
-      </Box>
-
-      <Box
-        data-chart-box
+    <>
+      <Card
+        shadow="sm"
+        padding={isGallery ? 'sm' : 'lg'}
+        radius="md"
+        withBorder
+        display="flex"
+        data-chart-id={chart.id}
+        data-chart-subtype={chart.subtype}
+        onMouseEnter={isGallery ? () => setIsHovered(true) : undefined}
+        onMouseLeave={isGallery ? () => setIsHovered(false) : undefined}
         style={{
-          height: chartBoxHeight,
-          overflow: isGallery ? 'hidden' : 'visible',
-          flex: '1 1 auto',
-          minHeight: isGallery ? 220 : 400,
-           ...(isGallery ? {} : { minHeight: 400 }),
+          flexDirection: 'column',
+          minHeight: 0,
+          ...(isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : {}),
+          breakInside: 'avoid',
+          pageBreakInside: 'avoid',
+          ...(isGallery
+            ? {
+                cursor: 'pointer',
+                transition: 'transform 150ms ease, box-shadow 150ms ease',
+                transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+                boxShadow: isHovered
+                  ? '0 8px 20px rgba(0,0,0,0.12)'
+                  : undefined,
+              }
+            : {})
         }}
       >
-        {content}
-      </Box>
+        <Box mb={isGallery ? 4 : 'xs'}>
+          <Group gap={8} wrap="nowrap" mb={isGallery ? 4 : 8} w="100%">
+            <Title order={isGallery ? 5 : 2} fw={500} lineClamp={1}>
+              {chart.description}
+            </Title>
+            {!isGallery && (
+              <>
+                <Title order={2} fw={200} c="dimmed"> | </Title>
+                <Title order={2} fw={200}>{chart.title}</Title>
+              </>
+            )}
+            <Box flex={1} />
 
-      {!isGallery && (
-        <Text size="sm" c="gray.6" mt="md" ta="right">
-          {chart.metadata?.source}
-        </Text>
-      )}
+            {!isGallery && (
+              <Group align="right" gap={4}>
+                {allCategories.map((cat) => (
+                  <Badge
+                    key={cat}
+                    color="green"
+                    variant={matchedCategories.includes(cat) ? 'filled' : 'light'}
+                    size="sm"
+                  >
+                    {cat}
+                  </Badge>
+                ))}
+              </Group>
+            )}
+            {isGallery && (
+              <Group justify="flex-end">
+                <ActionIcon
+                component={motion.button}
+                variant="transparent"
+                size="lg"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded((v) => !v);
+                }}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {expanded ? (
+                  <CornersInIcon size={30} weight="thin" color="grey" />
+                ) : (
+                  <CornersOutIcon size={30} weight="thin" color="grey" />
+                )}
+              </ActionIcon>
+              </Group>
+            )}
 
-      {!isPdfMode && (
-        <Group mt={isGallery ? 'xs' : 'md'}>
-          {action === 'toggle' && defId && onToggle ? (
-            <ToggleChart
-              defId={defId}
-              isIncluded={isIncluded ?? true}
-              onToggle={onToggle}
-            />
-          ) : action === 'add' ? (
-            <AddChart chart={chart} defId={defId} />
-          ) : action === 'remove' ? (
-            <RemoveChart chart={chart} />
-          ) : null}
-        </Group>
-      )}
-    </Card>
+            {!isPdfMode && showViewSwitch && (
+              <ViewSwitch view={localView} setView={setLocalView} />
+            )}
+          </Group>
+        </Box>
+
+        <Box
+          data-chart-box
+          style={{
+            height: chartBoxHeight,
+            overflow: isGallery ? 'hidden' : 'visible',
+            flex: '1 1 auto',
+            minHeight: isGallery ? 220 : 400,
+            ...(isGallery ? {} : { minHeight: 400 }),
+          }}
+        >
+          {content}
+        </Box>
+
+        {!isGallery && (
+          <Text size="sm" c="gray.6" mt="md" ta="right">
+            {chart.metadata?.source}
+          </Text>
+        )}
+
+        {!isPdfMode && (
+          <Group mt={isGallery ? 'xs' : 'md'}>
+            {action === 'toggle' && defId && onToggle ? (
+              <ToggleChart
+                defId={defId}
+                isIncluded={isIncluded ?? true}
+                onToggle={onToggle}
+              />
+            ) : action === 'add' ? (
+              <AddChart chart={chart} defId={defId} />
+            ) : action === 'remove' ? (
+              <RemoveChart chart={chart} />
+            ) : null}
+          </Group>
+        )}
+      </Card>
+      <Modal
+        opened={expanded}
+        onClose={() => setExpanded(false)}
+        size="100%"
+        centered
+        withCloseButton={false}
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 4,
+        }}
+      >
+        <ActionIcon
+          component={motion.button}
+          pos="absolute"
+          top={12}
+          right={12}
+          variant="transparent"
+          color="grey"
+          whileHover={{ scale: 1.15 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => setExpanded(false)}
+          style={{ zIndex: 1000 }}
+        >
+          <CornersInIcon size={30} />
+        </ActionIcon>
+
+        <ChartCard
+          chart={chart}
+          ChartComponent={ChartComponent}
+          TrendComponent={TrendComponent}
+          matchedCategories={matchedCategories}
+          action={action}
+          defId={defId}
+          isIncluded={isIncluded}
+          onToggle={onToggle}
+          view="report"
+        />
+      </Modal>
+    </>
   );
 };
 

@@ -37,7 +37,7 @@ const FORMATTERS: Record<
       v != null ? `${decimals != null ? Number(v).toFixed(decimals) : v}%` : '—',
   },
   number: {
-    axisFormatter: (v) => Number(v).toLocaleString(),
+    axisFormatter: (v) => `${(v / 1000).toFixed(0)}k`,
     tooltip: (v) => (v != null ? Number(v).toLocaleString() : '—'),
   },
   years: {
@@ -152,16 +152,15 @@ export const SingleSeriesTrendChart = <TData,>({
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis
             dataKey="year"
-            tick={{ fontSize: isGallery ? 10 : 11 }}
-            interval={0}
-            minTickGap={isGallery ? 10 : 5}
+            tick={{ fontSize: isGallery ? 11 : 11 }}
+            interval={1}
           />
           <YAxis
             unit={fmt.unit}
             tick={{ fontSize: isGallery ? 9 : 11 }}
             domain={['auto', 'auto']}
             tickFormatter={fmt.axisFormatter}
-            width={isGallery ? 32 : 60}
+            //width={isGallery ? 32 : 60}
           />
           {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v, decimals)} />}
           {!isGallery && (
@@ -170,7 +169,7 @@ export const SingleSeriesTrendChart = <TData,>({
               verticalAlign="bottom"
               onClick={(e: any) => toggleSeries(e.dataKey)}
               formatter={legendFormatter}
-              wrapperStyle={{ fontSize: 12 }}
+              wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
             />
           )}
           <Line
@@ -284,8 +283,17 @@ export const MultiSeriesTrendChart = <TData,>({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={plotData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis unit={fmt.unit} tick={{ fontSize: 12 }} domain={['auto', 'auto']} tickFormatter={fmt.axisFormatter} />
+          <XAxis
+            dataKey="year"
+            tick={{ fontSize: isGallery ? 11 : 11 }}
+            interval={1}
+          />
+          <YAxis 
+            unit={fmt.unit} 
+            tick={{ fontSize: isGallery ? 9 : 11 }} 
+            domain={['auto', 'auto']} 
+            tickFormatter={fmt.axisFormatter} 
+          />
           {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v)} />}
           {!isGallery && (
             <Legend
@@ -293,7 +301,7 @@ export const MultiSeriesTrendChart = <TData,>({
               verticalAlign="bottom"
               onClick={(e: any) => toggleSeries(e.dataKey)}
               formatter={legendFormatter}
-              wrapperStyle={{ fontSize: 12 }}
+              wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
             />
           )}
           {series.map((s) => (

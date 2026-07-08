@@ -43,10 +43,10 @@ export function AddChart({ chart, defId }: AddChartProps) {
   const { interests } = useProfile();
 
   const stableId = [
-  chart.title,
-  chart.subtype,
-  ...(chart.chartParams?.legendLabels ?? []),
-].join("::");
+    chart.title,
+    chart.subtype,
+    ...(chart.chartParams?.legendLabels ?? []),
+  ].join("::");
 
 const inReport = items.some(item => item.id === stableId);
 
@@ -64,7 +64,7 @@ const handleClick = () => {
       color={inReport ? "red" : "blue"}
       variant={inReport ? "filled" : "light"}
       leftSection={
-        inReport ? <XIcon size={16} weight="bold" /> : <CheckIcon size={16} weight="bold" />
+        inReport ? <XIcon size={12} weight="bold" /> : <CheckIcon size={16} weight="bold" />
       }
     >
       {inReport
