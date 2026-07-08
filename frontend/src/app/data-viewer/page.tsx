@@ -9,6 +9,8 @@ import {
   useApplyFilters,
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
+
+import classes  from './Tabs.module.css';
 import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 
@@ -55,7 +57,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Population (ACS)'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Population
         </Text>
       </Grid.Col>
@@ -64,7 +66,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           ${formatNumber(metrics['Median Household Income'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Household Income
         </Text>
       </Grid.Col>
@@ -73,7 +75,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Median Age'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Median Age
         </Text>
       </Grid.Col>
@@ -82,7 +84,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Labor Force Participation Rate (16+)'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           In Labor Force (16+)
         </Text>
       </Grid.Col>
@@ -91,7 +93,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           ${formatNumber(metrics['Median Home Value'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Median Home Value
         </Text>
       </Grid.Col>
@@ -114,6 +116,8 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
       radius="md"
       defaultValue="Land Use"
       mt={0}
+      color="green"
+      classNames={{ tab: classes.tab }}
     >
       <Tabs.List>
         {sections.map((section) => (
@@ -353,41 +357,16 @@ return (
         pb={0}
         px="xl"
         style={{
-          background: `
-            radial-gradient(
-              ellipse at top,
-              rgba(76,110,245,.10) 0%,
-              rgba(76,110,245,.04) 45%,
-              transparent 90%
-            ),
-            linear-gradient(
-              to bottom,
-              #f6f8fc,
-              #ffffff
-            )
-        `,
+          backgroundColor: "#143460",
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.14) 0.5px, transparent 0.5px)",
+          backgroundSize: "3px 3px",
+          borderBottom: "1px solid #eef0f3",
+          color: "#ffffff",
         }}
       >
-        {/* Background glow */}
-        <Box
-          style={{
-            position: "absolute",
-            width: 700,
-            height: 500,
-            borderRadius: "50%",
-            background: "rgba(76,110,245,0.12)",
-            filter: "blur(120px)",
-            top: -300,
-            left: "50%",
-            transform: "translateX(-50%)",
-            pointerEvents: "none",
-            zIndex: 0,
-          }}
-        />
-
         {/* Hero content */}
         <Box pos="relative" style={{ zIndex: 1 }}>
-          <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={8}>
+          <Text size="xs" fw={700} c="lightgrey" tt="uppercase" mb={8}>
             Data Viewer
           </Text>
 
@@ -395,13 +374,13 @@ return (
             {myLocation.name}
           </Title>
 
-          <Text size="lg" c="dimmed" mt={8} mb={-10}>
+          <Text size="lg" c="lightgrey" mt={8} mb={-10}>
             Compared with {comparison.name}
           </Text>
 
           <StatCards />
 
-          <Box mt={32}>
+          <Box mr={-40} ml={0}>
             <ChartTabs
               sections={sections}
               activeTab={activeTab}

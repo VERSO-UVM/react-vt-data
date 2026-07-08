@@ -179,7 +179,7 @@ export const SingleSeriesTrendChart = <TData,>({
             strokeWidth={lineWidth}
             dot={false}
             animationBegin={0} 
-            animationDuration={1000} 
+            animationDuration={!isGallery ? 1500 : 0} 
             hide={hidden.has(seriesName)}
           />
           {compareData.length > 0 && (
@@ -191,7 +191,7 @@ export const SingleSeriesTrendChart = <TData,>({
               strokeWidth={lineWidth}
               dot={false}
               animationBegin={0} 
-              animationDuration={1000}
+              animationDuration={!isGallery ? 1500 : 0}
               hide={hidden.has(`${seriesName} (cmp)`)}
             />
           )}
@@ -315,6 +315,7 @@ export const MultiSeriesTrendChart = <TData,>({
               stroke={s.color}
               strokeWidth={2}
               dot={false}
+              animationDuration={!isGallery ? 1500 : 0}
               hide={hidden.has(s.key)}
             />
           ))}
@@ -328,6 +329,7 @@ export const MultiSeriesTrendChart = <TData,>({
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
                 legendType="none"
+                animationDuration={!isGallery ? 1500 : 0}
                 dot={false}
                 hide={hidden.has(s.key)}
               />

@@ -34,7 +34,7 @@ export default function RootLayout({
       <body className={`${zillaSlab.variable} antialiased`}>
         <MantineProvider theme={theme}>
           <HeaderMenu />
-          <Box px="sm">
+          <Box>
             <main>{children}</main>
           </Box>
         </MantineProvider>

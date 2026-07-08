@@ -31,7 +31,19 @@ export {
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem } from '@/types/cachedCharts';
-import { Badge, Card, Box, Title, Stack, Text, Group, SimpleGrid, ActionIcon, Modal } from '@mantine/core';
+import { 
+  Badge, 
+  Card, 
+  Box, 
+  Title, 
+  Stack, 
+  Text, 
+  Group, 
+  SimpleGrid, 
+  ActionIcon, 
+  Modal, 
+  Container 
+} from '@mantine/core';
 import { CornersOutIcon, CornersInIcon } from '@phosphor-icons/react';
 import * as motion from "motion/react-client"
 import { AddChart, RemoveChart, ToggleChart } from './saving';
@@ -297,61 +309,63 @@ export const ChartStack = <TData extends Record<string, any>>({
     : {};
 
   return (
-    <Wrapper {...wrapperProps} mt={5}>
-      {charts.map((chart, i) => {
-        const ChartComponent = allCharts[
-          chart.subtype as keyof typeof allCharts
-        ] as React.FC<{ chart: ChartItem<TData> }>;
+    <Box px="md" w="100%">
+      <Wrapper {...wrapperProps} mt={5}>
+        {charts.map((chart, i) => {
+          const ChartComponent = allCharts[
+            chart.subtype as keyof typeof allCharts
+          ] as React.FC<{ chart: ChartItem<TData> }>;
 
-        const TrendComponent = chart.trendChart
-          ? (allCharts[chart.trendChart as keyof typeof allCharts] as React.FC<{
-              chart: ChartItem<TData>;
-            }>)
-          : undefined;
+          const TrendComponent = chart.trendChart
+            ? (allCharts[chart.trendChart as keyof typeof allCharts] as React.FC<{
+                chart: ChartItem<TData>;
+              }>)
+            : undefined;
 
-        const matchedCategories =
-          userInterests.length > 0 && chart.categories
-            ? chart.categories.filter((cat) => userInterests.includes(cat))
-            : [];
+          const matchedCategories =
+            userInterests.length > 0 && chart.categories
+              ? chart.categories.filter((cat) => userInterests.includes(cat))
+              : [];
 
-        const defId = defIds?.[i];
-        const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
-        const handleToggle = defId && onToggle ? () => onToggle(defId) : undefined;
+          const defId = defIds?.[i];
+          const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
+          const handleToggle = defId && onToggle ? () => onToggle(defId) : undefined;
 
-        if (chart.subtype === 'noteCard')
+          if (chart.subtype === 'noteCard')
+            return (
+              <Card key={chart.id} shadow="sm" padding="sm" radius="md" withBorder>
+                <Text size="sm" c="dimmed">
+                  {chart.notes}
+                </Text>
+              </Card>
+            );
+
+          if (!ChartComponent) return null;
+          if (!chart.data || chart.data.length === 0)
+            return (
+              <Card key={chart.id} shadow="sm" padding="lg" radius="md" withBorder>
+                <Text>
+                  No data available from {`${chart.title}`}
+                  {chart.description ? ` for ${chart.description}` : ''}.
+                </Text>
+              </Card>
+            );
           return (
-            <Card key={chart.id} shadow="sm" padding="sm" radius="md" withBorder>
-              <Text size="sm" c="dimmed">
-                {chart.notes}
-              </Text>
-            </Card>
+            <ChartCard
+              key={chart.id}
+              chart={chart}
+              action={action}
+              view={view}
+              ChartComponent={ChartComponent}
+              TrendComponent={TrendComponent}
+              matchedCategories={matchedCategories}
+              defId={defId}
+              isIncluded={included}
+              onToggle={handleToggle}
+            />
           );
-
-        if (!ChartComponent) return null;
-        if (!chart.data || chart.data.length === 0)
-          return (
-            <Card key={chart.id} shadow="sm" padding="lg" radius="md" withBorder>
-              <Text>
-                No data available from {`${chart.title}`}
-                {chart.description ? ` for ${chart.description}` : ''}.
-              </Text>
-            </Card>
-          );
-        return (
-          <ChartCard
-            key={chart.id}
-            chart={chart}
-            action={action}
-            view={view}
-            ChartComponent={ChartComponent}
-            TrendComponent={TrendComponent}
-            matchedCategories={matchedCategories}
-            defId={defId}
-            isIncluded={included}
-            onToggle={handleToggle}
-          />
-        );
-      })}
-    </Wrapper>
+        })}
+      </Wrapper>
+    </Box>
   );
 };
