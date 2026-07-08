@@ -48,12 +48,7 @@ interface ProfileStore {
 export const useProfile = create<ProfileStore>()(
   persist(
     (set) => ({
-      // Default to Chittenden County
-      myLocation: {
-        type: 'county',
-        county: 'Chittenden',
-        name: 'Chittenden County, Vermont',
-      },
+      myLocation: { type: 'state', state: true, name: 'Vermont' },
       comparison: { type: 'state', state: true, name: 'Vermont' },
       interests: [],
       yearMin: YEAR_MIN_OVERALL,
