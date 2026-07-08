@@ -97,7 +97,7 @@ export const ChartCard = <TData extends Record<string, any>>({
   const chartBoxHeight = isPdfMode
     ? isTablePrimary ? 'auto' : 400
     : isGallery
-      ? 220
+      ? 275
       : 400;
   
   const [expanded, setExpanded] = useState(false);

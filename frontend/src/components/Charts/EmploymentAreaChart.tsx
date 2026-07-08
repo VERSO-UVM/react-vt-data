@@ -34,7 +34,7 @@ const tooltipFmt = (v: any) => `${v.toLocaleString(0)}`;
 type EmpView = 'stacked' | 'trend' | 'table';
 
 // Gallery tiles get a compact height; report/PDF get the full interactive height.
-const GALLERY_H = 225;
+const GALLERY_H = 275;
 const INNER_H = 345;
 
 // Same year-snapping helper used by the trend charts — keeps x-axis tick
