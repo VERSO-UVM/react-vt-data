@@ -160,7 +160,6 @@ export const SingleSeriesTrendChart = <TData,>({
             tick={{ fontSize: isGallery ? 9 : 11 }}
             domain={['auto', 'auto']}
             tickFormatter={fmt.axisFormatter}
-            //width={isGallery ? 32 : 60}
           />
           {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v, decimals)} />}
           {!isGallery && (

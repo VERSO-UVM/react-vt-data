@@ -113,6 +113,10 @@ export const ChartCard = <TData extends Record<string, any>>({
         data-chart-subtype={chart.subtype}
         onMouseEnter={isGallery ? () => setIsHovered(true) : undefined}
         onMouseLeave={isGallery ? () => setIsHovered(false) : undefined}
+        onClick={isGallery ? (e) => {
+                    e.stopPropagation();
+                    setExpanded((v) => !v);
+                  }: undefined}
         style={{
           flexDirection: 'column',
           minHeight: 0,
@@ -161,16 +165,16 @@ export const ChartCard = <TData extends Record<string, any>>({
             {isGallery && (
               <Group justify="flex-end">
                 <ActionIcon
-                component={motion.button}
-                variant="transparent"
-                size="lg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setExpanded((v) => !v);
-                }}
-                whileHover={{ scale: 1.15 }}
-                whileTap={{ scale: 0.9 }}
-              >
+                  component={motion.button}
+                  variant="transparent"
+                  size="lg"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpanded((v) => !v);
+                  }}
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.9 }}
+                >
                 {expanded ? (
                   <CornersInIcon size={30} weight="thin" color="grey" />
                 ) : (

@@ -28,8 +28,8 @@ const SECTOR_COLORS: Record<string, string> = {
   'Other Services': '#c0c0c0',
 };
 
-const fmt = (v: any) =>
-  v != null && !isNaN(v) ? Number(v).toLocaleString() : '—';
+const yAxisFmt = (v: any) => `${(v / 1000).toFixed(0)}k`;
+const tooltipFmt = (v: any) => `${v.toLocaleString(0)}`;
 
 type EmpView = 'stacked' | 'trend' | 'table';
 
@@ -151,7 +151,7 @@ export const EmploymentAreaChart = ({
               interval={0}
             />
             <YAxis
-              tickFormatter={fmt}
+              tickFormatter={yAxisFmt}
               tick={{ fontSize: isGallery ? 9 : 11 }}
               width={isGallery ? 36 : 65}
               label={
@@ -168,7 +168,7 @@ export const EmploymentAreaChart = ({
             />
             {!isGallery && (
               <Tooltip
-                formatter={(val: any, name: string) => [fmt(val), name]}
+                formatter={(val: any, name: string) => [tooltipFmt(val), name]}
                 labelFormatter={(label) => `Quarter: ${label}`}
               />
             )}
@@ -251,7 +251,7 @@ export const EmploymentAreaChart = ({
               interval={0}
             />
             <YAxis
-              tickFormatter={fmt}
+              tickFormatter={yAxisFmt}
               tick={{ fontSize: 11 }}
               width={65}
               domain={[trendYMin, trendYMax]}
@@ -264,7 +264,7 @@ export const EmploymentAreaChart = ({
               }}
             />
             <Tooltip
-              formatter={(val: any, name: string) => [fmt(val), name]}
+              formatter={(val: any, name: string) => [tooltipFmt(val), name]}
               labelFormatter={(label) => `Quarter: ${label}`}
             />
             <Line
@@ -305,11 +305,11 @@ export const EmploymentAreaChart = ({
                   <Table.Td>{row.quarter_label}</Table.Td>
                   {sectors.map((s) => (
                     <Table.Td key={s} style={{ textAlign: 'right' }}>
-                      {fmt(row[s])}
+                      {tooltipFmt(row[s])}
                     </Table.Td>
                   ))}
                   <Table.Td style={{ textAlign: 'right', fontWeight: 600 }}>
-                    {fmt(row.Total)}
+                    {tooltipFmt(row.Total)}
                   </Table.Td>
                 </Table.Tr>
               ))}

@@ -4,7 +4,7 @@ import { Zilla_Slab } from 'next/font/google';
 import '@mantine/core/styles.css';
 import './globals.css';
 
-import { MantineProvider, Container } from '@mantine/core';
+import { MantineProvider, Container, Box } from '@mantine/core';
 
 import HeaderMenu from '../components/HeaderMenu';
 import { theme } from './theme';
@@ -34,9 +34,9 @@ export default function RootLayout({
       <body className={`${zillaSlab.variable} antialiased`}>
         <MantineProvider theme={theme}>
           <HeaderMenu />
-          <Container size="xl" py="lg">
+          <Box px="sm">
             <main>{children}</main>
-          </Container>
+          </Box>
         </MantineProvider>
       </body>
     </html>
