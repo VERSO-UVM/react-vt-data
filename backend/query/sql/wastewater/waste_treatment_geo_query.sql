@@ -21,7 +21,7 @@ FROM (
             )
         )
     ) AS feature
-    FROM wastewater_treatment_facilities_treatment_facility_info AS i
-    JOIN wastewater_treatment_facilities_treatment_facility_geom AS g USING (ID)
+    FROM treatment_facilities_treatment_facility_info AS i
+    JOIN treatment_facilities_treatment_facility_geom AS g USING (ID)
     {join_filter_block}
 )

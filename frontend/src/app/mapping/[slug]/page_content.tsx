@@ -48,6 +48,21 @@ const MAP_CONFIG: Record<
   },
   'soil-suitability': {
     title: 'Soil Suitability',
+    initialURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
+    filterURL: `${BASE_API_URL}/filters/tree?source=soil_suitability_info_soil_suit`,
+    dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
+  },
+  'treatment-facilities': {
+    title: 'Wastewater Treatment Facilities',
+    initialURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
+    filterURL: `${BASE_API_URL}/filters/tree?source=treatment_facilities_treatment_facility_info`,
+    dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
+  },
+  'service_areas': {
+    title: 'Wastewater Service Areas',
+    initialURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
+    filterURL: `${BASE_API_URL}/filters/tree?source=service_areas_service_area_info`,
+    dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
 };
 

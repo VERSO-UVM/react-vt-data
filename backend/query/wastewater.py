@@ -13,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource
-from query.core_functions import sql_filter_block, build_where_query_from_filters, filter_tree
+from query.core_functions import sql_filter_block
 from query.processed_db import DB
 
 logger = logging.getLogger(__name__)

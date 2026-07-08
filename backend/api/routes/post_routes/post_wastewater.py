@@ -14,25 +14,25 @@ router = APIRouter()
 
 @router.post("/load/mapping/wastewater/service_area")
 async def wastewater_service_geojson(request: FilterRequest):
-    source = request_to_source(request, "wastewater_service_area_info", "default")
+    source = request_to_source(request, "service_areas_service_area_info", "default")
     data = get_waste_service_areas_geojson([source])
     return Response(content=data, media_type="application/json")
 
 @router.post("/load/mapping/wastewater/treatment_facility")
 async def wastewater_facility_geojson(request: FilterRequest):
-    source = request_to_source(request, "wastewater_treatment_info", "default")
+    source = request_to_source(request, "treatment_facilities_treatment_facility_info", "default")
     data = get_waste_treatment_facility_geojson([source])
     return Response(content=data, media_type="application/json")
 
 @router.post("/load/wastewater/zoning/facility_permits")
 async def wastewater_facility_permits(request: FilterRequest):
     #TODO: the json table might be wrong, check later
-    source = request_to_source(request, "wastewater_permit_info", "default")
+    source = request_to_source(request, "treatment_facilities_treatment_facility_permit_info", "default")
     table = get_waste_treatment_facility_permits([source])
     return make_response(data=table, metadata=get_metadata("zoning"))
 
 @router.post("/load/mapping/wastewater/septic_soil_suitability")
 async def wastewater_soil_suit_geojson(request: FilterRequest):
-    source = request_to_source(request, "soil_suit_info", "default")
+    source = request_to_source(request, "soil_suitability_info_soil_suit", "default")
     data = get_soil_suit_geojson([source])
     return Response(content=data, media_type="application/json")

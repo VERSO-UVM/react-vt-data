@@ -17,7 +17,7 @@ FROM (
             )
         )
     ) AS feature
-    FROM wastewater_service_areas_service_area_info AS i
-    JOIN wastewater_service_areas_service_area_geom AS g USING (ID)
+    FROM service_areas_service_area_info AS i
+    JOIN service_areas_service_area_geom AS g USING (ID)
     {join_filter_block}
 )

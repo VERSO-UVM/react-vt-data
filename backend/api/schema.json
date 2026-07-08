@@ -19,7 +19,7 @@
         "Value": "val"
       }
     },
-    "soil_suit_info": {
+    "soil_suitability_info_soil_suit": {
       "join_key": "ID",
       "join_type": "inner",
       "columns": {
@@ -28,7 +28,7 @@
           "Soil Suitability Level": "Suitability"
       }
     },
-    "wastewater_treatment_info": {
+    "treatment_facilities_treatment_facility_info": {
       "join_key": "ID",
       "join_type": "inner",
       "columns": {
@@ -38,7 +38,7 @@
           "Town": "TownName"
       }
     },
-    "wastewater_permit_info": {
+    "treatment_facilities_treatment_facility_permit_info": {
       "join_key": "ID",
       "join_type": "inner",
       "columns": {
@@ -48,7 +48,7 @@
           "Town": "TownName"
       }
     },
-    "wastewater_service_area_info": {
+    "service_areas_service_area_info": {
       "join_key": "ID",
       "join_type": "inner",
       "columns": {

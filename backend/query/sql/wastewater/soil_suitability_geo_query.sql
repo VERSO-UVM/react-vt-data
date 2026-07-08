@@ -19,8 +19,8 @@ FROM (
             )
         )
     ) AS feature
-    FROM wastewater_soil_suitability_info_soil_suit AS i
-    JOIN wastewater_soil_suitability_geom_soil_suit AS g USING (ID)
-    LEFT JOIN wastewater_soil_suitability_soil_suitability_colors AS c ON c.soil_suitability = i.Suitability
+    FROM soil_suitability_info_soil_suit AS i
+    JOIN soil_suitability_geom_soil_suit AS g USING (ID)
+    LEFT JOIN soil_suitability_soil_suitability_colors AS c ON c.soil_suitability = i.Suitability
     {join_filter_block}
 )
