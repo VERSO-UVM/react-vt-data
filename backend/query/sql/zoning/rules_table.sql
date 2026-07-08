@@ -1,6 +1,6 @@
 WITH filtered_info AS (
     SELECT DISTINCT OBJECT_ID FROM zoning_info
-    {where_string}
+    {{ where_string }}
 )
 SELECT
     r.OBJECT_ID,
