@@ -2,7 +2,15 @@
 
 import { usePathname } from 'next/navigation';
 import { IconChevronDown } from '@tabler/icons-react';
-import { UnstyledButton, Burger, Container, Group, Menu, Image, Anchor } from '@mantine/core';
+import {
+  UnstyledButton,
+  Burger,
+  Container,
+  Group,
+  Menu,
+  Image,
+  Anchor,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
 import Link from 'next/link';
@@ -30,6 +38,10 @@ const links = [
         label: 'Data Profile Comparison',
       },
       { link: '/data-comparison/b-tables', label: 'Detailed Table Comparison' },
+      {
+        link: '/data-comparison/variable-comparison',
+        label: 'Variable Comparison',
+      },
     ],
   },
   { link: '/working-report', label: 'Report' },
@@ -37,7 +49,7 @@ const links = [
   {
     link: '/resources',
     label: 'Resources',
-    
+
     // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
       { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
@@ -46,16 +58,15 @@ const links = [
     ],
   },
   // { link: '/scratch', label: 'Scratch' }, // For zoning rules filter development
-  
   // I outlined future sections of our "About" page below -Ian
-  { 
-    link: '/about', 
+  {
+    link: '/about',
     label: 'About',
     links: [
       // { link: '/about/team', label: 'Team' },
       // { link: '/about/faq', label: 'FAQs' },
       // { link: '/about/contact', label: 'Contact Us' },
-    ]
+    ],
   },
 ];
 
@@ -85,8 +96,8 @@ export default function HeaderMenu() {
       lastY = currentY;
     };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   const items = links.map((link) => {
@@ -142,27 +153,37 @@ export default function HeaderMenu() {
     );
   });
 
-    return (
-      <header className={`${classes.header} ${hidden ? classes.hidden : ""}`}>
-        <Container size="xl">
-          <div className={classes.inner}>
-            <Group gap="lg">
-              <Anchor href="/">
-                <Image src="/images/VDC_logo.jpg" alt="Logo" w={140} h={50} style={{ cursor: 'pointer' }} />
-              </Anchor>
-              <ProfileModal />
-            </Group>
+  return (
+    <header className={`${classes.header} ${hidden ? classes.hidden : ''}`}>
+      <Container size="xl">
+        <div className={classes.inner}>
+          <Group gap="lg">
+            <Anchor href="/">
+              <Image
+                src="/images/VDC_logo.jpg"
+                alt="Logo"
+                w={140}
+                h={50}
+                style={{ cursor: 'pointer' }}
+              />
+            </Anchor>
+            <ProfileModal />
+          </Group>
 
-            {/* Navigation items separated into their own wrapping group */}
-            <Group gap={4} visibleFrom="md" wrap="wrap" style={{ flex: 1, justifyContent: 'flex-end' }}>
-              {items}
-            </Group>
+          {/* Navigation items separated into their own wrapping group */}
+          <Group
+            gap={4}
+            visibleFrom="md"
+            wrap="wrap"
+            style={{ flex: 1, justifyContent: 'flex-end' }}
+          >
+            {items}
+          </Group>
 
-            {/* Mobile Burger Menu */}
-            <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
-          </div>
-        </Container>
-      </header>
+          {/* Mobile Burger Menu */}
+          <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
+        </div>
+      </Container>
+    </header>
   );
 }
-

@@ -7,47 +7,47 @@
  *
  */
 
-import { CascadeFilter } from './CascadeUI';
 import { FilterSpec, FilterValue, filterDef } from './filterTypes';
-import { useState } from 'react';
-import ApplyButton from './applybutton';
-import { Group } from '@mantine/core';
+import { Group, Stack, Button } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { FilterUI } from './filterUI';
 
 function filterSpecFactory(def: filterDef): FilterSpec {
   return { filter_table: def.filter_table, filters: {} };
 }
 
 interface FilterWrapProps {
-  selectData: (v: any) => void;
-  dataURL: string;
+  handleApply: (specs: FilterSpec[]) => void;
   filterList: filterDef[];
 }
 
-export function FilterWrap(params: FilterWrapProps) {
-  const { selectData, dataURL, filterList } = params;
-  const [specs, setSpecs] = useState<FilterSpec[]>(
-    filterList.map(filterSpecFactory),
-  );
+export function FilterWrap(props: FilterWrapProps) {
+  const { handleApply, filterList } = props;
 
-  // update the ith spec with new filters via spread {...s, filters}
-  const updateSpec = (i: number, filters: Record<string, FilterValue>) =>
-    setSpecs((prev) =>
-      prev.map((spec, j) => (j === i ? { ...spec, filters } : spec)),
-    );
+  const form = useForm<{ specs: FilterSpec[] }>({
+    initialValues: { specs: filterList.map(filterSpecFactory) },
+  });
 
   return (
-    <div>
-      <Group align="flex-start">
+    <form onSubmit={form.onSubmit((v) => handleApply(v.specs))}>
+      <Stack gap="md">
         {filterList.map((def, i) => {
-          const common = {
-            spec: specs[i],
-            setValue: (f: Record<string, FilterValue>) => updateSpec(i, f), // pass down function to update ith spec
+          const params = {
+            spec: form.values.specs[i],
+            setValue: (f: Record<string, FilterValue>) =>
+              form.setFieldValue(`specs.${i}.filters`, f),
           };
-          if (def.filter_style === 'Cascade')
-            return <CascadeFilter key={i} {...common} />;
+          return <FilterUI key={i} style={def.filter_style} params={params} />;
         })}
-      </Group>
-      <ApplyButton dataURL={dataURL} specs={specs} onData={selectData} />
-    </div>
+        <Group grow>
+          <Button variant="default" type="button" onClick={() => form.reset()}>
+            Reset
+          </Button>
+          <Button type="submit" disabled={!form.isDirty()}>
+            Apply
+          </Button>
+        </Group>
+      </Stack>
+    </form>
   );
 }

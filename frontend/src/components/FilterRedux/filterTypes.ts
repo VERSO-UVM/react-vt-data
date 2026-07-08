@@ -9,7 +9,7 @@
 ///// Core Filter Objects ///
 
 // filters can be either
-//     lists of strings (values to IN on in sql)
+//     lists of strings AND booleans-as-strings (values to IN on in sql)
 //    (min max) tuples for ranges.
 export type FilterValue = string[] | { min: number; max: number };
 
@@ -31,9 +31,16 @@ export type apiFilterParams = {
   setValue: (v: Record<string, FilterValue>) => void;
 };
 
+// type to define a cascade/checkbox filter, etc.
+export interface FilterUIProps {
+  style: filterStyle,
+  params: apiFilterParams
+}
+
 ////////// Types for pre-defining filters to hydrate
 type filterStyle = 'Cascade' | 'Checkbox';
 export type filterDef = {
   filter_table: string;
   filter_style: filterStyle;
 };
+

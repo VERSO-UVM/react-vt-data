@@ -40,18 +40,20 @@ class RangeDescriptor(BaseModel):
 
 class FilterResponse(BaseModel):
     """Response to a request for the information to build front end filters.
-        tree -- the hierarchical tree of possible (cascading) values
+        tree -- the hierarchical tree of possible (cascading) values.
         labels -- what to call the columns we'll filter on
         ranges -- a list of ranges (see RangeDescriptor). For now, this list has a length of zero or one.
+        options -- a dictionary of {column: [optionA, optionB, etc.]} objects for checkboxes.
 
 
     Args:
         BaseModel (_type_): _description_
     """
 
-    tree: dict
     labels: list[str]
+    tree: dict = {}
     ranges: list[RangeDescriptor] = []
+    options: dict[str, list[str]] = {}
 
 
 def make_response(
