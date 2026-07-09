@@ -118,7 +118,7 @@ export default function ExploratoryMappingGrid({
   if (!links?.length) return null;
 
   return (
-    <Grid justify="center" gutter="xl">
+    <Grid justify="center" gap="xl">
       {links.map((item) => (
         <Grid.Col key={item.link} span={{ base: 12, sm: 6, md: 4 }}>
           <MappingCard item={item} />

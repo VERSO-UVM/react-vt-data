@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 const TOOLS = [
   {
-    href: '/tools/benefits-estimator',
+    href: '/resources/benefits-estimator',
     label: 'Vermont Benefits Estimator',
     description:
       'Estimate eligibility for Three Squares VT (SNAP), Medicaid, ' +
@@ -37,25 +37,27 @@ export default function ToolsPage() {
       <SimpleGrid cols={{ base: 1, sm: 2 }} maw={900} mx="auto" px="md">
         {TOOLS.map((tool) => (
           <Card
-            key={tool.href}
-            component={Link}
-            href={tool.href}
             withBorder
             radius="md"
             p="lg"
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
-            <Group gap="xs" mb="xs">
-              <Text fw={600}>{tool.label}</Text>
-              {tool.badge && (
-                <Badge color="orange" variant="filled" size="sm">
-                  {tool.badge}
-                </Badge>
-              )}
-            </Group>
-            <Text size="sm" c="dimmed">
-              {tool.description}
-            </Text>
+            <Link
+              href={tool.href}
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <Group gap="xs" mb="xs">
+                <Text fw={600}>{tool.label}</Text>
+                {tool.badge && (
+                  <Badge color="orange" variant="filled" size="sm">
+                    {tool.badge}
+                  </Badge>
+                )}
+              </Group>
+              <Text size="sm" c="dimmed">
+                {tool.description}
+              </Text>
+            </Link>
           </Card>
         ))}
       </SimpleGrid>

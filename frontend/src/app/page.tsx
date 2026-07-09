@@ -313,7 +313,7 @@ function FeatureCards() {
 
           <Card
             component={Link}
-            href="/tools/benefits-estimator"
+            href="/resources/benefits-estimator"
             withBorder
             radius="lg"
             shadow="sm"

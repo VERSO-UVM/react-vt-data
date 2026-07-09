@@ -404,7 +404,7 @@ export default function DPExplorerPage() {
         <Stack>
           {/* Cascade filter */}
           <Paper withBorder p="md" radius="md">
-            <Grid gutter="sm">
+            <Grid>
               <Grid.Col span={{ base: 12, sm: 'auto' }}>
                 <Select
                   label="Table"

@@ -41,7 +41,7 @@ const INNER_H = 345;
 // density consistent everywhere gallery-vs-report matters.
 const computeGalleryTicks = (
   values: string[],
-  keepEvery = 4
+  keepEvery = 4,
 ): string[] | undefined => {
   if (values.length === 0) return undefined;
   if (values.length <= keepEvery) return values;
@@ -168,7 +168,7 @@ export const EmploymentAreaChart = ({
             />
             {!isGallery && (
               <Tooltip
-                formatter={(val: any, name: string) => [tooltipFmt(val), name]}
+                formatter={(val, name) => [tooltipFmt(val), name ?? '']}
                 labelFormatter={(label) => `Quarter: ${label}`}
               />
             )}
@@ -264,7 +264,7 @@ export const EmploymentAreaChart = ({
               }}
             />
             <Tooltip
-              formatter={(val: any, name: string) => [tooltipFmt(val), name]}
+              formatter={(val, name) => [tooltipFmt(val), name ?? '']}
               labelFormatter={(label) => `Quarter: ${label}`}
             />
             <Line
