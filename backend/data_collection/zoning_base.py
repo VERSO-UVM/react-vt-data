@@ -1,9 +1,9 @@
+from io import BytesIO
+
 import pandas as pd
 import requests
-from io import BytesIO
 from pyogrio import read_dataframe
 
-API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
 BASE_URL = "https://raw.githubusercontent.com/VERSO-UVM/Vermont-Zoning-Atlas/main/data/vt-zoning-update.fgb"
 STORAGE_LOCATION = "Data/zoning"
 
