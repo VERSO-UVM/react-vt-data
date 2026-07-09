@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Response
 
-from api.core_functions import request_to_source
+from api.core_functions import request_to_source, spec_to_source
 from api.metadata_registry import get_metadata
-from api.models import FilterRequest, make_response
+from api.models import FilterRequest, make_response, FilterSpec
 from query import (
     get_waste_service_areas_geojson,
     get_waste_treatment_facility_geojson,

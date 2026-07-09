@@ -1,4 +1,4 @@
-{cte_filter_block}
+{{cte_filter_block}}
 SELECT json_object(
     'type', 'FeatureCollection',
     'features', json_group_array(feature)
@@ -23,5 +23,5 @@ FROM (
     ) AS feature
     FROM treatment_facilities_treatment_facility_info AS i
     JOIN treatment_facilities_treatment_facility_geom AS g USING (ID)
-    {join_filter_block}
-)
+    {{join_filter_block}}
+) as features

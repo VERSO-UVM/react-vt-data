@@ -11,7 +11,7 @@ from pathlib import Path
 
 import duckdb
 
-db = duckdb.connect("Data/_Processed/all_data.duckdb")
+db = duckdb.connect("../Data/_Processed/all_data.duckdb")
 db.execute("INSTALL SPATIAL")
 db.execute("LOAD SPATIAL")
 

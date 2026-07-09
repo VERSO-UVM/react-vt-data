@@ -1,4 +1,4 @@
-{cte_filter_block}
+{{cte_filter_block}}
 SELECT json_object(
     'type', 'FeatureCollection',
     'features', json_group_array(feature)
@@ -22,5 +22,5 @@ FROM (
     FROM soil_suitability_info_soil_suit AS i
     JOIN soil_suitability_geom_soil_suit AS g USING (ID)
     LEFT JOIN soil_suitability_soil_suitability_colors AS c ON c.soil_suitability = i.Suitability
-    {join_filter_block}
-)
+    {{join_filter_block}}
+) AS features
