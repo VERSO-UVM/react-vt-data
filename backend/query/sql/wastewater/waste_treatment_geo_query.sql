@@ -8,13 +8,13 @@ FROM (
         'type', 'Feature',
         'geometry', ST_AsGeoJSON(ST_Simplify(g.geometry, 0.0001))::JSON,
         'properties', json_object(
-            'Septage Received At Facility', i.SeptageReceivedAtThisFacility,
-            'Design Hydraulic Capacity', i.DesignHydraulicCapacityInMGD
+             'Septage Received At Facility', i.SeptageReceivedAtThisFacility,
+            'Design Hydraulic Capacity', i.DesignHydraulicCapacityInMGD,
             'tooltip', json_object(
                 '__title__', 'Wastewater Treatment Facilities',
                 'Regional Planning Commission', i.RPC,
-                'County', i.County
-                'District', i.TownName || ' ' || i.MunicipalName,
+                'County', i.County,
+                'Town Name', i.TownName,
                 'Facility Name', i.FacilityName,
                 'Septage Received At Facility', i.SeptageReceivedAtThisFacility,
                 'Design Hydraulic Capacity', i.DesignHydraulicCapacityInMGD

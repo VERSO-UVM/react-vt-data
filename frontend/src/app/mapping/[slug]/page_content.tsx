@@ -58,7 +58,7 @@ const MAP_CONFIG: Record<
     filterURL: `${BASE_API_URL}/filters/tree?source=treatment_facilities_treatment_facility_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
   },
-  'service_areas': {
+  'service-areas': {
     title: 'Wastewater Service Areas',
     initialURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
     filterURL: `${BASE_API_URL}/filters/tree?source=service_areas_service_area_info`,

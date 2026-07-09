@@ -5,6 +5,8 @@ export function generateStaticParams() {
   return [
     { slug: 'zoning' },
     { slug: 'soil-suitability' },
+    { slug: 'treatment-facilities'},
+    { slug: 'service_areas'},
     { slug: 'flood-legal' },
   ];
 }
