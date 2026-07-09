@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Grid, Text, Title, Tabs } from '@mantine/core';
+import { Box, Grid, Text, Title, Tabs, ScrollArea } from '@mantine/core';
 import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon, Icon } from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
@@ -9,6 +9,8 @@ import {
   useApplyFilters,
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
+
+import classes  from './Tabs.module.css';
 import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 
@@ -50,12 +52,12 @@ function StatCards() {
     v === undefined || v === null ? '—' : v.toLocaleString();
 
   return (
-    <Grid gutter={40} py="xl">
+    <Grid py="xl">
       <Grid.Col span={{ base: 6, md: 2 }}>
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Population (ACS)'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Population
         </Text>
       </Grid.Col>
@@ -64,7 +66,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           ${formatNumber(metrics['Median Household Income'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Household Income
         </Text>
       </Grid.Col>
@@ -73,7 +75,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Median Age'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Median Age
         </Text>
       </Grid.Col>
@@ -82,7 +84,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           {formatNumber(metrics['Labor Force Participation Rate (16+)'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           In Labor Force (16+)
         </Text>
       </Grid.Col>
@@ -91,7 +93,7 @@ function StatCards() {
         <Text size="2rem" fw={700} lh={1} mb={10}>
           ${formatNumber(metrics['Median Home Value'])}
         </Text>
-        <Text size="sm" c="dimmed" tt="uppercase" fw={500}>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
           Median Home Value
         </Text>
       </Grid.Col>
@@ -110,10 +112,12 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
     <Tabs
       value={activeTab}
       onChange={setActiveTab}
-      variant="outline"
+      variant="default"
       radius="md"
       defaultValue="Land Use"
-      mt={20}
+      mt={0}
+      color="green"
+      classNames={{ tab: classes.tab }}
     >
       <Tabs.List>
         {sections.map((section) => (
@@ -175,11 +179,13 @@ export default function DataViewerPage() {
       const url = chart.url;
       const filters = buildFilters(myLocation, {
         col: 'year',
-        selected: [yearMin, yearMax],
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
-        selected: [yearMin, yearMax],
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
       });
 
       applyFilters({
@@ -273,6 +279,7 @@ export default function DataViewerPage() {
         notes: `County-level data (${employmentCounty} County) — QCEW does not report employment at the town level.`,
       });
     }
+    
     return createChartItem({
       title: myLocation.name,
       xField: chart.xField,
@@ -344,38 +351,59 @@ return (
   <Box h="100vh">
     <Box px={0}>
       {/* Hero */}
-      <Box pt={32} pb={24} h={250}>
-        <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={8}>
-          Data Viewer
-        </Text>
+      <Box
+        pos="relative"
+        pt={40}
+        pb={0}
+        px="xl"
+        style={{
+          backgroundColor: "#143460",
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.14) 0.5px, transparent 0.5px)",
+          backgroundSize: "3px 3px",
+          borderBottom: "1px solid #eef0f3",
+          color: "#ffffff",
+        }}
+      >
+        {/* Hero content */}
+        <Box pos="relative" style={{ zIndex: 1 }}>
+          <Text size="xs" fw={700} c="lightgrey" tt="uppercase" mb={8}>
+            Data Viewer
+          </Text>
 
-        <Title fw={600}>
-          {myLocation.name}
-        </Title>
+          <Title fw={600}>
+            {myLocation.name}
+          </Title>
 
-        <Text size="lg" c="dimmed" mt={4}>
-          Compared with {comparison.name}
-        </Text>
+          <Text size="lg" c="lightgrey" mt={8} mb={-10}>
+            Compared with {comparison.name}
+          </Text>
 
-        <StatCards/>
+          <StatCards />
+
+          <Box mr={-40} ml={0}>
+            <ChartTabs
+              sections={sections}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </Box>
+          
+        </Box>
       </Box>
 
-      <ChartTabs
-        sections={sections}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-      {/* Charts */}
-      <Box py="xl">
-        <ChartStack
-          charts={visibleItems}
-          action="add"
-          userInterests={interests}
-          defIds={visibleItems.map(
-            (c) => c.chartParams?.defId
-          )}
-        />
-      </Box>
+      {/* Charts... */}
+      <Box py="xs">
+          <ChartStack
+            charts={visibleItems}
+            action="add"
+            userInterests={interests}
+            defIds={visibleItems.map(
+              (c) => c.chartParams?.defId
+            )}
+            view="gallery"
+          />
+        </Box>
+
     </Box>
   </Box>
 );
