@@ -21,8 +21,10 @@ import {
   YEAR_MAX_OVERALL,
   Location,
 } from './profileStore';
+import * as motion from 'motion/react-client';
 import county_town_names from '@/data/county_town_names.json';
 import { IconMapPin, IconTags, IconCalendarStats } from '@tabler/icons-react';
+import { UserCircleIcon } from '@phosphor-icons/react';
 
 type CountyKey = keyof typeof county_town_names;
 
@@ -44,6 +46,72 @@ interface ProfileLocationSelectProps {
   location: Location;
   setLocation: (loc: Location) => void;
   showNational?: boolean;
+}
+
+function ProfileButton({
+  onClick,
+  opened,
+}: {
+  onClick: () => void;
+  opened: boolean;
+}) {
+  return (
+    <motion.button
+      onClick={onClick}
+      initial="rest"
+      whileHover="hover"
+      whileTap={{ scale: 0.96 }}
+      animate={opened ? 'hover' : 'rest'}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 20px',
+        borderRadius: 999,
+        border: '1.5px solid var(--mantine-color-blue-6)',
+        background: 'transparent',
+        cursor: 'pointer',
+        fontWeight: 500,
+        fontSize: 16,
+        maxHeight: 45,
+        maxWidth: 170,
+      }}
+    >
+      <motion.span
+        variants={{
+          rest: { scaleX: 0 },
+          hover: { scaleX: 1 },
+        }}
+        transition={{ duration: 0.4, ease: [0.65, 0, 0.35, 1] }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'var(--mantine-color-blue-6)',
+          transformOrigin: 'left',
+          zIndex: 0,
+        }}
+      />
+      <motion.span
+        variants={{
+          rest: { color: 'var(--mantine-color-blue-6)' },
+          hover: { color: '#fff' },
+        }}
+        transition={{ duration: 0.25 }}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <UserCircleIcon size={30} weight="light" />
+        My Profile
+      </motion.span>
+    </motion.button>
+  );
 }
 
 const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
@@ -182,7 +250,7 @@ export const ProfileModal: React.FC = () => {
 
   return (
     <>
-      <Button onClick={handleOpen}>My Profile</Button>
+      <ProfileButton onClick={handleOpen} opened={opened} />
       <Modal
         opened={opened}
         onClose={closeProfileModal}

@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { IconChevronDown } from '@tabler/icons-react';
 import {
   UnstyledButton,
   Burger,
@@ -167,7 +166,6 @@ export default function HeaderMenu() {
                 style={{ cursor: 'pointer' }}
               />
             </Anchor>
-            <ProfileModal />
           </Group>
 
           {/* Navigation items separated into their own wrapping group */}
@@ -179,8 +177,8 @@ export default function HeaderMenu() {
           >
             {items}
           </Group>
+          <ProfileModal />
 
-          {/* Mobile Burger Menu */}
           <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
         </div>
       </Container>
