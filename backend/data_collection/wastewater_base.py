@@ -40,9 +40,7 @@ def fetch_wastewater():
 # ---------------------------------------------------------------------------
 
 
-def run_wastewater_scrape(
-    output_filename: str,
-) -> None:
+def run_wastewater_scrape():
     """
     Fetch Wastewater data and save as parquet files.
     """
