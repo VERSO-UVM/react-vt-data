@@ -20,10 +20,7 @@ export default function FilterContainer({
       <GenericFilter apiURL={apiURL} />
 
       <Group grow>
-        <Button
-          variant="default"
-          onClick={() => setSelectedFilters({})}
-        >
+        <Button variant="default" onClick={() => setSelectedFilters({})}>
           Reset
         </Button>
 

@@ -1,4 +1,5 @@
 {
+  "python.analysis.extraPaths": ["backend"], 
   "editor.codeActionsOnSave": {
     "source.fixAll.ruff": "explicit",
     "source.organizeImports.ruff": "explicit"
@@ -6,5 +7,50 @@
   "[python]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff"
-  }
+  },
+  "[sql]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "sqlfluff.vscode-sqlfluff"
+  },
+  "[jinja-sql]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "sqlfluff.vscode-sqlfluff"
+  },
+  "sqlfluff.workingDirectory": "${workspaceFolder}/backend",
+  "sqlfluff.executablePath": "${workspaceFolder}/backend/.venv/bin/sqlfluff",
+  "sqlfluff.linter.run": "onSave",
+  "sqlfluff.experimental.format.executeInTerminal": true,
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.requireConfig": true
 }

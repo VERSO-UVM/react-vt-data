@@ -26,7 +26,7 @@ const BASE_STYLES = {
 const VERMONT_BOUNDS = {
   latitude: { min: 42.7, max: 45.0 },
   longitude: { min: -73.5, max: -71.5 },
-  zoom: { min: 7, max: 11 },
+  zoom: { min: 7, max: 15 },
 };
 
 const INITIAL_VIEW_STATE = {

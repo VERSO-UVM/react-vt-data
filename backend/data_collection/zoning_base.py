@@ -1,4 +1,3 @@
-
 import pandas as pd
 import requests
 from io import BytesIO
@@ -21,12 +20,15 @@ def fetch_zoning() -> pd.DataFrame | None:
     df = read_dataframe(BytesIO(r.content))
     return df
 
+
 # ---------------------------------------------------------------------------
 # Main scrape runner
 # ---------------------------------------------------------------------------
 
 
-def run_zoning_scrape(output_filename: str,) -> None:
+def run_zoning_scrape(
+    output_filename: str,
+) -> None:
     """
     Fetch Zoning data and save as parquet file.
     """

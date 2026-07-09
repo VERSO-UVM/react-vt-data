@@ -6,17 +6,45 @@
       "columns": {
         "County": "County",
         "Jurisdiction": "Municipal_Name",
-        "District Name": "District_Name",
-        "District Type": "District_Type"
+        "District Type": "District_Type",
+        "District Name": "District_Name"
+      }
+    },
+    "zoning_wide": {
+      "join_key": "OBJECT_ID",
+      "join_type": "inner",
+      "columns": {
+        "Accessory Dwelling Unit": "ADU_Allowance",
+        "Single Family": "F1F_Allowance",
+        "Two Family": "F2F_Allowance",
+        "Three Family": "F3F_Allowance",
+        "Four Family": "F4F_Allowance",
+        "Affordable Housing": "Affordable_Housing_Allowance",
+        "Planned Residential Development": "PRD_Allowance",
+        "Planned Unit Development": "PUD_Allowance"
       }
     },
     "zoning_rules": {
       "join_key": "OBJECT_ID",
       "join_type": "inner",
+      "value_col": "val",
+      "var_col": "rule",
       "columns": {
         "Usage Type": "use_type",
         "Rule": "rule",
         "Value": "val"
+      }
+    },
+    "cdc_places": {
+      "join_key": "LocationID",
+      "join_type": "inner",
+      "value_col": "Data_Value",
+      "var_col": "Measure",
+      "columns": {
+        "Key Indicator": "SME_Highlight",
+        "Category": "Category",
+        "Measure": "Measure",
+        "Prevalence Measure": "Data_Value_Type"
       }
     },
     "soil_suitability_info_soil_suit": {

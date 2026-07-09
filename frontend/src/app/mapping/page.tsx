@@ -58,16 +58,9 @@ export default function BaseMappingPage() {
             Vermont Mapping Explorer
           </Title>
 
-          <Text
-            ta="center"
-            c="dimmed"
-            size="lg"
-            maw={750}
-            mx="auto"
-            mt="md"
-          >
-            Explore statewide zoning regulations, environmental constraints,
-            and flood hazards through interactive geospatial datasets.
+          <Text ta="center" c="dimmed" size="lg" maw={750} mx="auto" mt="md">
+            Explore statewide zoning regulations, environmental constraints, and
+            flood hazards through interactive geospatial datasets.
           </Text>
         </Container>
       </Center>

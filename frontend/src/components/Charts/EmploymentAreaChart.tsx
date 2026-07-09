@@ -17,44 +17,67 @@ import { ScrollArea, SegmentedControl, Table } from '@mantine/core';
 import { useState } from 'react';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 
-// Stacking order should match SECTOR_ORDER in post_qcew.py
 const SECTOR_COLORS: Record<string, string> = {
-  'Goods-producing': '#4472c4',
-  'Trade, Transportation & Utilities': '#ed7d31',
-  'Education & Health Services': '#70ad47',
-  'Leisure & Hospitality': '#5b9bd5',
-  'Professional & Business Services': '#ffc000',
-  'Information & Financial Activities': '#9e480e',
-  Government: '#636363',
+  'Goods-producing': '#264653',
+  'Trade, Transportation & Utilities': '#287271',
+  'Education & Health Services': '#2a9d8f',
+  'Leisure & Hospitality': '#8ab17d',
+  'Professional & Business Services': '#e9c46a',
+  'Information & Financial Activities': '#f4a261',
+  Government: '#e76f51',
   'Other Services': '#c0c0c0',
 };
 
-const fmt = (v: any) =>
-  v != null && !isNaN(v) ? Number(v).toLocaleString() : '—';
+const yAxisFmt = (v: any) => `${(v / 1000).toFixed(0)}k`;
+const tooltipFmt = (v: any) => `${v.toLocaleString(0)}`;
 
 type EmpView = 'stacked' | 'trend' | 'table';
 
-// Inner chart height after the SegmentedControl (~32px + 8px mb) takes space
+// Gallery tiles get a compact height; report/PDF get the full interactive height.
+const GALLERY_H = 275;
 const INNER_H = 345;
 
-export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
+// Same year-snapping helper used by the trend charts — keeps x-axis tick
+// density consistent everywhere gallery-vs-report matters.
+const computeGalleryTicks = (
+  values: string[],
+  keepEvery = 4
+): string[] | undefined => {
+  if (values.length === 0) return undefined;
+  if (values.length <= keepEvery) return values;
+  const step = Math.ceil(values.length / keepEvery);
+  const ticks = values.filter((_, i) => i % step === 0);
+  if (ticks[ticks.length - 1] !== values[values.length - 1]) {
+    ticks.push(values[values.length - 1]);
+  }
+  return ticks;
+};
+
+export const EmploymentAreaChart = ({
+  chart,
+  view = 'report',
+}: {
+  chart: ChartItem<any>;
+  view?: 'gallery' | 'report';
+}) => {
   const isPdfMode = usePdfMode();
-  const [view, setView] = useState<EmpView>('stacked');
-  // In PDF mode always show the stacked chart — no interactive controls.
-  const activeView: EmpView = isPdfMode ? 'stacked' : view;
+  const isGallery = view === 'gallery';
+
+  const [localView, setLocalView] = useState<EmpView>('stacked');
+  // Gallery tiles always show the stacked view — no controls, no state to manage.
+  const activeView: EmpView = isPdfMode || isGallery ? 'stacked' : localView;
+
   const data = chart.data as any[];
   if (!data?.length) return null;
 
   const sectors = Object.keys(data[0]).filter((k) => k !== 'quarter_label');
 
-  // Show only Q1 ticks on x-axis to avoid crowding
   const q1Ticks = data
     .filter((d) => String(d.quarter_label).endsWith('Q1'))
     .map((d) => d.quarter_label);
 
-  // Augment each row with a computed Total (sum of all sector 4QMA values).
-  // Because moving average is linear, sum(4QMA_i) == 4QMA(sum_i), so this is
-  // exact unless some sectors have suppressed (NaN) values.
+  const galleryTicks = computeGalleryTicks(q1Ticks, 4);
+
   const dataWithTotal = data.map((row) => ({
     ...row,
     Total: sectors.reduce((sum, s) => {
@@ -63,10 +86,6 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
     }, 0),
   }));
 
-  // Nice round Y-axis bounds for trend view.
-  // Step is chosen so there are ~5 ticks across the data range; the bottom is
-  // one step below the data min and the top is rounded up to the next step.
-  // e.g. min=11262, max=15086 → step=1000 → domain [10000, 16000]
   const totals = dataWithTotal
     .map((r) => r.Total as number)
     .filter((v) => v > 0);
@@ -81,15 +100,29 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
   const trendYMin = (Math.floor(minTotal / step) - 1) * step;
   const trendYMax = Math.ceil(maxTotal / step) * step;
 
-  // Table rows newest-first
   const tableRows = [...dataWithTotal].reverse();
+
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const height = isGallery ? GALLERY_H : INNER_H;
 
   return (
     <>
-      {!isPdfMode && (
+      {!isPdfMode && !isGallery && (
         <SegmentedControl
-          value={view}
-          onChange={(v) => setView(v as EmpView)}
+          value={localView}
+          onChange={(v) => setLocalView(v as EmpView)}
           data={[
             { label: 'Stacked', value: 'stacked' },
             { label: 'Trend', value: 'trend' },
@@ -101,35 +134,91 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
       )}
 
       {activeView === 'stacked' && (
-        <ResponsiveContainer width="100%" height={INNER_H}>
+        <ResponsiveContainer width="100%" height={height}>
           <AreaChart
             data={data}
-            margin={{ top: 10, right: 20, left: 20, bottom: 5 }}
+            margin={
+              isGallery
+                ? { top: 4, right: 8, left: 8, bottom: 0 }
+                : { top: 10, right: 20, left: 20, bottom: 5 }
+            }
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
             <XAxis
               dataKey="quarter_label"
-              ticks={q1Ticks}
-              tick={{ fontSize: 11 }}
+              ticks={isGallery ? galleryTicks : q1Ticks}
+              tick={{ fontSize: isGallery ? 9 : 11 }}
               interval={0}
             />
             <YAxis
-              tickFormatter={fmt}
-              tick={{ fontSize: 11 }}
-              width={65}
-              label={{
-                value: 'Employment',
-                angle: -90,
-                position: 'insideLeft',
-                offset: -5,
-                style: { fontSize: 11 },
-              }}
+              tickFormatter={yAxisFmt}
+              tick={{ fontSize: isGallery ? 9 : 11 }}
+              width={isGallery ? 36 : 65}
+              label={
+                isGallery
+                  ? undefined
+                  : {
+                      value: 'Employment',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: -5,
+                      style: { fontSize: 11 },
+                    }
+              }
             />
-            <Tooltip
-              formatter={(val: any, name: string) => [fmt(val), name]}
-              labelFormatter={(label) => `Quarter: ${label}`}
-            />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
+            {!isGallery && (
+              <Tooltip
+                formatter={(val: any, name: string) => [tooltipFmt(val), name]}
+                labelFormatter={(label) => `Quarter: ${label}`}
+              />
+            )}
+            {!isGallery && (
+              <Legend
+                verticalAlign="top"
+                wrapperStyle={{ fontSize: 12 }}
+                content={({ payload }) => (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                      gap: '12px',
+                      paddingBottom: '8px',
+                    }}
+                  >
+                    {payload?.map((entry: any) => {
+                      const key = entry.value;
+                      const isHidden = hidden.has(key);
+                      return (
+                        <span
+                          key={key}
+                          onClick={() => toggleSeries(key)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            cursor: 'pointer',
+                            color: isHidden ? '#999' : '#222',
+                            textDecoration: isHidden ? 'line-through' : 'none',
+                            userSelect: 'none',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 12,
+                              height: 12,
+                              background: isHidden ? '#ccc' : entry.color,
+                              marginRight: 6,
+                              borderRadius: 2,
+                            }}
+                          />
+                          {key}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              />
+            )}
             {sectors.map((s) => (
               <Area
                 key={s}
@@ -141,14 +230,15 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
                 fillOpacity={0.85}
                 dot={false}
                 activeDot={false}
+                hide={hidden.has(s)}
               />
             ))}
           </AreaChart>
         </ResponsiveContainer>
       )}
 
-      {activeView === 'trend' && (
-        <ResponsiveContainer width="100%" height={INNER_H}>
+      {activeView === 'trend' && !isGallery && (
+        <ResponsiveContainer width="100%" height={height}>
           <LineChart
             data={dataWithTotal}
             margin={{ top: 10, right: 20, left: 20, bottom: 5 }}
@@ -161,7 +251,7 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
               interval={0}
             />
             <YAxis
-              tickFormatter={fmt}
+              tickFormatter={yAxisFmt}
               tick={{ fontSize: 11 }}
               width={65}
               domain={[trendYMin, trendYMax]}
@@ -174,22 +264,21 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
               }}
             />
             <Tooltip
-              formatter={(val: any, name: string) => [fmt(val), name]}
+              formatter={(val: any, name: string) => [tooltipFmt(val), name]}
               labelFormatter={(label) => `Quarter: ${label}`}
             />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
             <Line
               type="monotone"
               dataKey="Total"
               stroke="#154734"
-              strokeWidth={2.5}
+              strokeWidth={3}
               dot={false}
             />
           </LineChart>
         </ResponsiveContainer>
       )}
 
-      {activeView === 'table' && (
+      {activeView === 'table' && !isGallery && (
         <ScrollArea style={isPdfMode ? undefined : { height: INNER_H }}>
           <Table striped highlightOnHover withColumnBorders fz="xs">
             <Table.Thead
@@ -216,11 +305,11 @@ export const EmploymentAreaChart = ({ chart }: { chart: ChartItem<any> }) => {
                   <Table.Td>{row.quarter_label}</Table.Td>
                   {sectors.map((s) => (
                     <Table.Td key={s} style={{ textAlign: 'right' }}>
-                      {fmt(row[s])}
+                      {tooltipFmt(row[s])}
                     </Table.Td>
                   ))}
                   <Table.Td style={{ textAlign: 'right', fontWeight: 600 }}>
-                    {fmt(row.Total)}
+                    {tooltipFmt(row.Total)}
                   </Table.Td>
                 </Table.Tr>
               ))}

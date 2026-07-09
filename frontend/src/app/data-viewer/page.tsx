@@ -1,13 +1,7 @@
 'use client';
 
-import {
-  Center,
-  Container,
-  Group,
-  SegmentedControl,
-  Text,
-  Title,
-} from '@mantine/core';
+import { Box, Grid, Text, Title, Tabs, ScrollArea } from '@mantine/core';
+import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon, Icon } from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -15,8 +9,131 @@ import {
   useApplyFilters,
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
+
+import classes  from './Tabs.module.css';
 import { useEffect, useState } from 'react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+
+// Imports needed for stat cards
+import { BASE_API_URL } from '@/config';
+
+type Row = {
+  year: string;
+  NAME: string;
+  Value: number;
+  Variable: string;
+};
+
+function StatCards() {
+  const { myLocation, yearMin, yearMax } = useProfile();
+
+  const [data, setData] = useState<Row[]>([]);
+  const applyFilters = useApplyFilters();
+
+  useEffect(() => {
+    applyFilters({
+      dataURL: `${BASE_API_URL}/load/acs5-db/tidy/snapshot`,
+      filters: buildFilters(myLocation, {
+        col: 'year',
+        selected: [yearMin, yearMax],
+      }),
+      onData: (data) => {
+        setData(data);
+      },
+    });
+  }, [myLocation, yearMin, yearMax]);
+
+  const metrics = data.reduce<Record<string, number>>((acc, d) => {
+    acc[d.Variable] = d.Value;
+    return acc;
+  }, {});
+
+  const formatNumber = (v?: number) =>
+    v === undefined || v === null ? '—' : v.toLocaleString();
+
+  return (
+    <Grid py="xl">
+      <Grid.Col span={{ base: 6, md: 2 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          {formatNumber(metrics['Population (ACS)'])}
+        </Text>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
+          Population
+        </Text>
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 6, md: 2 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          ${formatNumber(metrics['Median Household Income'])}
+        </Text>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
+          Household Income
+        </Text>
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 6, md: 2 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          {formatNumber(metrics['Median Age'])}
+        </Text>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
+          Median Age
+        </Text>
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 6, md: 2 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          {formatNumber(metrics['Labor Force Participation Rate (16+)'])}
+        </Text>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
+          In Labor Force (16+)
+        </Text>
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 6, md: 2 }}>
+        <Text size="2rem" fw={700} lh={1} mb={10}>
+          ${formatNumber(metrics['Median Home Value'])}
+        </Text>
+        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
+          Median Home Value
+        </Text>
+      </Grid.Col>
+    </Grid>
+  );
+}
+
+interface Section {id: string; label: string; icon: Icon}
+
+function ChartTabs({sections, activeTab, setActiveTab}: {
+  sections: Section[];
+  activeTab: string | null;
+  setActiveTab: (v: string | null) => void;
+}) {
+  return (
+    <Tabs
+      value={activeTab}
+      onChange={setActiveTab}
+      variant="default"
+      radius="md"
+      defaultValue="Land Use"
+      mt={0}
+      color="green"
+      classNames={{ tab: classes.tab }}
+    >
+      <Tabs.List>
+        {sections.map((section) => (
+          <Tabs.Tab
+            key={section.id}
+            value={section.id}
+            leftSection={<section.icon size={16} />}
+          >
+            {section.label}
+          </Tabs.Tab>
+        ))}
+      </Tabs.List>
+    </Tabs>
+  );
+}
+
 
 export default function DataViewerPage() {
   const { myLocation, comparison, interests, yearMin, yearMax } = useProfile();
@@ -29,6 +146,8 @@ export default function DataViewerPage() {
   const [compareTableData, setCompareTableData] = useState<
     Record<string, any[]>
   >({});
+
+
   const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
 
   const applyFilters = useApplyFilters();
@@ -39,38 +158,55 @@ export default function DataViewerPage() {
     (c) => !c.subtype.startsWith('renderTable'),
   );
 
+  const categoryIcons: Record<string, Icon> = {
+    Housing: HouseLineIcon,
+    Demographics: UserListIcon,
+    'Land Use': TreeIcon,
+    Education: GraduationCapIcon,
+    'Labor & Economy': TrendUpIcon,
+  };
+
+  const sections = [...new Set(chartDefs.flatMap((c) => c.categories ?? []))]
+  .map((category) => ({
+    id: category.toLowerCase().replace(/\s+/g, '-'),
+    label: category,
+    icon: categoryIcons[category] ?? HouseLineIcon,
+  }));
+
+
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
       const url = chart.url;
-      const filterKey = chart.filterKey;
-      const dataKey = chart.dataKey;
-      const filters = buildFilters(myLocation);
-      const compFilters = buildFilters(comparison);
+      const filters = buildFilters(myLocation, {
+        col: 'year',
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
+      });
+      const compFilters = buildFilters(comparison, {
+        col: 'year',
+        selected: [chart.chartParams?.fixedYear ?? yearMin,
+                  chart.chartParams?.fixedYear ?? yearMax],
+      });
 
-      applyFilters(
-        url,
-        filters,
-        filterKey,
-        dataKey,
-        (data, metadata, tableData) =>
+      applyFilters({
+        dataURL: url,
+        filters: filters,
+        onData: (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
             [chart.id]: { data, metadata, tableData },
           })),
-        { name: myLocation.name, year_min: yearMin, year_max: yearMax },
-      );
-      applyFilters(
-        url,
-        compFilters,
-        filterKey,
-        dataKey,
-        (data, metadata, tableData) =>
+      });
+
+      applyFilters({
+        dataURL: url,
+        filters: compFilters,
+        onData: (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
             ...prev,
             [chart.id]: { data, metadata, tableData },
           })),
-        { name: comparison.name, year_min: yearMin, year_max: yearMax },
-      );
+      });
     });
   }, [myLocation, comparison, yearMin, yearMax]);
 
@@ -99,30 +235,30 @@ export default function DataViewerPage() {
         return `${d.url}::${JSON.stringify(extra)}` === key;
       });
       // Primary location fetch
-      applyFilters(
-        def.url,
-        {},
-        undefined,
-        undefined,
-        (data) =>
+      applyFilters({
+        dataURL: def.url,
+        filters: buildFilters(myLocation, {
+          col: 'year',
+          selected: [yearMin, yearMax],
+        }),
+        onData: (data) =>
           siblings.forEach((d) =>
             setChartData((prev) => ({ ...prev, [d.id]: { data } })),
           ),
-        { name: myLocation.name, ...effectiveExtra },
-      );
+      });
       // Comparison location fetch
       if (comparison.name) {
-        applyFilters(
-          def.url,
-          {},
-          undefined,
-          undefined,
-          (data) =>
+        applyFilters({
+          dataURL: def.url,
+          filters: buildFilters(comparison, {
+            col: 'year',
+            selected: [yearMin, yearMax],
+          }),
+          onData: (data) =>
             siblings.forEach((d) =>
               setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
             ),
-          { name: comparison.name, ...effectiveExtra },
-        );
+        });
       }
     });
   }, [myLocation, comparison, yearMin, yearMax]);
@@ -143,6 +279,7 @@ export default function DataViewerPage() {
         notes: `County-level data (${employmentCounty} County) — QCEW does not report employment at the town level.`,
       });
     }
+    
     return createChartItem({
       title: myLocation.name,
       xField: chart.xField,
@@ -184,53 +321,90 @@ export default function DataViewerPage() {
   );
 
   const allItems = [...charts, ...tableItems];
-  const visibleItems =
-    focusMode === 'focus' && interests.length > 0
-      ? allItems.filter((c) =>
-          c.categories?.some((cat) => interests.includes(cat)),
-        )
-      : allItems;
+  
+  let filteredItems = allItems;
 
-  return (
-    <>
-      <Center pt="xl" mb="md">
-        <Title order={2}>Data Analysis</Title>
-      </Center>
-      {interests.length > 0 && (
-        <Group
-          mb="md"
-          justify="flex-end"
-          style={{
-            position: 'sticky',
-            top: 56,
-            zIndex: 100,
-            backgroundColor: 'var(--mantine-color-body)',
-            paddingBlock: 8,
-            paddingInline: 16,
-          }}
-        >
-          <Text size="sm" c="dimmed">
-            {interests.join(', ')}
-          </Text>
-          <SegmentedControl
-            size="sm"
-            value={focusMode}
-            onChange={(v) => setFocusMode(v as 'all' | 'focus')}
-            data={[
-              { label: 'All charts', value: 'all' },
-              { label: 'My focus', value: 'focus' },
-            ]}
-          />
-        </Group>
-      )}
-      <Container size="xl">
-        <ChartStack
-          charts={visibleItems}
-          action="add"
-          userInterests={interests}
-          defIds={visibleItems.map((c) => c.chartParams?.defId)}
-        />
-      </Container>
-    </>
+  if (focusMode === 'focus' && interests.length > 0) {
+    filteredItems = filteredItems.filter((c) =>
+      c.categories?.some((cat) => interests.includes(cat)),
+    );
+  }
+
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
+
+  if (activeTab) {
+  const section = sections.find(
+    (s) => s.id === activeTab
   );
+
+  if (section) {
+    filteredItems = filteredItems.filter((item) =>
+      item.categories?.includes(section.label)
+    );
+  }
+}
+
+const visibleItems = filteredItems;
+
+return (
+  <Box h="100vh">
+    <Box px={0}>
+      {/* Hero */}
+      <Box
+        pos="relative"
+        pt={40}
+        pb={0}
+        px="xl"
+        style={{
+          backgroundColor: "#143460",
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.14) 0.5px, transparent 0.5px)",
+          backgroundSize: "3px 3px",
+          borderBottom: "1px solid #eef0f3",
+          color: "#ffffff",
+        }}
+      >
+        {/* Hero content */}
+        <Box pos="relative" style={{ zIndex: 1 }}>
+          <Text size="xs" fw={700} c="lightgrey" tt="uppercase" mb={8}>
+            Data Viewer
+          </Text>
+
+          <Title fw={600}>
+            {myLocation.name}
+          </Title>
+
+          <Text size="lg" c="lightgrey" mt={8} mb={-10}>
+            Compared with {comparison.name}
+          </Text>
+
+          <StatCards />
+
+          <Box mr={-40} ml={0}>
+            <ChartTabs
+              sections={sections}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </Box>
+          
+        </Box>
+      </Box>
+
+      {/* Charts... */}
+      <Box py="xs">
+          <ChartStack
+            charts={visibleItems}
+            action="add"
+            userInterests={interests}
+            defIds={visibleItems.map(
+              (c) => c.chartParams?.defId
+            )}
+            view="gallery"
+          />
+        </Box>
+
+    </Box>
+  </Box>
+);
 }

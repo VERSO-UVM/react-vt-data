@@ -67,9 +67,15 @@ METADATA: dict[str, dict] = {
             "(Table B23025)"
         ),
         "lastUpdated": "2023",
-        "caveats": [
-            "Estimates for small geographies may have high margins of error."
-        ],
+        "caveats": ["Estimates for small geographies may have high margins of error."],
+    },
+    "snapshot": {
+        "source": (
+            "U.S. Census Bureau, American Community Survey 5-Year Estimates "
+            "(Tables DP03, DP04, DP05)"
+        ),
+        "lastUpdated": "2023",
+        "caveats": ["Estimates for small geographies may have high margins of error."],
     },
     "qcew_employment": {
         "source": (

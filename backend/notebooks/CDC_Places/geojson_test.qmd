@@ -1,0 +1,145 @@
+---
+title: "Trying runtime sql queries to get cdc geojsons"
+author: Fitz Koch
+date: today
+description:  builds SQL tables from zoning data.
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+bibliography: /home/fitsl/library/zotero/fjk_library.bib
+---
+
+# Setup 
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+
+```
+
+```{python}
+con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+con.execute("LOAD spatial")
+df = con.execute("SELECT * FROM cdc_places").df()
+df.head()
+```
+
+```{python}
+con.execute("SHOW TABLES").df()
+```
+
+# Bivariate Colormap
+There are two cases -- the user wants a single variable, and the user wants two variables. I think we should probably just separate these endpoints rather than make some flexible case, because everything -- the way we show the info, etc., will flow downstream from that. 
+
+
+
+```{python}
+single_var_sql = """--sql
+    SELECT
+        p.LocationID,
+        p.Measure,
+        p.Data_Value,
+        p.bin,
+        c.CountyFIPS,
+        ST_ASGEOJSON(c.geom) AS geometry
+    FROM cdc_places p
+    LEFT JOIN vermont_counties c ON p.LocationID = c.CountyFIPS
+"""
+```
+
+
+```{python}
+where_string = "WHERE p.Measure IN ('Hearing disability among adults', 'Depression among adults')"
+res = con.execute(single_var_sql + where_string).df()
+res.head()
+```
+
+```{python}
+measures = res['Measure'].unique()
+m1 = res[res.Measure == measures[0]][['LocationID', 'geometry', 'Data_Value', 'bin']]
+m2 = res[res.Measure == measures[1]][['LocationID', 'Data_Value', 'bin']]
+wide = m1.merge(m2, on='LocationID', suffixes=('_1', '_2'))
+wide
+wide.columns
+```
+
+```{python}
+import xycmap
+from matplotlib import pyplot as plt 
+xcmap = plt.cm.viridis_r
+ycmap = plt.cm.Blues
+n = (3, 3)  # x, y
+cmap = xycmap.mean_xycmap(xcmap=xcmap, ycmap=ycmap, n=n)
+plt.imshow(cmap, origin='lower')
+```
+
+```{python}
+def to_rgba(r):
+    if pd.isna(r["bin_1"]) or pd.isna(r["bin_2"]):
+        return [0, 0, 0, 0]  # transparent for missing
+    rgba = cmap[int(r["bin_2"]), int(r["bin_1"])]
+    return [round(c * 255) for c in rgba]
+
+
+wide["color"] = wide.apply(to_rgba, axis=1)
+wide.head()
+```
+
+Lets take a quick look at how that actually looks...
+
+```{python}
+import geopandas as gpd
+from shapely import from_geojson   
+
+gdf = gpd.GeoDataFrame(wide, geometry=wide["geometry"].apply(from_geojson))
+gdf.plot(color=gdf["color"].apply(lambda c: [v/255 for v in c]))  
+```
+
+Not exactly stunning, but this should do okay on the front end. Fine tuning the colormap is something we can do later. 
+
+
+# Getting from table
+```{python}
+measure = 'Binge drinking among adults' 
+edges = con.execute("""
+    SELECT * FROM cdc_edges 
+    WHERE Measure IN ('Binge drinking among adults')
+ """).df()
+edges.head()
+```
+
+```{python}
+edges_x = edges[edges["Measure"]==measure].drop(columns="Measure").iloc[0].tolist()
+edges_x
+
+```
+

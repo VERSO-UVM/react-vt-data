@@ -76,7 +76,7 @@ const DemographicsTableBase = <TData,>({
         <Table striped withTableBorder withColumnBorders fz="xs">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Demographic</Table.Th>
+              <Table.Th></Table.Th>
               {years.map((y) => (
                 <Table.Th key={y}>{y}</Table.Th>
               ))}
@@ -140,28 +140,15 @@ export const renderTable = <TData,>({ chart }: { chart: ChartItem<TData> }) => (
   />
 );
 
-export const renderTableEstimates = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => (
-  <DemographicsTableBase
-    chart={chart}
-    renderCell={(row) =>
-      row?.Value != null ? row.Value.toLocaleString() : '—'
-    }
+export const renderTableEstimates = <TData,>({chart,}: {chart: ChartItem<TData>;}) => (  
+  <DemographicsTableBase chart={chart} renderCell={(row) =>
+      row?.Value != null ? row.Value.toLocaleString() : '—'}
   />
 );
 
 /** Shows Percent when available, falls back to Value — for mixed tables like Housing. */
-export const renderTableMixed = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => (
-  <DemographicsTableBase
-    chart={chart}
-    renderCell={(row) => {
+export const renderTableMixed = <TData,>({chart}: {chart: ChartItem<TData>;}) => (
+  <DemographicsTableBase chart={chart} renderCell={(row) => {
       if (row?.Percent != null) return `${row.Percent.toFixed(1)}%`;
       if (row?.Value != null) return row.Value.toLocaleString();
       return '—';

@@ -131,8 +131,8 @@ def build() -> None:
     con.execute(f"""
         CREATE TABLE historic_population AS
         SELECT
-            X_geoid, NAME, {_NAME_COLS},
-            CAST("Year" AS VARCHAR) AS "Year",
+            geoid, NAME, geo_type, {_NAME_COLS},
+            CAST("Year" AS VARCHAR) AS "year",
             TRY_CAST(Population AS DOUBLE) AS Population
         FROM read_csv_auto('{_csv("VT_Historic_Population.csv")}')
     """)
@@ -197,7 +197,7 @@ def build() -> None:
     # Zoning parquet
     # ------------------------------------------------------------------
 
-    con.execute(f"""
+    con.execute("""
         INSTALL spatial;
         LOAD spatial;
     """)
@@ -212,7 +212,7 @@ def build() -> None:
     # Wastewater parquets
     # ------------------------------------------------------------------
 
-    con.execute(f"""
+    con.execute("""
         LOAD spatial;
     """)
 

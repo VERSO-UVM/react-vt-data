@@ -1,0 +1,87 @@
+
+
+
+
+```{r}
+pacman::p_load(tidyverse)
+```
+
+
+```{r}
+pop <- read.csv("VT_Historic_Population.csv")
+```
+
+
+
+```{r}
+pop_clean <- 
+  pop |> 
+  mutate(geo_type = "town") |> 
+  select(-X) |> 
+  rename(
+    "geoid" = "X_geoid"
+  )
+```
+
+
+
+
+```{r}
+county_lookup <- data.frame(
+  NAME = c("Addison County, Vermont", "Bennington County, Vermont", "Caledonia County, Vermont", "Chittenden County, Vermont", "Essex County, Vermont",
+           "Franklin County, Vermont", "Grand Isle County, Vermont", "Lamoille County, Vermont", "Orange County, Vermont", "Orleans County, Vermont", "Rutland County, Vermont",
+           "Washington County, Vermont", "Windham County, Vermont", "Windsor County, Vermont"),
+  geoid = c("50001","50003","50005","50007","50009","50011","50013","50015","50017","50019","50021","50023","50025","50027"))
+
+pop_county <- 
+  pop_clean |> 
+  mutate(NAME = str_extract(NAME, ",\\s*([^,]+ County, Vermont)")) |> 
+  mutate(NAME = str_remove(NAME, "^,\\s*")) |> 
+  summarise(
+    .by = c(NAME, Year),
+    Population = sum(Population, na.rm = TRUE),
+  ) |> 
+  arrange(desc(Population))
+
+
+pop_county <- pop_county |> 
+  left_join(county_lookup, by = "NAME") |> 
+  relocate(geoid, .after = NAME) |> 
+  mutate(geo_type = "county") |> 
+  arrange(Year)
+
+pop_county
+```
+
+
+
+```{r}
+pop_state <- 
+  pop_clean |> 
+  summarise(
+    .by = c(Year),
+    Population = sum(Population, na.rm = TRUE),
+  ) |> 
+  arrange(desc(Population)) |> 
+  mutate(
+    NAME = "Vermont",
+    geo_type = "state",
+    geoid = "50"
+  ) |> 
+  arrange(Year)
+pop_state
+```
+
+
+```{r}
+pop_master <- rbind(pop_clean, pop_county, pop_state)
+```
+
+
+```{r}
+write_csv(pop_master, "VT_Historic_Population.csv")
+```
+
+
+
+

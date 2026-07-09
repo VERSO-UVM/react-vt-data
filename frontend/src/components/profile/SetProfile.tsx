@@ -10,7 +10,7 @@ import {
   Text,
   Title,
   Box,
-  Alert
+  Alert,
 } from '@mantine/core';
 import {
   useProfile,
@@ -191,17 +191,15 @@ export const ProfileModal: React.FC = () => {
           blur: 3,
         }}
         styles={{
-          title: {fontWeight: 600, textAlign: 'center'},
-          body: {overflowX: 'hidden'}}}
-        >
+          title: { fontWeight: 600, textAlign: 'center' },
+          body: { overflowX: 'hidden' },
+        }}
+      >
         <Stack gap="md">
           {!profileSet && (
-            <Alert
-              variant="light"
-              color="blue"
-              radius="md"
-            >
-              Select a profile before beginning. Only your location is required; other fields are optional.
+            <Alert variant="light" color="blue" radius="md">
+              Select a profile before beginning. Only your location is required;
+              other fields are optional.
             </Alert>
           )}
           <ProfileLocationSelect

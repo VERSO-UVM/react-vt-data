@@ -33,8 +33,48 @@
 The schema governs filtering and joining. It is laid out as follows:
 
 
-* primary dataset: the dataset to be joined onto. falls back to "default." This what the 'main logic' is done to in the SELECT clause of the SQL query.
-    * secondary dataset: the dataset we're using to filter the primary dataset
+* target_table (formerly primary dataset): the dataset to be joined onto. falls back to "default." This what the 'main logic' is done to in the SELECT clause of the SQL query.
+    * filter_table (formerly secondary dataset): the dataset we're using to filter the primary dataset
         * join_key: the column to join on. see FilterSource in request_models.py
         * join_type: what type of join, either SQL standard (eg left) or spatial
+        * value_col: the column where data *values* are stored. 
+        * var_col: the column where *variable names* are stored. 
         * columns: ORDERED {label, column} pairs. The order is the filter cascade order; the label is what frontend shows; the column is what is sent back to the sql
+        * range: if the final value shouldn't be a set of categories, but instead a numerical range, then it goes in this column. 
+
+Note that value_col and var_col both are premised on the idea that the dataset is in a **tidy** format: one row per observation, with variable in the 'discriminator; column. 
+
+# Future
+If needed, the scheme can at some point be updated to instead type each column in the ordered column list, or something like that. The hope is that the schema can hold only the "hand controlled" meta data, and that some other function can actually define/type the columns, etc., so that, for example:
+* boolean columns are grouped and returned by checkbox
+* category columns are grouped and returned by cascade
+
+
+
+
+## Example 
+We want to *generate* something like the below. 
+
+```
+{
+  "zoning_full": {
+    "join_key": "OBJECT_ID",
+    "join_type": "inner",
+    "columns": {
+      "County":         { "col": "County",          "type": "category", "group": "district" },
+      "Jurisdiction":   { "col": "Municipal_Name",   "type": "category", "group": "district" },
+      "District Type":  { "col": "District_Type",    "type": "category", "group": "district" },
+
+      "ADU Allowed":           { "col": "ADU_Allowance",                  "type": "bool", "group": "allowance" },
+      "PUD Allowed":           { "col": "PUD_Allowance",                  "type": "bool", "group": "allowance" },
+      "Affordable Allowed":    { "col": "Affordable_Housing_Allowance",   "type": "bool", "group": "allowance" },
+
+      "Elderly Only (ADU)":    { "col": "ADU_Elderly_Housing_Only",       "type": "bool", "group": "occupancy" },
+      "Owner-Occupied (ADU)":  { "col": "ADU_Owner_Occupancy_Required",   "type": "bool", "group": "occupancy" },
+
+      "Max Height (F2F)":      { "col": "F2F_Max_Height",   "type": "range", "group": "dimensional" },
+      "Min Lot Size (F2F)":    { "col": "F2F_Min_Lot_Size", "type": "range", "group": "dimensional" }
+    }
+  }
+}
+```

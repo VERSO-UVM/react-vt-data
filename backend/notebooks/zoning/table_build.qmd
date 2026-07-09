@@ -53,7 +53,7 @@ con = duckdb.connect()
 ```
 
 ```{python}
-data_dir= Path("Data") 
+data_dir = Path("Data")
 path = data_dir / "zoning" / "vt-zoning-update.fgb"
 df = pyogrio.read_dataframe(path)
 df = crs_set(df)
@@ -68,9 +68,11 @@ con.execute("INSTALL spatial; LOAD spatial")
 ```{python}
 con.execute(f"""--sql
   CREATE OR REPLACE VIEW zoning_raw AS 
-  SELECT * FROM ST_READ('{path}')
+  SELECT * EXCLUDE (OGC_FID) FROM ST_READ('{path}')
 """)
 ```
+
+We don't need OGC_FID, because that's just what ST_READ adds as a row identifier, and OBJECT_ID is already meant to do that.
 
 ```{python}
 old_path = data_dir / "zoning" / "vt-zoning-update_old.fgb"
@@ -357,7 +359,23 @@ rules.head(30)
 df['District_Type'].value_counts()
 ```
 
-Looks good. 
+Looks good. Let's look at the values a bit more...
+
+```{python}
+rules['val'].value_counts().reset_index().head(15)
+```
+
+```{python}
+rules["use_type"].value_counts()
+```
+
+```{python}
+for idx, row in rules[rules["rule"] == "Allowance"]["use_type"].value_counts().reset_index().iterrows():
+  print(f"{row["use_type"]}")
+```
+
+
+So we have a mix of strings and numbers, plus the booleans. Not ideal... 
 
 # Extra functionality
 
@@ -391,3 +409,24 @@ con.execute("SELECT * FROM zoning_district_type_colors").df().head()
 
 Now, we convert all of this into a build script. And test the results.
 (Done)
+
+
+## Full Table 
+For checkboxes, it's easier to filter on a *wide* dataset then a long one -- one of the complications of Keeping Things Tidy. 
+
+So we'll store the full zoning dataset, too. 
+
+```{python}
+con.execute("DESCRIBE zoning_raw").df().head(50)
+```
+
+```{python}
+full = con.execute("SELECT * FROM zoning_raw").df()
+full.head()
+```
+
+
+```{python}
+con.execute("SELECT DISTINCT F1F_Allowance FROM zoning_raw ORDER BY 1").fetchall()
+```
+
