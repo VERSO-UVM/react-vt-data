@@ -39,5 +39,9 @@ def run_zoning_scrape(
         df.to_parquet(out, index=False)
 
 
-if __name__ == "__main__":
+def main():
     run_zoning_scrape("vt_zoning.parquet")
+
+
+if __name__ == "__main__":
+    main()

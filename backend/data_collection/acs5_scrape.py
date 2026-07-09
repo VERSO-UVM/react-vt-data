@@ -69,7 +69,7 @@ def fetch_table(year, table, for_clause, in_clause):
         return None
 
 
-def scrape(geos: list = GEOS, append: bool = False):
+def run_acs5_scrape(geos: list = GEOS, append: bool = False):
     # Collect raw frames per table
     all_frames = {table: [] for table in TABLES}
 
@@ -165,7 +165,7 @@ def merge_tidy_tables():
         print(f"Combined tidy saved: {len(combined):,} rows")
 
 
-if __name__ == "__main__":
+def main():
     p = argparse.ArgumentParser(
         description="Scrape ACS DP02-DP05 profile tables for Vermont."
     )
@@ -184,5 +184,9 @@ if __name__ == "__main__":
     )
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    scrape(geos=selected_geos, append=args.append)
+    run_acs5_scrape(geos=selected_geos, append=args.append)
     merge_tidy_tables()
+
+
+if __name__ == "__main__":
+    main()

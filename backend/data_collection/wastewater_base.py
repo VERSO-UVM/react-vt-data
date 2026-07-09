@@ -55,5 +55,9 @@ def run_wastewater_scrape():
         )
 
 
-if __name__ == "__main__":
+def main():
     run_wastewater_scrape()
+
+
+if __name__ == "__main__":
+    main()

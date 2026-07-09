@@ -20,7 +20,7 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
 Output: vt_acs5_b_economic_tidy.parquet
 """
 
-from data_collection.base import GEOS, YEARS, VarGroup, run_scrape
+from data_collection.base import YEARS, VarGroup, run_acs_b_scrape
 
 SL = "Labor Force"
 SI = "Income"
@@ -70,7 +70,8 @@ fetch_specs = {
     "B19301": ["B19301_001E"],
 }
 
-if __name__ == "__main__":
+
+def main():
     import argparse
 
     from data_collection.base import ALL_GEOS
@@ -91,7 +92,7 @@ if __name__ == "__main__":
     )
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    run_scrape(
+    run_acs_b_scrape(
         fetch_specs,
         var_groups,
         "vt_acs5_b_economic_tidy.parquet",
@@ -99,3 +100,7 @@ if __name__ == "__main__":
         selected_geos,
         append=args.append,
     )
+
+
+if __name__ == "__main__":
+    main()
