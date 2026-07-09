@@ -40,23 +40,17 @@ def fetch_wastewater():
 # ---------------------------------------------------------------------------
 
 
-def run_wastewater_scrape():
-    """
-    Fetch Wastewater data and save as parquet files.
-    """
+def collect():
     wwtf, service_areas = fetch_wastewater()
 
-    if wwtf is not None and service_areas is not None:
-        wwtf.to_parquet(
-            f"{STORAGE_LOCATION}/ww_treatment_facilities.parquet", index=False
-        )
-        service_areas.to_parquet(
-            f"{STORAGE_LOCATION}/ww_service_areas.parquet", index=False
-        )
+    return {
+        "ww_treatment_facilities": wwtf,
+        "ww_service_areas": service_areas,
+    }
 
 
 def main():
-    run_wastewater_scrape()
+    collect()
 
 
 if __name__ == "__main__":

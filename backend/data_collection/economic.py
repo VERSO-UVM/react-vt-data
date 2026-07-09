@@ -71,7 +71,7 @@ fetch_specs = {
 }
 
 
-def main():
+def collect():
     import argparse
 
     from data_collection.base import ALL_GEOS
@@ -92,7 +92,7 @@ def main():
     )
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    run_acs_b_scrape(
+    df = run_acs_b_scrape(
         fetch_specs,
         var_groups,
         "vt_acs5_b_economic_tidy.parquet",
@@ -101,6 +101,8 @@ def main():
         append=args.append,
     )
 
+    return df
+
 
 if __name__ == "__main__":
-    main()
+    df = collect()

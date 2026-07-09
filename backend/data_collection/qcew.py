@@ -237,13 +237,15 @@ def run_qcew_scrape() -> None:
     combined.sort_values(["County", "year", "quarter", "sector"], inplace=True)
     combined.reset_index(drop=True, inplace=True)
 
-    combined.to_parquet(OUTPUT_FILE, index=False)
-    print(f"\nDone. {len(combined):,} rows → {OUTPUT_FILE}")
+    # combined.to_parquet(OUTPUT_FILE, index=False)
+    # print(f"\nDone. {len(combined):,} rows → {OUTPUT_FILE}")
+    return combined
 
 
-def main():
-    run_qcew_scrape()
+def collect():
+    df = run_qcew_scrape()
+    return df
 
 
 if __name__ == "__main__":
-    main()
+    df = collect()

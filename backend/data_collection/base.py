@@ -223,5 +223,7 @@ def run_acs_b_scrape(
         except FileNotFoundError:
             print(f"No existing file at {out}; writing fresh.")
 
-    tidy.to_parquet(out, index=False)
-    print(f"\nDone. {len(tidy):,} rows -> {out}")
+    # tidy.to_parquet(out, index=False)
+    # print(f"\nDone. {len(tidy):,} rows -> {out}")
+
+    return tidy
