@@ -1,4 +1,4 @@
-from datastore.lake import con
+from datastore.lake_build import con
 
 
 def test_tables():

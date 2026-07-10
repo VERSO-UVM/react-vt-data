@@ -8,7 +8,7 @@ from data_collection import (
     wastewater,
     zoning,
 )
-from datastore.lake import replace_table
+from datastore.lake_build import replace_table
 
 DATA_CATEGORIES = [
     acs5,
