@@ -1,10 +1,10 @@
 from data_collection import (
     acs5,
-    # demographics,
-    # economic,
-    # education,
-    # housing,
-    # qcew,
+    demographics,
+    economic,
+    education,
+    housing,
+    qcew,
     wastewater,
     zoning,
 )
@@ -12,11 +12,11 @@ from datastore.lake import replace_table
 
 DATA_CATEGORIES = [
     acs5,
-    # demographics,
-    # economic,
-    # education,
-    # housing,
-    # qcew,
+    demographics,
+    economic,
+    education,
+    housing,
+    qcew,
     wastewater,
     zoning,
 ]
@@ -41,6 +41,7 @@ def run_master_scrape():
 
             # Handle multiple tables
             for table_name, df in outputs.items():
+                table_name = "RAW_" + table_name
                 print(f"Loading {table_name}")
                 replace_table(table_name, df)
 

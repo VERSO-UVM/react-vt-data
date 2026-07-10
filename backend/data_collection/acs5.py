@@ -189,7 +189,7 @@ def collect(
         append=append,
     )
 
-    tables["acs5_combined"] = combine_tables(tables)
+    # tables["acs5_combined"] = combine_tables(tables)
 
     return tables
 
