@@ -3,7 +3,7 @@ from datastore.lake import con
 
 def test_tables():
     tables = con.execute("""
-        SHOW TABLES FROM lake.main
+        SHOW TABLES FROM lake.RAW
     """).fetchall()
 
     assert len(tables) > 0
@@ -13,7 +13,7 @@ def test_row_counts():
     tables = [
         row[0]
         for row in con.execute("""
-            SHOW TABLES FROM lake.main
+            SHOW TABLES FROM lake.RAW
         """).fetchall()
     ]
 
@@ -21,7 +21,7 @@ def test_row_counts():
         count = con.execute(
             f"""
             SELECT COUNT(*)
-            FROM lake.main.{table}
+            FROM lake.RAW.{table}
             """
         ).fetchone()[0]
 

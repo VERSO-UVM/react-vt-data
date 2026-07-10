@@ -172,10 +172,6 @@ def merge_tidy_tables():
     return
 
 
-def combine_tables(tables):
-    return pd.concat(tables.values(), ignore_index=True)
-
-
 def collect(
     geos=GEOS,
     append=False,
@@ -188,8 +184,6 @@ def collect(
         geos=geos,
         append=append,
     )
-
-    # tables["acs5_combined"] = combine_tables(tables)
 
     return tables
 

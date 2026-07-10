@@ -12,24 +12,23 @@ DATA_DIR.mkdir(exist_ok=True)
 
 con = duckdb.connect()
 
-# Install data lake dependencies
+# Load extension
 try:
     con.execute("LOAD ducklake")
 except duckdb.Error:
     con.execute("INSTALL ducklake")
     con.execute("LOAD ducklake")
 
-
-# Create overall file structure (RAW / CLEANED)
-con.execute("CREATE SCHEMA IF NOT EXISTS RAW")
-con.execute("CREATE SCHEMA IF NOT EXISTS CLEANED")
-
-# Add the "lake" storage subfolder in the Data folder
+# Attach the DuckLake catalog
 con.execute(f"""
     ATTACH '{LAKE_PATH.as_posix()}'
     AS lake
     (TYPE ducklake)
 """)
+
+# Create schemas in the lake catalog
+con.execute("CREATE SCHEMA IF NOT EXISTS lake.RAW")
+con.execute("CREATE SCHEMA IF NOT EXISTS lake.CLEANED")
 
 
 def replace_table(name: str, df: pd.DataFrame):
