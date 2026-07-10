@@ -33,47 +33,64 @@ sql_path = Path("build/wastewater/sql")
 
 # hardcoded specifics:
 ## soil suitability table info
-suitability_info_cols = [
-    "OGC_FID", "Suitability", "Jurisdiction", "RPC", "Acres"
-]
+suitability_info_cols = ["OGC_FID", "Suitability", "Jurisdiction", "RPC", "Acres"]
 
-suitability_geom_cols = [
-    "OGC_FID","geom"
-]
+suitability_geom_cols = ["OGC_FID", "geom"]
 
 ## wastewater service area table info
 service_area_info_cols = [
-    "ID", "TownID", "TreatmentFacility", "SystemName", "SystemOwner", "TownName", "Municipal_Name",
-    "County", "RPC"
+    "ID",
+    "TownID",
+    "TreatmentFacility",
+    "SystemName",
+    "SystemOwner",
+    "TownName",
+    "Municipal_Name",
+    "County",
+    "RPC",
 ]
 
 service_miscellaneous_info_cols = [
-    "ID", "GISNotes", "GISDate", "GISUpdate", "Creator", "SourceFile", "GEOIDTXT"
+    "ID",
+    "GISNotes",
+    "GISDate",
+    "GISUpdate",
+    "Creator",
+    "SourceFile",
+    "GEOIDTXT",
 ]
 
-service_geom_cols = [
-    "ID", "geometry"
-]
+service_geom_cols = ["ID", "geometry"]
 
 ## wastewater treatment facility table info
 facility_info_cols = [
-    "ID", "FacilityID", "DesignHydraulicCapacityInMGD", "SeptageReceivedAtThisFacility",
-    "WWInventoryURL", "FacilityName", "TownName", "Municipal_Name", "County","RPC"
+    "ID",
+    "FacilityID",
+    "DesignHydraulicCapacityInMGD",
+    "SeptageReceivedAtThisFacility",
+    "WWInventoryURL",
+    "FacilityName",
+    "TownName",
+    "Municipal_Name",
+    "County",
+    "RPC",
 ]
 
 permit_info_cols = [
-    "ID","PermitID", "PermitRecordID", "NPDESPermitNumber", "PermitLink", "PermitteeName"
+    "ID",
+    "PermitID",
+    "PermitRecordID",
+    "NPDESPermitNumber",
+    "PermitLink",
+    "PermitteeName",
 ]
 
-facility_miscellaneous_info_cols = [
-    "ID", "SourceFile", "GEOIDTXT"
-]
+facility_miscellaneous_info_cols = ["ID", "SourceFile", "GEOIDTXT"]
 
-facility_geom_cols = [
-    "ID", "Latitude", "Longitude", "geometry"
-]
+facility_geom_cols = ["ID", "Latitude", "Longitude", "geometry"]
 
 # functions:
+
 
 ## soil suitability table creation
 def save_suitability_data():
@@ -82,7 +99,7 @@ def save_suitability_data():
 
     build_suitability_color_table()
     con.execute(
-        f"COPY (SELECT * FROM soil_suitability_type_colors) TO '{proc_dir /'soil_suitability'/ f'soil_suitability_colors.parquet'}' "
+        f"COPY (SELECT * FROM soil_suitability_type_colors) TO '{proc_dir / 'soil_suitability' / f'soil_suitability_colors.parquet'}' "
     )
 
     info_table_names = []
@@ -107,19 +124,31 @@ def save_suitability_data():
             f"COPY (SELECT * FROM {geom_table_name}) TO '{proc_dir / 'soil_suitability' / f'{geom_table_name}.parquet'}' "
         )
 
-    con.execute(f"""CREATE TABLE geom_soil_suit AS SELECT * FROM {geom_table_names[0]};""")
-    con.execute(f"""CREATE TABLE info_soil_suit AS SELECT * FROM {info_table_names[0]};""")
+    con.execute(
+        f"""CREATE TABLE geom_soil_suit AS SELECT * FROM {geom_table_names[0]};"""
+    )
+    con.execute(
+        f"""CREATE TABLE info_soil_suit AS SELECT * FROM {info_table_names[0]};"""
+    )
 
     for tables in range(len(info_table_names)):
         if tables != 0:
-            con.execute(f"""INSERT INTO info_soil_suit SELECT * FROM {info_table_names[tables]};""")
-            con.execute(f"""INSERT INTO geom_soil_suit SELECT * FROM {geom_table_names[tables]};""")
+            con.execute(
+                f"""INSERT INTO info_soil_suit SELECT * FROM {info_table_names[tables]};"""
+            )
+            con.execute(
+                f"""INSERT INTO geom_soil_suit SELECT * FROM {geom_table_names[tables]};"""
+            )
 
     con.execute(f"""CREATE SEQUENCE info_id_sequence START 1;""")
-    con.execute(f"""ALTER TABLE info_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('info_id_sequence');""")
+    con.execute(
+        f"""ALTER TABLE info_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('info_id_sequence');"""
+    )
 
     con.execute(f"""CREATE SEQUENCE geom_id_sequence START 1;""")
-    con.execute(f"""ALTER TABLE geom_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('geom_id_sequence');""")
+    con.execute(
+        f"""ALTER TABLE geom_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('geom_id_sequence');"""
+    )
 
     con.execute(
         f"COPY (SELECT * FROM info_soil_suit) TO '{proc_dir / 'soil_suitability' / f'info_soil_suit.parquet'}' "
@@ -129,14 +158,9 @@ def save_suitability_data():
     )
 
 
-
-
-
-
-
 def build_suitability_info_table(table_name):
     info_string = ", ".join(suitability_info_cols)
-    info_table_name = 'info_' + table_name
+    info_table_name = "info_" + table_name
 
     con.execute(f"""--sql
       CREATE OR REPLACE VIEW {info_table_name} AS
@@ -145,9 +169,10 @@ def build_suitability_info_table(table_name):
     """)
     return info_table_name
 
+
 def build_suitability_geom_table(table_name):
     geom_string = ", ".join(suitability_geom_cols)
-    geom_table_name = 'geom_' + table_name
+    geom_table_name = "geom_" + table_name
 
     con.execute(f"""--sql
       CREATE OR REPLACE VIEW {geom_table_name} AS
@@ -155,6 +180,7 @@ def build_suitability_geom_table(table_name):
       FROM {table_name}
     """)
     return geom_table_name
+
 
 def build_suitability_color_table():
     con.execute(f"""--sql
@@ -183,6 +209,7 @@ def load_wastewater_service_data():
       SELECT * FROM read_parquet('{waste_service_path}')
     """)
 
+
 def build_wastewater_service_info_table():
     service_area_info_string = ", ".join(service_area_info_cols)
 
@@ -191,6 +218,7 @@ def build_wastewater_service_info_table():
       SELECT {service_area_info_string}
       FROM wastewater_service_areas
     """)
+
 
 def build_wastewater_service_geom_table():
     service_miscellaneous_info_string = ", ".join(service_miscellaneous_info_cols)
@@ -201,6 +229,7 @@ def build_wastewater_service_geom_table():
       FROM wastewater_service_areas
     """)
 
+
 def build_wastewater_service_miscellaneous_info_table():
     service_geom_string = ", ".join(service_geom_cols)
 
@@ -210,6 +239,7 @@ def build_wastewater_service_miscellaneous_info_table():
       FROM wastewater_service_areas
     """)
 
+
 def save_wastewater_service_area_tables():
 
     load_wastewater_service_data()
@@ -217,10 +247,15 @@ def save_wastewater_service_area_tables():
     build_wastewater_service_geom_table()
     build_wastewater_service_miscellaneous_info_table()
 
-    for table in ['service_area_info', 'service_area_miscellaneous_info', 'service_area_geom']:
+    for table in [
+        "service_area_info",
+        "service_area_miscellaneous_info",
+        "service_area_geom",
+    ]:
         con.execute(
             f"COPY (SELECT * FROM {table}) TO '{proc_dir / 'service_areas' / f'{table}.parquet'}' "
         )
+
 
 ## wastewater treatment facility table creation
 def load_wastewater_facility_data():
@@ -231,6 +266,7 @@ def load_wastewater_facility_data():
       SELECT * FROM read_parquet('{waste_facility_path}')
     """)
 
+
 def build_wastewater_facility_info_table():
     facility_info_string = ", ".join(facility_info_cols)
 
@@ -239,6 +275,7 @@ def build_wastewater_facility_info_table():
       SELECT {facility_info_string}
       FROM wastewater_treatment_facilities
     """)
+
 
 def build_wastewater_facility_geom_table():
     facility_geom_string = ", ".join(facility_geom_cols)
@@ -249,6 +286,7 @@ def build_wastewater_facility_geom_table():
       FROM wastewater_treatment_facilities
     """)
 
+
 def build_wastewater_facility_miscellaneous_info_table():
     facility_miscellaneous_info_string = ", ".join(facility_miscellaneous_info_cols)
 
@@ -257,6 +295,7 @@ def build_wastewater_facility_miscellaneous_info_table():
       SELECT {facility_miscellaneous_info_string}
       FROM wastewater_treatment_facilities
     """)
+
 
 def build_wastewater_permit_table():
     facility_permit_info_string = ", ".join(permit_info_cols)
@@ -267,6 +306,7 @@ def build_wastewater_permit_table():
       FROM wastewater_treatment_facilities
     """)
 
+
 def save_wastewater_facility_tables():
     load_wastewater_facility_data()
     build_wastewater_facility_info_table()
@@ -274,9 +314,14 @@ def save_wastewater_facility_tables():
     build_wastewater_facility_miscellaneous_info_table()
     build_wastewater_permit_table()
 
-    for table in ['treatment_facility_info', 'treatment_facility_geom', 'treatment_facility_miscellaneous_info', 'treatment_facility_permit_info']:
+    for table in [
+        "treatment_facility_info",
+        "treatment_facility_geom",
+        "treatment_facility_miscellaneous_info",
+        "treatment_facility_permit_info",
+    ]:
         con.execute(
-            f"COPY (SELECT * FROM {table}) TO '{proc_dir /'treatment_facilities'/ f'{table}.parquet'}' "
+            f"COPY (SELECT * FROM {table}) TO '{proc_dir / 'treatment_facilities' / f'{table}.parquet'}' "
         )
 
 
@@ -285,13 +330,10 @@ def main():
     proc_dir.mkdir(parents=True, exist_ok=True)
     con.execute("LOAD spatial")
 
-
     save_wastewater_facility_tables()
     save_wastewater_service_area_tables()
     save_suitability_data()
 
+
 if __name__ == "__main__":
     main()
-
-
-
