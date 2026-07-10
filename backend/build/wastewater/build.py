@@ -1,8 +1,8 @@
 """
 **Author**:
-    Fitz Koch
+    Atticus Tarleton
 **Created**:
-    2026-06-01
+    2026-06-28
 **Description**:
     Build script to convert the wastewater and soil suitability files into SQL tables.
 """
