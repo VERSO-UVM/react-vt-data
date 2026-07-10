@@ -19,6 +19,11 @@ except duckdb.Error:
     con.execute("INSTALL ducklake")
     con.execute("LOAD ducklake")
 
+
+# Create overall file structure (RAW / CLEANED)
+con.execute("CREATE SCHEMA IF NOT EXISTS RAW")
+con.execute("CREATE SCHEMA IF NOT EXISTS CLEANED")
+
 # Add the "lake" storage subfolder in the Data folder
 con.execute(f"""
     ATTACH '{LAKE_PATH.as_posix()}'

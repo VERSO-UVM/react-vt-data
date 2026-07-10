@@ -41,9 +41,9 @@ def run_master_scrape():
 
             # Handle multiple tables
             for table_name, df in outputs.items():
-                table_name = "RAW_" + table_name
-                print(f"Loading {table_name}")
-                replace_table(table_name, df)
+                full_name = f"RAW.{table_name}"
+                print(f"Loading {full_name}")
+                replace_table(full_name, df)
 
             print(f"Completed {name}")
 
