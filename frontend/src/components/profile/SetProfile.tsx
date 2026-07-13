@@ -11,6 +11,8 @@ import {
   Title,
   Box,
   Alert,
+  Group,
+  SimpleGrid,
 } from '@mantine/core';
 import {
   useProfile,
@@ -19,7 +21,10 @@ import {
   YEAR_MAX_OVERALL,
   Location,
 } from './profileStore';
+import * as motion from 'motion/react-client';
 import county_town_names from '@/data/county_town_names.json';
+import { IconMapPin, IconTags, IconCalendarStats } from '@tabler/icons-react';
+import { UserCircleIcon } from '@phosphor-icons/react';
 
 type CountyKey = keyof typeof county_town_names;
 
@@ -43,6 +48,72 @@ interface ProfileLocationSelectProps {
   showNational?: boolean;
 }
 
+function ProfileButton({
+  onClick,
+  opened,
+}: {
+  onClick: () => void;
+  opened: boolean;
+}) {
+  return (
+    <motion.button
+      onClick={onClick}
+      initial="rest"
+      whileHover="hover"
+      whileTap={{ scale: 0.96 }}
+      animate={opened ? 'hover' : 'rest'}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '10px 20px',
+        borderRadius: 999,
+        border: '1.5px solid var(--mantine-color-blue-6)',
+        background: 'transparent',
+        cursor: 'pointer',
+        fontWeight: 500,
+        fontSize: 16,
+        maxHeight: 45,
+        maxWidth: 170,
+      }}
+    >
+      <motion.span
+        variants={{
+          rest: { scaleX: 0 },
+          hover: { scaleX: 1 },
+        }}
+        transition={{ duration: 0.4, ease: [0.65, 0, 0.35, 1] }}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'var(--mantine-color-blue-6)',
+          transformOrigin: 'left',
+          zIndex: 0,
+        }}
+      />
+      <motion.span
+        variants={{
+          rest: { color: 'var(--mantine-color-blue-6)' },
+          hover: { color: '#fff' },
+        }}
+        transition={{ duration: 0.25 }}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <UserCircleIcon size={30} weight="light" />
+        My Profile
+      </motion.span>
+    </motion.button>
+  );
+}
+
 const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   title,
   location,
@@ -52,11 +123,12 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   const counties = Object.keys(county_town_names) as CountyKey[];
 
   return (
-    <>
-      <Title order={2}>{title}</Title>
+    <Stack gap="xs">
+      <Title order={3}>{title}</Title>
 
       <Select
         label="Area type"
+        radius="md"
         value={location.type}
         onChange={(value) => {
           if (!value) return;
@@ -83,6 +155,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         <Select
           label="Pick a county"
           value={location.county || ''}
+          radius="md"
           onChange={(value) =>
             value &&
             setLocation({
@@ -100,6 +173,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         <Select
           label="Pick a town"
           value={location.town || ''}
+          radius="md"
           onChange={(value) =>
             value &&
             setLocation({
@@ -114,7 +188,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
           }))}
         />
       )}
-    </>
+    </Stack>
   );
 };
 
@@ -176,85 +250,123 @@ export const ProfileModal: React.FC = () => {
 
   return (
     <>
-      <Button onClick={handleOpen}>My Profile</Button>
+      <ProfileButton onClick={handleOpen} opened={opened} />
       <Modal
         opened={opened}
         onClose={closeProfileModal}
         title="Profile"
-        size="md"
-        radius="xl"
-        padding="xl"
+        radius="lg"
         centered
+        size={900}
         shadow="xl"
         overlayProps={{
           backgroundOpacity: 0.55,
           blur: 3,
         }}
         styles={{
-          title: { fontWeight: 600, textAlign: 'center' },
-          body: { overflowX: 'hidden' },
+          title: { fontWeight: 700, fontSize: '1.15rem' },
+          body: { overflowX: 'hidden', maxHeight: 450 },
         }}
       >
-        <Stack gap="md">
+        <Stack gap="lg">
           {!profileSet && (
             <Alert variant="light" color="blue" radius="md">
               Select a profile before beginning. Only your location is required;
               other fields are optional.
             </Alert>
           )}
-          <ProfileLocationSelect
-            title="My Location"
-            location={tempMyLocation}
-            setLocation={setTempMyLocation}
-          />
-          <ProfileLocationSelect
-            title="Comparison"
-            location={tempComparison}
-            setLocation={setTempComparison}
-            showNational
-          />
+
+          {/* Locations */}
+          <Box>
+            <Group gap={6} mb={2}>
+              <IconMapPin size={16} stroke={1.75} />
+              <Text size="sm" fw={600}>
+                Locations
+              </Text>
+            </Group>
+            <Text size="xs" c="dimmed" mb="sm">
+              Choose where you are and what you'd like to compare against.
+            </Text>
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 2 }} spacing="md">
+              <ProfileLocationSelect
+                title="My Location"
+                location={tempMyLocation}
+                setLocation={setTempMyLocation}
+              />
+              <ProfileLocationSelect
+                title="Comparison"
+                location={tempComparison}
+                setLocation={setTempComparison}
+                showNational
+              />
+            </SimpleGrid>
+          </Box>
 
           <Divider />
 
-          <div>
-            <Title order={2}>Areas of Interest</Title>
-            <Text size="sm" c="dimmed" mb="xs">
-              Highlight and filter charts relevant to your focus areas.
-            </Text>
-            <MultiSelect
-              label="Select topics"
-              data={[...INTEREST_OPTIONS]}
-              value={tempInterests}
-              onChange={setTempInterests}
-              placeholder="Any topic"
-              clearable
-            />
-          </div>
-
-          <Divider />
-
-          <div>
-            <Title order={2}>Years of Longitudinal Interest</Title>
-            <Text size="sm" c="dimmed" mb="xs">
-              Restrict trend tables and charts to this year range (
-              {tempYearRange[0]}–{tempYearRange[1]}).
-            </Text>
-            <Box px="xs">
-              <RangeSlider
-                min={YEAR_MIN_OVERALL}
-                max={YEAR_MAX_OVERALL}
-                step={1}
-                value={tempYearRange}
-                onChange={setTempYearRange}
-                marks={YEAR_MARKS}
-                label={(v) => String(v)}
-                mt="xs"
-                mb="xl"
+          {/* Interests + Year range, side by side */}
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xl">
+            <Box>
+              <Group gap={6} mb={2}>
+                <IconTags size={16} stroke={1.75} />
+                <Text size="sm" fw={600}>
+                  Areas of Interest
+                </Text>
+              </Group>
+              <Text size="xs" c="dimmed" mb="sm">
+                Highlight charts relevant to your focus areas.
+              </Text>
+              <MultiSelect
+                data={[...INTEREST_OPTIONS]}
+                value={tempInterests}
+                onChange={setTempInterests}
+                placeholder="Any topic"
+                clearable
+                radius="md"
               />
             </Box>
-          </div>
 
-          <Button onClick={handleSave}>Save Profile</Button>
+            <Box>
+              <Group gap={6} mb={2}>
+                <IconCalendarStats size={16} stroke={1.75} />
+                <Text size="sm" fw={600}>
+                  Years of Interest
+                </Text>
+              </Group>
+              <Text size="xs" c="dimmed" mb="md">
+                Restrict trends to{' '}
+                <Text span fw={600} c="blue">
+                  {tempYearRange[0]}–{tempYearRange[1]}
+                </Text>
+                .
+              </Text>
+              <Box px="xs" pt={6}>
+                <RangeSlider
+                  min={YEAR_MIN_OVERALL}
+                  max={YEAR_MAX_OVERALL}
+                  step={1}
+                  minRange={5}
+                  value={tempYearRange}
+                  onChange={setTempYearRange}
+                  marks={YEAR_MARKS}
+                  label={(v) => String(v)}
+                  labelTransitionProps={{
+                    transition: 'slide-up',
+                    duration: 150,
+                    timingFunction: 'linear',
+                  }}
+                  size="sm"
+                />
+              </Box>
+            </Box>
+          </SimpleGrid>
+
+          <Group justify="flex-end" mt="xs">
+            <Button variant="default" onClick={closeProfileModal}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>Save Profile</Button>
+          </Group>
         </Stack>
       </Modal>
     </>
