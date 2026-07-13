@@ -1,3 +1,13 @@
+"""
+**Author**:
+    Ian Sargent
+**Created**:
+    2026-07-10
+**Description**:
+    Testing script for DuckLake tables (RAW + ClEANED)
+    Run script (from backend) with: `python -m tests.test_lake`
+"""
+
 from datastore.lake_build import con
 
 
