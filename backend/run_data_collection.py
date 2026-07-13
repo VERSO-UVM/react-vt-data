@@ -1,24 +1,26 @@
 from data_collection import (
-    acs5,
-    demographics,
-    economic,
-    education,
-    housing,
-    qcew,
-    wastewater,
-    zoning,
+    # acs5,
+    # demographics,
+    # economic,
+    # education,
+    # housing,
+    # qcew,
+    # wastewater,
+    # zoning,
+    historic_population,
 )
 from datastore.lake_build import replace_table
 
 DATA_CATEGORIES = [
-    acs5,
-    demographics,
-    economic,
-    education,
-    housing,
-    qcew,
-    wastewater,
-    zoning,
+    # acs5,
+    # demographics,
+    # economic,
+    # education,
+    # housing,
+    # qcew,
+    # wastewater,
+    # zoning,
+    historic_population
 ]
 
 
