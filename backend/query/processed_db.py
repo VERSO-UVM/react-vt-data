@@ -50,4 +50,14 @@ def _build() -> duckdb.DuckDBPyConnection:
     return con
 
 
+# def _build_DB_from_lake() -> duckdb.DuckDBPyConnection:
+#     """
+#     Builds tables in `all_data.duckdb` by pulling directly from the
+#     CLEANED schema in the DuckLake, instead of reading source CSVs/Parquets.
+#     """
+#     path = Path(proc_dir / "all_data.duckdb")
+#     con = duckdb.connect(path, read_only=True)
+#     _load_spatial(con)
+
+
 DB = _build()

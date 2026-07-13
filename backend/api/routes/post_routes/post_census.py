@@ -90,6 +90,21 @@ async def get_housing_snapshot(request: FilterRequest):
     return response
 
 
+# NOTE: TEMPORARY! - should be removed once historic_population is confirmed working via DuckLake
+@router.post("/load/census/demographic/historic_population/test")
+async def get_historic_population_test(request: FilterRequest):
+    filters = request.filters if request else None
+    data = timeseries_db.query_timeseries("historic_population", filters)
+
+    if data.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No data found for the given filters: {filters}",
+        )
+
+    return make_response(data, {})
+
+
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
 @router.post("/load/census/{category}/{subcategory}")
 async def read_census_data_subcat(

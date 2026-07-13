@@ -13,7 +13,7 @@ import pandas as pd
 from datastore.lake_build import con
 
 
-def read_raw_data():
+def read_raw_data() -> pd.DataFrame:
     raw_df = con.execute(
         """
         SELECT * 
@@ -107,7 +107,7 @@ def add_population_aggregations(df: pd.DataFrame):
     return combined
 
 
-def clean_historic_population():
+def clean():
     # Get raw dataframe from DuckLake RAW tables
     raw_df = read_raw_data()
     # Clean column names
@@ -126,7 +126,7 @@ def clean_historic_population():
     return df
 
 
-def add_cleaned_population_table(clean_df: pd.DataFrame):
+def add_to_lake(clean_df: pd.DataFrame):
     """
     Writes the cleaned, long-format historic population dataframe
     to the CLEANED schema in DuckLake.
@@ -140,8 +140,8 @@ def add_cleaned_population_table(clean_df: pd.DataFrame):
 
 
 def main():
-    clean_df = clean_historic_population()
-    add_cleaned_population_table(clean_df)
+    clean_df = clean()
+    add_to_lake(clean_df)
 
 
 if __name__ == "__main__":
