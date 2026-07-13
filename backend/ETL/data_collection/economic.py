@@ -20,7 +20,7 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
 Output: vt_acs5_b_economic_tidy.parquet
 """
 
-from data_collection.base import YEARS, VarGroup, run_acs_b_scrape
+from ETL.data_collection.base import YEARS, VarGroup, run_acs_b_scrape
 
 SL = "Labor Force"
 SI = "Income"
@@ -74,7 +74,7 @@ fetch_specs = {
 def collect():
     import argparse
 
-    from data_collection.base import ALL_GEOS
+    from ETL.data_collection.base import ALL_GEOS
 
     p = argparse.ArgumentParser(description="Scrape ACS B-table economic data.")
     p.add_argument(

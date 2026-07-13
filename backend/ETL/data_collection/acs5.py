@@ -17,9 +17,11 @@ import pandas as pd
 import requests
 
 from app_utils.census import tidy_census
-from data_collection.base import ALL_GEOS
+from ETL.data_collection.base import ALL_GEOS
 
-API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
+API_KEY = (
+    "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"  # TODO: Get this as a .env variable!!!
+)
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5/profile"
 STATE_FIPS = "50"  # Vermont
 TABLES = {

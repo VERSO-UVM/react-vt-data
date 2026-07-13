@@ -4,17 +4,17 @@
 **Created**:
     2026-07-13
 **Description**:
-    Fetches the already cleaned Historic Population data from the csv on GitHub
+    Fetches the Historic Population data estimates from the VT Open Geodata Portal
     Original Raw Data Source: https://geodata.vermont.gov/datasets/84a286c51ece48488273710e1f49834e/explore
 """
 
 import pandas as pd
 
-URL = "https://raw.githubusercontent.com/VERSO-UVM/react-vt-data/refs/heads/main/backend/Data/Census/VT_Historic_Population.csv"
+RAW_URL = "https://www.arcgis.com/sharing/rest/content/items/84a286c51ece48488273710e1f49834e/data"
 
 
 def collect():
-    df = pd.read_csv(URL)
+    df = pd.read_csv(RAW_URL)
     return df
 
 

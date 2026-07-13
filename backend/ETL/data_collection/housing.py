@@ -15,7 +15,7 @@ Variables match Table 4 of the Annual Report:
 Output: vt_acs5_b_housing_tidy.parquet
 """
 
-from data_collection.base import YEARS, VarGroup, run_acs_b_scrape
+from ETL.data_collection.base import YEARS, VarGroup, run_acs_b_scrape
 
 S = "Housing"
 
@@ -45,7 +45,7 @@ fetch_specs = {
 def collect():
     import argparse
 
-    from data_collection.base import ALL_GEOS
+    from ETL.data_collection.base import ALL_GEOS
 
     p = argparse.ArgumentParser(description="Scrape ACS B-table housing data.")
     p.add_argument(

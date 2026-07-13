@@ -47,7 +47,7 @@ def test_table_structure(table_name: str):
 def main():
     # test_tables()
     # test_row_counts()
-    test_table_structure("acs5_housing")
+    test_table_structure("historic_population")
 
 
 if __name__ == "__main__":
