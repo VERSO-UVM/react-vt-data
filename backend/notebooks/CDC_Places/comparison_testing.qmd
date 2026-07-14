@@ -186,7 +186,7 @@ print(groups)
 
 ## Parallel Lines Plot
 ```{python}
-pvi = (pv - pv.mean()) / pv.std() # standardize cols
+pvi = (pv - pv.mean()) / pv.std() # standardize cols to standard deviation
 pvi = pvi.reset_index()
 ```
 
@@ -195,3 +195,41 @@ pd.plotting.parallel_coordinates(frame=pvi, class_column="LocationID")
 plt.xticks(rotation=90)
 plt.show()
 ```
+
+Can also compare just two counties...
+
+```{python}
+fips = ["50007", "50001"]
+pvi_lim = pvi[pvi["LocationID"].isin(fips)]
+
+pd.plotting.parallel_coordinates(frame=pvi_lim, class_column="LocationID")
+plt.xticks(rotation=90)
+plt.show()
+```
+
+## PCA 
+```{python}
+from sklearn.decomposition import PCA
+X = pvi.set_index("LocationID")
+pca = PCA(n_components=2)
+scores = pca.fit_transform(X)
+print(pca.explained_variance_ratio_)
+```
+
+```{python}
+pvi["pca1"] = scores[:, 0] 
+pvi.head()
+```
+
+```{python}
+pca.components_[0]
+``` 
+
+Look at how each column contributes to the PCA...: 
+```{python}
+cols = [col for col in pvi.columns if col not in ["LocationID", "pca1"]]
+for col, weight in zip(cols, pca.components_[0]):
+    print(f"{col}, {weight:.03f}")
+```
+
+Note that the above is all about the variance in *standardized Vermont*, not all of it. 
