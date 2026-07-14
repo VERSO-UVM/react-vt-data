@@ -36,7 +36,7 @@ def rename_county_subdivision(df: pd.DataFrame):
     return df
 
 
-def change_unemployment_dtype(df: pd.DataFrame):
+def change_dtype(df: pd.DataFrame):
     df["Unemployment_Rate"] = pd.to_numeric(df["Unemployment_Rate"], errors="coerce")
 
     return df
@@ -51,7 +51,7 @@ def replace_unavailable_data(df: pd.DataFrame):
 def clean():
     raw_df = read_raw_data()
     df = rename_county_subdivision(raw_df)
-    df = change_unemployment_dtype(df)
+    df = change_dtype(df)
     df = replace_unavailable_data(df)
 
     return df

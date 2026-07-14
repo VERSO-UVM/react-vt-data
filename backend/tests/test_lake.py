@@ -5,7 +5,8 @@
     2026-07-10
 **Description**:
     Testing script for DuckLake tables (RAW + ClEANED)
-    Run script (from backend) with: `python -m tests.test_lake`
+    Run with: 
+python -m tests.test_lake
 """
 
 from datastore.lake_build import con
@@ -115,8 +116,8 @@ def test_cleaned_zoning():
 def main():
     # test_tables()
     # test_row_counts()
-    # test_table_structure("historic_population")
-    test_cleaned_zoning()
+    test_table_structure("demographics")
+    # test_cleaned_zoning()
 
 
 if __name__ == "__main__":
