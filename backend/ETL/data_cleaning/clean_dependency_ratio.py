@@ -96,7 +96,7 @@ def clean():
 
 def add_to_lake(clean_df: pd.DataFrame):
     """
-    Writes the cleaned, long-format dependency_ratio dataframe
+    Writes the cleaned, long-format age_dependency_ratio dataframe
     to the CLEANED schema in DuckLake.
     """
     con.execute(
