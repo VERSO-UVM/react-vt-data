@@ -1,0 +1,550 @@
+---
+title: "wastewater sql workthrough"
+author: Atticus Tarleton
+date: today
+description:  builds SQL tables from wastewater data.
+format:
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute:
+  cache: true
+editor:
+    render-on-save: true
+---
+
+
+# Setup
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+
+```
+
+```{python}
+con = duckdb.connect()
+```
+
+# Examining the different datasets available
+
+## Checking the soil suitability data that is stored
+note that soil suitability is how suitable the soil is for septic tanks
+- it is stored, however there are a few columns that appear redundant and/or unused
+```{python}
+data_dir= Path("Data")
+path = data_dir / "soil-suitability" / "ACRPC_Soil_Septic.fgb"
+df = pyogrio.read_dataframe(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+
+## Checking the wastewater data is stored and somewhat clean
+### Checking the saved geojson files
+note, this is not quite right, there are too many columns that should not exist
+```{python}
+path = data_dir / "wastewater" / "VermontServiceArea.geojson"
+df = gpd.read_file(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+And for the other geojson.
+
+Notes about this wwtf geojson
+- a lot of the columns seem redundant and like they should not be in there
+- data does not line up with the wastewater treatment parquet
+- the same issues are present in the above wastewater geojson as well
+```{python}
+path = data_dir / "wastewater" / "VermontWWTF.geojson"
+df = gpd.read_file(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+
+
+### Checking the saved parquet files
+note: this is different from the geojsons, they are much cleaner, and don't have extra columns
+```{python}
+path = data_dir / "wastewater" / "ww_treatment_facilities.parquet"
+df = gpd.read_parquet(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+```{python}
+path = data_dir / "wastewater" / "ww_service_areas.parquet"
+df = gpd.read_parquet(path)
+df = crs_set(df)
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+Now, creating new parquet files because the previous ones have no primary key
+
+First is the service areas parquet file
+```{python}
+path = data_dir / "wastewater" / "ww_service_areas.parquet"
+df = gpd.read_parquet(path)
+df = crs_set(df)
+
+df['ID'] = range(1, len(df) + 1)
+new_path = data_dir / "wastewater" / "ww_service_areas_new.parquet"
+df.to_parquet(new_path, index=False)
+df = gpd.read_parquet(new_path)
+df = crs_set(df)
+
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+Next is the treatment facilities parquet file
+```{python}
+path = data_dir / "wastewater" / "ww_treatment_facilities.parquet"
+df = gpd.read_parquet(path)
+df = crs_set(df)
+
+df['ID'] = range(1, len(df) + 1)
+new_path = data_dir / "wastewater" / "ww_treatment_facilities_new.parquet"
+df.to_parquet(new_path, index=False)
+df = gpd.read_parquet(new_path)
+df = crs_set(df)
+
+
+display(df.head())
+print(f'The number of rows is: {len(df)}')
+```
+
+
+# Reading the datasets into SQL
+
+```{python}
+con.execute("INSTALL spatial; LOAD spatial")
+```
+```{python}
+data_dir= Path("Data")
+soil_suit_path = data_dir / "soil-suitability"
+wastewater_path = data_dir/ "wastewater"
+```
+
+## Soil Suitability
+### First Test file
+This is to make sure everything works. after that, the same process will be applied to the remaining soil suitability files
+```{python}
+acrpc_path = soil_suit_path / "ACRPC_Soil_Septic.fgb"
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW ACRPC_Soil_Septic AS
+  SELECT * FROM ST_READ('{acrpc_path}')
+""")
+```
+now checking that this worked, and getting column names
+```{python}
+df = con.execute("SELECT * FROM ACRPC_Soil_Septic").df()
+for col in df.columns:
+  print(col)
+
+display(df.head())
+```
+Columns OBJECTID_1, Shape_Length, and Shape_Area appear to have only zeros, so we will check to see if that is true.
+If it is true, then those columns will be dropped from the final dataset
+```{python}
+print(df['OBJECTID_1'].unique())
+print(df['Shape_Length'].unique())
+print(df['Shape_Area'].unique())
+```
+Now to separate the table
+
+`OGC_FID` will be the main hash key
+
+There are two tables, Information and Geometry
+- INFORMATION
+    - main hash key: `OGC_FID`
+    - goal: all of the unique information defining relating to a unique soil suitability region
+- GEOMETRY
+    - main hash key: `OGC_FID`
+    - goal: hold the geometry data relating to the main hash key
+These tables are split because of how large the geometry data is, making analysis faster if it is not needed
+```{python}
+info_cols = [
+    "OGC_FID",
+    "Suitability",
+    "Jurisdiction",
+    "RPC",
+    "Acres"
+]
+
+geom_cols = [
+    "OGC_FID",
+    "geom"
+]
+```
+Creating the info table
+```{python}
+info_string = ", ".join(info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW info AS
+  SELECT {info_string}
+  FROM ACRPC_Soil_Septic
+""")
+
+info = con.execute("SELECT * FROM info").df()
+display(info.head())
+```
+Creating the geom table
+```{python}
+geom_string = ", ".join(geom_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW geom AS
+  SELECT {geom_string}
+  FROM ACRPC_Soil_Septic
+""")
+
+geo = con.execute("SELECT * FROM geom").df()
+geo.head()
+```
+
+### Extending the process to all soil suitability files
+```{python}
+soil_suit_data_paths = list(soil_suit_path.glob("*.fgb"))
+
+for datafile_path in soil_suit_data_paths:
+    table_name = datafile_path.stem
+    con.execute(f"""--sql
+    CREATE OR REPLACE VIEW {table_name} AS
+    SELECT * FROM ST_READ('{datafile_path}')
+    """)
+    df = con.execute(f"SELECT * FROM {table_name}").df()
+
+    # checking that there is no file where the three columns dropped have any unique values
+    if df['OBJECTID_1'].unique() == df['Shape_Length'].unique() == df['Shape_Area'].unique() == [0]:
+        print(f"the data for {table_name} has no unique values for OBJECTID_1, Shape_Length, or Shape_Area")
+    else:
+        print(f"the data for {table_name} has these unique values for: ")
+        print(f"OBJECTID_1: {df['OBJECTID_1'].unique()}")
+        print(f"Shape_Length: {df['Shape_Length'].unique()}")
+        print(f"Shape_Area: {df['Shape_Area'].unique()}")
+
+    # creating the info table
+    info_string = ", ".join(info_cols)
+    info_table_name = 'info_' + table_name
+
+    con.execute(f"""--sql
+      CREATE OR REPLACE VIEW {info_table_name} AS
+      SELECT {info_string}
+      FROM {table_name}
+    """)
+
+    info = con.execute(f"SELECT * FROM {info_table_name}").df()
+
+    # creating the geom table
+    geom_string = ", ".join(geom_cols)
+    geom_table_name = 'geom_' + table_name
+
+    con.execute(f"""--sql
+      CREATE OR REPLACE VIEW {geom_table_name} AS
+      SELECT {geom_string}
+      FROM {table_name}
+    """)
+```
+creating a color table for fill colors
+```{python}
+con.execute(f"""--sql
+CREATE TABLE soil_suitability_type_colors (
+    soil_suitability   TEXT PRIMARY KEY,
+    hex_color       TEXT NOT NULL,
+    rgba            TEXT NOT NULL  -- '[255,127,14,180]' as JSON-ish text
+);
+
+INSERT INTO soil_suitability_type_colors VALUES
+    ('Well Suited',         '#2ca02c', '[44, 160, 44, 180]'),
+    ('Moderately Suited',   '#ffcc00', '[255, 204, 0, 180]'),
+    ('Marginally Suited',   '#fd7e14', '[253, 126, 20, 180]'),
+    ('Not Suited',          '#dc3545', '[220, 53, 69, 180]'),
+    ('Not Rated',           '#6c757d', '[108, 117, 125, 180]');
+""")
+```
+
+## Wastewater
+Each wastewater parquet file will be turned into a different table
+
+### Wastewater Service Areas
+```{python}
+waste_service_path = wastewater_path / "ww_service_areas_new.parquet"
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW wastewater_service_areas AS
+  SELECT * FROM read_parquet('{waste_service_path}')
+""")
+```
+Examining the dataset and getting the column names
+```{python}
+df = con.execute("SELECT * FROM wastewater_service_areas").df()
+for col in df.columns:
+  print(col)
+
+display(df.head())
+```
+
+Now to separate this into tables
+
+`ID` will be the main hash key
+
+There will be three tables, SERVICE_AREA_INFORMATION, MISCELLANEOUS_INFORMATION, and GEOMETRY
+- SERVICE_AREA_INFORMATION
+    - main hash key: `ID`
+    - goal: hold information directly relating to the wastewater service area
+    - columns: ID, TownID, TreatmentFacility, SystemName, SystemOwner, TownName, Municipal_Name, County, RPC
+- MISCELLANEOUS_INFORMATION
+    - main hash key: `ID`
+    - goal: hold other information more related to where the data came from and when
+    - columns: ID, GISNotes, GISDate, GISUpdate, Creator, SourceFile, GEOIDTXT
+- GEOMETRY
+    - main hash key: `ID`
+    - goal: hold the geometry information, sectioned off because it is so large
+    - columns: ID, geometry
+
+```{python}
+service_area_info_cols = [
+    "ID",
+    "TownID",
+    "TreatmentFacility",
+    "SystemName",
+    "SystemOwner",
+    "TownName",
+    "Municipal_Name",
+    "County",
+    "RPC"
+]
+
+miscellaneous_info_cols = [
+    "ID",
+    "GISNotes",
+    "GISDate",
+    "GISUpdate",
+    "Creator",
+    "SourceFile",
+    "GEOIDTXT"
+]
+
+geom_cols = [
+    "ID",
+    "geometry"
+]
+```
+
+creating the service area information table
+
+```{python}
+service_area_info_string = ", ".join(service_area_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW service_area_info AS
+  SELECT {service_area_info_string}
+  FROM wastewater_service_areas
+""")
+
+service_area_info = con.execute("SELECT * FROM service_area_info").df()
+display(service_area_info.head())
+```
+
+creating the miscellaneous information table
+
+```{python}
+miscellaneous_info_string = ", ".join(miscellaneous_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW miscellaneous_info AS
+  SELECT {miscellaneous_info_string}
+  FROM wastewater_service_areas
+""")
+
+miscellaneous_info = con.execute("SELECT * FROM miscellaneous_info").df()
+display(miscellaneous_info.head())
+```
+
+creating the geometry table
+
+```{python}
+geom_string = ", ".join(geom_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW geom_service_areas AS
+  SELECT {geom_string}
+  FROM wastewater_service_areas
+""")
+
+geom_service_areas = con.execute("SELECT * FROM geom_service_areas").df()
+display(geom_service_areas.head())
+```
+
+
+### Wastewater Treatment Facilities
+```{python}
+waste_facility_path = wastewater_path / "ww_treatment_facilities_new.parquet"
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW wastewater_treatment_facilities AS
+  SELECT * FROM read_parquet('{waste_facility_path}')
+""")
+```
+
+Examining the dataset and getting the column names
+```{python}
+df = con.execute("SELECT * FROM wastewater_treatment_facilities").df()
+for col in df.columns:
+  print(col)
+
+display(df.head())
+```
+Now to separate this into tables
+
+`ID` will be the main hash key
+
+There will be 4 tables, FACILITY_INFORMATION, PERMIT_INFORMATION, MISCELLANEOUS_INFORMATION, and GEOMETRY
+- FACILITY_INFORMATION
+    - main hash key: `ID`
+    - goal: hold information directly related to the capacity and nature of the wastewater treatment facility
+    - columns: ID, FacilityID, DesignHydraulicCapacityInMGD, SeptageReceivedAtThisFacility, WWInventoryURL, FacilityName, TownName, Municipal_Name, County, RPC
+- PERMIT_INFORMATION
+    - main hash key: `ID`
+    - goal: hold information related to the permit of the wastewater treatment facility
+    - columns: ID, PermitID, PermitRecordID, NPDESPermitNumber, PermitLink, PermitteeName
+- MISCELLANEOUS_INFORMATION
+    - main hash key: `ID`
+    - goal: hold other miscellaneous information relating to the wastewater treatment facility that could be useful
+    - columns: ID, SourceFile, GEOIDTXT
+- GEOMETRY
+    - main hash key: `ID`
+    - goal: hold the geometry data describing where the treatment facility is
+    - columns: ID, Latitude, Longitude, geometry
+
+```{python}
+facility_info_cols = [
+    "ID",
+    "FacilityID",
+    "DesignHydraulicCapacityInMGD",
+    "SeptageReceivedAtThisFacility",
+    "WWInventoryURL",
+    "FacilityName",
+    "TownName",
+    "Municipal_Name",
+    "County",
+    "RPC"
+]
+
+permit_info_cols = [
+    "ID",
+    "PermitID",
+    "PermitRecordID",
+    "NPDESPermitNumber",
+    "PermitLink",
+    "PermitteeName"
+]
+
+miscellaneous_info_cols = [
+    "ID",
+    "SourceFile",
+    "GEOIDTXT"
+]
+
+geom_cols = [
+    "ID",
+    "Latitude",
+    "Longitude",
+    "geometry"
+]
+```
+
+creating the facility information table
+
+```{python}
+treatment_facility_info_string = ", ".join(facility_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW treatment_facility_info AS
+  SELECT {treatment_facility_info_string}
+  FROM wastewater_treatment_facilities
+""")
+
+treatment_facility_info = con.execute("SELECT * FROM treatment_facility_info").df()
+display(treatment_facility_info.head())
+```
+
+creating the permit information table
+
+```{python}
+facility_permit_info_string = ", ".join(permit_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW facility_permit_info AS
+  SELECT {facility_permit_info_string}
+  FROM wastewater_treatment_facilities
+""")
+
+facility_permit_info = con.execute("SELECT * FROM facility_permit_info").df()
+display(facility_permit_info.head())
+```
+
+creating the miscellaneous information table
+
+```{python}
+facility_miscellaneous_info_string = ", ".join(miscellaneous_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW facility_miscellaneous_info AS
+  SELECT {facility_miscellaneous_info_string}
+  FROM wastewater_treatment_facilities
+""")
+
+facility_miscellaneous_info = con.execute("SELECT * FROM facility_miscellaneous_info").df()
+display(facility_miscellaneous_info.head())
+```
+
+creating the geometry table
+
+```{python}
+facility_geom_string = ", ".join(geom_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW facility_geom AS
+  SELECT {facility_geom_string}
+  FROM wastewater_treatment_facilities
+""")
+
+facility_geom = con.execute("SELECT * FROM facility_geom").df()
+display(facility_geom.head())
+```

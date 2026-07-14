@@ -46,6 +46,45 @@
         "Measure": "Measure",
         "Prevalence Measure": "Data_Value_Type"
       }
+    },
+    "soil_suitability_info_soil_suit": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "Jurisdiction": "Jurisdiction",
+          "Soil Suitability Level": "Suitability"
+      }
+    },
+    "treatment_facilities_treatment_facility_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "County": "County",
+          "Jurisdiction": "Municipal_Name",
+          "Town": "TownName"
+      }
+    },
+    "treatment_facilities_treatment_facility_permit_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "County": "County",
+          "Jurisdiction": "Municipal_Name",
+          "Town": "TownName"
+      }
+    },
+    "service_areas_service_area_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+          "Regional Planning Commission": "RPC",
+          "County": "County",
+          "Jurisdiction": "Municipal_Name",
+          "Town": "TownName"
+      }
     }
   }
 }
