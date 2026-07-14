@@ -5,7 +5,8 @@
     2026-07-13
 **Description**:
     Data cleaning script for the raw `historic_population` table in the DuckLake
-    Run with: `python -m ETL.data_cleaning.clean_historic_population`
+    Run with: 
+python -m ETL.data_cleaning.clean_historic_population
 """
 
 import pandas as pd

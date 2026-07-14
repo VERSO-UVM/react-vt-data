@@ -6,7 +6,8 @@
 **Description**:
     Data cleaning script for historic unemployment rate.
     Derived from the `RAW.acs5_economic` DuckLake table
-    Run with: `python -m ETL.data_cleaning.clean_unemployment_rate`
+    Run with
+python -m ETL.data_cleaning.clean_unemployment_rate
 """
 
 import numpy as np

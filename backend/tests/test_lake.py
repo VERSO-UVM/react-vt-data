@@ -54,10 +54,69 @@ def test_table_structure(table_name: str):
     )
 
 
+def test_cleaned_zoning():
+    """Validate lake.CLEANED zoning tables after ETL load."""
+
+    con.execute(
+        """
+        INSTALL spatial;
+        LOAD spatial;
+        """
+    )
+    tables = [
+        "info",
+        "geom",
+        "rules",
+        "wide",
+        "colors",
+    ]
+
+    print("\n=== CLEANED ZONING TABLE TEST ===\n")
+
+    for table in tables:
+        full_name = f"lake.CLEANED.zoning_{table}"
+
+        print("=" * 80)
+        print(f"TABLE: {full_name}")
+
+        # row count
+        rows = con.execute(
+            f"SELECT COUNT(*) FROM {full_name}"
+        ).fetchone()[0]
+
+        print(f"Rows: {rows:,}")
+
+
+        # sample
+        print("\nSample:")
+        sample = con.execute(
+            f"SELECT * FROM {full_name} LIMIT 2"
+        ).df()
+
+        print(sample)
+
+        # geometry checks
+        if table == "geom":
+            print("\nGeometry checks:")
+
+            geom_type = con.execute(
+                """
+                SELECT typeof(geometry)
+                FROM lake.CLEANED.zoning_geom
+                LIMIT 1
+                """
+            ).fetchone()
+
+            print("Geometry type:", geom_type[0])
+
+        print()
+
+
 def main():
     # test_tables()
     # test_row_counts()
-    test_table_structure("historic_population")
+    # test_table_structure("historic_population")
+    test_cleaned_zoning()
 
 
 if __name__ == "__main__":

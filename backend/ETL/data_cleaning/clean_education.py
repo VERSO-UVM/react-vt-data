@@ -5,7 +5,8 @@
     2026-07-13
 **Description**:
     Data cleaning script for the raw (curated variables) `education` table in the DuckLake
-    Run with: `python -m ETL.data_cleaning.clean_education`
+    Run with:
+python -m ETL.data_cleaning.clean_education
 """
 
 import pandas as pd

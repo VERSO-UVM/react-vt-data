@@ -5,7 +5,8 @@
     2026-07-13
 **Description**:
     Data cleaning script for the raw (curated variables) `housing` table in the DuckLake
-    Run with: `python -m ETL.data_cleaning.clean_housing`
+    Run with:
+python -m ETL.data_cleaning.clean_housing
 """
 
 import pandas as pd

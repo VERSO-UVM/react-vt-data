@@ -5,7 +5,8 @@
     2026-07-13
 **Description**:
     Data cleaning script for the raw `qcew` table in the DuckLake
-    Run with: `python -m ETL.data_cleaning.clean_qcew`
+    Run with:
+python -m ETL.data_cleaning.clean_qcew
 """
 
 import pandas as pd
