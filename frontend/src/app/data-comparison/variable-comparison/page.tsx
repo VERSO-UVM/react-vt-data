@@ -1,5 +1,5 @@
 'use client';
-import { Paper, Text } from '@mantine/core';
+import { Select, keys, Paper, Text } from '@mantine/core';
 import { useState } from 'react';
 import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';
@@ -130,10 +130,35 @@ function BivariateLegend({ legend }: { legend: Legend }) {
   );
 }
 
+const validDatasets = {
+  'CDC, County Level': `${BASE_API_URL}/load/mapping/cdc/places/county_comparison`,
+  'CDC, Tract Level': `${BASE_API_URL}/load/mapping/cdc/places/tract_comparison`,
+};
+
+function DataSetSelector({
+  handleSelect,
+}: {
+  handleSelect: (value: string) => void;
+}) {
+  return (
+    <Select
+      label="Select Dataset"
+      data={Object.keys(validDatasets)}
+      onChange={handleSelect}
+      defaultValue={'CDC, County Level'}
+    />
+  );
+}
+
 export default function VariableComparison() {
   const [legend, setLegend] = useState<Legend | null>(null);
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
-  const comparisonURL = `${BASE_API_URL}/load/mapping/cdc/places/tract_comparison`;
+  const standardURL = `${BASE_API_URL}/load/mapping/cdc/places/county_comparison`;
+  const [comparisonURL, comparsionSetURL] = useState<string>(standardURL);
+
+  const handleSelectDataSet = (value: string): void => {
+    comparsionSetURL(validDatasets[value as keyof typeof validDatasets]);
+  };
 
   const handleApply = async (specs: FilterSpec[]) => {
     const payload = assemble(specs);
@@ -149,6 +174,7 @@ export default function VariableComparison() {
       title="Compare Variables"
       sidebar={
         <>
+          <DataSetSelector handleSelect={comparsionSetURL} />
           <FilterWrap handleApply={handleApply} filterList={cdc_filtering} />
           {legend && <BivariateLegend legend={legend} />}
         </>
