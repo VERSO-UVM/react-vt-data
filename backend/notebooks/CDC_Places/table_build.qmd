@@ -325,8 +325,7 @@ tracts["Data_Value_Type"].unique()
 
 Okay, cool, so there are 192 different locations (unnamed), and what's more, they are *only* in crude prevalence, which is what want.
 
-We can *bin* them by county for doing analysis that way, but otherwise we'll keep all the columns basically exactly the same. I'm not going to repeat the logic her; just in the build script. 
-
+We can *bin* them by county for doing analysis that way, but otherwise we'll keep all the columns basically exactly the same. I'm not going to repeat the logic here; just in the build script. 
 
 
 

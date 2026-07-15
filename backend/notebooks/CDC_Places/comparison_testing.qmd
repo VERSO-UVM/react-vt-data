@@ -232,4 +232,124 @@ for col, weight in zip(cols, pca.components_[0]):
     print(f"{col}, {weight:.03f}")
 ```
 
-Note that the above is all about the variance in *standardized Vermont*, not all of it.  
+Generally, positive = bad, negative = good, thouh we see that some tests -- routine checkup, cancer screening -- are not.  Depression is mostly noise; binge drinking correlates presumably to wealthy 
+
+## PCA with national spread
+
+
+Note that the above is all about the variance in *standardized Vermont*, not all of it. So now we'll do that... 
+
+```{python}
+sme_indicators = df["Measure"].where(df["SME_Highlight"]==True).unique().tolist()
+indicators_sql = ", ".join(f"'{i}'" for i in sme_indicators)
+```
+
+
+```{python}
+db = duckdb.connect()
+
+data_dir = Path("Data")
+path = data_dir / "CDC" / "CDC_Places.csv"
+
+db.execute(f"""--sql
+  CREATE OR REPLACE VIEW places_raw AS 
+  SELECT * FROM read_csv('{path}')
+""")
+
+db.execute(f"""--sql
+  CREATE OR REPLACE VIEW cdc_places_temp AS 
+  SELECT * EXCLUDE (Geolocation,  StateDesc),
+      CASE WHEN 
+        DataValueTypeID = 'CrdPrv' AND Measure IN ({indicators_sql})
+        THEN 1 else 0 END 
+     AS SME_Highlight
+  FROM places_raw
+    WHERE Data_Value_Type IN ('Crude prevalence') 
+        AND SME_Highlight = 1
+  """)
+
+us_df = db.execute(f"""--sql
+  SELECT * FROM cdc_places_temp
+""").df()
+```
+
+
+```{python}
+us_df.head()
+```
+
+Pivot
+```{python}
+pv_us = us_df.pivot(columns="Measure", values="Data_Value", index="LocationID")
+pv_us = pv_us.dropna(axis=0, how="any")
+pv_us.head()
+```
+
+Standardize
+```{python}
+pvi_us = (pv_us - pv_us.mean()) / pv_us.std() # standardize cols to standard deviation
+pvi_us = pvi_us.reset_index()
+pvi_us.head()
+```
+
+
+```{python}
+from sklearn.decomposition import PCA
+X = pvi_us.set_index("LocationID")
+pca_us = PCA(n_components=2)
+scores_us = pca_us.fit_transform(X)
+print(pca_us.explained_variance_ratio_)
+```
+
+```{python}
+pvi_us["pca1"] = scores_us[:, 0] 
+pvi_us.head()
+```
+
+```{python}
+pca_us.components_[0]
+``` 
+
+Look at how each column contributes to the PCA...: 
+```{python}
+cols = [col for col in pvi_us.columns if col not in ["LocationID", "pca1"]]
+for col, weight_vt, weight_us in zip(cols, pca.components_[0], pca_us.components_[0]):
+    print(f"{col}, {weight_vt:.03f} {weight_us:.03f}")
+```
+
+This is good; the results are quite similar. So we can use the national loadings and not worry about them too much.
+
+
+```{python}
+scores_vtus = pca_us.transform(pvi.set_index("LocationID")[cols])
+pvi["pca_us_vt"] = scores_vtus[:, 0]
+pvi.head()
+```
+
+```{python}
+fips_mapper = {
+    50001: "Addison",
+    50003: "Bennington",
+    50005: "Caledonia",
+    50007: "Chittenden",
+    50009: "Essex",
+    50011: "Franklin",
+    50013: "Grand Isle",
+    50015: "Lamoille",
+    50017: "Orange",
+    50019: "Orleans",
+    50021: "Rutland",
+    50023: "Washington",
+    50025: "Windham",
+    50027: "Windsor"
+}
+
+pvi["LocationID"] = pvi["LocationID"].astype(int)
+pvi["Location"] = pvi["LocationID"].map(fips_mapper)
+pvi.head()
+```
+
+```{python}
+sns.barplot(data=pvi, x="Location", y="pca_us_vt")
+plt.xticks(rotation=90)
+```

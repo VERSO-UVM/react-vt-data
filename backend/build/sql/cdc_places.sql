@@ -12,4 +12,4 @@ SELECT
         ELSE FALSE
     END AS SME_Highlight
 FROM read_csv('{{ path }}')
-WHERE StateAbbr IN ('VT')
+WHERE DataValueTypeID = 'CrdPrv'
