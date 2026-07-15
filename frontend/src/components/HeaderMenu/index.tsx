@@ -24,6 +24,8 @@ const links = [
     links: [
       { link: '/mapping/zoning', label: 'Zoning' },
       { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
+      { link: '/mapping/treatment-facilities', label: 'Wastewater Treatment Facilities'},
+      {link: '/mapping/service-areas', label: 'Wastewater System Service Areas'},
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
