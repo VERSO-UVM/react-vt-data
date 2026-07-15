@@ -26,20 +26,8 @@ def fetch_zoning() -> pd.DataFrame | None:
 # ---------------------------------------------------------------------------
 
 
-def run_zoning_scrape(output_filename: str) -> None:
-    """
-    Fetch Zoning data and save as parquet file.
-    """
-    df = fetch_zoning()
-    # out = f"{STORAGE_LOCATION}/{output_filename}"
-    # if df is not None:
-    # df.to_parquet(out, index=False)
-
-    return df
-
-
 def collect():
-    df = run_zoning_scrape("vt_zoning.parquet")
+    df = fetch_zoning()
     return df
 
 

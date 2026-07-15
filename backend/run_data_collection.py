@@ -1,26 +1,28 @@
 from datastore.lake_build import replace_table
 from ETL.data_collection import (
-    # acs5,
-    # demographics,
-    # economic,
-    # education,
+    acs5,
+    demographics,
+    economic,
+    education,
     historic_population,
-    # housing,
-    # qcew,
-    # wastewater,
-    # zoning,
+    housing,
+    qcew,
+    wastewater,
+    zoning,
+    cdc
 )
 
 DATA_CATEGORIES = [
-    # acs5,
-    # demographics,
-    # economic,
-    # education,
+    acs5,
+    demographics,
+    economic,
+    education,
     historic_population,
-    # housing,
-    # qcew,
-    # wastewater,
-    # zoning,
+    housing,
+    qcew,
+    wastewater,
+    zoning,
+    cdc
 ]
 
 
