@@ -99,9 +99,11 @@ def add_to_lake(clean_df: pd.DataFrame):
     Writes the cleaned, long-format age_dependency_ratio dataframe
     to the CLEANED schema in DuckLake.
     """
+    # Table naming schema
+    # NOTE: {source}_{table-name}_{mode (ie. ts)}
     con.execute(
         """
-        CREATE OR REPLACE TABLE lake.CLEANED.age_dependency_ratio AS
+        CREATE OR REPLACE TABLE lake.CLEANED.acs5-demographics_age-dependency-ratio_ts AS
         SELECT * FROM clean_df
         """
     )
