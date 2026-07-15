@@ -232,4 +232,4 @@ for col, weight in zip(cols, pca.components_[0]):
     print(f"{col}, {weight:.03f}")
 ```
 
-Note that the above is all about the variance in *standardized Vermont*, not all of it. 
+Note that the above is all about the variance in *standardized Vermont*, not all of it.  
