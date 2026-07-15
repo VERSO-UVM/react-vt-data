@@ -4,10 +4,10 @@ PLACES_URL = "https://media.githubusercontent.com/media/VERSO-UVM/react-vt-data/
 NOTES_URL = "https://media.githubusercontent.com/media/VERSO-UVM/react-vt-data/refs/heads/main/backend/Data/CDC/cdc_notes.csv"
 
 # ---------------------------------------------------------------------------
-# Zoning API fetch
+# CDC API fetch
 # ---------------------------------------------------------------------------
 
-# Fetch zoning data from github repo (an fgb file)
+# CDC zoning data from github repo (an fgb file)
 
 
 def fetch_cdc():

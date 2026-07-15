@@ -1,3 +1,13 @@
+"""
+**Author**:
+    Ian Sargent
+**Created**:
+    2026-07-13
+**Description**:
+    Fetches Vermont zoning data from the Zoning Atlas GitHub repository
+"""
+
+
 from io import BytesIO
 
 import pandas as pd

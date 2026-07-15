@@ -1,3 +1,12 @@
+"""
+**Author**:
+    Ian Sargent
+**Created**:
+    2026-07-13
+**Description**:
+    Fetches Vermont wastewater data files from the WIM GitHub repository
+"""
+
 from io import BytesIO
 
 import pandas as pd
