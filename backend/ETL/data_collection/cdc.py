@@ -1,3 +1,12 @@
+"""
+**Author**:
+    Ian Sargent
+**Created**:
+    2026-07-15
+**Description**:
+    Fetches Vermont CDC .csv files from our GitHub repository
+"""
+
 import pandas as pd
 
 PLACES_URL = "https://media.githubusercontent.com/media/VERSO-UVM/react-vt-data/refs/heads/main/backend/Data/CDC/CDC_Places.csv"
