@@ -54,7 +54,9 @@ def single_var_geojson(sources: list[FilterSource]):
 
 
 def widen_dual_var(df, measures):
-    m1 = df[df.Measure == measures[0]][["LocationID", "geometry", "Data_Value", "bin"]]
+    m1 = df[df.Measure == measures[0]][
+        ["LocationID", "geometry", "Data_Value", "bin", "natl_pct"]
+    ]
     m2 = df[df.Measure == measures[1]][["LocationID", "Data_Value", "bin"]]
     wide = m1.merge(m2, on="LocationID", suffixes=("_1", "_2"))
     return wide
@@ -110,6 +112,8 @@ def dual_var_comparison(
     sql_path = sql_dir / f"{geoLevel}.sql"
     sql, params = sql_filter_block(sql_path, [merged])
     df = DB.execute(sql, params).df()
+    print(df.head())
+
     df = widen_dual_var(df, measures)
 
     cmap = build_cmap()
@@ -126,6 +130,7 @@ def dual_var_comparison(
                         "__title__": "Variable Comparison",
                         f"{measures[0]}": r.Data_Value_1,
                         f"{measures[1]}": r.Data_Value_2,
+                        "National Percentage": r.natl_pct,
                     },
                 },
             }
