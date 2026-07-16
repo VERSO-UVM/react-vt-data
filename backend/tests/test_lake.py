@@ -80,7 +80,7 @@ def test_cleaned_tables(prefix: str = "wastewater") -> None:
 
 
 def main():
-    test_cleaned_tables()
+    test_cleaned_tables("flood")
 
 
 if __name__ == "__main__":
