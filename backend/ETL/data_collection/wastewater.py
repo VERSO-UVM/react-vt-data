@@ -7,15 +7,15 @@
     Fetches Vermont wastewater data files from the WIM GitHub repository
 """
 
-from io import BytesIO
 
 import pandas as pd
-import requests
 from pyogrio import read_dataframe
 
 WWTF_URL = "https://raw.githubusercontent.com/VERSO-UVM/Wastewater-Infrastructure-Mapping/refs/heads/main/data/Vermont_Treatment_Facilities.geojson"
 SERVICE_AREA_URL = "https://raw.githubusercontent.com/VERSO-UVM/Wastewater-Infrastructure-Mapping/main/data/Vermont_Service_Areas.geojson"
-STORAGE_LOCATION = "Data/wastewater"
+SOIL_SUITABILITY_URL = "https://raw.githubusercontent.com/VERSO-UVM/Vermont-Livability-Map/main/data/{rpc}_Soil_Septic.fgb"
+
+RPCs = ["ACRPC", "BCRC", "CCRPC", "CVRPC", "LCPC", "MARC", "NVDA", "NWRPC", "RRPC", "TRORC", "WRC"]
 
 # ---------------------------------------------------------------------------
 # Wastewater API fetch
@@ -23,38 +23,52 @@ STORAGE_LOCATION = "Data/wastewater"
 
 
 # Fetch wastewater data from github repo (geojson files)
-def fetch_WWTF() -> pd.DataFrame | None:
-    r = requests.get(WWTF_URL, timeout=30)
-    r.raise_for_status()
-    df = read_dataframe(BytesIO(r.content))
-    return df
+def fetch_treatment_facilities() -> pd.DataFrame:
+    return read_dataframe(WWTF_URL)
 
 
-def fetch_service_areas() -> pd.DataFrame | None:
-    r = requests.get(SERVICE_AREA_URL, timeout=30)
-    r.raise_for_status()
-    df = read_dataframe(BytesIO(r.content))
-    return df
+def fetch_service_areas() -> pd.DataFrame:
+    return read_dataframe(SERVICE_AREA_URL)
 
 
-def fetch_wastewater():
-    wwtf = fetch_WWTF()
-    service_areas = fetch_service_areas()
+def fetch_soil_septic_single(rpc: str) -> pd.DataFrame:
+    """
+    Download a single RPC soil suitability dataset.
+    """
+    url = SOIL_SUITABILITY_URL.format(rpc=rpc)
+    try:
+        return read_dataframe(url)
+    except Exception as e:
+        raise FileNotFoundError(
+            f"No soil suitability data found for RPC '{rpc}'."
+        ) from e
 
-    return wwtf, service_areas
+
+def load_soil_septic_multi() -> pd.DataFrame:
+    """
+    Load and combine soil suitability data for all available RPCs.
+    """
+    dfs = []
+    for rpc in RPCs:
+        try:
+            dfs.append(fetch_soil_septic_single(rpc))
+        except FileNotFoundError:
+            print(f"Skipping missing soil suitability data for {rpc}")
+
+    return pd.concat(dfs, ignore_index=True)
+
+
 
 
 # ---------------------------------------------------------------------------
 # Main scrape runner
 # ---------------------------------------------------------------------------
 
-
 def collect():
-    wwtf, service_areas = fetch_wastewater()
-
     return {
-        "ww_treatment_facilities": wwtf,
-        "ww_service_areas": service_areas,
+        "ww_treatment_facilities": fetch_treatment_facilities(),
+        "ww_service_areas": fetch_service_areas(),
+        "septic_soil_suitability": load_soil_septic_multi(),
     }
 
 

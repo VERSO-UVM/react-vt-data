@@ -65,7 +65,7 @@ service_geom_cols = ["ID", "geometry"]
 ## wastewater treatment facility table info
 facility_info_cols = [
     "ID",
-    "FacilityID",
+    "Faci`lityID",
     "DesignHydraulicCapacityInMGD",
     "SeptageReceivedAtThisFacility",
     "WWInventoryURL",
