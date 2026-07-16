@@ -44,18 +44,20 @@ def fetch_soil_septic_single(rpc: str) -> pd.DataFrame:
         ) from e
 
 
-def load_soil_septic_multi() -> pd.DataFrame:
+def load_soil_septic_multi() -> dict[str, pd.DataFrame]:
     """
-    Load and combine soil suitability data for all available RPCs.
+    Load soil suitability data for all available RPCs.
+    Returns a dictionary keyed by RPC name.
     """
-    dfs = []
+    dfs = {}
+
     for rpc in RPCs:
         try:
-            dfs.append(fetch_soil_septic_single(rpc))
+            dfs[f"ww_soil_suitability_{rpc}"] = fetch_soil_septic_single(rpc)
         except FileNotFoundError:
             print(f"Skipping missing soil suitability data for {rpc}")
 
-    return pd.concat(dfs, ignore_index=True)
+    return dfs
 
 
 
@@ -68,8 +70,9 @@ def collect():
     return {
         "ww_treatment_facilities": fetch_treatment_facilities(),
         "ww_service_areas": fetch_service_areas(),
-        # NOTE: This combined RPC file is too large to upload at once
-        # "septic_soil_suitability": load_soil_septic_multi(),
+        # NOTE: The combined RPC file is too large to upload at once -> 
+        # Upload each RPC dataset to lake.RAW tables
+        **load_soil_septic_multi(),
     }
 
 
