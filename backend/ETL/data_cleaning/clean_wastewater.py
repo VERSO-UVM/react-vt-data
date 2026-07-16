@@ -9,10 +9,7 @@
 python -m ETL.data_cleaning.clean_wastewater
 """
 
-import pandas as pd
-
 from datastore.lake_build import con
-from data_collection.wastewater import RPCs
 
 # TODO: Path is useful when sql files are created!
 # from build import BACKEND
@@ -56,6 +53,7 @@ def add_facility_id():
 
 
 def build_soil_combined():
+    RPCs = ["ACRPC", "BCRC", "CCRPC", "CVRPC", "LCPC", "MARC", "NVDA", "NWRPC", "RRPC", "TRORC", "WRC"]
     union=" UNION ALL ".join([f"SELECT * FROM lake.RAW.ww_soil_suitability_{r}" for r in RPCs])
     con.execute(f"CREATE OR REPLACE VIEW soil_suitability_combined AS {union}")
 
@@ -230,7 +228,8 @@ def add_to_lake():
         "treatment_facility_misc_info",
 
         "soil_suitability_info",
-        "soil_suitability_geom"
+        # NOTE: This dataset is too large for git storage. Add to .gitignore
+        # "soil_suitability_geom"
     ]
     
     
