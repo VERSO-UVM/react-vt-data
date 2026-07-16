@@ -5,7 +5,7 @@
     2026-07-14
 **Description**:
     Data cleaning script for health insurance coverage.
-    Derived from the `RAW.economic` DuckLake table
+    Derived from the `RAW.acs5_economic` DuckLake table
     Run with:
 python -m ETL.data_cleaning.clean_health_insurance_coverage
 """
