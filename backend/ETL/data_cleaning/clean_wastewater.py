@@ -228,7 +228,7 @@ def add_to_lake():
         "treatment_facility_misc_info",
 
         "soil_suitability_info",
-        # NOTE: This dataset is too large for git storage. Add to .gitignore
+        # NOTE: This `geom` dataset is too large for git storage. Add to .gitignore
         # "soil_suitability_geom"
     ]
     
