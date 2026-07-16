@@ -14,17 +14,17 @@ from ETL.data_collection import (
 )
 
 DATA_CATEGORIES = [
-    acs5,
-    demographics,
-    economic,
-    education,
+    # acs5,
+    # demographics,
+    # economic,
+    # education,
     flood,
-    historic_population,
-    housing,
-    qcew,
-    wastewater,
-    zoning,
-    cdc
+    # historic_population,
+    # housing,
+    # qcew,
+    # wastewater,
+    # zoning,
+    # cdc
 ]
 
 

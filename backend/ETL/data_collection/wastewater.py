@@ -68,7 +68,8 @@ def collect():
     return {
         "ww_treatment_facilities": fetch_treatment_facilities(),
         "ww_service_areas": fetch_service_areas(),
-        "septic_soil_suitability": load_soil_septic_multi(),
+        # NOTE: This combined RPC file is too large to upload at once
+        # "septic_soil_suitability": load_soil_septic_multi(),
     }
 
 
