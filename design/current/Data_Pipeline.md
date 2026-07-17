@@ -6,6 +6,7 @@ This document describes the ETL (Extract, Transform, Load) pipeline used to coll
 
 As of now, the pipeline is organized into two stages — **data_collection** and **data_cleaning** — orchestrated by master scripts, with data populated in a DuckLake data lake.
 
+```
 backend/
 ├── ETL/
 │   ├── data_collection/
@@ -39,6 +40,7 @@ backend/
 │   └── run_data_cleaning.py     # Master cleaning script
 └── datastore/
     └── lake_build.py            # lake builder
+```
 
 ## Pipeline Stages
 
