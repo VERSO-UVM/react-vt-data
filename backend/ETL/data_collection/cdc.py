@@ -8,8 +8,9 @@
 """
 
 import pandas as pd
-import pyogrio
+import geopandas as gpd
 import requests
+from io import BytesIO
 
 # ---------------------------------------------------------------------------
 # API endpoints
@@ -38,16 +39,18 @@ def fetch_cdc():
     """Fetch CDC PLACES datasets."""
 
     # County data (GeoJSON)
-    places_county_df = pyogrio.read_dataframe(PLACES_COUNTY_URL)
+    county_resp = requests.get(PLACES_COUNTY_URL, timeout=60)
+    county_resp.raise_for_status()
+    places_county_df = gpd.read_file(BytesIO(county_resp.content))
 
-    # Tract data (GeoJSON)
-    response = requests.get(
+    # Tract data (GeoJSON) - also a FeatureCollection, parse with geopandas
+    tract_resp = requests.get(
         PLACES_TRACT_URL,
         params={"$query": PLACES_TRACT_QUERY},
         timeout=60,
     )
-    response.raise_for_status()
-    places_tract_df = pd.DataFrame(response.json())
+    tract_resp.raise_for_status()
+    places_tract_df = gpd.read_file(BytesIO(tract_resp.content))
 
     # Notes dataset
     notes_df = pd.read_csv(CDC_NOTES_URL)
@@ -64,7 +67,9 @@ def fetch_cdc():
 # ---------------------------------------------------------------------------
 
 def collect():
-    """Collect all CDC datasets."""
+    """
+    Collect all CDC datasets.
+    """
     return fetch_cdc()
 
 

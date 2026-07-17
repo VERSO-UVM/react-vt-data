@@ -62,7 +62,7 @@ def test_cleaned_tables(prefix: str) -> None:
 
         null_sql = ",\n".join(
             [
-                f"SUM(CASE WHEN {c} IS NULL THEN 1 ELSE 0 END) AS {c}"
+                f"SUM(CASE WHEN '{c}' IS NULL THEN 1 ELSE 0 END) AS '{c}'"
                 for c in cols
             ]
         )
@@ -133,7 +133,7 @@ def test_raw_tables(prefix: str) -> None:
 
         null_sql = ",\n".join(
             [
-                f"SUM(CASE WHEN {c} IS NULL THEN 1 ELSE 0 END) AS {c}"
+                f"SUM(CASE WHEN '{c}' IS NULL THEN 1 ELSE 0 END) AS '{c}'"
                 for c in cols
             ]
         )
@@ -154,7 +154,7 @@ def test_raw_tables(prefix: str) -> None:
 
 
 def main():
-    test_raw_tables("ww_stormwater")
+    test_raw_tables("cdc_notes")
 
 
 if __name__ == "__main__":
