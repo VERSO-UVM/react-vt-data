@@ -187,16 +187,38 @@ def build_suitability_geom() -> None:
 ## STORMWATER MANAGEMENT TABLES --------------------
 
 def build_stormwater_info() -> None:
-    stormwater_info_cols = [
-        "Type", "SystemType", "Status", "GEOIDTXT", 
-        "GlobalID", "Municipal_Name", "County", "RPC"]
-    
+    # "Type" labels derived from VERSO WIM GitHub pages 
     con.execute(
-        f"""
-        CREATE OR REPLACE VIEW stormwater_management_info AS 
-        SELECT {', '.join(stormwater_info_cols)} 
+        """
+        CREATE OR REPLACE VIEW stormwater_management_info AS
+        SELECT
+            CASE Type
+                WHEN 2 THEN 'Bioretention / Rain Garden'
+                WHEN 6 THEN 'Wet Pond'
+                WHEN 7 THEN 'Dry Detention Pond'
+                WHEN 8 THEN 'Infiltration Basin (Shallow)'
+                WHEN 9 THEN 'Detention Basin (General)'
+                WHEN 10 THEN 'Roadside Ditch / Buffer Strip'
+                WHEN 13 THEN 'Extended Detention Basin'
+                WHEN 14 THEN 'Pervious Pavement Area'
+                WHEN 15 THEN 'Filter Strip'
+                WHEN 16 THEN 'Grass Swale'
+                WHEN 17 THEN 'Other / Unknown'
+                WHEN 18 THEN 'Cistern / Underground Storage'
+                WHEN 19 THEN 'Infiltration Basin / Trench'
+                WHEN 20 THEN 'Sand Filter'
+                WHEN 21 THEN 'Constructed Wetland'
+                ELSE CAST(Type AS VARCHAR)
+            END AS Type,
+            Status,
+            GEOIDTXT,
+            GlobalID,
+            Municipal_Name,
+            County,
+            RPC
         FROM lake.RAW.ww_stormwater_management_areas
-        """)
+        """
+    )
     
 
 def build_stormwater_geom() -> None:
@@ -244,21 +266,21 @@ def clean():
 
 def add_to_lake():
     table_names = [
-        "service_info",
-        "service_geom",
-        "service_misc",
+        # "service_info",
+        # "service_geom",
+        # "service_misc",
 
-        "treatment_facility_info",
-        "treatment_facility_geom",
-        "treatment_facility_permit_info",
-        "treatment_facility_misc_info",
+        # "treatment_facility_info",
+        # "treatment_facility_geom",
+        # "treatment_facility_permit_info",
+        # "treatment_facility_misc_info",
 
-        "soil_suitability_info",
+        # "soil_suitability_info",
         # NOTE: This `geom` dataset is too large for git storage. Add to .gitignore
-        "soil_suitability_geom",
+        # "soil_suitability_geom",
 
         "stormwater_management_info",
-        "stormwater_management_geom"
+        # "stormwater_management_geom"
 
     ]
     
