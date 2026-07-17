@@ -55,32 +55,32 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="economic",
         variables=["Median Household Income"],
         value_source_col="Value",
-        output_value_col="acs5Economics_medianHouseholdIncome_timeseries",
-        output_table="median_hh_income",
+        output_value_col="Median_Household_Income",
+        output_table="acs5Economics_medianHouseholdIncome_timeseries",
     ),
     # Median Home Value (from housing)
     "median_home_value": DatasetConfig(
         source_table="housing",
         variables=["Median Home Value"],
         value_source_col="Value",
-        output_value_col="acs5Housing_medianHomeValue_timeseries",
-        output_table="median_home_value",
+        output_value_col="Median_Home_Value",
+        output_table="acs5Housing_medianHomeValue_timeseries",
     ),
     # Median Per Cap Income (from economics)
     "per_capita_income": DatasetConfig(
         source_table="economic",
         variables=["Per Capita Income"],
         value_source_col="Value",
-        output_value_col="acs5Economics_perCapitaIncome_timeseries",
-        output_table="per_capita_income",
+        output_value_col="Per_Capita_Income",
+        output_table="acs5Economics_perCapitaIncome_timeseries",
     ),
     # Housing Units (from housing)
     "total_housing_units": DatasetConfig(
         source_table="housing",
         variables=["Total Housing Units"],
         value_source_col="Value",
-        output_value_col="acs5Housing_housingUnits_timeseries",
-        output_table="total_housing_units",
+        output_value_col="Total_Housing_Units",
+        output_table="acs5Housing_housingUnits_timeseries",
     ),
     # Vacancy Rate (from housing)
     "vacancy_rate": DatasetConfig(

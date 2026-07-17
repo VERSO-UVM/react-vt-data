@@ -97,7 +97,7 @@ def add_to_lake(clean_df: pd.DataFrame):
     # NOTE: {source}_{table-name}_{mode (ie. ts)}
     con.execute(
         """--sql
-        CREATE OR REPLACE TABLE lake.CLEANED.age_dependency_ratio AS
+        CREATE OR REPLACE TABLE lake.CLEANED.acs5Demographics_ageDependencyRatio_timeseries AS
         SELECT * FROM clean_df
         """)
 
