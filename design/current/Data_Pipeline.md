@@ -48,6 +48,7 @@ backend/
 
 Located in `ETL/data_collection/`, this stage contains one script per data category:
 
+- **base** - Shared utilities for the ACS 5-Year Census B-table scrapers.
 - **acs5** — American Community Survey 5-Year Census B-table data
 - **cdc** — CDC data
 - **demographics** — Demographic data
@@ -60,16 +61,16 @@ Located in `ETL/data_collection/`, this stage contains one script per data categ
 - **wastewater** — Wastewater data
 - **zoning** — Zoning data
 
-`base.py` holds shared utilities for the ACS 5-Year Census B-table scrapers.
-
 **`run_data_collection.py`** is the master collection script — it runs each individual collector and populates the results into the `lake.RAW` schema. The `lake.RAW` schema itself is built by `datastore/lake_build.py`.
 
 ### 2. Data Cleaning
 
-Located in `ETL/data_cleaning/`, all cleaning scripts are prefixed with `clean_`:
+Located in `ETL/data_cleaning/`,
 
 - `clean_cdc.py`
-- `clean_demographics.py` — includes age dependency ratio and derived time series (median age, median household income, median home value, per capita income, total housing units, vacancy rate, unemployment rate)
+- `clean_demographics.py`
+- `clean_dependency_ratio.py`
+- `clean_derived_time_series.py` — includes derived time series (median age, median household income, median home value, per capita income, total housing units, vacancy rate, unemployment rate)
 - `clean_economic.py`
 - `clean_education.py`
 - `clean_flood.py`
@@ -83,13 +84,9 @@ Located in `ETL/data_cleaning/`, all cleaning scripts are prefixed with `clean_`
 **`run_data_cleaning.py`** is the master cleaning script — it sends each `lake.RAW` table through its corresponding cleaning script and populates the cleaned output into the `lake.CLEANED` schema.
 
 ## Data Flow
-[data_collection scripts] → run_data_collection.py → lake.RAW.{table}
-│
-▼
-run_data_cleaning.py → clean_*.py
-│
-▼
-lake.CLEANED.{table_name}
+
+1. `run_data_collection.py` runs and grabs all the raw data from various source, populating the lake.RAW tables in the DuckLake
+2. `run_data_cleaning.py` runs those RAW tables through cleaning scripts, then populating the lake.CLEANED tables in the DuckLake
 
 ## Table Naming Convention
 
@@ -101,4 +98,4 @@ Tables follow the pattern:
 
 **Modes:** `timeseries`, `geom`, `info`, `tidy`, `county`, `tract`, `rules`, `colors`, etc.
 
-**Example:** `acs5Economics_income_timeseries`, `VersoZoning_parcels_geom`
+**Example:** `acs5Economics_medianHouseholdIncome_timeseries`, `VersoZoning_info`, `FEMA_floodHazard_geom`, `acs5_demographics_tidy`
