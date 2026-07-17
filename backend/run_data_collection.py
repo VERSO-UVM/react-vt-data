@@ -27,17 +27,17 @@ from ETL.data_collection import (
 # Collection scripts to run. 
 # You can comment out any ones you don't want to run below
 DATA_CATEGORIES = [
-    acs5,
+    # acs5,
     cdc,
-    demographics,
-    economic,
-    education,
-    flood,
-    historic_population,
-    housing,
-    qcew,
-    wastewater,
-    zoning,
+    # demographics,
+    # economic,
+    # education,
+    # flood,
+    # historic_population,
+    # housing,
+    # qcew,
+    # wastewater,
+    # zoning,
 ]
 
 

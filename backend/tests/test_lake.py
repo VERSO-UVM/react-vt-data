@@ -125,7 +125,7 @@ def test_raw_tables(prefix: str) -> None:
             """).fetchdf()
 
         print("Schema:")
-        print(schema[["column_name", "column_type", "null"]])
+        print(schema["column_name"].tolist())
         print()
 
         # Null counts
@@ -154,7 +154,7 @@ def test_raw_tables(prefix: str) -> None:
 
 
 def main():
-    test_raw_tables("cdc_notes")
+    test_raw_tables("cdc_places_county")
 
 
 if __name__ == "__main__":

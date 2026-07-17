@@ -89,7 +89,7 @@ def build_service_info() -> None:
     
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW service_info AS 
+        CREATE OR REPLACE VIEW serviceAreas_info AS 
         SELECT {', '.join(service_area_info_cols)} 
         FROM service_areas_with_id
         """)
@@ -99,7 +99,7 @@ def build_service_geom() -> None:
     # service_geom_cols = ["Area_ID", "geometry"]
     con.execute(
         """--sql
-        CREATE OR REPLACE VIEW service_geom AS 
+        CREATE OR REPLACE VIEW serviceAreas_geom AS 
         SELECT 
             Area_ID, 
             ST_GeomFromWKB(geometry) AS geometry 
@@ -114,7 +114,7 @@ def build_service_misc() -> None:
     
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW service_misc AS 
+        CREATE OR REPLACE VIEW serviceAreas_misc AS 
         SELECT {', '.join(service_miscellaneous_info_cols)} 
         FROM service_areas_with_id
         """)
@@ -128,7 +128,7 @@ def build_facility_info() -> None:
     
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW treatment_facility_info AS 
+        CREATE OR REPLACE VIEW treatmentFacilities_info AS 
         SELECT {', '.join(facility_info_cols)} 
         FROM treatment_facilities_with_id
         """)
@@ -138,7 +138,7 @@ def build_facility_geom() -> None:
     # facility_geom_cols = ["Facility_ID", "Latitude", "Longitude", "geometry"]
     con.execute(
         """--sql
-        CREATE OR REPLACE VIEW treatment_facility_geom AS 
+        CREATE OR REPLACE VIEW treatmentFacilities_geom AS 
         SELECT 
             Facility_ID, 
             Latitude, 
@@ -155,7 +155,7 @@ def build_facility_permits() -> None:
     
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW treatment_facility_permit_info AS 
+        CREATE OR REPLACE VIEW treatmentFacilitiesPermits_info AS 
         SELECT {', '.join(permit_info_cols)} 
         FROM treatment_facilities_with_id
         """)
@@ -166,7 +166,7 @@ def build_facility_misc() -> None:
     
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW treatment_facility_misc_info AS 
+        CREATE OR REPLACE VIEW treatmentFacilitiesMisc_info AS 
         SELECT {', '.join(facility_miscellaneous_info_cols)} 
         FROM treatment_facilities_with_id
         """)
@@ -178,7 +178,7 @@ def build_suitability_info() -> None:
     
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW soil_suitability_info AS 
+        CREATE OR REPLACE VIEW soilSuitability_info AS 
         SELECT {', '.join(suitability_info_cols)} 
         FROM soil_suitability_with_id
         """)
@@ -188,7 +188,7 @@ def build_suitability_geom() -> None:
     # suitability_geom_cols = ["OGC_FID", "geometry"]
     con.execute(
         """--sql
-        CREATE OR REPLACE VIEW soil_suitability_geom AS 
+        CREATE OR REPLACE VIEW soilSuitability_geom AS 
         SELECT 
             OGC_FID, 
             ST_GeomFromWKB(geometry) AS geometry 
@@ -202,7 +202,7 @@ def build_stormwater_info() -> None:
     # "Type" labels derived from VERSO WIM GitHub pages 
     con.execute(
         """--sql
-        CREATE OR REPLACE VIEW stormwater_management_info AS
+        CREATE OR REPLACE VIEW stormwaterManagement_info AS
         SELECT
             CASE Type
                 WHEN 2 THEN 'Bioretention / Rain Garden'
@@ -236,7 +236,7 @@ def build_stormwater_info() -> None:
 def build_stormwater_geom() -> None:
     con.execute(
         """--sql
-        CREATE OR REPLACE VIEW stormwater_management_geom AS 
+        CREATE OR REPLACE VIEW stormwaterManagement_geom AS 
         SELECT 
             GlobalID, 
             ST_GeomFromWKB(geometry) AS geometry 
@@ -284,8 +284,8 @@ def add_to_lake():
 
         "treatmentFacilities_info",
         "treatmentFacilities_geom",
-        "treatmentFacilityPermits_info",
-        "treatmentFacilityMisc_info",
+        "treatmentFacilitiesPermits_info",
+        "treatmentFacilitiesMisc_info",
 
         "soilSuitability_info",
         # NOTE: This `geom` dataset is too large for git storage. Add to .gitignore
