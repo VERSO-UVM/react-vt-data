@@ -7,42 +7,38 @@ This document describes the ETL (Extract, Transform, Load) pipeline used to coll
 As of now, the pipeline is organized into two stages — **data_collection** and **data_cleaning** — orchestrated by master scripts, with data populated in a DuckLake data lake.
 
 backend/
-├── **ETL/**
-├    ├── **data_collection/**
-├    │   ├── `base.py`
-├    │   ├── `acs5.py`
-├    │   ├── `cdc.py`
-├    │   ├── `demographics.py`
-├    │   ├── `economic.py`
-├    │   ├── `education.py`
-├    │   ├── `flood.py`
-├    │   ├── `historic_population.py`
-├    │   ├── `housing.py`
-├    │   ├── `qcew.py`
-├    │   ├── `wastewater.py`
-├    │   └── `zoning.py`
-├    ├── **data_cleaning/**
-├    │   ├── `clean_cdc.py`
-├    │   ├── `clean_demographics.py`
-├    │   ├── `clean_dependency_ratio.py`
-├    │   ├── `clean_derived_time_series.py`
-├    │   ├── `clean_economic.py`
-├    │   ├── `clean_education.py`
-├    │   ├── `clean_flood.py`
-├    │   ├── `clean_health_insurance_coverage.py`
-├    │   ├── `clean_historic_population.py`
-├    │   ├── `clean_housing.py`
-├    │   ├── `clean_qcew.py`
-├    │   ├── `clean_wastewater.py`
-├    │   └── `clean_zoning.py`
-├   <!-- Master collection script -->
-├── `run_data_collection.py`
-├   <!-- Master cleaning script -->
-└── `run_data_cleaning.py`
-datastore/
-├   <!-- lake builder -->
-└── `lake_build.py`
-
+├── ETL/
+│   ├── data_collection/
+│   │   ├── base.py
+│   │   ├── acs5.py
+│   │   ├── cdc.py
+│   │   ├── demographics.py
+│   │   ├── economic.py
+│   │   ├── education.py
+│   │   ├── flood.py
+│   │   ├── historic_population.py
+│   │   ├── housing.py
+│   │   ├── qcew.py
+│   │   ├── wastewater.py
+│   │   └── zoning.py
+│   ├── data_cleaning/
+│   │   ├── clean_cdc.py
+│   │   ├── clean_demographics.py
+│   │   ├── clean_dependency_ratio.py
+│   │   ├── clean_derived_time_series.py
+│   │   ├── clean_economic.py
+│   │   ├── clean_education.py
+│   │   ├── clean_flood.py
+│   │   ├── clean_health_insurance_coverage.py
+│   │   ├── clean_historic_population.py
+│   │   ├── clean_housing.py
+│   │   ├── clean_qcew.py
+│   │   ├── clean_wastewater.py
+│   │   └── clean_zoning.py
+│   ├── run_data_collection.py   # Master collection script
+│   └── run_data_cleaning.py     # Master cleaning script
+└── datastore/
+    └── lake_build.py            # lake builder
 
 ## Pipeline Stages
 
