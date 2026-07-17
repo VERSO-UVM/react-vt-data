@@ -75,11 +75,11 @@ def load_soil_septic_multi() -> dict[str, pd.DataFrame]:
 
 def collect():
     return {
-        "ww_treatment_facilities": fetch_treatment_facilities(),
-        "ww_service_areas": fetch_service_areas(),
+        # "ww_treatment_facilities": fetch_treatment_facilities(),
+        # "ww_service_areas": fetch_service_areas(),
         # NOTE: The combined RPC file is too large to upload at once -> 
         # Upload each RPC dataset to lake.RAW tables
-        **load_soil_septic_multi(),
+        # **load_soil_septic_multi(),
         "ww_stormwater_management_areas": fetch_water_features()
     }
 
