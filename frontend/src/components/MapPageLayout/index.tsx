@@ -67,7 +67,7 @@ export default function MapPageLayout({
             // with content below, the map keeps a fixed comfortable height and
             // the column scrolls; alone, it fills the viewport
             ...(below
-              ? { height: '62vh', flexShrink: 0 }
+              ? { height: '75vh', flexShrink: 0 }
               : { flex: 1, minHeight: 0 }),
           }}
         >

@@ -82,7 +82,7 @@ def _measure_cutpoints(measures: list[str]) -> tuple[list[float], list[float]]:
     """Bin edges for each measure from the precomputed cdc_edges table."""
     params: list = []
     where_string = compile_where({"Measure": measures}, params)
-    sql = f"SELECT * FROM cdc_edges {where_string}"
+    sql = f"SELECT * FROM cdc_county_edges {where_string}"
     edges = DB.execute(sql, params).df()
     edges_x = (
         edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()

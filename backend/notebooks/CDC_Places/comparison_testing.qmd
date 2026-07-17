@@ -53,7 +53,7 @@ from app_utils.data_loading import crs_set
 ```{python}
 con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
 con.execute("LOAD spatial")
-df = con.execute("SELECT * FROM cdc_places").df()
+df = con.execute("SELECT * FROM cdc_county_places").df()
 df.head()
 ```
 
@@ -66,7 +66,7 @@ There are two cases -- the user wants a single variable, and the user wants two 
 
 
 ```{python}
-con.execute("DESCRIBE cdc_places").df()
+con.execute("DESCRIBE cdc_county_places").df()
 ```
 
 ```{python}
@@ -79,7 +79,7 @@ single_var_sql = """--sql
         p.bin,
         c.CountyFIPS,
         ST_ASGEOJSON(c.geom) AS geometry
-    FROM cdc_places p
+    FROM cdc_county_places p
     LEFT JOIN vermont_counties c ON p.LocationID = c.CountyFIPS
 """
 ```
@@ -156,7 +156,7 @@ sme_places = con.execute("""--sql
         LocationID, 
         Measure, Data_Value, 
         Data_Value_Type
-    FROM cdc_places
+    FROM cdc_county_places
     WHERE Data_Value_Type IN ('Crude prevalence') 
             AND SME_Highlight = 1
 """).df()
@@ -249,7 +249,7 @@ indicators_sql = ", ".join(f"'{i}'" for i in sme_indicators)
 db = duckdb.connect()
 
 data_dir = Path("Data")
-path = data_dir / "CDC" / "CDC_Places.csv"
+path = data_dir / "CDC" / "cdc_places.csv"
 
 db.execute(f"""--sql
   CREATE OR REPLACE VIEW places_raw AS 

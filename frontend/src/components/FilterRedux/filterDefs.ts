@@ -2,12 +2,12 @@ import { filterDef } from './filterTypes';
 
 export const cdc_filtering: filterDef[] = [
   {
-    filter_table: 'cdc_places',
+    filter_table: 'cdc_county_places',
     filter_style: 'Cascade',
     label: 'Variable 1',
   },
   {
-    filter_table: 'cdc_places',
+    filter_table: 'cdc_county_places',
     filter_style: 'Cascade',
     label: 'Variable 2',
   },

@@ -35,13 +35,13 @@
         "Value": "val"
       }
     },
-    "cdc_places": {
+    "cdc_county_places": {
       "join_key": "LocationID",
       "join_type": "inner",
       "value_col": "Data_Value",
       "var_col": "Measure",
       "columns": {
-        "Key Indicator": "SME_Highlight",
+        "Population Health Indicator": "SME_Highlight",
         "Category": "Category",
         "Measure": "Measure",
         "Prevalence Measure": "Data_Value_Type"
