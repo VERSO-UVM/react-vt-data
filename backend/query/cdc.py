@@ -55,7 +55,7 @@ def single_var_geojson(sources: list[FilterSource]):
 
 def widen_dual_var(df, measures):
     m1 = df[df.Measure == measures[0]][
-        ["LocationID", "geometry", "Data_Value", "bin", "natl_pct"]
+        ["LocationID", "geometry", "Data_Value", "bin", "natl_pct", "CountyName"]
     ]
     m2 = df[df.Measure == measures[1]][["LocationID", "Data_Value", "bin"]]
     wide = m1.merge(m2, on="LocationID", suffixes=("_1", "_2"))
@@ -128,6 +128,7 @@ def dual_var_comparison(
                     "rgba_color": color,
                     "tooltip": {
                         "__title__": "Variable Comparison",
+                        "County": r.CountyName,
                         f"{measures[0]}": r.Data_Value_1,
                         f"{measures[1]}": r.Data_Value_2,
                         "National Percentage": r.natl_pct,
