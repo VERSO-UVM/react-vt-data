@@ -153,18 +153,18 @@ function DataSetSelector({
 export default function VariableComparison() {
   const [legend, setLegend] = useState<Legend | null>(null);
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
-  const standardURL = `${BASE_API_URL}/load/mapping/cdc/places/county_comparison`;
-  const [comparisonURL, comparsionSetURL] = useState<string>(standardURL);
+  const [comparisonURL, setComparisonURL] = useState<string | null>(null);
 
   const handleSelectDataSet = (value: string): void => {
-    comparsionSetURL(validDatasets[value as keyof typeof validDatasets]);
+    setComparisonURL(validDatasets[value as keyof typeof validDatasets]);
   };
 
   const handleApply = async (specs: FilterSpec[]) => {
     const payload = assemble(specs);
     // one response carries geojson (data) + legend (metadata), so the legend
     // colors always match the map colors
-    const res = await postRequest({ dataURL: comparisonURL, payload });
+    const url = comparisonURL as string;
+    const res = await postRequest({ dataURL: url, payload });
     setGeojson(res.data);
     setLegend(res.metadata?.legend ?? null);
   };
@@ -174,8 +174,10 @@ export default function VariableComparison() {
       title="Compare Variables"
       sidebar={
         <>
-          <DataSetSelector handleSelect={comparsionSetURL} />
-          <FilterWrap handleApply={handleApply} filterList={cdc_filtering} />
+          <DataSetSelector handleSelect={handleSelectDataSet} />
+          {comparisonURL && (
+            <FilterWrap handleApply={handleApply} filterList={cdc_filtering} />
+          )}
           {legend && <BivariateLegend legend={legend} />}
         </>
       }

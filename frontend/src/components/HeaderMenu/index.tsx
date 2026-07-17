@@ -13,6 +13,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { ProfileModal } from '../profile/SetProfile';
 
 const links = [
@@ -23,6 +24,8 @@ const links = [
     links: [
       { link: '/mapping/zoning', label: 'Zoning' },
       { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
+      { link: '/mapping/treatment-facilities', label: 'Wastewater Treatment Facilities'},
+      {link: '/mapping/service-areas', label: 'Wastewater System Service Areas'},
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
@@ -72,6 +75,31 @@ export default function HeaderMenu() {
   const pathname = usePathname(); /* Get the current pathname */
 
   const [opened, { toggle }] = useDisclosure(false);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    let lastY = window.scrollY;
+
+    const onScroll = () => {
+      const currentY = window.scrollY;
+
+      // Don't hide while near the top
+      if (currentY < 80) {
+        setHidden(false);
+      } else if (currentY > lastY) {
+        // Scrolling down
+        setHidden(true);
+      } else {
+        // Scrolling up
+        setHidden(false);
+      }
+
+      lastY = currentY;
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const items = links.map((link) => {
     const isActive = (link: string) =>
@@ -127,7 +155,7 @@ export default function HeaderMenu() {
   });
 
   return (
-    <header className={classes.header}>
+    <header className={`${classes.header} ${hidden ? classes.hidden : ''}`}>
       <Container size="xl">
         <div className={classes.inner}>
           <Group gap="lg">
@@ -140,7 +168,6 @@ export default function HeaderMenu() {
                 style={{ cursor: 'pointer' }}
               />
             </Anchor>
-            <ProfileModal />
           </Group>
 
           {/* Navigation items separated into their own wrapping group */}
@@ -152,8 +179,8 @@ export default function HeaderMenu() {
           >
             {items}
           </Group>
+          <ProfileModal />
 
-          {/* Mobile Burger Menu */}
           <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
         </div>
       </Container>

@@ -20,6 +20,20 @@ export const links = [
     badges: ['NRCS', 'Septic'],
   },
   {
+    link: '/mapping/treatment-facilities',
+    label: 'Wastewater Treatment Facilities',
+    description:
+      'Explore locations of current public wastewater treatment facilities and their capacities.',
+    badges: ['ANR', 'Wastewater'],
+  },
+  {
+    link: '/mapping/service-areas',
+    label: 'Wastewater System Service Areas',
+    description:
+      'Examine current service areas of public wastewater systems.',
+    badges: ['ANR', 'Wastewater'],
+  },
+  {
     link: '/mapping/flood-legal',
     label: 'Flood Insurance',
     description:

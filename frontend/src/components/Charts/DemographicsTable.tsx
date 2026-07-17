@@ -86,7 +86,7 @@ const DemographicsTableBase = ({
         <Table striped withTableBorder withColumnBorders fz="xs">
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Demographic</Table.Th>
+              <Table.Th></Table.Th>
               {years.map((y) => (
                 <Table.Th key={y}>{y}</Table.Th>
               ))}
@@ -150,10 +150,10 @@ export const renderTable = ({ chart }: { chart: ChartItem<AcsRow> }) => (
   />
 );
 
-export const renderTableEstimates = ({
+export const renderTableEstimates = <TData,>({
   chart,
 }: {
-  chart: ChartItem<AcsRow>;
+  chart: ChartItem<TData>;
 }) => (
   <DemographicsTableBase
     chart={chart}
@@ -164,7 +164,11 @@ export const renderTableEstimates = ({
 );
 
 /** Shows Percent when available, falls back to Value — for mixed tables like Housing. */
-export const renderTableMixed = ({ chart }: { chart: ChartItem<AcsRow> }) => (
+export const renderTableMixed = <TData,>({
+  chart,
+}: {
+  chart: ChartItem<TData>;
+}) => (
   <DemographicsTableBase
     chart={chart}
     renderCell={(row) => {

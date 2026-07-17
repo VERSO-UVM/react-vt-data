@@ -1,8 +1,9 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { useItems } from '../ItemsProvider';
 import { useProfile } from '@/components/profile/profileStore';
-import { Button } from '@mantine/core';
-import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { Button, Transition } from '@mantine/core';
+import { CheckIcon, XIcon } from '@phosphor-icons/react';
+import { ChartItem } from '@/types/cachedCharts';
 
 // Toggle include/exclude for auto-populated working report charts
 interface ToggleProps {
@@ -31,31 +32,42 @@ interface AddChartProps {
   defId?: string;
 }
 export function AddChart({ chart, defId }: AddChartProps) {
-  const { addItem, includeById, excludeById } = useItems();
+  const { addItem, removeItem, includeById, excludeById, items } = useItems();
+
   const { interests } = useProfile();
 
+  const stableId = [
+    chart.title,
+    chart.subtype,
+    ...(chart.chartParams?.legendLabels ?? []),
+  ].join('::');
+
+  const inReport = items.some((item) => item.id === stableId);
+
   const handleClick = () => {
-    if (defId) {
-      includeById(defId);
+    if (inReport) {
+      removeItem(stableId);
     } else {
-      // Stable ID: title + subtype + locations — prevents saving the same chart twice
-      const stableId = [
-        chart.title,
-        chart.subtype,
-        ...(chart.chartParams?.legendLabels ?? []),
-      ].join('::');
-      const deduped = { ...chart, id: stableId };
-      addItem(deduped);
-      // Auto-exclude if interests are set and this chart doesn't match any
-      if (interests.length > 0) {
-        const matches = deduped.categories?.some((cat: string) =>
-          interests.includes(cat),
-        );
-        if (!matches) excludeById(stableId);
-      }
+      addItem({ ...chart, id: stableId });
     }
   };
-  return <Button onClick={handleClick}>Save to working report</Button>;
+
+  return (
+    <Button
+      onClick={handleClick}
+      color={inReport ? 'red' : 'blue'}
+      variant={inReport ? 'filled' : 'light'}
+      leftSection={
+        inReport ? (
+          <XIcon size={12} weight="bold" />
+        ) : (
+          <CheckIcon size={16} weight="bold" />
+        )
+      }
+    >
+      {inReport ? 'Remove from working report' : 'Add to working report'}
+    </Button>
+  );
 }
 
 // Remove a manually-saved chart from the working report

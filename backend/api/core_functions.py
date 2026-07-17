@@ -15,9 +15,18 @@ from api.routes import get_filter_table_metadata
 def spec_to_source(spec: FilterSpec, target_table: str) -> FilterSource:
     src_schema = get_filter_table_metadata(target_table, spec.filter_table)
     colmap = {**src_schema["columns"], **src_schema.get("range", {})}
+    mapped_filters = {}
+    dropped = {}
+
+    for k, v in spec.filters.items():
+        if k in colmap:
+            mapped_filters[colmap[k]] = v
+        else:
+            dropped[k] = v
+
     return FilterSource(
         filter_table=spec.filter_table,
-        filters={colmap[k]: v for k, v in spec.filters.items() if k in colmap},
+        filters=mapped_filters,
         join_key=src_schema["join_key"],
         join_type=src_schema["join_type"],
     )
