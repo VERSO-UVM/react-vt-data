@@ -13,7 +13,7 @@ venv/
 
 # Large geodata files — not for version control
 backend/Data/Parcels/
-backend/Data/lake.files/CLEANED/wastewater_soil_suitability_geom/
+backend/Data/lake.files/CLEANED/ww_soil_suitability_geom/
 
 # Local planning/notes files
 claude_todo.md

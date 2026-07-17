@@ -1,6 +1,7 @@
 from datastore.lake_build import replace_table
 from ETL.data_collection import (
     acs5,
+    cdc,
     demographics,
     economic,
     education,
@@ -10,11 +11,13 @@ from ETL.data_collection import (
     qcew,
     wastewater,
     zoning,
-    cdc
 )
 
+# Cleaning scripts to run. 
+# You can comment out any ones you don't want to run below
 DATA_CATEGORIES = [
     acs5,
+    cdc,
     demographics,
     economic,
     education,
@@ -24,7 +27,6 @@ DATA_CATEGORIES = [
     qcew,
     wastewater,
     zoning,
-    cdc
 ]
 
 

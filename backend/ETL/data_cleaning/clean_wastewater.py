@@ -28,9 +28,8 @@ def _load_spatial() -> None:
         con.execute("LOAD spatial")
 
 
-## ADD UNIQUE ID COLUMNS
-
-def add_service_area_id():
+## ADD UNIQUE ID COLUMNS --------------------
+def build_service_area_id() -> None:
     con.execute(
         """
         CREATE OR REPLACE VIEW service_areas_with_id AS
@@ -41,7 +40,7 @@ def add_service_area_id():
         """)
 
 
-def add_facility_id():
+def build_facility_id() -> None:
     con.execute(
         """
         CREATE OR REPLACE VIEW treatment_facilities_with_id AS
@@ -52,13 +51,13 @@ def add_facility_id():
         """)
 
 
-def build_soil_combined():
+def build_soil_combined() -> None:
     RPCs = ["ACRPC", "BCRC", "CCRPC", "CVRPC", "LCPC", "MARC", "NVDA", "NWRPC", "RRPC", "TRORC", "WRC"]
     union=" UNION ALL ".join([f"SELECT * FROM lake.RAW.ww_soil_suitability_{r}" for r in RPCs])
     con.execute(f"CREATE OR REPLACE VIEW soil_suitability_combined AS {union}")
 
 
-def add_soil_suitability_id():
+def build_soil_suitability_id() -> None:
     con.execute(
         """
         CREATE OR REPLACE VIEW soil_suitability_with_id AS
@@ -71,7 +70,7 @@ def add_soil_suitability_id():
 
 
 ## SERVICE AREA TABLES --------------------
-def build_service_info():
+def build_service_info() -> None:
     service_area_info_cols = [
         "Area_ID", "TownID", "TreatmentFacility", "SystemName",
         "SystemOwner", "TownName", "Municipal_Name", "County", "RPC"]
@@ -84,20 +83,19 @@ def build_service_info():
         """)
     
 
-def build_service_geom():
+def build_service_geom() -> None:
     # service_geom_cols = ["Area_ID", "geometry"]
-    
     con.execute(
         """
         CREATE OR REPLACE VIEW service_geom AS 
         SELECT 
             Area_ID, 
-            ST_GeomFromWKB(geometry) geometry 
+            ST_GeomFromWKB(geometry) AS geometry 
         FROM service_areas_with_id
         """)
 
     
-def build_service_misc():
+def build_service_misc() -> None:
     service_miscellaneous_info_cols = [
         "Area_ID", "GISNotes", "GISDate", "GISUpdate",
         "Creator", "SourceFile", "GEOIDTXT"]
@@ -111,7 +109,7 @@ def build_service_misc():
 
 
 ## TREATMENT FACILITY TABLES --------------------
-def build_facility_info():
+def build_facility_info() -> None:
     facility_info_cols = [
         "Facility_ID", "DesignHydraulicCapacityInMGD", "SeptageReceivedAtThisFacility",
         "WWInventoryURL", "FacilityName", "TownName", "Municipal_Name", "County", "RPC"]
@@ -124,9 +122,8 @@ def build_facility_info():
         """)
     
 
-def build_facility_geom():
+def build_facility_geom() -> None:
     # facility_geom_cols = ["Facility_ID", "Latitude", "Longitude", "geometry"]
-    
     con.execute(
         """
         CREATE OR REPLACE VIEW treatment_facility_geom AS 
@@ -134,12 +131,12 @@ def build_facility_geom():
             Facility_ID, 
             Latitude, 
             Longitude, 
-            ST_GeomFromWKB(geometry) geometry 
+            ST_GeomFromWKB(geometry) AS geometry 
         FROM treatment_facilities_with_id
         """)
     
 
-def build_facility_permits():
+def build_facility_permits() -> None:
     permit_info_cols = [
         "Facility_ID", "PermitID", "PermitRecordID", "NPDESPermitNumber",
         "PermitLink", "PermitteeName"]
@@ -152,7 +149,7 @@ def build_facility_permits():
         """)
 
 
-def build_facility_misc():
+def build_facility_misc() -> None:
     facility_miscellaneous_info_cols = ["Facility_ID", "SourceFile", "GEOIDTXT"]
     
     con.execute(
@@ -164,7 +161,7 @@ def build_facility_misc():
 
 ## SOIL SUITABILITY TABLES --------------------
 
-def build_suitability_info():
+def build_suitability_info() -> None:
     suitability_info_cols = ["OGC_FID", "Suitability", "Jurisdiction", "RPC", "Acres"]
     
     con.execute(
@@ -175,16 +172,41 @@ def build_suitability_info():
         """)
 
 
-def build_suitability_geom():
+def build_suitability_geom() -> None:
     # suitability_geom_cols = ["OGC_FID", "geometry"]
-    
     con.execute(
         """
         CREATE OR REPLACE VIEW soil_suitability_geom AS 
         SELECT 
             OGC_FID, 
-            ST_GeomFromWKB(geometry) geometry 
+            ST_GeomFromWKB(geometry) AS geometry 
         FROM soil_suitability_with_id
+        """)
+
+
+## STORMWATER MANAGEMENT TABLES --------------------
+
+def build_stormwater_info() -> None:
+    stormwater_info_cols = [
+        "Type", "SystemType", "Status", "GEOIDTXT", 
+        "GlobalID", "Municipal_Name", "County", "RPC"]
+    
+    con.execute(
+        f"""
+        CREATE OR REPLACE VIEW stormwater_management_info AS 
+        SELECT {', '.join(stormwater_info_cols)} 
+        FROM lake.RAW.ww_stormwater_management_areas
+        """)
+    
+
+def build_stormwater_geom() -> None:
+    con.execute(
+        """
+        CREATE OR REPLACE VIEW stormwater_management_geom AS 
+        SELECT 
+            GlobalID, 
+            ST_GeomFromWKB(geometry) AS geometry 
+        FROM lake.RAW.ww_stormwater_management_areas
         """)
 
 
@@ -195,10 +217,10 @@ def clean():
     _load_spatial()
 
     # Add unique IDs to each table
-    add_service_area_id()
-    add_facility_id()
+    build_service_area_id()
+    build_facility_id()
     build_soil_combined()
-    add_soil_suitability_id()
+    build_soil_suitability_id()
 
     # Service area tables
     build_service_info()
@@ -215,6 +237,10 @@ def clean():
     build_suitability_info()
     build_suitability_geom()
 
+    # Stormwater Management Tables
+    build_stormwater_info()
+    build_stormwater_geom()
+
 
 def add_to_lake():
     table_names = [
@@ -229,14 +255,18 @@ def add_to_lake():
 
         "soil_suitability_info",
         # NOTE: This `geom` dataset is too large for git storage. Add to .gitignore
-        "soil_suitability_geom"
+        "soil_suitability_geom",
+
+        "stormwater_management_info",
+        "stormwater_management_geom"
+
     ]
     
     
     for name in table_names:
         con.execute(
             f"""
-            CREATE OR REPLACE TABLE lake.CLEANED.wastewater_{name} AS 
+            CREATE OR REPLACE TABLE lake.CLEANED.ww_{name} AS 
             SELECT * 
             FROM {name}
             """)
