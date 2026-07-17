@@ -38,7 +38,7 @@ def add_to_lake(clean_df: pd.DataFrame):
     """
     con.execute(
         """
-        CREATE OR REPLACE TABLE lake.CLEANED.economic AS
+        CREATE OR REPLACE TABLE lake.CLEANED.acs5_economics_tidy AS
         SELECT * FROM clean_df
         """
     )

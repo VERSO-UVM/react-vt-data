@@ -38,7 +38,7 @@ def add_to_lake(clean_df: pd.DataFrame):
     """
     con.execute(
         """
-        CREATE OR REPLACE TABLE lake.CLEANED.qcew AS
+        CREATE OR REPLACE TABLE lake.CLEANED.qcew_sectorEmployment_timeseries AS
         SELECT * FROM clean_df
         """
     )

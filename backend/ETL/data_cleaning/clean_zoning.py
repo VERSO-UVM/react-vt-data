@@ -126,11 +126,6 @@ def build_rules(raw_df: pd.DataFrame):
     con.register("zoning_raw", cast_df)  # temporary swap
     try:
         rule_string = ", ".join(clean_rule_cols)
-        print("Expected rule columns:")
-        print(clean_rule_cols)
-
-        print("\nActual dataframe columns:")
-        print(cast_df.columns.tolist())
         con.execute(render_sql(sql_path / "zoning_rules.sql", rule_string=rule_string))
         rules = con.execute("SELECT * FROM raw_rules").df()
     finally:
@@ -163,7 +158,19 @@ def build_full():
 
 
 def build_color():
-    con.execute((sql_path / "zoning_colors.sql").read_text())
+    con.execute(
+        """
+        CREATE OR REPLACE VIEW colors AS
+        SELECT *
+        FROM (
+            VALUES
+                ('Residential', '#1f77b4', '[31,119,180,180]'),
+                ('Mixed', '#ff7f0e', '[255,127,14,180]'),
+                ('Nonresidential', '#2ca02c', '[44,160,44,180]'),
+                ('Overlay', '#d62728', '[214,39,40,180]')
+        ) AS t(district_type, hex_color, rgba);
+        """
+    )
 
 
 def clean():

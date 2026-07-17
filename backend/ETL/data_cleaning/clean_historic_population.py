@@ -134,7 +134,7 @@ def add_to_lake(clean_df: pd.DataFrame):
     """
     con.execute(
         """
-        CREATE OR REPLACE TABLE lake.CLEANED.historic_population AS
+        CREATE OR REPLACE TABLE lake.CLEANED.VCGI_historicPopulation_timeseries AS
         SELECT * FROM clean_df
         """
     )

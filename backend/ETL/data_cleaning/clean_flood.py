@@ -55,7 +55,7 @@ def build_flood():
 def add_to_lake():
     con.execute(
         """
-        CREATE OR REPLACE TABLE lake.CLEANED.flood AS
+        CREATE OR REPLACE TABLE lake.CLEANED.flood_geom AS
         SELECT *
         FROM flood
         """)

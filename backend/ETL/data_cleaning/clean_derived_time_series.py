@@ -48,14 +48,14 @@ CONFIGS: dict[str, DatasetConfig] = {
         variables=["Median Age"],
         value_source_col="Value",
         output_value_col="Median_Age",
-        output_table="median_age",
+        output_table="acs5Demographics_medianAge_timeseries",
     ),
     # Median HH Income (from economics)
     "median_hh_income": DatasetConfig(
         source_table="economic",
         variables=["Median Household Income"],
         value_source_col="Value",
-        output_value_col="Median_HH_Income",
+        output_value_col="acs5Economics_medianHouseholdIncome_timeseries",
         output_table="median_hh_income",
     ),
     # Median Home Value (from housing)
@@ -63,7 +63,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="housing",
         variables=["Median Home Value"],
         value_source_col="Value",
-        output_value_col="Median_Home_Value",
+        output_value_col="acs5Housing_medianHomeValue_timeseries",
         output_table="median_home_value",
     ),
     # Median Per Cap Income (from economics)
@@ -71,7 +71,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="economic",
         variables=["Per Capita Income"],
         value_source_col="Value",
-        output_value_col="Per_Capita_Income",
+        output_value_col="acs5Economics_perCapitaIncome_timeseries",
         output_table="per_capita_income",
     ),
     # Housing Units (from housing)
@@ -79,7 +79,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="housing",
         variables=["Total Housing Units"],
         value_source_col="Value",
-        output_value_col="Total_Housing_Units",
+        output_value_col="acs5Housing_housingUnits_timeseries",
         output_table="total_housing_units",
     ),
     # Vacancy Rate (from housing)
@@ -88,7 +88,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         variables=["Homeowner Vacancy Rate", "Rental Vacancy Rate"],
         value_source_col="Percent",
         output_value_col="Percent",
-        output_table="vacancy_rate",
+        output_table="acs5Housing_vacancyRates_timeseries",
         keep_variable_col=True,
     ),
     "unemployment_rate": DatasetConfig(
@@ -96,7 +96,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         variables=["Unemployment Rate"],
         value_source_col="Value",
         output_value_col="Unemployment_Rate",
-        output_table="unemployment_rate",
+        output_table="acs5Economics_unemploymentRate_timeseries",
         extra_where_statement="Measure = 'Percent'",
     ),
 }

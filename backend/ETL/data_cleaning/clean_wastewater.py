@@ -266,21 +266,21 @@ def clean():
 
 def add_to_lake():
     table_names = [
-        # "service_info",
-        # "service_geom",
-        # "service_misc",
+        "serviceAreas_info",
+        "serviceAreas_geom",
+        "serviceAreas_misc",
 
-        # "treatment_facility_info",
-        # "treatment_facility_geom",
-        # "treatment_facility_permit_info",
-        # "treatment_facility_misc_info",
+        "treatmentFacilities_info",
+        "treatmentFacilities_geom",
+        "treatmentFacilityPermits_info",
+        "treatmentFacilityMisc_info",
 
-        # "soil_suitability_info",
+        "soilSuitability_info",
         # NOTE: This `geom` dataset is too large for git storage. Add to .gitignore
-        # "soil_suitability_geom",
+        "soilSuitability_geom",
 
-        "stormwater_management_info",
-        # "stormwater_management_geom"
+        "stormwaterManagement_info",
+        "stormwaterManagement_geom"
 
     ]
     
@@ -288,7 +288,7 @@ def add_to_lake():
     for name in table_names:
         con.execute(
             f"""
-            CREATE OR REPLACE TABLE lake.CLEANED.ww_{name} AS 
+            CREATE OR REPLACE TABLE lake.CLEANED.wastewater_{name} AS 
             SELECT * 
             FROM {name}
             """)

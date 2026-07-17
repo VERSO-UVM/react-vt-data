@@ -1,3 +1,14 @@
+"""
+**Author**:
+    Ian Sargent
+**Created**:
+    2026-07-10
+**Description**:
+    This is the master orchestrating data scraping script.
+    Running this document will call each individual category scraper
+    and populate tables into the DuckLake's RAW schema.
+"""
+
 from datastore.lake_build import replace_table
 from ETL.data_collection import (
     acs5,
@@ -13,7 +24,7 @@ from ETL.data_collection import (
     zoning,
 )
 
-# Cleaning scripts to run. 
+# Collection scripts to run. 
 # You can comment out any ones you don't want to run below
 DATA_CATEGORIES = [
     acs5,
