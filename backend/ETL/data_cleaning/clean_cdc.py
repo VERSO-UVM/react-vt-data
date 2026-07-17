@@ -15,7 +15,7 @@ from datastore.lake_build import con
 
 def get_sme_indicators() -> str:
     data_notes = con.execute(
-        """
+        """--sql
         SELECT * 
         FROM lake.RAW.cdc_notes
         """
@@ -79,15 +79,17 @@ def add_to_lake(places: pd.DataFrame, edges: pd.DataFrame) -> None:
     con.register("places_df", places)
     con.register("edges_df", edges)
 
-    con.execute("""
+    con.execute(
+        """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.cdc_places AS
         SELECT * FROM places_df
-    """)
+        """)
 
-    con.execute("""
+    con.execute(
+        """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.cdc_edges AS
         SELECT * FROM edges_df
-    """)
+        """)
 
 
 

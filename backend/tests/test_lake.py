@@ -24,13 +24,14 @@ def test_cleaned_tables(prefix: str) -> None:
         - null counts
     """
 
-    tables = con.execute(f"""
+    tables = con.execute(
+        f"""--sql
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'CLEANED'
           AND table_name LIKE '{prefix}%'
         ORDER BY table_name
-    """).fetchdf()["table_name"]
+        """).fetchdf()["table_name"]
 
     for table in tables:
         print("=" * 80)
@@ -38,17 +39,19 @@ def test_cleaned_tables(prefix: str) -> None:
         print("=" * 80)
 
         # Row count
-        rows = con.execute(f"""
+        rows = con.execute(
+            f"""--sql
             SELECT COUNT(*)
             FROM lake.CLEANED.{table}
-        """).fetchone()[0]
+            """).fetchone()[0]
 
         print(f"Rows: {rows:,}\n")
 
         # Schema
-        schema = con.execute(f"""
+        schema = con.execute(
+            f"""--sql
             DESCRIBE lake.CLEANED.{table}
-        """).fetchdf()
+            """).fetchdf()
 
         print("Schema:")
         print(schema[["column_name", "column_type", "null"]])
@@ -64,11 +67,12 @@ def test_cleaned_tables(prefix: str) -> None:
             ]
         )
 
-        nulls = con.execute(f"""
+        nulls = con.execute(
+            f"""--sql
             SELECT
             {null_sql}
             FROM lake.CLEANED.{table}
-        """).fetchdf().T
+            """).fetchdf().T
 
         nulls.columns = ["Null Count"]
 
@@ -91,13 +95,14 @@ def test_raw_tables(prefix: str) -> None:
         - null counts
     """
 
-    tables = con.execute(f"""
+    tables = con.execute(
+        f"""--sql
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'RAW'
           AND table_name LIKE '{prefix}%'
         ORDER BY table_name
-    """).fetchdf()["table_name"]
+        """).fetchdf()["table_name"]
 
     for table in tables:
         print("=" * 80)
@@ -105,17 +110,19 @@ def test_raw_tables(prefix: str) -> None:
         print("=" * 80)
 
         # Row count
-        rows = con.execute(f"""
+        rows = con.execute(
+            f"""--sql
             SELECT COUNT(*)
             FROM lake.RAW.{table}
-        """).fetchone()[0]
+            """).fetchone()[0]
 
         print(f"Rows: {rows:,}\n")
 
         # Schema
-        schema = con.execute(f"""
+        schema = con.execute(
+            f"""--sql
             DESCRIBE lake.RAW.{table}
-        """).fetchdf()
+            """).fetchdf()
 
         print("Schema:")
         print(schema[["column_name", "column_type", "null"]])
@@ -131,11 +138,11 @@ def test_raw_tables(prefix: str) -> None:
             ]
         )
 
-        nulls = con.execute(f"""
-            SELECT
-            {null_sql}
+        nulls = con.execute(
+            f"""--sql
+            SELECT {null_sql}
             FROM lake.RAW.{table}
-        """).fetchdf().T
+            """).fetchdf().T
 
         nulls.columns = ["Null Count"]
 

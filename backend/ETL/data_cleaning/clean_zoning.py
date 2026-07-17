@@ -52,22 +52,33 @@ boolean_remapper = {
 }
 
 
+## LOAD SPATIAL EXTENSION FUNCTION --------------------
 def _load_spatial() -> None:
-    """Load the spatial extension, installing it first if necessary."""
+    """
+    Load the spatial extension, installing it first if necessary.
+    """
     try:
-        con.execute("LOAD spatial")
+        con.execute(
+            """--sql
+            LOAD spatial
+            """)
     except Exception:
-        con.execute("INSTALL spatial")
-        con.execute("LOAD spatial")
+        con.execute(
+            """--sql
+            INSTALL spatial
+            """)
+        con.execute(
+            """--sql
+            LOAD spatial
+            """)
 
 
 def read_raw_data() -> pd.DataFrame:
     raw_df = con.execute(
-        """
+        """--sql
         SELECT * 
         FROM lake.RAW.zoning
-        """
-    ).df()
+        """).df()
 
     con.register("zoning_raw", raw_df)
 
@@ -77,25 +88,32 @@ def read_raw_data() -> pd.DataFrame:
 def build_info():
     info_string = ", ".join(info_cols)
     con.execute(render_sql(sql_path / "zoning_info.sql", info_string=info_string))
-    info_df = con.execute("SELECT * FROM raw_info").df()
+    info_df = con.execute(
+        """--sql
+        SELECT * FROM raw_info
+        """).df()
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
     con.register("info", info_df)
 
 
 def build_geom():
-    con.execute("""
+    con.execute(
+        """--sql
         CREATE OR REPLACE VIEW geom AS
         SELECT
             OBJECT_ID,
             ST_GeomFromWKB(geometry) AS geometry
         FROM lake.RAW.zoning
-    """)
+        """)
 
 
 def get_rule_cols():
     dropped_cols = ["Shape_Area", "Shape_Length"]
-    all_cols = con.execute("DESCRIBE lake.RAW.zoning").df()["column_name"].tolist()
+    all_cols = con.execute(
+        """--sql
+        DESCRIBE lake.RAW.zoning
+        """).df()["column_name"].tolist()
     rule_cols = set(all_cols)
     for item in geom_cols + info_cols + ["Acres"] + dropped_cols:
         if item in rule_cols:
@@ -127,7 +145,10 @@ def build_rules(raw_df: pd.DataFrame):
     try:
         rule_string = ", ".join(clean_rule_cols)
         con.execute(render_sql(sql_path / "zoning_rules.sql", rule_string=rule_string))
-        rules = con.execute("SELECT * FROM raw_rules").df()
+        rules = con.execute(
+            """--sql
+            SELECT * FROM raw_rules
+            """).df()
     finally:
         con.register("zoning_raw", raw_df)  # restore original for downstream steps
 
@@ -151,15 +172,16 @@ def build_rules(raw_df: pd.DataFrame):
 def build_full():
     drop_cols = ["geometry", "Shape_Area", "Shape_Length"]
     exclude = ", ".join(drop_cols)
-    con.execute(f"""--sql
+    con.execute(
+        f"""--sql
         CREATE OR REPLACE VIEW wide AS
         SELECT * EXCLUDE ({exclude}) FROM zoning_raw
-    """)
+        """)
 
 
 def build_color():
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW colors AS
         SELECT *
         FROM (
@@ -192,10 +214,11 @@ def add_to_lake():
     """
     tables = ["info", "geom", "rules", "wide", "colors"]
     for name in tables:
-        con.execute(f"""--sql
+        con.execute(
+            f"""--sql
             CREATE OR REPLACE TABLE lake.CLEANED.zoning_{name} AS
             SELECT * FROM {name}
-        """)
+            """)
 
 
 def main():

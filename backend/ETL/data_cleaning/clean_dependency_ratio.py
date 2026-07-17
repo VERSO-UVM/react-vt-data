@@ -20,7 +20,8 @@ from datastore.lake_build import con
 
 
 def read_raw_data() -> pd.DataFrame:
-    raw_df = con.execute("""
+    raw_df = con.execute(
+        """--sql
         SELECT
             year,
             NAME,
@@ -38,7 +39,7 @@ def read_raw_data() -> pd.DataFrame:
             '65 to 74',
             '75 Plus'          
         )
-    """).df()
+        """).df()
 
     return raw_df
 
@@ -102,11 +103,10 @@ def add_to_lake(clean_df: pd.DataFrame):
     # Table naming schema
     # NOTE: {source}_{table-name}_{mode (ie. ts)}
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.age_dependency_ratio AS
         SELECT * FROM clean_df
-        """
-    )
+        """)
 
 
 def main():

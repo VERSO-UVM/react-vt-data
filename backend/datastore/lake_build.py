@@ -14,21 +14,37 @@ con = duckdb.connect()
 
 # Load extension
 try:
-    con.execute("LOAD ducklake")
+    con.execute(
+        """--sql
+        LOAD ducklake
+        """)
 except duckdb.Error:
-    con.execute("INSTALL ducklake")
-    con.execute("LOAD ducklake")
+    con.execute(
+        """--sql
+        INSTALL ducklake
+        """)
+    con.execute(
+        """--sql
+        LOAD ducklake
+        """)
 
 # Attach the DuckLake catalog
-con.execute(f"""
+con.execute(
+    f"""--sql
     ATTACH '{LAKE_PATH.as_posix()}'
     AS lake
     (TYPE ducklake)
 """)
 
 # Create schemas in the lake catalog
-con.execute("CREATE SCHEMA IF NOT EXISTS lake.RAW")
-con.execute("CREATE SCHEMA IF NOT EXISTS lake.CLEANED")
+con.execute(
+    """--sql
+    CREATE SCHEMA IF NOT EXISTS lake.RAW
+    """)
+con.execute(
+    """--sql
+    CREATE SCHEMA IF NOT EXISTS lake.CLEANED
+    """)
 
 
 def replace_table(name: str, df: pd.DataFrame):
@@ -48,7 +64,8 @@ def replace_table(name: str, df: pd.DataFrame):
 
     con.register("tmp_df", df)
 
-    con.execute(f"""
+    con.execute(
+        f"""--sql
         CREATE OR REPLACE TABLE lake.{name}
         AS
         SELECT *

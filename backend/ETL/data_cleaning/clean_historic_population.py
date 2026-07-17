@@ -16,11 +16,10 @@ from datastore.lake_build import con
 
 def read_raw_data() -> pd.DataFrame:
     raw_df = con.execute(
-        """
+        """--sql
         SELECT * 
         FROM lake.RAW.historic_population
-        """
-    ).df()
+        """).df()
 
     return raw_df
 
@@ -133,11 +132,10 @@ def add_to_lake(clean_df: pd.DataFrame):
     to the CLEANED schema in DuckLake.
     """
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.VCGI_historicPopulation_timeseries AS
         SELECT * FROM clean_df
-        """
-    )
+        """)
 
 
 def main():

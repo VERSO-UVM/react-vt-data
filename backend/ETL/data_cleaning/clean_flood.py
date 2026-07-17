@@ -19,18 +19,28 @@ def _load_spatial() -> None:
     Load the spatial extension, installing it first if necessary.
     """
     try:
-        con.execute("LOAD spatial")
+        con.execute(
+            """--sql
+            LOAD spatial
+            """)
     except Exception:
-        con.execute("INSTALL spatial")
-        con.execute("LOAD spatial")
+        con.execute(
+            """--sql
+            INSTALL spatial
+            """)
+        con.execute(
+            """--sql
+            LOAD spatial
+            """)
+
 
 
 def build_flood():
     """
     Clean FEMA flood polygons.
     """
-
-    con.execute("""
+    con.execute(
+        """--sql
         CREATE OR REPLACE VIEW flood AS
         SELECT
             ST_GeomFromWKB(geometry) AS geometry,
@@ -49,13 +59,13 @@ def build_flood():
             END AS rgba_color
         FROM lake.RAW.flood
         WHERE SFHA_TF = 'T'
-    """)
+        """)
 
 
 def add_to_lake():
     con.execute(
-        """
-        CREATE OR REPLACE TABLE lake.CLEANED.flood_geom AS
+        """--sql
+        CREATE OR REPLACE TABLE lake.CLEANED.FEMA_floodHazard_geom AS
         SELECT *
         FROM flood
         """)

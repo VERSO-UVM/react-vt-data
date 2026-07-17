@@ -119,11 +119,11 @@ def read_raw_data(cfg: DatasetConfig) -> pd.DataFrame:
     if cfg.extra_where_statement:
         where_clause += f"\n        AND {cfg.extra_where_statement}"
   
-    query = f"""
+    query = f"""--sql
         SELECT {", ".join(select_parts)}
         FROM lake.RAW.{cfg.source_table}
         {where_clause};
-    """
+        """
  
     return con.execute(query, cfg.variables).df()
 
@@ -160,12 +160,11 @@ def add_to_lake(clean_df: pd.DataFrame, output_table: str) -> None:
     Writes a cleaned, long-format dataframe to the CLEANED schema in DuckLake.
     """
     con.execute(
-        f"""
+        f"""--sql
         CREATE OR REPLACE TABLE lake.CLEANED.{output_table} AS
         SELECT * 
         FROM clean_df
-        """
-    )
+        """)
 
 
 def run(name: str) -> None:

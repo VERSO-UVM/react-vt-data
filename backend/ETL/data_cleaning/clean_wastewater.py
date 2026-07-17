@@ -22,16 +22,25 @@ def _load_spatial() -> None:
     Load the spatial extension, installing it first if necessary.
     """
     try:
-        con.execute("LOAD spatial")
+        con.execute(
+            """--sql
+            LOAD spatial
+            """)
     except Exception:
-        con.execute("INSTALL spatial")
-        con.execute("LOAD spatial")
+        con.execute(
+            """--sql
+            INSTALL spatial
+            """)
+        con.execute(
+            """--sql
+            LOAD spatial
+            """)
 
 
 ## ADD UNIQUE ID COLUMNS --------------------
 def build_service_area_id() -> None:
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW service_areas_with_id AS
         SELECT 
             ROW_NUMBER() 
@@ -42,7 +51,7 @@ def build_service_area_id() -> None:
 
 def build_facility_id() -> None:
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW treatment_facilities_with_id AS
         SELECT 
             ROW_NUMBER() 
@@ -54,12 +63,15 @@ def build_facility_id() -> None:
 def build_soil_combined() -> None:
     RPCs = ["ACRPC", "BCRC", "CCRPC", "CVRPC", "LCPC", "MARC", "NVDA", "NWRPC", "RRPC", "TRORC", "WRC"]
     union=" UNION ALL ".join([f"SELECT * FROM lake.RAW.ww_soil_suitability_{r}" for r in RPCs])
-    con.execute(f"CREATE OR REPLACE VIEW soil_suitability_combined AS {union}")
+    con.execute(
+        f"""--sql
+        CREATE OR REPLACE VIEW soil_suitability_combined AS {union}
+        """)
 
 
 def build_soil_suitability_id() -> None:
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW soil_suitability_with_id AS
         SELECT 
             ROW_NUMBER() 
@@ -76,7 +88,7 @@ def build_service_info() -> None:
         "SystemOwner", "TownName", "Municipal_Name", "County", "RPC"]
     
     con.execute(
-        f"""
+        f"""--sql
         CREATE OR REPLACE VIEW service_info AS 
         SELECT {', '.join(service_area_info_cols)} 
         FROM service_areas_with_id
@@ -86,7 +98,7 @@ def build_service_info() -> None:
 def build_service_geom() -> None:
     # service_geom_cols = ["Area_ID", "geometry"]
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW service_geom AS 
         SELECT 
             Area_ID, 
@@ -101,7 +113,7 @@ def build_service_misc() -> None:
         "Creator", "SourceFile", "GEOIDTXT"]
     
     con.execute(
-        f"""
+        f"""--sql
         CREATE OR REPLACE VIEW service_misc AS 
         SELECT {', '.join(service_miscellaneous_info_cols)} 
         FROM service_areas_with_id
@@ -115,7 +127,7 @@ def build_facility_info() -> None:
         "WWInventoryURL", "FacilityName", "TownName", "Municipal_Name", "County", "RPC"]
     
     con.execute(
-        f"""
+        f"""--sql
         CREATE OR REPLACE VIEW treatment_facility_info AS 
         SELECT {', '.join(facility_info_cols)} 
         FROM treatment_facilities_with_id
@@ -125,7 +137,7 @@ def build_facility_info() -> None:
 def build_facility_geom() -> None:
     # facility_geom_cols = ["Facility_ID", "Latitude", "Longitude", "geometry"]
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW treatment_facility_geom AS 
         SELECT 
             Facility_ID, 
@@ -142,7 +154,7 @@ def build_facility_permits() -> None:
         "PermitLink", "PermitteeName"]
     
     con.execute(
-        f"""
+        f"""--sql
         CREATE OR REPLACE VIEW treatment_facility_permit_info AS 
         SELECT {', '.join(permit_info_cols)} 
         FROM treatment_facilities_with_id
@@ -153,7 +165,7 @@ def build_facility_misc() -> None:
     facility_miscellaneous_info_cols = ["Facility_ID", "SourceFile", "GEOIDTXT"]
     
     con.execute(
-        f"""
+        f"""--sql
         CREATE OR REPLACE VIEW treatment_facility_misc_info AS 
         SELECT {', '.join(facility_miscellaneous_info_cols)} 
         FROM treatment_facilities_with_id
@@ -165,7 +177,7 @@ def build_suitability_info() -> None:
     suitability_info_cols = ["OGC_FID", "Suitability", "Jurisdiction", "RPC", "Acres"]
     
     con.execute(
-        f"""
+        f"""--sql
         CREATE OR REPLACE VIEW soil_suitability_info AS 
         SELECT {', '.join(suitability_info_cols)} 
         FROM soil_suitability_with_id
@@ -175,7 +187,7 @@ def build_suitability_info() -> None:
 def build_suitability_geom() -> None:
     # suitability_geom_cols = ["OGC_FID", "geometry"]
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW soil_suitability_geom AS 
         SELECT 
             OGC_FID, 
@@ -189,7 +201,7 @@ def build_suitability_geom() -> None:
 def build_stormwater_info() -> None:
     # "Type" labels derived from VERSO WIM GitHub pages 
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW stormwater_management_info AS
         SELECT
             CASE Type
@@ -223,7 +235,7 @@ def build_stormwater_info() -> None:
 
 def build_stormwater_geom() -> None:
     con.execute(
-        """
+        """--sql
         CREATE OR REPLACE VIEW stormwater_management_geom AS 
         SELECT 
             GlobalID, 
@@ -284,10 +296,9 @@ def add_to_lake():
 
     ]
     
-    
     for name in table_names:
         con.execute(
-            f"""
+            f"""--sql
             CREATE OR REPLACE TABLE lake.CLEANED.wastewater_{name} AS 
             SELECT * 
             FROM {name}
