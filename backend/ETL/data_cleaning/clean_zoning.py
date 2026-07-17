@@ -216,7 +216,7 @@ def add_to_lake():
     for name in tables:
         con.execute(
             f"""--sql
-            CREATE OR REPLACE TABLE lake.CLEANED.zoning_{name} AS
+            CREATE OR REPLACE TABLE lake.CLEANED.VersoZoning_{name} AS
             SELECT * FROM {name}
             """)
 

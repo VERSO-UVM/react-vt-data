@@ -299,7 +299,7 @@ def add_to_lake():
     for name in table_names:
         con.execute(
             f"""--sql
-            CREATE OR REPLACE TABLE lake.CLEANED.wastewater_{name} AS 
+            CREATE OR REPLACE TABLE lake.CLEANED.VersoWastewater_{name} AS 
             SELECT * 
             FROM {name}
             """)
