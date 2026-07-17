@@ -35,12 +35,6 @@ def read_raw_data() -> pd.DataFrame:
     return raw_df
 
 
-def rename_county_subdivision(df: pd.DataFrame):
-    df["geo_type"] = df["geo_type"].replace("county_subdivision", "town")
-
-    return df
-
-
 def change_dtype(df: pd.DataFrame):
     df["Value"] = pd.to_numeric(df["Value"], errors="coerce")
 
@@ -55,8 +49,7 @@ def replace_unavailable_data(df: pd.DataFrame):
 
 def clean():
     raw_df = read_raw_data()
-    df = rename_county_subdivision(raw_df)
-    df = change_dtype(df)
+    df = change_dtype(raw_df)
     df = replace_unavailable_data(df)
 
     return df

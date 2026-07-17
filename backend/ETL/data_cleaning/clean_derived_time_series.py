@@ -128,12 +128,6 @@ def read_raw_data(cfg: DatasetConfig) -> pd.DataFrame:
     return con.execute(query, cfg.variables).df()
 
 
-def rename_county_subdivision(df: pd.DataFrame) -> pd.DataFrame:
-    df["geo_type"] = df["geo_type"].replace("county_subdivision", "town")
-
-    return df
-
-
 def change_dtype(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
     df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
 
@@ -148,7 +142,6 @@ def replace_unavailable_data(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
 
 def clean(cfg: DatasetConfig) -> pd.DataFrame:
     df = read_raw_data(cfg)
-    df = rename_county_subdivision(df)
     df = change_dtype(df, cfg.output_value_col)
     df = replace_unavailable_data(df, cfg.output_value_col)
 

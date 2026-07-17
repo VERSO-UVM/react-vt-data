@@ -44,12 +44,6 @@ def read_raw_data() -> pd.DataFrame:
     return raw_df
 
 
-def rename_county_subdivision(df: pd.DataFrame):
-    df["geo_type"] = df["geo_type"].replace("county_subdivision", "town")
-
-    return df
-
-
 def replace_unavailable_data(df: pd.DataFrame):
     df["Value"] = df["Value"].replace(-666666666.0, np.nan)
 
@@ -89,8 +83,7 @@ def calculate_dependency_ratio(df: pd.DataFrame):
 
 def clean():
     raw_df = read_raw_data()
-    df = rename_county_subdivision(raw_df)
-    df = replace_unavailable_data(df)
+    df = replace_unavailable_data(raw_df)
     df = calculate_dependency_ratio(df)
     return df
 
