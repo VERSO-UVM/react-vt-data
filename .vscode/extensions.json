@@ -2,6 +2,9 @@
   "recommendations": [
     "charliermarsh.ruff",
     "esbenp.prettier-vscode",
-    "sqlfluff.vscode-sqlfluff"
+    "sqlfluff.vscode-sqlfluff",
+    "qufiwefefwoyn.inline-sql-syntax",
+    "orangielou.quacksyntax",
+    "mechatroner.rainbow-csv"
   ]
 }
