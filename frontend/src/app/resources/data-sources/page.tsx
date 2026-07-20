@@ -1,68 +1,88 @@
-"use client";
+'use client';
 
 import {
-  Card,
+  Box,
   Container,
-  Divider,
-  Group,
-  Select,
-  Stack,
-  Table,
+  Grid,
   Text,
   Title,
-  Badge,
+  Card,
+  Stack,
+  Group,
+  Select,
+  Divider,
+  Table,
   Button,
-} from "@mantine/core";
-import { useState } from "react";
+} from '@mantine/core';
+import { useState } from 'react';
 
-const FONT_DISPLAY = "Zilla Slab";
+const COLOR = {
+  spruce: '#1B3A2F',
+  spruceDeep: '#122820',
+  slate: '#40525A',
+  birch: '#F6F5EF',
+  birchDim: '#EEEBE0',
+  ink: '#1B211D',
+  amber: '#dd9a2f',
+  amberSoft: '#E7B563',
+  line: 'rgba(27, 58, 47, 0.14)',
+};
+
+const FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', serif";
+const FONT_BODY = "'General Sans', 'Inter', sans-serif";
+const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
+
 
 const DATA_SOURCES = {
   Housing: [
     {
-      name: "Housing Characteristics",
+      name: 'Housing Characteristics',
       source:
-        "U.S. Census Bureau, American Community Survey 5-Year Estimates",
-      updated: "2023",
+        'U.S. Census Bureau, American Community Survey 5-Year Estimates',
       description:
-        "Housing occupancy, tenure, and value estimates for Vermont communities.",
+        'Housing occupancy, tenure, and value estimates for Vermont communities.',
+      updated: '2023',
       variables: [
         {
-          category: "Housing Units",
-          name: "B25002",
-          meaning: "Housing occupancy status",
+          category: 'Housing Units',
+          name: 'B25002',
+          meaning: 'Housing occupancy status',
         },
         {
-          category: "Ownership",
-          name: "B25003",
-          meaning: "Owner-occupied and renter-occupied housing units",
+          category: 'Ownership',
+          name: 'B25003',
+          meaning:
+            'Owner-occupied and renter-occupied housing units',
         },
         {
-          category: "Value",
-          name: "B25077",
-          meaning: "Median value of owner-occupied housing units",
+          category: 'Value',
+          name: 'B25077',
+          meaning:
+            'Median value of owner-occupied housing units',
         },
       ],
     },
   ],
 
-  "Land Use": [
+  'Land Use': [
     {
-      name: "Municipal Zoning",
-      source: "Municipal Zoning Records",
-      updated: "2024",
+      name: 'Municipal Zoning',
+      source: 'Municipal Zoning Records',
       description:
-        "Normalized zoning districts and regulations from Vermont municipalities.",
+        'Normalized zoning districts and regulations collected from Vermont municipalities.',
+      updated: '2024',
       variables: [
         {
-          category: "District",
-          name: "district_type",
-          meaning: "Generalized zoning district classification",
+          category: 'District',
+          name: 'district_type',
+          meaning:
+            'Generalized zoning district classification',
         },
         {
-          category: "Rules",
-          name: "minimum_lot_size",
-          meaning: "Minimum allowed parcel size",
+          category: 'Rules',
+          name: 'minimum_lot_size',
+          meaning:
+            'Minimum allowed parcel size',
         },
       ],
     },
@@ -70,180 +90,313 @@ const DATA_SOURCES = {
 
   Economy: [
     {
-      name: "Employment by Industry",
+      name: 'Employment by Industry',
       source:
-        "U.S. Bureau of Labor Statistics, Quarterly Census of Employment and Wages",
-      updated: "2023-Q4",
+        'U.S. Bureau of Labor Statistics, Quarterly Census of Employment and Wages',
       description:
-        "Employment and wage estimates by industry sector.",
+        'Employment and wage estimates by industry sector.',
+      updated: '2023-Q4',
       variables: [
         {
-          category: "Employment",
-          name: "employment",
-          meaning: "Average covered employment",
+          category: 'Employment',
+          name: 'employment',
+          meaning:
+            'Average covered employment',
         },
         {
-          category: "Industry",
-          name: "naics_sector",
-          meaning: "NAICS industry classification",
+          category: 'Industry',
+          name: 'naics_sector',
+          meaning:
+            'NAICS industry classification',
         },
       ],
     },
   ],
 };
 
+
 export default function DataSourcesPage() {
-  const [subject, setSubject] = useState<string | null>("Housing");
-  const [selectedSource, setSelectedSource] = useState(0);
 
-  const sources = subject ? DATA_SOURCES[subject as keyof typeof DATA_SOURCES] : [];
+  const [subject, setSubject] =
+    useState('Housing');
 
-  const activeSource = sources[selectedSource];
+  const [selectedSource, setSelectedSource] =
+    useState(0);
+
+
+  const sources =
+    DATA_SOURCES[
+      subject as keyof typeof DATA_SOURCES
+    ];
+
+  const activeSource =
+    sources[selectedSource];
+
 
   return (
-    <Container size="xl" py="xl">
-      <Stack gap="xl">
 
-        <Stack gap={4}>
+    <Box>
+
+      {/* Hero */}
+      <Box
+        style={{
+          position: 'relative',
+          width: '100vw',
+          left: '50%',
+          marginLeft: '-50vw',
+          background:
+            `linear-gradient(160deg, ${COLOR.spruceDeep} 0%, ${COLOR.spruce} 100%)`,
+          paddingTop: 70,
+          paddingBottom: 50,
+        }}
+      >
+
+        <Container size="xl">
+
+          <Text
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 12,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: COLOR.amberSoft,
+            }}
+          >
+            Resources
+          </Text>
+
+
           <Title
             order={1}
             style={{
               fontFamily: FONT_DISPLAY,
-              fontSize: "clamp(2rem, 4vw, 3rem)",
+              fontWeight: 600,
+              fontSize:
+                'clamp(2.3rem, 5vw, 3.7rem)',
+              color: COLOR.birch,
+              marginTop: 14,
             }}
           >
             Data Sources
           </Title>
 
-          <Text size="lg" c="dimmed">
-            Explore the datasets powering the Vermont Data Collaborative.
-            Learn where the data comes from and what each variable represents.
+
+          <Text
+            size="lg"
+            mt={12}
+            maw={650}
+            style={{
+              color:
+                'rgba(246,245,239,0.7)',
+              fontFamily: FONT_BODY,
+            }}
+          >
+            Explore the datasets behind the Vermont
+            Data Collaborative. Learn where data
+            originates and what each variable means.
           </Text>
-        </Stack>
+
+        </Container>
+
+      </Box>
 
 
-        <Divider />
+      <Container size="xl" py={50}>
+
+        <Stack gap="xl">
 
 
-        <Select
-          label="Subject Area"
-          placeholder="Choose a subject"
-          value={subject}
-          onChange={(value) => {
-            setSubject(value);
-            setSelectedSource(0);
-          }}
-          data={Object.keys(DATA_SOURCES)}
-        />
+          <Select
+            label="Subject Area"
+            value={subject}
+            onChange={(value) =>
+              setSubject(value || 'Housing')
+            }
+            data={
+              Object.keys(DATA_SOURCES)
+            }
+          />
 
 
-        <Group align="stretch" wrap="wrap">
-          {sources.map((source, index) => (
-            <Card
-              key={source.name}
-              shadow="sm"
-              padding="lg"
-              radius="md"
-              withBorder
-              style={{
-                flex: "1 1 300px",
-                cursor: "pointer",
-              }}
-              onClick={() => setSelectedSource(index)}
-            >
-              <Stack>
-                <Title order={3} style={{ fontFamily: FONT_DISPLAY }}>
-                  {source.name}
-                </Title>
+          <Grid>
 
-                <Text size="sm">
-                  {source.source}
+            {sources.map((source,index)=>(
+
+              <Grid.Col
+                key={source.name}
+                span={{
+                  base:12,
+                  md:4
+                }}
+              >
+
+                <Card
+                  withBorder
+                  radius="lg"
+                  p="lg"
+                  onClick={() =>
+                    setSelectedSource(index)
+                  }
+                  style={{
+                    cursor:'pointer',
+                    borderColor:
+                      selectedSource === index
+                        ? COLOR.amber
+                        : COLOR.line,
+                  }}
+                >
+
+                  <Stack gap="sm">
+
+                    <Title
+                      order={3}
+                      style={{
+                        fontFamily:
+                          FONT_DISPLAY,
+                        fontWeight:600,
+                      }}
+                    >
+                      {source.name}
+                    </Title>
+
+
+                    <Text size="sm">
+                      {source.source}
+                    </Text>
+
+
+                    <Text
+                      size="sm"
+                      c="dimmed"
+                    >
+                      {source.description}
+                    </Text>
+
+                  </Stack>
+
+                </Card>
+
+              </Grid.Col>
+
+            ))}
+
+          </Grid>
+
+
+          <Divider />
+
+
+          <Box>
+
+            <Group justify="space-between"
+              mb="md">
+
+              <Box>
+
+                <Text
+                  style={{
+                    fontFamily:FONT_MONO,
+                    fontSize:11,
+                    letterSpacing:'0.12em',
+                    textTransform:'uppercase',
+                    color:COLOR.slate,
+                  }}
+                >
+                  Variables
                 </Text>
 
-                <Badge>
-                  Updated {source.updated}
-                </Badge>
 
-                <Text size="sm" c="dimmed">
-                  {source.description}
-                </Text>
-              </Stack>
-            </Card>
-          ))}
-        </Group>
-
-
-        {activeSource && (
-          <>
-            <Divider />
-
-            <Stack gap="md">
-
-              <Group justify="space-between">
                 <Title
                   order={2}
                   style={{
-                    fontFamily: FONT_DISPLAY,
+                    fontFamily:
+                      FONT_DISPLAY,
                   }}
                 >
-                  {activeSource.name} Variables
+                  {activeSource.name}
                 </Title>
 
-                <Button variant="light">
-                  Compare Variables
-                </Button>
-              </Group>
+              </Box>
 
 
-              <Card
-                withBorder
-                radius="md"
-                padding="0"
+              <Button
+                variant="light"
+                color="green"
               >
-                <Table striped highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>
-                        Category
-                      </Table.Th>
+                Compare Variables
+              </Button>
 
-                      <Table.Th>
-                        Variable
-                      </Table.Th>
+            </Group>
 
-                      <Table.Th>
-                        Meaning
-                      </Table.Th>
+
+            <Card
+              withBorder
+              radius="lg"
+              p={0}
+            >
+
+              <Table striped highlightOnHover>
+
+                <Table.Thead>
+
+                  <Table.Tr>
+
+                    <Table.Th>
+                      Category
+                    </Table.Th>
+
+                    <Table.Th>
+                      Variable
+                    </Table.Th>
+
+                    <Table.Th>
+                      Meaning
+                    </Table.Th>
+
+                  </Table.Tr>
+
+                </Table.Thead>
+
+
+                <Table.Tbody>
+
+                  {activeSource.variables.map(
+                    variable => (
+
+                    <Table.Tr
+                      key={variable.name}
+                    >
+
+                      <Table.Td>
+                        {variable.category}
+                      </Table.Td>
+
+                      <Table.Td>
+                        {variable.name}
+                      </Table.Td>
+
+                      <Table.Td>
+                        {variable.meaning}
+                      </Table.Td>
+
                     </Table.Tr>
-                  </Table.Thead>
 
-                  <Table.Tbody>
-                    {activeSource.variables.map((variable) => (
-                      <Table.Tr key={variable.name}>
+                  ))}
 
-                        <Table.Td>
-                          {variable.category}
-                        </Table.Td>
+                </Table.Tbody>
 
-                        <Table.Td>
-                          {variable.name}
-                        </Table.Td>
+              </Table>
 
-                        <Table.Td>
-                          {variable.meaning}
-                        </Table.Td>
+            </Card>
 
-                      </Table.Tr>
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </Card>
+          </Box>
 
-            </Stack>
-          </>
-        )}
 
-      </Stack>
-    </Container>
+        </Stack>
+
+      </Container>
+
+    </Box>
+
   );
 }
