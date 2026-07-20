@@ -27,6 +27,7 @@ const links = [
       { link: '/mapping/treatment-facilities', label: 'Wastewater Treatment Facilities'},
       {link: '/mapping/service-areas', label: 'Wastewater System Service Areas'},
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
+      { link: '/mapping/ambulance', label: 'Ambulance Service Areas'}
     ],
   },
   { link: '/data-viewer', label: 'Analyze' }, // accessible via Working Report

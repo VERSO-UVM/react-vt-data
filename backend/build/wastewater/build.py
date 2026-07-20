@@ -8,7 +8,6 @@
 """
 
 # TODO: move the large SQL code to its own files rather than inside here
-# TODO: also, need to go create the consolidated duckDB database
 
 import os
 from pathlib import Path

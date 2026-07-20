@@ -61,6 +61,12 @@ const MAP_CONFIG: Record<
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=service_areas_service_area_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
+  'ambulance': {
+    title: 'Ambulance Service Areas',
+    initialURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=ambulance_ambulance_info`,
+    dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+  },
 };
 
 const STATS_CONFIG: Record<

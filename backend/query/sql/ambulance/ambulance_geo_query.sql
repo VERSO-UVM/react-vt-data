@@ -1,0 +1,30 @@
+{{ cte_filter_block }}
+SELECT
+    json_object(
+        'type', 'FeatureCollection',
+        'features', json_group_array(feature)
+    )::VARCHAR AS fc
+FROM (
+    SELECT
+        json_object(
+            'type', 'Feature',
+            'geometry', ST_AsGeoJSON(ST_Simplify(g.geometry, 0.0001))::JSON,
+            'properties', json_object(
+                'Certification Level', i.Cert_Level,
+                'Acres', ROUND(g.Shape__Area, 2),
+                'rgba_color', c.rgba::JSON,
+                'tooltip', json_object(
+                    '__title__', 'Ambulance Service Areas',
+                    'Company Name', i.Serv_Name,
+                    'Address of Company', i.Address,
+                    'Certification Level', i.Cert_Level,
+                    'Acres', ROUND(g.Shape__Area, 2)
+                )
+            )
+        ) AS feature
+    FROM ambulance_ambulance_info AS i
+    INNER JOIN ambulance_ambulance_geom AS g USING (OBJECTID)
+    LEFT JOIN ambulance_ambulance_colors AS c
+        ON i.Cert_Level = c.certification_level
+    {{ join_filter_block }}
+) AS features

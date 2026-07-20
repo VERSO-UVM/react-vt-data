@@ -13,3 +13,6 @@ from query.wastewater import (
     get_waste_treatment_facility_permits,
     get_soil_suit_geojson,
 )
+from query.ambulance import (
+    get_ambulance_geojson,
+)
