@@ -54,6 +54,7 @@ const links = [
     // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
       { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
+      { link: '/resources/data-sources', label: 'Data Sources '},
       // { link: '/resources/github', label: 'GitHub' },
       // { link: '/resources/tutorial', label: 'Tutorial' },
     ],
