@@ -147,3 +147,17 @@ def dual_var_comparison(
         "edges_y": edges_y,
     }
     return geojson, legend
+
+
+def get_cdc_county_pca():
+    df = DB.execute("""--sql
+               SELECT i.LocationID, ROUND(i.pca_score, 2) AS "Health Burden", c.CountyName
+                FROM cdc_countyPcaData AS i
+                LEFT JOIN vermont_counties AS c ON i.LocationID = c.CountyFIPS
+               """).df()
+    df["CountyName"] = df["CountyName"].str.title()
+    df = df.sort_values(by="CountyName")
+    ret = df[["CountyName", "Health Burden"]].to_dict(orient="records")
+    print(ret)
+    print("WhATS GOING ON")
+    return ret

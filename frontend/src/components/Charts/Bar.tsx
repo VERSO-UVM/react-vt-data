@@ -29,36 +29,58 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
+import {
+  Title,
+  Box,
+  Group,
+  Text,
+  ActionIcon,
+  Tooltip as MantineTooltip,
+} from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
 
 // d3 color schemes looked up by name (e.g. 'schemeCategory10')
 const d3Schemes = d3 as unknown as Record<string, readonly string[]>;
 
-const SamePerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => {
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        width={500}
-        height={300}
-        data={chart.data}
-        margin={{
-          top: 5,
-          right: 30,
-          left: 20,
-          bottom: 5,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey={chart.xField} />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        {chart.chartParams?.datakeys?.map(([datakey, color]) => (
-          <Bar key={datakey} dataKey={datakey} fill={color} />
-        ))}
-      </BarChart>
-    </ResponsiveContainer>
-  );
-};
+const SamePerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => (
+  <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Group gap={4}>
+      <Text size="sm" fw={600}>
+        {chart.title}
+      </Text>
+      {chart.description && (
+        <MantineTooltip label={chart.description} multiline w={240}>
+          <ActionIcon variant="subtle" size="sm">
+            <IconInfoCircle size={14} />
+          </ActionIcon>
+        </MantineTooltip>
+      )}
+    </Group>
+    <Box style={{ flex: 1, minHeight: 0 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={chart.data}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey={chart.xField}
+            interval={chart.chartParams?.xInterval ?? 0}
+            angle={chart.chartParams?.xAngle ?? -45}
+            textAnchor={chart.chartParams?.xAngle ? 'end' : 'middle'}
+            height={chart.chartParams?.xHeight ?? 70}
+          />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          {chart.chartParams?.datakeys?.map(([datakey, color]) => (
+            <Bar key={datakey} dataKey={datakey} fill={color} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </Box>
+  </Box>
+);
 
 // ---------------------------------------------------------------------------
 // DiffPerXBarChart — single dataset, per-bar colors from data

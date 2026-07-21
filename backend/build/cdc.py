@@ -21,7 +21,7 @@ TABLES = [
     "county_edges",
     "tract_places",
     "tract_edges",
-    "county_pca_data",
+    "countyPcaData",
 ]
 
 
@@ -49,7 +49,7 @@ def build_PCA_table(us_df: pd.DataFrame) -> pd.DataFrame:
     pca = PCA(n_components=2)
     pca.fit(pv)
 
-    # standardize the  VT, pivot, and return
+    # standardize the  VT, transform, add back in, and return
     pv_vt = (pv_vt - mean) / std
     assert list(pv_vt.columns) == list(pv.columns), "measure columns misaligned"
     scores = pca.transform(pv_vt)
@@ -89,7 +89,7 @@ def build_places(name: str, path: Path, indicators: str) -> None:
     """)
     if name == "county":
         CON.execute(f"""--sql
-                CREATE OR REPLACE TABLE {name}_pca_data
+                CREATE OR REPLACE TABLE {name}PcaData
                 AS SELECT * 
                 FROM pca_df            
             """)

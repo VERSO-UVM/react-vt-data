@@ -249,7 +249,7 @@ indicators_sql = ", ".join(f"'{i}'" for i in sme_indicators)
 db = duckdb.connect()
 
 data_dir = Path("Data")
-path = data_dir / "CDC" / "cdc_places.csv"
+path = data_dir / "CDC" / "CDC_Places.csv"
 
 db.execute(f"""--sql
   CREATE OR REPLACE VIEW places_raw AS 

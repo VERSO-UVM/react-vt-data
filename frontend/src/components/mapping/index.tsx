@@ -7,6 +7,7 @@ import { Map } from 'react-map-gl/maplibre';
 // deck, geojson, and maplibre styling
 import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
+import { Controller } from '@deck.gl/core';
 import type { FeatureCollection } from 'geojson';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -16,6 +17,8 @@ import { Paper, Divider } from '@mantine/core';
 interface MyMapProps {
   geojson: FeatureCollection | null;
   showCountyLines: boolean;
+  controllerOn?: boolean;
+  initialZoom?: number;
 }
 
 const BASE_STYLES = {
@@ -41,8 +44,16 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
-  const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+export default function VTMap({
+  geojson,
+  showCountyLines,
+  controllerOn = true,
+  initialZoom = 7,
+}: MyMapProps) {
+  const [viewState, setViewState] = useState({
+    ...INITIAL_VIEW_STATE,
+    zoom: initialZoom,
+  });
   const [baseStyle] = useState(BASE_STYLES.OSM);
   const [tooltip, setTooltip] = useState<{
     x: number;
@@ -144,7 +155,7 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
         <DeckGL
           viewState={viewState}
           onViewStateChange={onViewStateChange}
-          controller
+          controller={controllerOn}
           layers={layers}
           style={{ width: '100%', height: '100%' }}
         >

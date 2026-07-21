@@ -5,12 +5,14 @@ import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';
 import VTMap from '@/components/mapping';
 import VariableScatter from '@/components/Charts/MapCorrespondentScatter';
-import MapPageLayout from '@/components/MapPageLayout';
 import { cdc_filtering } from '@/components/FilterRedux/filterDefs';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 import { assemble } from '@/components/FilterRedux/apiHelpers';
 import { postRequest } from '@/components/FilterRedux/filterRequest';
 import { FilterSpec } from '@/components/FilterRedux/filterTypes';
+import QuadTileMapLayout from '@/components/QuadTileMapLayout';
+import { ChartItem } from '@/types/cachedCharts';
+import { SamePerXBarChart } from '@/components/Charts';
 
 type Legend = {
   grid: number[][][]; // [y][x] -> rgba, matches the map's fill colors
@@ -136,6 +138,8 @@ const validDatasets = {
   'CDC, Tract Level': `${BASE_API_URL}/load/mapping/cdc/places/tract_comparison`,
 };
 
+const pcaURL = `${BASE_API_URL}/load/mapping/cdc/places/pca_summary`;
+
 function DataSetSelector({
   handleSelect,
 }: {
@@ -154,10 +158,16 @@ function DataSetSelector({
 export default function VariableComparison() {
   const [legend, setLegend] = useState<Legend | null>(null);
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
-  const [comparisonURL, setComparisonURL] = useState<string | null>(null);
+  const [comparisonURL, setComparisonURL] = useState<string>(
+    validDatasets['CDC, County Level'],
+  );
+  const [pcaChart, setPCAChart] = useState<ChartItem | null>(null);
 
   const handleSelectDataSet = (value: string): void => {
     setComparisonURL(validDatasets[value as keyof typeof validDatasets]);
+    if (value === 'CDC, County Level') {
+      // setPCASummaryURL(pcaURL);
+    }
   };
 
   const handleApply = async (specs: FilterSpec[]) => {
@@ -166,13 +176,31 @@ export default function VariableComparison() {
     // colors always match the map colors
     const url = comparisonURL as string;
     const res = await postRequest({ dataURL: url, payload });
+
     setGeojson(res.data);
     setLegend(res.metadata?.legend ?? null);
+
+    if (url === validDatasets['CDC, County Level']) {
+      const pcaRes = await postRequest({ dataURL: pcaURL, payload });
+      setPCAChart({
+        id: 'cdc-county-pca',
+        title: 'Combined Health Burden Index',
+        type: 'chart',
+        subtype: 'bar',
+        xField: 'CountyName',
+        yField: 'Health Burden',
+        // SamePerXBarChart draws one <Bar> per datakey, not from yField
+        chartParams: { datakeys: [['Health Burden', '#3b7dd8']] },
+        data: pcaRes.data,
+        description:
+          'The Health Burden represents a weighted combination of every Health Burden variable, with the weight based on how unusual that value is compared to the national average. It is based on Principal Component Analysis, or PCA. Negative health burden means the county has fewer health issues than the average American county.',
+      });
+    }
   };
 
   return (
-    <MapPageLayout
-      title="Compare Variables"
+    <QuadTileMapLayout
+      title="Compare Health Indicators"
       sidebar={
         <>
           <DataSetSelector handleSelect={handleSelectDataSet} />
@@ -182,8 +210,22 @@ export default function VariableComparison() {
           {legend && <BivariateLegend legend={legend} />}
         </>
       }
-      map={<VTMap geojson={geojson} showCountyLines={false} />}
-      below={<VariableScatter geojson={geojson} legend={legend} />}
+      map={
+        <VTMap
+          geojson={geojson}
+          showCountyLines={false}
+          controllerOn={false}
+          initialZoom={8}
+        />
+      }
+      tiles={[
+        geojson && <VariableScatter geojson={geojson} legend={legend} />,
+        pcaChart && (
+          <div style={{ height: 360 }}>
+            <SamePerXBarChart chart={pcaChart} />
+          </div>
+        ),
+      ]}
     />
   );
 }

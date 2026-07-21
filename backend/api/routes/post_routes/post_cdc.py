@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from api.core_functions import request_to_source, spec_to_source
 from api.models import APIResponse, FilterRequest, FilterSpec, make_response
-from query import dual_var_comparison, single_var_geojson
+from query import dual_var_comparison, get_cdc_county_pca, single_var_geojson
 
 router = APIRouter()
 
@@ -36,3 +36,8 @@ async def cdc_comparison_tract(specs: list[FilterSpec]) -> APIResponse:
     sources = [spec_to_source(spec, "default") for spec in specs]
     geojson, legend = dual_var_comparison(sources, geoLevel="tract_places")
     return make_response(data=geojson, metadata={"legend": legend})
+
+
+@router.post("/load/mapping/cdc/places/pca_summary")
+async def cdc_pca(specs: list[FilterSpec]) -> APIResponse:
+    return make_response(data=get_cdc_county_pca(), metadata={})

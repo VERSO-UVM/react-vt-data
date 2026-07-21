@@ -13,6 +13,9 @@ interface ChartParams {
   defId?: string;
   legendLabels?: string[];
   noViewSwitch?: boolean;
+  xInterval?: number;
+  xAngle?: number;
+  xHeight?: number;
   [key: string]: unknown;
 }
 
@@ -42,7 +45,7 @@ interface TableColumnConfig {
   visible?: boolean; // client-side filtering
 }
 
-interface ChartItem<TData> extends BaseItem<TData> {
+interface ChartItem<TData = DataRow> extends BaseItem<TData> {
   type: 'chart';
   subtype: string;
   trendChart?: string; // component name for the trend view of table-primary items
