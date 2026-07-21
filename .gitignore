@@ -19,6 +19,9 @@ backend/Data/Parcels/
 claude_todo.md
 claude-work-done.md
 
+# duckdb files that don't belong on git (can build from parquet)
+*.duckdb
+
 
 # build libraries
 *node_modules*
