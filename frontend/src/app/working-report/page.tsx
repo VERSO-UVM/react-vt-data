@@ -23,214 +23,256 @@ import {
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
 import { motion } from 'motion/react';
-import { PencilSimpleIcon, DownloadSimpleIcon, Icon, XIcon } from "@phosphor-icons/react";
+import {
+  PencilSimpleIcon,
+  DownloadSimpleIcon,
+  Icon,
+  XIcon,
+} from '@phosphor-icons/react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';
 import { PdfModeContext } from '@/contexts/PdfModeContext';
 
-
 const COLOR = {
- spruce: '#1B3A2F',
- spruceDeep: '#122820',
- slate: '#40525A',
- birch: '#F6F5EF',
- birchDim: '#EEEBE0',
- ink: '#1B211D',
- amber: '#dd9a2f',
- amberSoft: '#E7B563',
- amberYellow: '#FFD100',
- line: 'rgba(27, 58, 47, 0.14)',
+  spruce: '#1B3A2F',
+  spruceDeep: '#122820',
+  slate: '#40525A',
+  birch: '#F6F5EF',
+  birchDim: '#EEEBE0',
+  ink: '#1B211D',
+  amber: '#dd9a2f',
+  amberSoft: '#E7B563',
+  amberYellow: '#FFD100',
+  line: 'rgba(27, 58, 47, 0.14)',
 };
 const FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', serif";
 const FONT_BODY = "'General Sans', 'Inter', sans-serif";
 const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
 
-
 function HeroSection({
- myLocation,
- comparison,
- interests,
- yearMin,
- yearMax,
- openProfileModal,
- isGenerating,
- handleDownloadPdf,
- handleClearReport
+  myLocation,
+  comparison,
+  interests,
+  yearMin,
+  yearMax,
+  openProfileModal,
+  isGenerating,
+  handleDownloadPdf,
+  handleClearReport,
 }: {
- myLocation: any;
- comparison: any;
- interests: string[];
- yearMin: number;
- yearMax: number;
- openProfileModal: () => void;
- isGenerating: boolean;
- handleDownloadPdf: () => void;
- handleClearReport: () => void;
+  myLocation: any;
+  comparison: any;
+  interests: string[];
+  yearMin: number;
+  yearMax: number;
+  openProfileModal: () => void;
+  isGenerating: boolean;
+  handleDownloadPdf: () => void;
+  handleClearReport: () => void;
 }) {
- return (
-   // Full-bleed: breaks out of the page's centered Container so the hero
-   // touches both edges of the viewport instead of floating as a card.
-   <Box
-     style={{
-       position: 'relative',
-       overflow: 'hidden',
-       width: '100vw',
-       left: '50%',
-       marginLeft: '-50vw',
-       background: `linear-gradient(160deg, ${COLOR.spruceDeep} 0%, ${COLOR.spruce} 100%)`,
-       paddingTop: 70,
-       paddingBottom: 40,
-     }}
-   >
-     <Container size="xl">
-       <Grid gap="md" align="center">
-         <Grid.Col span={{ base: 12, md: 8 }}>
-           <motion.div
-             initial={{ opacity: 0, y: 16 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-           >
-             <Text
-               style={{
-                 fontFamily: FONT_MONO,
-                 fontSize: 12,
-                 letterSpacing: '0.14em',
-                 textTransform: 'uppercase',
-                 color: COLOR.amberSoft,
-               }}
-             >
-               Working Report
-             </Text>
-           </motion.div>
-           <Title
-             order={1}
-             style={{
-               fontFamily: FONT_DISPLAY,
-               fontWeight: 600,
-               fontSize: 'clamp(2.3rem, 5.4vw, 3.7rem)',
-               lineHeight: 1.04,
-               color: COLOR.birch,
-               marginTop: 14,
-               maxWidth: 640,
-             }}
-           >
-             {myLocation?.name || 'No Location Selected'}
-             {comparison?.name && (
-               <Text
-                 span
-                 style={{
-                   fontFamily: FONT_DISPLAY,
-                   fontWeight: 400,
-                   fontSize: '0.4em',
-                   color: 'rgba(246, 245, 239, 0.58)',
-                   display: 'block',
-                   marginTop: 8,
-                 }}
-               >
-                 compared to {comparison.name}
-               </Text>
-             )}
-           </Title>
-           <ReportActions
+  return (
+    // Full-bleed: breaks out of the page's centered Container so the hero
+    // touches both edges of the viewport instead of floating as a card.
+    <Box
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        width: '100vw',
+        left: '50%',
+        marginLeft: '-50vw',
+        background: `linear-gradient(160deg, ${COLOR.spruceDeep} 0%, ${COLOR.spruce} 100%)`,
+        paddingTop: 70,
+        paddingBottom: 40,
+      }}
+    >
+      <Container size="xl">
+        <Grid gap="md" align="center">
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Text
+                style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 12,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: COLOR.amberSoft,
+                }}
+              >
+                Working Report
+              </Text>
+            </motion.div>
+            <Title
+              order={1}
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontWeight: 600,
+                fontSize: 'clamp(2.3rem, 5.4vw, 3.7rem)',
+                lineHeight: 1.04,
+                color: COLOR.birch,
+                marginTop: 14,
+                maxWidth: 640,
+              }}
+            >
+              {myLocation?.name || 'No Location Selected'}
+              {comparison?.name && (
+                <Text
+                  span
+                  style={{
+                    fontFamily: FONT_DISPLAY,
+                    fontWeight: 400,
+                    fontSize: '0.4em',
+                    color: 'rgba(246, 245, 239, 0.58)',
+                    display: 'block',
+                    marginTop: 8,
+                  }}
+                >
+                  compared to {comparison.name}
+                </Text>
+              )}
+            </Title>
+            <ReportActions
               isGenerating={isGenerating}
               onDownload={handleDownloadPdf}
               onClear={handleClearReport}
             />
-           
-         </Grid.Col>
-         {/* Profile panel — sits beside the title, always on the dark
+          </Grid.Col>
+          {/* Profile panel — sits beside the title, always on the dark
              background so the light text stays legible. Kept compact so
              it doesn't compete with the location title. */}
-         <Grid.Col span={{ base: 12, md: 4 }}>
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-           >
-             <Box
-               style={{
-                 background: 'rgba(246,245,239,0.07)',
-                 border: '1px solid rgba(246,245,239,0.18)',
-                 borderRadius: 14,
-                 padding: '16px 18px',
-                 backdropFilter: 'blur(6px)',
-               }}
-             >
-               <Group justify="space-between" align="center" mb={10}>
-                 <Text
-                   style={{
-                     fontFamily: FONT_MONO,
-                     color: COLOR.amberSoft,
-                     fontSize: 12,
-                     letterSpacing: '0.08em',
-                     textTransform: 'uppercase',
-                   }}
-                 >
-                   Report Summary
-                 </Text>
-                 <Button
-                   size="compact-xs"
-                   variant="subtle"
-                   rightSection={<PencilSimpleIcon size={16} weight="bold" />}
-                   onClick={openProfileModal}
-                   styles={{ root: { color: COLOR.amberSoft } }}
-                 >
-                   Edit
-                 </Button>
-               </Group>
-               <Stack gap={10}>
-                 <ProfileField label="Location" value={myLocation?.name} small />
-                 <ProfileField label="Comparing to" value={comparison?.name} small />
-                 <ProfileField label="Years" value={`${yearMin}–${yearMax}`} small />
-                 <Box>
-                   <FieldLabel small>Interests</FieldLabel>
-                   {interests.length > 0 ? (
-                     <Text size="sm" style={{ color: COLOR.birch, fontWeight: 500 }}>
-                       {interests.join(' · ')}
-                     </Text>
-                   ) : (
-                     <Text size="sm" style={{ color: 'rgba(246,245,239,0.55)' }}>None selected</Text>
-                   )}
-                 </Box>
-               </Stack>
-             </Box>
-           </motion.div>
-         </Grid.Col>
-       </Grid>
-     </Container>
-   </Box>
- );
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.7,
+                delay: 0.4,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Box
+                style={{
+                  background: 'rgba(246,245,239,0.07)',
+                  border: '1px solid rgba(246,245,239,0.18)',
+                  borderRadius: 14,
+                  padding: '16px 18px',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <Group justify="space-between" align="center" mb={10}>
+                  <Text
+                    style={{
+                      fontFamily: FONT_MONO,
+                      color: COLOR.amberSoft,
+                      fontSize: 12,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Report Summary
+                  </Text>
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    rightSection={<PencilSimpleIcon size={16} weight="bold" />}
+                    onClick={openProfileModal}
+                    styles={{ root: { color: COLOR.amberSoft } }}
+                  >
+                    Edit
+                  </Button>
+                </Group>
+                <Stack gap={10}>
+                  <ProfileField
+                    label="Location"
+                    value={myLocation?.name}
+                    small
+                  />
+                  <ProfileField
+                    label="Comparing to"
+                    value={comparison?.name}
+                    small
+                  />
+                  <ProfileField
+                    label="Years"
+                    value={`${yearMin}–${yearMax}`}
+                    small
+                  />
+                  <Box>
+                    <FieldLabel small>Interests</FieldLabel>
+                    {interests.length > 0 ? (
+                      <Text
+                        size="sm"
+                        style={{ color: COLOR.birch, fontWeight: 500 }}
+                      >
+                        {interests.join(' · ')}
+                      </Text>
+                    ) : (
+                      <Text
+                        size="sm"
+                        style={{ color: 'rgba(246,245,239,0.55)' }}
+                      >
+                        None selected
+                      </Text>
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+            </motion.div>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </Box>
+  );
 }
 
-
-function FieldLabel({ children, small }: { children: React.ReactNode; small?: boolean }) {
- return (
-   <Text
-     style={{
-       fontFamily: FONT_MONO,
-       fontSize: small ? 10 : 11,
-       letterSpacing: '0.08em',
-       textTransform: 'uppercase',
-       color: 'rgba(246,245,239,0.5)',
-       marginBottom: 4,
-     }}
-   >
-     {children}
-   </Text>
- );
+function FieldLabel({
+  children,
+  small,
+}: {
+  children: React.ReactNode;
+  small?: boolean;
+}) {
+  return (
+    <Text
+      style={{
+        fontFamily: FONT_MONO,
+        fontSize: small ? 10 : 11,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: 'rgba(246,245,239,0.5)',
+        marginBottom: 4,
+      }}
+    >
+      {children}
+    </Text>
+  );
 }
 
-
-function ProfileField({ label, value, small }: { label: string; value?: string; small?: boolean }) {
- return (
-   <Box>
-     <FieldLabel small={small}>{label}</FieldLabel>
-     <Text size={small ? 'sm' : 'md'} style={{ color: COLOR.birch, fontWeight: 500 }}>{value || '—'}</Text>
-   </Box>
- );
+function ProfileField({
+  label,
+  value,
+  small,
+}: {
+  label: string;
+  value?: string;
+  small?: boolean;
+}) {
+  return (
+    <Box>
+      <FieldLabel small={small}>{label}</FieldLabel>
+      <Text
+        size={small ? 'sm' : 'md'}
+        style={{ color: COLOR.birch, fontWeight: 500 }}
+      >
+        {value || '—'}
+      </Text>
+    </Box>
+  );
 }
-
 
 type ReportActionsProps = {
   isGenerating: boolean;
@@ -253,8 +295,8 @@ function ReportActions({
         style={{
           backgroundColor: COLOR.birchDim,
           color: COLOR.spruceDeep,
-          border: "none",
-          fontFamily: FONT_BODY
+          border: 'none',
+          fontFamily: FONT_BODY,
         }}
       >
         Download PDF
@@ -267,8 +309,8 @@ function ReportActions({
         onClick={onClear}
         leftSection={<XIcon size={16} weight="bold" />}
         style={{
-          border: "none",
-          fontFamily: FONT_BODY
+          border: 'none',
+          fontFamily: FONT_BODY,
         }}
       >
         Clear report
@@ -276,7 +318,6 @@ function ReportActions({
     </Group>
   );
 }
-
 
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
@@ -364,13 +405,17 @@ export default function WorkingReport() {
       const url = chart.url;
       const filters = buildFilters(myLocation, {
         col: 'year',
-        selected: [chart.chartParams?.fixedYear ?? yearMin,
-                  chart.chartParams?.fixedYear ?? yearMax],
+        selected: [
+          chart.chartParams?.fixedYear ?? yearMin,
+          chart.chartParams?.fixedYear ?? yearMax,
+        ],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
-        selected: [chart.chartParams?.fixedYear ?? yearMin,
-                  chart.chartParams?.fixedYear ?? yearMax],
+        selected: [
+          chart.chartParams?.fixedYear ?? yearMin,
+          chart.chartParams?.fixedYear ?? yearMax,
+        ],
       });
 
       applyFilters({
@@ -570,7 +615,7 @@ export default function WorkingReport() {
           isGenerating={isGenerating}
           handleDownloadPdf={handleDownloadPdf}
           handleClearReport={handleClearReport}
-       />
+        />
         <PdfModeContext.Provider value={isPdfMode}>
           <div ref={chartsRef}>
             <ChartStack
