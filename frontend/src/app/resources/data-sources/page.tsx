@@ -1,17 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import {
+  Button,
   Box,
   Card,
   Container,
   Divider,
   Drawer,
+  ScrollArea,
   SimpleGrid,
   Stack,
   Table,
   Text,
+  TextInput,
   Title,
 } from '@mantine/core';
 
@@ -23,6 +26,8 @@ import {
   GraduationCapIcon,
   DropIcon,
   UsersThreeIcon,
+  ArrowLeftIcon,
+  MagnifyingGlassIcon,
   Icon,
 } from '@phosphor-icons/react';
 import * as motion from "motion/react-client"
@@ -48,7 +53,6 @@ const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
 type Variable = {
   name: string;
   description: string;
-  datatype?: string;
   key? : boolean;
 };
 
@@ -215,37 +219,31 @@ const DATA_SOURCES: Category[] = [
           {
             name: "District Name",
             description: "Official municipal zoning district designation.",
-            datatype: "String",
             key: true,
           },
           {
             name: "1-Family Allowance",
             description: "Permitted and conditional land uses within each district.",
-            datatype: "String",
             key: true,
           },
           {
             name: "2-Family Allowance",
             description: "Permitted and conditional land uses within each district.",
-            datatype: "String",
             key: true,
           },
           {
             name: "3-Family Allowance",
             description: "Permitted and conditional land uses within each district.",
-            datatype: "String",
             key: true,
           },
           {
             name: "4+ Family Allowance",
             description: "Permitted and conditional land uses within each district.",
-            datatype: "String",
             key: true,
           },
           {
             name: "Minimum Lot Size",
             description: "Minimum parcel size required for development.",
-            datatype: "Numeric",
             key: true,
           },
         ],
@@ -273,28 +271,24 @@ const DATA_SOURCES: Category[] = [
             name: "Median Household Income",
             description:
               "Median annual household income reported by ACS.",
-            datatype: "Currency",
             key: true,
           },
           {
             name: "Unemployment Rate",
             description:
               "Unemployment rate among the civilian labor force.",
-            datatype: "Percentage",
             key: true,
           },
           {
             name: "Employment by Sector",
             description:
               "Employment counts by NAICS industry sector.",
-            datatype: "Count",
             key: true,
           },
           {
             name: "Per Capita Income",
             description:
               "Average annual income per person.",
-            datatype: "Currency",
             key: true,
           },
         ],
@@ -331,7 +325,6 @@ const DATA_SOURCES: Category[] = [
           {
             name: "Unemployment Rate",
             description: "Unemployment rate among the civilian labor force.",
-            datatype: "Percentage",
             key: true,
           },
         ],
@@ -352,19 +345,16 @@ const DATA_SOURCES: Category[] = [
           {
             name: "Annual Earnings for Male Full-Time Workers",
             description: "Annual earnings for male full-time workers",
-            datatype: "Currency",
             key: true,
           },
           {
             name: "Annual Earnings for Female Full-Time Workers",
             description: "Annual earnings for female full-time workers",
-            datatype: "Currency",
             key: true,
           },
           {
             name: "Annual Earnings All Workers",
             description: "Annual earnings for all workers (Part-time and full-time)",
-            datatype: "Currency",
             key: true,
           },
         ],
@@ -390,19 +380,16 @@ const DATA_SOURCES: Category[] = [
           {
             name: "Median Home Value",
             description: "Median home value reported by ACS.",
-            datatype: "Currency",
             key: true,
           },
           {
             name: "Rental Vacancy Rate",
             description: "",
-            datatype: "Percentage",
             key: true,
           },
           {
             name: "Owned Vacancy Rate",
             description: "",
-            datatype: "Percentage",
             key: true,
           },
           {
@@ -671,7 +658,7 @@ const DATA_SOURCES: Category[] = [
           },
           {
             name: "Sex Ratio",
-            description: "Unemployment rate among the civilian labor force.",
+            description: "Ratio of females to males.",
             key: true,
           },
           {
@@ -810,6 +797,33 @@ function DataSourcesHero() {
 }
 
 
+function SearchDatasets({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: React.ChangeEventHandler<HTMLInputElement>;
+}) {
+  return (
+    <TextInput
+      value={value}
+      onChange={onChange}
+      size="lg"
+      radius="xl"
+      placeholder="Search datasets, variables, or sources..."
+      rightSection={<MagnifyingGlassIcon size={18} />}
+      styles={{
+        input: {
+          backgroundColor: "rgba(255,255,255,0.95)",
+          borderColor: COLOR.line,
+          backdropFilter: "blur(8px)",
+        },
+      }}
+    />
+  );
+}
+
+
 function CategoryCard({
   category,
   onClick,
@@ -842,7 +856,7 @@ function CategoryCard({
     >
       <Card
         withBorder
-        radius="xl"
+        radius="lg"
         p="xl"
         h="100%"
         style={{
@@ -895,28 +909,24 @@ function DatasetCard({
       p="lg"
       style={{
         cursor: "pointer",
+        borderColor: COLOR.spruce,
+        borderWidth: 0.75
       }}
-      onClick={onClick}
-    >
+      onClick={onClick}>
       <Title
         order={3}
         style={{
           fontFamily: FONT_DISPLAY,
-        }}
-      >
+        }}>
         {dataset.name}
       </Title>
-
       <Text size="sm" c="dimmed" mt="xs">
         {dataset.summary}
       </Text>
-
       <Divider my="md" />
-
       <Text size="sm" fw={700}>
         Source
       </Text>
-
       <Text size="sm" c="dimmed">
         {dataset.source}
       </Text>
@@ -939,9 +949,6 @@ function VariableTable({
             Variable
           </Table.Th>
           <Table.Th>
-            Type
-          </Table.Th>
-          <Table.Th>
             Description
           </Table.Th>
         </Table.Tr>
@@ -951,9 +958,6 @@ function VariableTable({
           <Table.Tr key={variable.name}>
             <Table.Td>
               {variable.name}
-            </Table.Td>
-            <Table.Td>
-              {variable.datatype}
             </Table.Td>
             <Table.Td>
               {variable.description}
@@ -968,12 +972,18 @@ function VariableTable({
 
 function DatasetDrawer({
   category,
+  dataset,
   opened,
   onClose,
+  onDatasetSelect,
+  onBack,
 }: {
   category: Category | null;
+  dataset: Dataset | null;
   opened: boolean;
   onClose: () => void;
+  onDatasetSelect: (dataset: Dataset) => void;
+  onBack: () => void;
 }) {
 
   return (
@@ -981,28 +991,70 @@ function DatasetDrawer({
       opened={opened}
       onClose={onClose}
       position="bottom"
-      size="md">
-      {category && (
+      size="lg"
+    >
+      {dataset ? (
         <Stack>
-          <Title order={2 }style={{
-            color: COLOR.spruceDeep,
-            fontFamily: FONT_BODY
-          }}>
-            {`${category?.name} Datasets`}
+          <Button
+            variant='transparent'
+            justify="flex-start"
+            leftSection={<ArrowLeftIcon size={20} />}
+            style={{
+                width: 250,
+              }}
+              size='sm'
+            onClick={onBack}
+          >
+            Back to datasets
+          </Button>
+
+          <Stack gap={5}>
+            <Title
+              order={2}
+              style={{
+                fontFamily: FONT_DISPLAY,
+                color: COLOR.spruceDeep,
+              }}
+            >
+              {dataset.name}
+            </Title>
+            <Text size="xs" c="dimmed">
+              {dataset.source}
+            </Text>
+          </Stack>
+          <Text c="dimmed">
+            {dataset.summary}
+          </Text>
+          <Title order={3}>
+            Variables
           </Title>
-          <SimpleGrid
-          cols={{
-            base: 1,
-            sm: 2,
-            lg: 4,
-          }}>
-          {category.datasets.length === 0 ? (
-            <Text c="dimmed"> Dataset details coming soon.</Text>) : (
-            category.datasets.map((dataset) => (
-              <DatasetCard key={dataset.name} dataset={dataset}/>
-            ))
-          )}
-           </SimpleGrid>
+          <ScrollArea>
+          <VariableTable variables={dataset.variables}/>
+          </ScrollArea>
+        </Stack>
+      ) : (
+        <Stack>
+          <Title
+            order={2}
+            style={{
+              color: COLOR.spruceDeep,
+              fontFamily: FONT_BODY
+            }}
+          >
+            {category?.name} Datasets
+          </Title>
+
+          <SimpleGrid cols={{base:1, sm:2, lg:4}}>
+          {category?.datasets.map(dataset => (
+            <DatasetCard
+              key={dataset.name}
+              dataset={dataset}
+              onClick={() =>
+                onDatasetSelect(dataset)
+              }
+            />
+          ))}
+          </SimpleGrid>
         </Stack>
       )}
     </Drawer>
@@ -1021,20 +1073,49 @@ export default function DataSourcesPage() {
 
   const [selectedDataset, setSelectedDataset] =
     useState<Dataset | null>(null);
+  
+  const [search, setSearch] = useState("");
+
+  const filteredCategories = useMemo(() => {
+
+    if (!search.trim()) return DATA_SOURCES;
+
+    const query = search.toLowerCase();
+
+    return DATA_SOURCES.map(category => {
+      const datasets = category.datasets.filter(dataset => {
+      return (
+        category.name.toLowerCase().includes(query) ||
+        category.summary.toLowerCase().includes(query) ||
+        dataset.name.toLowerCase().includes(query) ||
+        dataset.summary.toLowerCase().includes(query) ||
+        dataset.source.toLowerCase().includes(query) ||
+        dataset.variables.some(variable =>
+        variable.name.toLowerCase().includes(query) ||
+        variable.description.toLowerCase().includes(query)));
+      });
+      return {...category, datasets};
+    }).filter(category => category.datasets.length > 0);
+}, [search]);
 
   return (
     <Box>
       <DataSourcesHero />
       <Container size="xl" py={50}>
+        <SearchDatasets
+          value={search}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+        />
         <SimpleGrid
           cols={{
             base: 1,
             sm: 2,
             lg: 3,
           }}
+          mt={50}
           spacing="xl"
         >
-          {DATA_SOURCES.map((category) => (
+          {filteredCategories.map((category) => (
             <CategoryCard
               key={category.name}
               category={category}
@@ -1047,10 +1128,18 @@ export default function DataSourcesPage() {
       </Container>
       <DatasetDrawer
         category={selectedCategory}
+        dataset={selectedDataset}
         opened={!!selectedCategory}
-        onClose={() =>
-          setSelectedCategory(null)
+        onDatasetSelect={(dataset) =>
+          setSelectedDataset(dataset)
         }
+        onBack={() =>
+          setSelectedDataset(null)
+        }
+        onClose={() => {
+          setSelectedCategory(null);
+          setSelectedDataset(null);
+        }}
       />
     </Box>
   );
