@@ -54,9 +54,8 @@ def single_var_geojson(sources: list[FilterSource]):
 
 
 def widen_dual_var(df, measures):
-    m1 = df[df.Measure == measures[0]][
-        ["LocationID", "geometry", "Data_Value", "bin", "natl_pct", "CountyName"]
-    ]
+    cols = ["LocationID", "geometry", "Data_Value", "bin", "natl_pct", "CountyName"]
+    m1 = df[df.Measure == measures[0]][[c for c in cols if c in df.columns]]
     m2 = df[df.Measure == measures[1]][["LocationID", "Data_Value", "bin"]]
     wide = m1.merge(m2, on="LocationID", suffixes=("_1", "_2"))
     return wide
@@ -120,20 +119,21 @@ def dual_var_comparison(
     features = []
     for r in df.itertuples():
         color = to_rgba({"bin_1": r.bin_1, "bin_2": r.bin_2}, cmap)
+        tooltip = {
+            "__title__": "Variable Comparison",
+            # "County": r.CountyName,
+            f"{measures[0]}": r.Data_Value_1,
+            f"{measures[1]}": r.Data_Value_2,
+            "National Percentage": r.natl_pct,
+        }
+        ## add in County Name if we're in county space.
+        if "CountyName" in df.columns:
+            tooltip["County"] = r.CountyName
         features.append(
             {
                 "type": "Feature",
                 "geometry": json.loads(r.geometry),
-                "properties": {
-                    "rgba_color": color,
-                    "tooltip": {
-                        "__title__": "Variable Comparison",
-                        "County": r.CountyName,
-                        f"{measures[0]}": r.Data_Value_1,
-                        f"{measures[1]}": r.Data_Value_2,
-                        "National Percentage": r.natl_pct,
-                    },
-                },
+                "properties": {"rgba_color": color, "tooltip": tooltip},
             }
         )
     geojson = {"type": "FeatureCollection", "features": features}

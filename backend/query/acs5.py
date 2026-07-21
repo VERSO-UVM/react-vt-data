@@ -14,8 +14,8 @@ import pandas as pd
 
 from api.models import FilterSource, RangeFilter
 from query.core_functions import filter_tree
-from sql_render import sql_filter_block
 from query.processed_db import DB
+from sql_render import sql_filter_block
 
 logger = logging.getLogger(__name__)
 sql_path = Path(__file__).resolve().parent / "sql" / "acs5"
@@ -45,22 +45,12 @@ ACS5_FILTER_COLS = {"Location": "NAME", "year": "year"}
 ACS5_TREE_LABELS = ["Location"]
 
 
-<<<<<<< Updated upstream
 def _acs5_source(
     table: str,
     filters: dict | None = None,
     fixed_filters: dict | None = None,
 ) -> FilterSource:
     """Build a FilterSource for direct single-table ACS filtering.
-=======
-def get_acs5_tidy(
-    dataset: str, name: str, year_min: int, year_max: int, filters: dict | None = None
-) -> pd.DataFrame:
-    config = QUERY_CONFIG.get(dataset)
-    query_filters = {"Location": name, **(filters or {})}
-    base_conditions = list(config["base_conditions"] or [])
-    base_conditions.append(f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}")
->>>>>>> Stashed changes
 
     Maps request-supplied label-keyed filters (Location, year range) via
     ACS5_FILTER_COLS and folds in the dataset's fixed filters. RangeFilter values
@@ -83,146 +73,48 @@ def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
     config = QUERY_CONFIG[dataset]
     source = _acs5_source(
         table=config["table"],
-<<<<<<< Updated upstream
         filters=filters,
         fixed_filters=config["fixed_filters"],
     )
 
     sql, params = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
-=======
-        base_conditions=base_conditions,
-    )
-
-    sql = (
-        (sql_path / "acs5_tidy.sql")
-        .read_text()
-        .format(table=config["table"], where_string=where_string)
-    )
->>>>>>> Stashed changes
 
     result = DB.execute(sql, params).df()
 
     if result is None:
         logger.error(
-<<<<<<< Updated upstream
             "ACS5 tidy query returned no rows for dataset: %s, filters: %s",
             dataset,
             filters,
         )
         raise ValueError(f"no results for dataset: {dataset}, filters: {filters}")
-=======
-            "ACS5 tidy query returned no rows for dataset: %s, name: %s, filters: %s",
-            dataset,
-            name,
-            filters,
-        )
-        raise ValueError(
-            f"no results for dataset: {dataset}, name: {name}, filters: {filters}"
-        )
->>>>>>> Stashed changes
 
     return result
 
 
-<<<<<<< Updated upstream
 def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="acs5_unemployment_rate", filters=filters)
-=======
-def get_unemployment_rate_ts(
-    filters: dict | None = None,
-    year_min: int | None = None,
-    year_max: int | None = None,
-) -> pd.DataFrame:
-    query_filters = filters or {}
->>>>>>> Stashed changes
 
     sql, params = sql_filter_block(sql_path / "unemployment_rate.sql", [source])
 
-<<<<<<< Updated upstream
     result = DB.execute(sql, params).df()
 
     if result is None or result.empty:
         logger.error("Unemployment rate query returned no rows for filters=%s", filters)
-=======
-    if year_min is not None and year_max is not None:
-        base_conditions.append(
-            f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}"
-        )
-
-    where_string = build_where_query_from_filters(
-        filters=query_filters,
-        colmap=ACS5_FILTER_COLS,
-        table="acs5_unemployment_rate",
-        base_conditions=base_conditions,
-    )
-
-    sql = (
-        (sql_path / "unemployment_rate.sql")
-        .read_text()
-        .format(where_string=where_string)
-    )
-
-    result = DB.execute(sql).df()
-
-    if result is None or result.empty:
-        logger.error(
-            "Unemployment rate query returned no rows for filters=%s year_min=%s year_max=%s",
-            filters,
-            year_min,
-            year_max,
-        )
->>>>>>> Stashed changes
         raise ValueError("no results for unemployment_rate query")
 
     return result
 
 
-<<<<<<< Updated upstream
 def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="acs5_median_earnings", filters=filters)
-=======
-def get_median_earnings(
-    filters: dict | None = None,
-    year_min: int | None = None,
-    year_max: int | None = None,
-) -> pd.DataFrame:
-    query_filters = filters or {}
->>>>>>> Stashed changes
 
     sql, params = sql_filter_block(sql_path / "median_earnings.sql", [source])
 
-<<<<<<< Updated upstream
     result = DB.execute(sql, params).df()
 
     if result is None or result.empty:
         logger.error("Median earnings query returned no rows for filters=%s", filters)
-=======
-    if year_min is not None and year_max is not None:
-        base_conditions.append(
-            f"CAST(year AS INTEGER) BETWEEN {year_min} AND {year_max}"
-        )
-
-    where_string = build_where_query_from_filters(
-        filters=query_filters,
-        colmap=ACS5_FILTER_COLS,
-        table="acs5_median_earnings",
-        base_conditions=base_conditions,
-    )
-
-    sql = (
-        (sql_path / "median_earnings.sql").read_text().format(where_string=where_string)
-    )
-
-    result = DB.execute(sql).df()
-
-    if result is None or result.empty:
-        logger.error(
-            "Median earnings query returned no rows for filters=%s year_min=%s year_max=%s",
-            filters,
-            year_min,
-            year_max,
-        )
->>>>>>> Stashed changes
         raise ValueError("no results for median_earnings query")
 
     return result

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';
 import VTMap from '@/components/mapping';
-import VariableScatter from '@/components/mapping/VariableScatter';
+import VariableScatter from '@/components/Charts/MapCorrespondentScatter';
 import MapPageLayout from '@/components/MapPageLayout';
 import { cdc_filtering } from '@/components/FilterRedux/filterDefs';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';

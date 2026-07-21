@@ -2,12 +2,10 @@ SELECT
     p.LocationID,
     p.Measure,
     p.Data_Value,
-    n.LocationName,
     p.bin,
     ROUND(p.natl_pct * 100, 2)  AS natl_pct,
     ST_ASGEOJSON(c.geometry) AS geometry,
-    c.CountyName
+    c.name
 FROM cdc_tract_places AS p
 LEFT JOIN vermont_tracts AS c ON p.LocationID = c.LocationID
 {{ where_string }}
-p
