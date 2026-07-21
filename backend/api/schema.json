@@ -87,7 +87,7 @@
       }
     },
     "ambulance_ambulance_info": {
-      "join_key":"ID",
+      "join_key":"OBJECTID",
       "join_type": "inner",
       "columns": {
         "Zip Code": "Zip_Code",
