@@ -19,6 +19,7 @@ import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
 import county_town_names from '@/data/county_town_names.json';
+import { DataRow } from '@/types/cachedCharts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -299,8 +300,8 @@ export default function DPExplorerPage() {
     measure
   );
 
-  const [sideAData, setSideAData] = useState<any[]>([]);
-  const [sideBData, setSideBData] = useState<any[]>([]);
+  const [sideAData, setSideAData] = useState<DataRow[]>([]);
+  const [sideBData, setSideBData] = useState<DataRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -309,6 +310,7 @@ export default function DPExplorerPage() {
 
   useEffect(() => {
     if (!isComplete) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale results when the selection becomes incomplete
       setSideAData([]);
       setSideBData([]);
       setAvailableYears([]);
@@ -338,8 +340,8 @@ export default function DPExplorerPage() {
         setSideAData(aData);
         setSideBData(bData);
         const yrs = Array.from(
-          new Set([...aData, ...bData].map((r: any) => r.year)),
-        ).sort((a: any, b: any) => a - b) as number[];
+          new Set([...aData, ...bData].map((r: DataRow) => r.year)),
+        ).sort((a, b) => Number(a) - Number(b)) as number[];
         setAvailableYears(yrs);
         // Clamp selected years to available
         if (yrs.length > 0) {
@@ -532,7 +534,7 @@ export default function DPExplorerPage() {
                       {makeLabel(sideA)}
                     </Text>
                     <Text fw={700} size="xl">
-                      {fmtVal(pointA?.Value ?? null)}
+                      {fmtVal((pointA?.Value as number | undefined) ?? null)}
                     </Text>
                   </Grid.Col>
                   <Grid.Col span={6}>
@@ -540,7 +542,7 @@ export default function DPExplorerPage() {
                       {makeLabel(sideB)}
                     </Text>
                     <Text fw={700} size="xl">
-                      {fmtVal(pointB?.Value ?? null)}
+                      {fmtVal((pointB?.Value as number | undefined) ?? null)}
                     </Text>
                   </Grid.Col>
                 </Grid>

@@ -1,8 +1,7 @@
 """
 Central DuckDB connection for the API server.
 
-Opens vt_data.duckdb read-only. Build it first with:
-    conda run -n leahy_data python setup_scripts/build_db.py
+Opens vt_data.duckdb read-only. Build it first uv.
 """
 
 import logging

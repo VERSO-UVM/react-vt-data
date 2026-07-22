@@ -141,7 +141,7 @@ export default function AboutPage() {
       </SimpleGrid>
       {/* Why We Built This */}
       <Container size="lg" pt={140} pb={80}>
-        <Grid>
+        <Grid gap="xl">
           <Grid.Col span={{ base: 12, md: 6 }}>
             <Title order={2} mb="md">
               Why We Built This

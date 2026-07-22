@@ -3,10 +3,24 @@
 
 import { useState } from 'react';
 import {
-  CartesianGrid, Legend, Line, LineChart, ResponsiveContainer,
-  Tooltip, XAxis, YAxis,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
+
+// tidy ACS-style row consumed by the trend charts
+interface TrendRow extends DataRow {
+  year?: number | string;
+  Variable?: string;
+  Value?: number;
+  Percent?: number;
+}
 import { Text } from '@mantine/core';
 
 const CompareNote = ({ name }: { name: string }) => (
@@ -24,17 +38,25 @@ type FormatType = 'currency' | 'percent' | 'number' | 'years';
 
 const FORMATTERS: Record<
   FormatType,
-  { unit?: string; axisFormatter?: (v: any) => string; tooltip: (v: any, decimals?: number) => string }
+  {
+    unit?: string;
+    axisFormatter?: (v: any) => string;
+    tooltip: (v: any, decimals?: number) => string;
+  }
 > = {
   currency: {
     axisFormatter: (v) => `$${(v / 1000).toFixed(0)}k`,
     tooltip: (v) =>
-      v != null ? `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—',
+      v != null
+        ? `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+        : '—',
   },
   percent: {
     unit: '%',
     tooltip: (v, decimals) =>
-      v != null ? `${decimals != null ? Number(v).toFixed(decimals) : v}%` : '—',
+      v != null
+        ? `${decimals != null ? Number(v).toFixed(decimals) : v}%`
+        : '—',
   },
   number: {
     axisFormatter: (v) => `${(v / 1000).toFixed(0)}k`,
@@ -100,10 +122,15 @@ export const SingleSeriesTrendChart = <TData,>({
 }) => {
   const isGallery = view === 'gallery';
   const {
-    seriesKey, valueField, format, decimals,
-    color = '#154734', compareColor = '#1c7ed6',
-    lineWidth = 3, showHelperText = true,
-} = config;
+    seriesKey,
+    valueField,
+    format,
+    decimals,
+    color = '#154734',
+    compareColor = '#1c7ed6',
+    lineWidth = 3,
+    showHelperText = true,
+  } = config;
 
   const { hidden, toggleSeries, legendFormatter } = useToggle();
 
@@ -112,7 +139,8 @@ export const SingleSeriesTrendChart = <TData,>({
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    [string, string] | undefined;
   const seriesName = seriesKey ?? valueField;
 
   const findValue = (rows: any[], year: number) => {
@@ -131,7 +159,6 @@ export const SingleSeriesTrendChart = <TData,>({
   }));
 
   const fmt = FORMATTERS[format];
-
 
   return (
     <>
@@ -161,7 +188,9 @@ export const SingleSeriesTrendChart = <TData,>({
             domain={['auto', 'auto']}
             tickFormatter={fmt.axisFormatter}
           />
-          {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v, decimals)} />}
+          {!isGallery && (
+            <Tooltip formatter={(v: any) => fmt.tooltip(v, decimals)} />
+          )}
           {!isGallery && (
             <Legend
               align="right"
@@ -178,8 +207,8 @@ export const SingleSeriesTrendChart = <TData,>({
             stroke={color}
             strokeWidth={lineWidth}
             dot={false}
-            animationBegin={0} 
-            animationDuration={!isGallery ? 1500 : 0} 
+            animationBegin={0}
+            animationDuration={!isGallery ? 1500 : 0}
             hide={hidden.has(seriesName)}
           />
           {compareData.length > 0 && (
@@ -190,7 +219,7 @@ export const SingleSeriesTrendChart = <TData,>({
               stroke={compareColor}
               strokeWidth={lineWidth}
               dot={false}
-              animationBegin={0} 
+              animationBegin={0}
               animationDuration={!isGallery ? 1500 : 0}
               hide={hidden.has(`${seriesName} (cmp)`)}
             />
@@ -206,8 +235,8 @@ export const SingleSeriesTrendChart = <TData,>({
 // ---------------------------------------------------------------------------
 
 export interface SeriesDef {
-  key: string;              // display key / legend label
-  matchVariable?: string;   // r.Variable to match (defaults to `key`)
+  key: string; // display key / legend label
+  matchVariable?: string; // r.Variable to match (defaults to `key`)
   aggregateFrom?: string[]; // sum these r.Variable matches instead (Demographics 65+)
   color: string;
 }
@@ -226,19 +255,22 @@ export interface MultiSeriesConfig {
 export const MultiSeriesTrendChart = <TData,>({
   chart,
   config,
-  view
+  view,
 }: {
   chart: ChartItem<TData>;
   config: MultiSeriesConfig;
   view?: 'gallery' | 'report';
 }) => {
-  
   const isGallery = view === 'gallery';
-  
+
   const {
-    series, valueField, format,
-    showHelperText = true, showCompareNote = true,
-    legendPosition = 'bottom-right', nameSuffix = true,
+    series,
+    valueField,
+    format,
+    showHelperText = true,
+    showCompareNote = true,
+    legendPosition = 'bottom-right',
+    nameSuffix = true,
   } = config;
 
   const { hidden, toggleSeries, legendFormatter } = useToggle();
@@ -248,25 +280,33 @@ export const MultiSeriesTrendChart = <TData,>({
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    [string, string] | undefined;
 
   const getValue = (rows: any[], year: number, s: SeriesDef) => {
     if (s.aggregateFrom) {
       const sum = s.aggregateFrom.reduce((acc, label) => {
-        const v = rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ?? 0;
+        const v =
+          rows.find((r) => r.year === year && r.Variable === label)?.[
+            valueField
+          ] ?? 0;
         return acc + v;
       }, 0);
       return sum > 0 ? Math.round(sum * 10) / 10 : null;
     }
     const label = s.matchVariable ?? s.key;
-    return rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ?? null;
+    return (
+      rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ??
+      null
+    );
   };
 
   const plotData = years.map((year) => {
     const pt: Record<string, any> = { year };
     for (const s of series) {
       pt[s.key] = getValue(data, year, s);
-      if (compareData.length > 0) pt[`${s.key} (cmp)`] = getValue(compareData, year, s);
+      if (compareData.length > 0)
+        pt[`${s.key} (cmp)`] = getValue(compareData, year, s);
     }
     return pt;
   });
@@ -284,18 +324,21 @@ export const MultiSeriesTrendChart = <TData,>({
         </Text>
       )}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={plotData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
           <XAxis
             dataKey="year"
             tick={{ fontSize: isGallery ? 11 : 11 }}
             interval={1}
           />
-          <YAxis 
-            unit={fmt.unit} 
-            tick={{ fontSize: isGallery ? 9 : 11 }} 
-            domain={['auto', 'auto']} 
-            tickFormatter={fmt.axisFormatter} 
+          <YAxis
+            unit={fmt.unit}
+            tick={{ fontSize: isGallery ? 9 : 11 }}
+            domain={['auto', 'auto']}
+            tickFormatter={fmt.axisFormatter}
           />
           {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v)} />}
           {!isGallery && (
@@ -311,7 +354,9 @@ export const MultiSeriesTrendChart = <TData,>({
             <Line
               key={s.key}
               dataKey={s.key}
-              name={nameSuffix ? `${s.key} (${labels?.[0] ?? 'Main'})` : undefined}
+              name={
+                nameSuffix ? `${s.key} (${labels?.[0] ?? 'Main'})` : undefined
+              }
               stroke={s.color}
               strokeWidth={2}
               dot={false}
@@ -324,7 +369,11 @@ export const MultiSeriesTrendChart = <TData,>({
               <Line
                 key={`${s.key}-cmp`}
                 dataKey={`${s.key} (cmp)`}
-                name={nameSuffix ? `${s.key} (${labels?.[1] ?? 'Comparison'})` : undefined}
+                name={
+                  nameSuffix
+                    ? `${s.key} (${labels?.[1] ?? 'Comparison'})`
+                    : undefined
+                }
                 stroke={s.color}
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
@@ -340,106 +389,254 @@ export const MultiSeriesTrendChart = <TData,>({
   );
 };
 
-
 // SINGLE CHARTS
-const single = (chart: ChartItem<any>, config: SingleSeriesConfig, view?: "gallery" | "report") => (
-  <SingleSeriesTrendChart chart={chart} config={config} view={view} />
-);
+const single = (
+  chart: ChartItem<any>,
+  config: SingleSeriesConfig,
+  view?: 'gallery' | 'report',
+) => <SingleSeriesTrendChart chart={chart} config={config} view={view} />;
 
-export const PopulationTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, { seriesKey: null, valueField: 'Population', format: 'number' }, view);
+export const PopulationTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: null, valueField: 'Population', format: 'number' },
+    view,
+  );
 
-export const MedianAgeTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, { seriesKey: 'Median Age', valueField: 'Value', format: 'years' }, view);
+export const MedianAgeTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: 'Median Age', valueField: 'Value', format: 'years' },
+    view,
+  );
 
-export const HomeValueTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, { seriesKey: 'Median Home Value', valueField: 'Value', format: 'currency' }, view);
+export const HomeValueTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: 'Median Home Value', valueField: 'Value', format: 'currency' },
+    view,
+  );
 
-export const HousingUnitsTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, { seriesKey: 'Total Housing Units', valueField: 'Value', format: 'number' }, view);
+export const HousingUnitsTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: 'Total Housing Units', valueField: 'Value', format: 'number' },
+    view,
+  );
 
-export const HousingTenureAreaChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, { seriesKey: 'Renter-Occupied Units', valueField: 'Percent', format: 'percent' }, view);
+export const HousingTenureAreaChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Renter-Occupied Units',
+      valueField: 'Percent',
+      format: 'percent',
+    },
+    view,
+  );
 
-export const LaborForceTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, {
-    seriesKey: 'Labor Force Participation Rate (16+)', valueField: 'Percent', format: 'percent'
-  }, view);
+export const LaborForceTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Labor Force Participation Rate (16+)',
+      valueField: 'Percent',
+      format: 'percent',
+    },
+    view,
+  );
 
-export const LaborForceTrendChartPrimeAge = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, {
-    seriesKey: 'Prime-Age Labor Force Participation Rate (25-54)', valueField: 'Percent', format: 'percent'
-  }, view);
+export const LaborForceTrendChartPrimeAge = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Prime-Age Labor Force Participation Rate (25-54)',
+      valueField: 'Percent',
+      format: 'percent',
+    },
+    view,
+  );
 
-export const UnemploymentTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, {
-    seriesKey: null, valueField: 'Value', format: 'percent', decimals: 1
-  }, view);
+export const UnemploymentTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: null,
+      valueField: 'Value',
+      format: 'percent',
+      decimals: 1,
+    },
+    view,
+  );
 
-export const HouseholdIncomeTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, { 
-    seriesKey: 'Median Household Income', valueField: 'Value', format: 'currency', showHelperText: false 
-  }, view);
+export const HouseholdIncomeTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Median Household Income',
+      valueField: 'Value',
+      format: 'currency',
+      showHelperText: false,
+    },
+    view,
+  );
 
-export const PerCapitaIncomeTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  single(chart, { 
-    seriesKey: 'Per Capita Income', valueField: 'Value', format: 'currency', showHelperText: false 
-  }, view);
-
+export const PerCapitaIncomeTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Per Capita Income',
+      valueField: 'Value',
+      format: 'currency',
+      showHelperText: false,
+    },
+    view,
+  );
 
 // MULTI CHARTS
-const multi = (chart: ChartItem<any>, config: MultiSeriesConfig, view?: "gallery" | "report") => (
-  <MultiSeriesTrendChart chart={chart} config={config} view={view} />
-);
+const multi = (
+  chart: ChartItem<any>,
+  config: MultiSeriesConfig,
+  view?: 'gallery' | 'report',
+) => <MultiSeriesTrendChart chart={chart} config={config} view={view} />;
 
-export const DemographicsTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  multi(chart, {
-    valueField: 'Percent',
-    format: 'percent',
-    series: [
-      { key: 'Under 18', color: '#154734' },
-      { key: '65+', aggregateFrom: ['65 to 74', '75 Plus'], color: '#1c7ed6' },
-    ],
-  }, view);
+export const DemographicsTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  multi(
+    chart,
+    {
+      valueField: 'Percent',
+      format: 'percent',
+      series: [
+        { key: 'Under 18', color: '#154734' },
+        {
+          key: '65+',
+          aggregateFrom: ['65 to 74', '75 Plus'],
+          color: '#1c7ed6',
+        },
+      ],
+    },
+    view,
+  );
 
-export const EducationTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: 'gallery' | 'report'; }) =>
-  multi(chart, {
-    valueField: 'Percent',
-    format: 'percent',
-    nameSuffix: false,
-    legendPosition: 'default',
-    series: [
-      { key: 'No High School Diploma', color: '#d62828' },
-      { key: 'High School Graduate', color: '#f77f00' },
-      { key: "Associate's Degree", color: '#fcbf49' },
-      { key: "Bachelor's Degree", color: '#003049' },
-      { key: 'Postgraduate Degree', color: '#457b9d' },
-    ],
-  }, view);
+export const EducationTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  multi(
+    chart,
+    {
+      valueField: 'Percent',
+      format: 'percent',
+      nameSuffix: false,
+      legendPosition: 'default',
+      series: [
+        { key: 'No High School Diploma', color: '#d62828' },
+        { key: 'High School Graduate', color: '#f77f00' },
+        { key: "Associate's Degree", color: '#fcbf49' },
+        { key: "Bachelor's Degree", color: '#003049' },
+        { key: 'Postgraduate Degree', color: '#457b9d' },
+      ],
+    },
+    view,
+  );
 
-export const EarningsTrendChart = <TData,>({ chart, view }: 
-  { chart: ChartItem<TData>; view?: "gallery" | "report" }) =>
-  multi(chart, {
-    valueField: 'Value',
-    format: 'currency',
-    series: [
-      { key: 'Male Full-Time Workers', matchVariable: 'DP03_0093', color: '#161E54' },
-      { key: 'Female Full-Time Workers', matchVariable: 'DP03_0094', color: '#F16D34' },
-      { key: 'All Workers', matchVariable: 'DP03_0092', color: '#9BB0C1' },
-    ],
-  }, view);
+export const EarningsTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  multi(
+    chart,
+    {
+      valueField: 'Value',
+      format: 'currency',
+      series: [
+        {
+          key: 'Male Full-Time Workers',
+          matchVariable: 'DP03_0093',
+          color: '#161E54',
+        },
+        {
+          key: 'Female Full-Time Workers',
+          matchVariable: 'DP03_0094',
+          color: '#F16D34',
+        },
+        { key: 'All Workers', matchVariable: 'DP03_0092', color: '#9BB0C1' },
+      ],
+    },
+    view,
+  );
 
 // ---------------------------------------------------------------------------
 // Generic two-location trend chart for the DP-combined explorer
@@ -449,13 +646,9 @@ export const EarningsTrendChart = <TData,>({ chart, view }:
 // chartParams.measure:      raw measure string (e.g. 'Percent') for formatting
 // ---------------------------------------------------------------------------
 
-export const DPTrendChart = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   const lbls = chart.chartParams?.legendLabels as [string, string] | undefined;
   const primaryName = lbls?.[0] ?? 'Side A';
   const compareName = lbls?.[1] ?? 'Side B';
@@ -465,7 +658,7 @@ export const DPTrendChart = <TData,>({
 
   const allYears = Array.from(
     new Set([...data, ...compareData].map((r) => r.year)),
-  ).sort((a, b) => a - b);
+  ).sort((a, b) => Number(a) - Number(b));
 
   const plotData = allYears.map((year) => ({
     year,
@@ -473,7 +666,7 @@ export const DPTrendChart = <TData,>({
     compare: compareData.find((r) => r.year === year)?.Value ?? null,
   }));
 
-  const fmt = (v: any) =>
+  const fmt = (v: unknown) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
 
   if (!data || data.length === 0) return null;
@@ -493,7 +686,11 @@ export const DPTrendChart = <TData,>({
           }
           domain={['auto', 'auto']}
         />
-        <Tooltip formatter={(value) => {return (Number(value) || 0).toLocaleString();}}/>
+        <Tooltip
+          formatter={(value) => {
+            return (Number(value) || 0).toLocaleString();
+          }}
+        />
         <Legend />
         <Line
           type="monotone"
