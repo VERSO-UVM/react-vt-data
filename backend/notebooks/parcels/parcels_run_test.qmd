@@ -1,0 +1,21 @@
+---
+title: "Vermont Parcels: the testing run notebook [QMD]"
+author: Isaac Wedaman
+date: today
+description:  The second version of the vermotn parcels the exploratory motion
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+---
+#ill get to this later
