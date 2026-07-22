@@ -7,7 +7,6 @@ import {
   Text,
   Title,
   Button,
-  Center,
   Stack,
   Group,
   Divider,
@@ -30,6 +29,14 @@ import {
   XIcon,
 } from '@phosphor-icons/react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { ChartItem, ChartMetadata, DataRow } from '@/types/cachedCharts';
+
+// one chart's backend payload, keyed by chart def id in state below
+type ChartPayload = {
+  data: DataRow[];
+  metadata?: ChartMetadata;
+  tableData?: DataRow[];
+};
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';
 import { PdfModeContext } from '@/contexts/PdfModeContext';
@@ -356,9 +363,9 @@ export default function WorkingReport() {
       if (!matches) excludeById(def.id);
     });
     savedItems.forEach((item) => {
-      const matches = (item as any).categories?.some((cat: string) =>
-        currentInterests.includes(cat),
-      );
+      const matches = (
+        'categories' in item ? item.categories : undefined
+      )?.some((cat: string) => currentInterests.includes(cat));
       if (!matches) excludeById(item.id);
     });
   };
@@ -382,14 +389,12 @@ export default function WorkingReport() {
   }, [interests, pendingReset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- data fetching (mirrors data-viewer) ----------
-  const [chartData, setChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
-  >({});
+  const [chartData, setChartData] = useState<Record<string, ChartPayload>>({});
   const [compareChartData, setCompareChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
+    Record<string, ChartPayload>
   >({});
   const [compareTableData, setCompareTableData] = useState<
-    Record<string, any[]>
+    Record<string, DataRow[]>
   >({});
 
   const applyFilters = useApplyFilters();
@@ -424,7 +429,11 @@ export default function WorkingReport() {
         onData: (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
 
@@ -434,7 +443,11 @@ export default function WorkingReport() {
         onData: (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
     });
@@ -471,7 +484,10 @@ export default function WorkingReport() {
         }),
         onData: (data) =>
           siblings.forEach((d) =>
-            setChartData((prev) => ({ ...prev, [d.id]: { data } })),
+            setChartData((prev) => ({
+              ...prev,
+              [d.id]: { data: data as DataRow[] },
+            })),
           ),
       });
       if (comparison.name) {
@@ -483,7 +499,10 @@ export default function WorkingReport() {
           }),
           onData: (data) =>
             siblings.forEach((d) =>
-              setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
+              setCompareTableData((prev) => ({
+                ...prev,
+                [d.id]: data as DataRow[],
+              })),
             ),
         });
       }
@@ -513,7 +532,7 @@ export default function WorkingReport() {
       data: chartData[chart.id]?.data || [],
       tableData: chartData[chart.id]?.tableData || [],
       showCols: chart.showCols,
-      metadata: chartData[chart.id]?.metadata || [],
+      metadata: chartData[chart.id]?.metadata,
       compareData: compareChartData[chart.id]?.data || [],
       compareTableData: compareChartData[chart.id]?.tableData || [],
       subtype: chart.subtype,
@@ -532,7 +551,7 @@ export default function WorkingReport() {
       title: myLocation.name,
       description: def.title,
       data: chartData[def.id]?.data || [],
-      metadata: chartData[def.id]?.metadata || [],
+      metadata: chartData[def.id]?.metadata,
       compareData: compareTableData[def.id] || [],
       chartParams: { legendLabels: [myLocation.name, comparison.name] },
       notes: def.notes,
@@ -560,11 +579,13 @@ export default function WorkingReport() {
 
   // Pair each item with its stable ID (chartDef ID for auto-populated;
   // item.id for manually saved charts from other pages), then sort by category
-  const savedCharts = savedItems.filter((i) => i.type === 'chart') as any[];
+  const savedCharts = savedItems.filter(
+    (i) => i.type === 'chart',
+  ) as ChartItem<DataRow>[];
   const allPairs = [
     ...nonTableDefs.map((def, i) => ({ defId: def.id, item: charts[i] })),
     ...tableDefs.map((def, i) => ({ defId: def.id, item: tableItems[i] })),
-    ...savedCharts.map((item: any) => ({ defId: item.id, item })),
+    ...savedCharts.map((item) => ({ defId: item.id, item })),
   ].sort(
     (a, b) => categoryRank(a.item.categories) - categoryRank(b.item.categories),
   );

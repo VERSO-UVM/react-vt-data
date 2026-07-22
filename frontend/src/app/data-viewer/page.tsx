@@ -62,7 +62,7 @@ function StatCards() {
         selected: [yearMin, yearMax],
       }),
       onData: (data) => {
-        setData(data);
+        setData(data as Row[]);
       },
     });
   }, [myLocation, yearMin, yearMax]);
@@ -345,10 +345,10 @@ export default function DataViewerPage() {
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
   const [compareChartData, setCompareChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
+    Record<string, ChartPayload>
   >({});
   const [compareTableData, setCompareTableData] = useState<
-    Record<string, any[]>
+    Record<string, DataRow[]>
   >({});
 
   const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
@@ -402,7 +402,11 @@ export default function DataViewerPage() {
         onData: (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
 
@@ -412,7 +416,11 @@ export default function DataViewerPage() {
         onData: (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
     });
@@ -451,7 +459,10 @@ export default function DataViewerPage() {
         }),
         onData: (data) =>
           siblings.forEach((d) =>
-            setChartData((prev) => ({ ...prev, [d.id]: { data } })),
+            setChartData((prev) => ({
+              ...prev,
+              [d.id]: { data: data as DataRow[] },
+            })),
           ),
       });
       // Comparison location fetch
@@ -464,7 +475,10 @@ export default function DataViewerPage() {
           }),
           onData: (data) =>
             siblings.forEach((d) =>
-              setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
+              setCompareTableData((prev) => ({
+                ...prev,
+                [d.id]: data as DataRow[],
+              })),
             ),
         });
       }
@@ -497,7 +511,7 @@ export default function DataViewerPage() {
       tableData: chartData[chart.id]?.tableData || [],
       showCols: chart.showCols,
 
-      metadata: chartData[chart.id]?.metadata || [],
+      metadata: chartData[chart.id]?.metadata,
       compareData: compareChartData[chart.id]?.data || [],
       compareTableData: compareChartData[chart.id]?.tableData || [],
 
@@ -518,7 +532,7 @@ export default function DataViewerPage() {
       title: myLocation.name,
       description: def.title,
       data: chartData[def.id]?.data || [],
-      metadata: chartData[def.id]?.metadata || [],
+      metadata: chartData[def.id]?.metadata,
       compareData: compareTableData[def.id] || [],
       chartParams: { legendLabels: [myLocation.name, comparison.name] },
       notes: def.notes,
