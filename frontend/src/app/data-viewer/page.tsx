@@ -34,7 +34,7 @@ import { useEffect, useState } from 'react';
 
 // within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
-import { FONT_MONO, COLOR } from './theme';
+import { FONT_MONO, COLOR, FONT_DISPLAY } from './theme';
 import { FieldLabel } from './FieldLabel';
 import { MetricsPanel } from './MetricsPanels';
 

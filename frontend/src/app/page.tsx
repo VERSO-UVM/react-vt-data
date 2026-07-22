@@ -1,8 +1,14 @@
 'use client';
- 
+
 import Link from 'next/link';
 import { useRef } from 'react';
-import { motion, useInView, useMotionValue, useTransform, animate } from 'motion/react';
+import {
+  motion,
+  useInView,
+  useMotionValue,
+  useTransform,
+  animate,
+} from 'motion/react';
 import {
   Anchor,
   Button,
@@ -26,11 +32,11 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ArrowRightIcon,
-  NewspaperIcon
+  NewspaperIcon,
 } from '@phosphor-icons/react';
- 
+
 import { useProfile } from '@/components/profile/profileStore';
- 
+
 /* ---------------------------------------------------------------
    Design tokens
    Palette drawn from Vermont's own landscape rather than a generic
@@ -49,11 +55,11 @@ const COLOR = {
   amberYellow: '#FFD100',
   line: 'rgba(27, 58, 47, 0.14)',
 };
- 
+
 const FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', serif";
 const FONT_BODY = "'General Sans', 'Inter', sans-serif";
 const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
- 
+
 /* ---------------------------------------------------------------
    Hero title typewriter timing
 ----------------------------------------------------------------*/
@@ -64,7 +70,7 @@ const TYPE_LINE1_START = 0.3;
 const TYPE_LINE1_DURATION = HERO_LINE_1.length * TYPE_CHAR_DELAY;
 const TYPE_LINE2_START = TYPE_LINE1_START + TYPE_LINE1_DURATION + 0.15;
 const TYPE_LINE2_DURATION = HERO_LINE_2.length * TYPE_CHAR_DELAY;
- 
+
 /* ---------------------------------------------------------------
    TypewriterLine — reveals a line character by character, as if
    it were being typed live.
@@ -103,7 +109,7 @@ function TypewriterLine({
     </motion.span>
   );
 }
- 
+
 /* ---------------------------------------------------------------
    BlinkingCursor — a typed-text caret that starts blinking once
    the line above it has finished typing.
@@ -130,7 +136,7 @@ function BlinkingCursor({ delay }: { delay: number }) {
     />
   );
 }
- 
+
 /* ---------------------------------------------------------------
    Reveal — scroll-triggered fade/slide wrapper. Used sparingly:
    each section reveals once, as a whole, rather than every child
@@ -156,7 +162,7 @@ function Reveal({
     </motion.div>
   );
 }
- 
+
 /* ---------------------------------------------------------------
    StatNumber — counts up from 0 when it scrolls into view.
 ----------------------------------------------------------------*/
@@ -172,12 +178,15 @@ function StatNumber({
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-40px' });
   const count = useMotionValue(0);
-  const rounded = useTransform(count, (v) => `${prefix}${Math.round(v).toLocaleString()}${suffix}`);
- 
+  const rounded = useTransform(
+    count,
+    (v) => `${prefix}${Math.round(v).toLocaleString()}${suffix}`,
+  );
+
   if (inView) {
     animate(count, value, { duration: 1.4, ease: [0.22, 1, 0.36, 1] });
   }
- 
+
   return (
     <motion.span
       ref={ref}
@@ -194,13 +203,19 @@ function StatNumber({
     </motion.span>
   );
 }
- 
+
 /* ---------------------------------------------------------------
    Topographic contour — the page's one signature motif. Vermont
    is read through its elevation lines; a single set of contour
    paths draws itself in on load, then sits quietly as texture.
 ----------------------------------------------------------------*/
-function ContourMark({ width = 260, height = 300 }: { width?: number; height?: number }) {
+function ContourMark({
+  width = 260,
+  height = 300,
+}: {
+  width?: number;
+  height?: number;
+}) {
   const paths = [
     'M10,220 C60,180 90,240 140,200 C190,160 220,210 250,180',
     'M0,180 C50,150 80,190 130,160 C180,130 210,170 260,150',
@@ -213,7 +228,12 @@ function ContourMark({ width = 260, height = 300 }: { width?: number; height?: n
       height={height}
       viewBox="0 0 260 300"
       fill="none"
-      style={{ position: 'absolute', right: -10, bottom: 20, pointerEvents: 'none' }}
+      style={{
+        position: 'absolute',
+        right: -10,
+        bottom: 20,
+        pointerEvents: 'none',
+      }}
     >
       {paths.map((d, i) => (
         <motion.path
@@ -224,13 +244,17 @@ function ContourMark({ width = 260, height = 300 }: { width?: number; height?: n
           strokeWidth={1.4}
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 1.6, delay: 0.2 + i * 0.15, ease: 'easeInOut' }}
+          transition={{
+            duration: 1.6,
+            delay: 0.2 + i * 0.15,
+            ease: 'easeInOut',
+          }}
         />
       ))}
     </svg>
   );
 }
- 
+
 /* ---------------------------------------------------------------
    Hero
 ----------------------------------------------------------------*/
@@ -285,7 +309,7 @@ function HeroSection({
                 A project of the Vermont Data Collaborative
               </Text>
             </motion.div>
- 
+
             <Title
               order={1}
               style={{
@@ -299,24 +323,42 @@ function HeroSection({
               }}
             >
               <motion.span style={{ display: 'block' }}>
-                <TypewriterLine text={HERO_LINE_1} startDelay={TYPE_LINE1_START} />
+                <TypewriterLine
+                  text={HERO_LINE_1}
+                  startDelay={TYPE_LINE1_START}
+                />
               </motion.span>
               <motion.span style={{ display: 'block' }}>
-                <TypewriterLine text={HERO_LINE_2} startDelay={TYPE_LINE2_START} />
-                <BlinkingCursor delay={TYPE_LINE2_START + TYPE_LINE2_DURATION} />
+                <TypewriterLine
+                  text={HERO_LINE_2}
+                  startDelay={TYPE_LINE2_START}
+                />
+                <BlinkingCursor
+                  delay={TYPE_LINE2_START + TYPE_LINE2_DURATION}
+                />
               </motion.span>
             </Title>
- 
+
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1.75, ease: [0.22, 1, 0.36, 1] }}
+              transition={{
+                duration: 0.6,
+                delay: 1.75,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
-              <Text size="lg" mt="md" maw={560} style={{ color: 'rgba(246,245,239,0.78)' }}>
-                Zoning, flood risk, housing, demographics, and more community-level data for all 251
-                towns and cities. It's free to explore and open to all.
+              <Text
+                size="lg"
+                mt="md"
+                maw={560}
+                style={{ color: 'rgba(246,245,239,0.78)' }}
+              >
+                Zoning, flood risk, housing, demographics, and more
+                community-level data for all 251 towns and cities. It's free to
+                explore and open to all.
               </Text>
- 
+
               <Group mt={32} gap="md">
                 <Button
                   component={Link}
@@ -335,7 +377,7 @@ function HeroSection({
                 >
                   Explore the maps
                 </Button>
- 
+
                 <Button
                   component={Link}
                   href="/data-viewer"
@@ -355,14 +397,18 @@ function HeroSection({
               </Group>
             </motion.div>
           </Grid.Col>
- 
+
           {/* Profile panel — sits beside the title, always on the dark
               background so the light text stays legible. */}
           <Grid.Col span={{ base: 12, md: 5 }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              transition={{
+                duration: 0.7,
+                delay: 0.4,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
               <Box
                 style={{
@@ -395,7 +441,7 @@ function HeroSection({
                     Edit
                   </Button>
                 </Group>
- 
+
                 <Stack gap={16}>
                   <ProfileField label="Location" value={myLocation?.name} />
                   <ProfileField label="Comparing to" value={comparison?.name} />
@@ -407,7 +453,9 @@ function HeroSection({
                         {interests.join(' · ')}
                       </Text>
                     ) : (
-                      <Text style={{ color: 'rgba(246,245,239,0.55)' }}>None selected</Text>
+                      <Text style={{ color: 'rgba(246,245,239,0.55)' }}>
+                        None selected
+                      </Text>
                     )}
                   </Box>
                 </Stack>
@@ -420,157 +468,8 @@ function HeroSection({
   );
 }
 
-
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-<<<<<<< HEAD
-    <>
-      <div>
-        <Center mb="lg">
-          <Title order={2}>Explore the Platform</Title>
-        </Center>
-
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
-          <Card
-            component={Link}
-            href="/mapping/zoning"
-            withBorder
-            radius="lg"
-            shadow="sm"
-            padding="lg"
-            style={{
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow =
-                '0 4px 12px rgba(0, 0, 0, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'sm';
-            }}
-          >
-            <ThemeIcon size={50} radius="md" variant="light">
-              <IconMap2 size={28} />
-            </ThemeIcon>
-            <Text fw={700} mt="md">
-              Mapping
-            </Text>
-
-            <Text size="sm" c="dimmed" mt="xs">
-              Explore zoning, flood risk, wastewater suitability, and other
-              Vermont spatial datasets.
-            </Text>
-          </Card>
-
-          <Card
-            component={Link}
-            href="/data-comparison"
-            withBorder
-            radius="lg"
-            shadow="sm"
-            padding="lg"
-            style={{
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow =
-                '0 4px 12px rgba(0, 0, 0, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'sm';
-            }}
-          >
-            <ThemeIcon size={50} radius="md" variant="light">
-              <IconChartBar size={28} />
-            </ThemeIcon>
-
-            <Text fw={700} mt="md">
-              Data Analysis
-            </Text>
-
-            <Text size="sm" c="dimmed" mt="xs">
-              Generate charts, summaries, and comparisons from Vermont datasets.
-            </Text>
-          </Card>
-
-          <Card
-            component={Link}
-            href="/data-export"
-            withBorder
-            radius="lg"
-            shadow="sm"
-            padding="lg"
-            style={{
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow =
-                '0 4px 12px rgba(0, 0, 0, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'sm';
-            }}
-          >
-            <ThemeIcon size={50} radius="md" variant="light">
-              <IconDownload size={28} />
-            </ThemeIcon>
-
-            <Text fw={700} mt="md">
-              Data Export
-            </Text>
-
-            <Text size="sm" c="dimmed" mt="xs">
-              Download clean, analysis-ready datasets with readable variable
-              names.
-            </Text>
-          </Card>
-
-          <Card
-            component={Link}
-            href="/resources/benefits-estimator"
-            withBorder
-            radius="lg"
-            shadow="sm"
-            padding="lg"
-            style={{
-              cursor: 'pointer',
-              transition: 'all 150ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow =
-                '0 4px 12px rgba(0, 0, 0, 0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'sm';
-            }}
-          >
-            <ThemeIcon size={50} radius="md" variant="light">
-              <IconHeartHandshake size={28} />
-            </ThemeIcon>
-
-            <Text fw={700} mt="md">
-              Benefits Estimator
-            </Text>
-
-            <Text size="sm" c="dimmed" mt="xs">
-              Estimate eligibility for Vermont assistance programs and benefits.
-            </Text>
-          </Card>
-        </SimpleGrid>
-      </div>
-    </>
-=======
     <Text
       style={{
         fontFamily: FONT_MONO,
@@ -583,16 +482,16 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Text>
->>>>>>> origin/main
   );
 }
-
 
 function ProfileField({ label, value }: { label: string; value?: string }) {
   return (
     <Box>
       <FieldLabel>{label}</FieldLabel>
-      <Text style={{ color: COLOR.birch, fontWeight: 500 }}>{value || '—'}</Text>
+      <Text style={{ color: COLOR.birch, fontWeight: 500 }}>
+        {value || '—'}
+      </Text>
     </Box>
   );
 }
@@ -630,7 +529,6 @@ function StatStrip() {
     </Reveal>
   );
 }
-
 
 function CapabilityFlow() {
   const items = [
@@ -672,11 +570,11 @@ function CapabilityFlow() {
         <Title
           order={2}
           ta="center"
-          style={{ 
-            fontFamily: FONT_BODY, 
-            fontWeight: 700, 
+          style={{
+            fontFamily: FONT_BODY,
+            fontWeight: 700,
             fontSize: 25,
-            color: COLOR.ink ,
+            color: COLOR.ink,
             lineHeight: 1.5,
           }}
           mb={48}
@@ -750,7 +648,6 @@ function CapabilityFlow() {
   );
 }
 
-
 function FeaturedDatasets() {
   const datasets = [
     'Zoning',
@@ -809,7 +706,9 @@ function FeaturedDatasets() {
                   {d}
                 </Link>
                 {i < datasets.length - 1 && (
-                  <span style={{ color: COLOR.amber, margin: '0 12px' }}>·</span>
+                  <span style={{ color: COLOR.amber, margin: '0 12px' }}>
+                    ·
+                  </span>
                 )}
               </span>
             ))}
@@ -838,7 +737,11 @@ function ValueAdds() {
         <Title
           order={2}
           ta="center"
-          style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, color: COLOR.ink }}
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 600,
+            color: COLOR.ink,
+          }}
           mb={8}
         >
           What's different here
@@ -872,7 +775,11 @@ function ValueAdds() {
               <Group grow>
                 <Text size="md">{row.label}</Text>
                 <Group justify="center">
-                  <CheckCircleIcon size={20} weight="fill" color={COLOR.spruce} />
+                  <CheckCircleIcon
+                    size={20}
+                    weight="fill"
+                    color={COLOR.spruce}
+                  />
                 </Group>
                 <Group justify="center">
                   <XCircleIcon size={20} weight="regular" color="#c2c2c2" />
@@ -906,15 +813,24 @@ function CommunitySection() {
           <Title
             order={2}
             ta="center"
-            style={{ fontFamily: FONT_DISPLAY, fontWeight: 600, color: COLOR.birch }}
+            style={{
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 600,
+              color: COLOR.birch,
+            }}
             mb={12}
           >
             Built in the open, by Vermonters
           </Title>
-          <Text ta="center" maw={560} mx="auto" style={{ color: 'rgba(246,245,239,0.78)' }}>
+          <Text
+            ta="center"
+            maw={560}
+            mx="auto"
+            style={{ color: 'rgba(246,245,239,0.78)' }}
+          >
             The platform's code and data pipelines are open source. Towns,
-            researchers, and volunteers help shape what gets added next —
-            and anyone can inspect exactly how a number was calculated.
+            researchers, and volunteers help shape what gets added next — and
+            anyone can inspect exactly how a number was calculated.
           </Text>
 
           <Group justify="center" mt={32} gap="md">
@@ -927,7 +843,10 @@ function CommunitySection() {
               radius="md"
               leftSection={<GithubLogoIcon size={18} />}
               styles={{
-                root: { borderColor: 'rgba(246,245,239,0.4)', color: COLOR.birch },
+                root: {
+                  borderColor: 'rgba(246,245,239,0.4)',
+                  color: COLOR.birch,
+                },
               }}
             >
               View the source
