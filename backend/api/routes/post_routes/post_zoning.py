@@ -22,6 +22,7 @@ router = APIRouter()
 async def zoning_geo_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_zoning_geojson(sources)
+    print(data)
     return Response(content=data, media_type="application/json")
 
 
