@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Badge,
   Card,
@@ -10,9 +12,9 @@ import {
 } from '@mantine/core';
 import Link from 'next/link';
 
-const TOOLS = [
+const RESOURCES = [
   {
-    href: '/tools/benefits-estimator',
+    href: '/resources/benefits-estimator',
     label: 'Vermont Benefits Estimator',
     description:
       'Estimate eligibility for Three Squares VT (SNAP), Medicaid, ' +
@@ -22,11 +24,11 @@ const TOOLS = [
   },
 ];
 
-export default function ToolsPage() {
+export default function ResourcesPage() {
   return (
     <Stack gap="xl">
       <Center pt="xl" mb="xs">
-        <Title order={2}>Tools</Title>
+        <Title order={2}>Resources</Title>
       </Center>
       <Center mb="xl">
         <Text c="dimmed" size="sm" maw={560} ta="center">
@@ -35,26 +37,26 @@ export default function ToolsPage() {
       </Center>
 
       <SimpleGrid cols={{ base: 1, sm: 2 }} maw={900} mx="auto" px="md">
-        {TOOLS.map((tool) => (
+        {RESOURCES.map((resource) => (
           <Card
-            key={tool.href}
+            key={resource.href}
             component={Link}
-            href={tool.href}
+            href={resource.href}
             withBorder
             radius="md"
             p="lg"
             style={{ textDecoration: 'none', color: 'inherit' }}
           >
             <Group gap="xs" mb="xs">
-              <Text fw={600}>{tool.label}</Text>
-              {tool.badge && (
+              <Text fw={600}>{resource.label}</Text>
+              {resource.badge && (
                 <Badge color="orange" variant="filled" size="sm">
-                  {tool.badge}
+                  {resource.badge}
                 </Badge>
               )}
             </Group>
             <Text size="sm" c="dimmed">
-              {tool.description}
+              {resource.description}
             </Text>
           </Card>
         ))}

@@ -1,4 +1,5 @@
-
+## Build files 
+*/Data/_Processed/
 
 # random stuff that's too big or unneeded to push
 venv/
@@ -18,6 +19,9 @@ backend/Data/Parcels/
 # Local planning/notes files
 claude_todo.md
 claude-work-done.md
+
+# duckdb files that don't belong on git (can build from parquet)
+*.duckdb
 
 
 # build libraries

@@ -204,7 +204,7 @@ export default function MainInputForm({ onCalculate }: InputFormProps) {
             greater accuracy
           </Button>
 
-          <Collapse in={showSupplemental}>
+          <Collapse expanded={showSupplemental}>
             <SupplementalQuestions
               data={supplemental}
               onChange={setSupplemental}

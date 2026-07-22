@@ -86,7 +86,33 @@ con.execute(f"""--sql
     FROM ST_Read('{county_path}')
 """)
 df = con.execute("SELECT * FROM counties_clean").df()
-df.head()
+df.sort_values(by="CountyFIPS").head()
 ```
 
 Matches against wikipedia, so we're good. 
+
+
+# Census Tract Lines
+
+```{python}
+path = data_dir / "vermont" / "cb_2025_50_tract_500k" / "cb_2025_50_tract_500k.shp"
+
+con.execute(f"""
+CREATE OR REPLACE VIEW vt_tracts AS
+SELECT
+    GEOID AS LocationID,
+    NAMELSAD AS name,
+    geom AS geometry
+FROM ST_Read('{path}')
+"""
+)
+tracts = con.execute("SELECT * FROM vt_tracts").df()
+tracts.sort_values(by="LocationID").head()
+```
+
+Looks great. We have 
+
+
+```{python}
+tracts.describe()
+```

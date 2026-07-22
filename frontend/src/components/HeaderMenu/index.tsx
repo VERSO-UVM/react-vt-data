@@ -55,17 +55,18 @@ const links = [
     // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
       { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
+      { link: '/resources/data-sources', label: 'Data Sources '},
       // { link: '/resources/github', label: 'GitHub' },
       // { link: '/resources/tutorial', label: 'Tutorial' },
     ],
   },
   // { link: '/scratch', label: 'Scratch' }, // For zoning rules filter development
-  // I outlined future sections of our "About" page below -Ian
+  // Future sections of the "About" page outlined below
   {
     link: '/about',
     label: 'About',
     links: [
-      // { link: '/about/team', label: 'Team' },
+      { link: '/about/team', label: 'Our Team' },
       // { link: '/about/faq', label: 'FAQs' },
       // { link: '/about/contact', label: 'Contact Us' },
     ],

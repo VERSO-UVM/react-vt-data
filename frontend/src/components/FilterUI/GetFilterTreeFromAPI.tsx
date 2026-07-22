@@ -16,7 +16,8 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
     range,
     setRange,
   } = useFilter();
-  const [tree, setTree] = useState<any>({});
+  type FilterTree = { [key: string]: FilterTree | null };
+  const [tree, setTree] = useState<FilterTree>({});
 
   // Load tree + labels
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
     let node = tree;
     for (let i = 0; i < level; i++) {
       if (!selectedFilters[i] || !node[selectedFilters[i]]) return [];
-      node = node[selectedFilters[i]];
+      node = node[selectedFilters[i]]!;
     }
     return ['All', ...Object.keys(node || {})];
   };

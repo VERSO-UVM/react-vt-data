@@ -4,7 +4,7 @@ export {
   DiffPerXBarChart,
   CompareDiffPerXBarChart,
   CompareHBarChart,
-  ZoningAllowanceStackedBarChart
+  ZoningAllowanceStackedBarChart,
 } from './Bar';
 
 export {
@@ -31,31 +31,37 @@ export {
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem } from '@/types/cachedCharts';
-import { 
-  Badge, 
-  Card, 
-  Box, 
-  Title, 
-  Stack, 
-  Text, 
-  Group, 
-  SimpleGrid, 
-  ActionIcon, 
-  Modal, 
-  Container 
+import {
+  Badge,
+  Card,
+  Box,
+  Title,
+  Stack,
+  Text,
+  Group,
+  SimpleGrid,
+  ActionIcon,
+  Modal,
+  Container,
 } from '@mantine/core';
 import { CornersOutIcon, CornersInIcon } from '@phosphor-icons/react';
-import * as motion from "motion/react-client"
+import * as motion from 'motion/react-client';
 import { AddChart, RemoveChart, ToggleChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 
 // ChartCard
-interface ChartCardProps<TData extends Record<string, any>> {
+interface ChartCardProps<TData extends DataRow> {
   chart: ChartItem<TData>;
-  ChartComponent: React.FC<{ chart: ChartItem<TData>; view?: 'gallery' | 'report' }>;
-  TrendComponent?: React.FC<{ chart: ChartItem<TData>; view?: 'gallery' | 'report' }>;
+  ChartComponent: React.FC<{
+    chart: ChartItem<TData>;
+    view?: 'gallery' | 'report';
+  }>;
+  TrendComponent?: React.FC<{
+    chart: ChartItem<TData>;
+    view?: 'gallery' | 'report';
+  }>;
   matchedCategories?: string[];
   action?: 'add' | 'remove' | 'toggle';
   defId?: string;
@@ -64,7 +70,7 @@ interface ChartCardProps<TData extends Record<string, any>> {
   view?: 'gallery' | 'report';
   border?: boolean;
 }
-export const ChartCard = <TData extends Record<string, any>>({
+export const ChartCard = <TData extends DataRow>({
   chart,
   ChartComponent,
   TrendComponent,
@@ -74,11 +80,11 @@ export const ChartCard = <TData extends Record<string, any>>({
   isIncluded,
   onToggle,
   view = 'report',
-  border = true
+  border = true,
 }: ChartCardProps<TData>) => {
   const isPdfMode = usePdfMode();
   const isGallery = view === 'gallery';
-  const showBorder = border === true
+  const showBorder = border === true;
   const [isHovered, setIsHovered] = useState(false);
 
   const isTablePrimary = chart.subtype.startsWith('renderTable');
@@ -87,7 +93,9 @@ export const ChartCard = <TData extends Record<string, any>>({
   const selfManagesViews = !!chart.chartParams?.noViewSwitch;
 
   const showViewSwitch =
-    !selfManagesViews && !isGallery && (isTablePrimary ? !!TrendComponent : true);
+    !selfManagesViews &&
+    !isGallery &&
+    (isTablePrimary ? !!TrendComponent : true);
 
   const content = selfManagesViews ? (
     <ChartComponent chart={chart} view={view} />
@@ -107,17 +115,19 @@ export const ChartCard = <TData extends Record<string, any>>({
   const allCategories = chart.categories ?? [];
 
   const chartBoxHeight = isPdfMode
-    ? isTablePrimary ? 'auto' : 400
+    ? isTablePrimary
+      ? 'auto'
+      : 400
     : isGallery
       ? 275
       : 400;
-  
+
   const [expanded, setExpanded] = useState(false);
-  
+
   return (
     <>
       <Card
-        shadow={showBorder? "sm" : undefined}
+        shadow={showBorder ? 'sm' : undefined}
         padding={isGallery ? 'sm' : 'lg'}
         radius="md"
         withBorder={showBorder}
@@ -126,10 +136,14 @@ export const ChartCard = <TData extends Record<string, any>>({
         data-chart-subtype={chart.subtype}
         onMouseEnter={isGallery ? () => setIsHovered(true) : undefined}
         onMouseLeave={isGallery ? () => setIsHovered(false) : undefined}
-        onClick={isGallery ? (e) => {
-                    e.stopPropagation();
-                    setExpanded((v) => !v);
-                  }: undefined}
+        onClick={
+          isGallery
+            ? (e) => {
+                e.stopPropagation();
+                setExpanded((v) => !v);
+              }
+            : undefined
+        }
         style={{
           flexDirection: 'column',
           minHeight: 0,
@@ -145,7 +159,7 @@ export const ChartCard = <TData extends Record<string, any>>({
                   ? '0 8px 20px rgba(0,0,0,0.12)'
                   : undefined,
               }
-            : {})
+            : {}),
         }}
       >
         <Box mb={isGallery ? 4 : 'xs'}>
@@ -155,8 +169,13 @@ export const ChartCard = <TData extends Record<string, any>>({
             </Title>
             {!isGallery && (
               <>
-                <Title order={2} fw={200} c="dimmed"> | </Title>
-                <Title order={2} fw={200}>{chart.title}</Title>
+                <Title order={2} fw={200} c="dimmed">
+                  {' '}
+                  |{' '}
+                </Title>
+                <Title order={2} fw={200}>
+                  {chart.title}
+                </Title>
               </>
             )}
             <Box flex={1} />
@@ -167,7 +186,9 @@ export const ChartCard = <TData extends Record<string, any>>({
                   <Badge
                     key={cat}
                     color="green"
-                    variant={matchedCategories.includes(cat) ? 'filled' : 'light'}
+                    variant={
+                      matchedCategories.includes(cat) ? 'filled' : 'light'
+                    }
                     size="sm"
                   >
                     {cat}
@@ -188,12 +209,12 @@ export const ChartCard = <TData extends Record<string, any>>({
                   whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.9 }}
                 >
-                {expanded ? (
-                  <CornersInIcon size={50} weight='thin' color='grey' />
-                ) : (
-                  <CornersOutIcon size={30} weight="thin" color="grey" />
-                )}
-              </ActionIcon>
+                  {expanded ? (
+                    <CornersInIcon size={50} weight="thin" color="grey" />
+                  ) : (
+                    <CornersOutIcon size={30} weight="thin" color="grey" />
+                  )}
+                </ActionIcon>
               </Group>
             )}
 
@@ -261,7 +282,7 @@ export const ChartCard = <TData extends Record<string, any>>({
           onClick={() => setExpanded(false)}
           style={{ zIndex: 1000 }}
         >
-          <CornersInIcon size={50} weight='thin' color='grey' />
+          <CornersInIcon size={50} weight="thin" color="grey" />
         </ActionIcon>
 
         <ChartCard
@@ -281,7 +302,7 @@ export const ChartCard = <TData extends Record<string, any>>({
   );
 };
 
-interface ChartStackProps<TData extends Record<string, any>> {
+interface ChartStackProps<TData extends DataRow> {
   charts: ChartItem<TData>[];
   action?: 'add' | 'remove' | 'toggle';
   userInterests?: string[];
@@ -293,7 +314,7 @@ interface ChartStackProps<TData extends Record<string, any>> {
 
 import * as allCharts from './index';
 
-export const ChartStack = <TData extends Record<string, any>>({
+export const ChartStack = <TData extends DataRow>({
   charts,
   action = 'add',
   userInterests = [],
@@ -317,7 +338,9 @@ export const ChartStack = <TData extends Record<string, any>>({
           ] as React.FC<{ chart: ChartItem<TData> }>;
 
           const TrendComponent = chart.trendChart
-            ? (allCharts[chart.trendChart as keyof typeof allCharts] as React.FC<{
+            ? (allCharts[
+                chart.trendChart as keyof typeof allCharts
+              ] as React.FC<{
                 chart: ChartItem<TData>;
               }>)
             : undefined;
@@ -329,11 +352,18 @@ export const ChartStack = <TData extends Record<string, any>>({
 
           const defId = defIds?.[i];
           const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
-          const handleToggle = defId && onToggle ? () => onToggle(defId) : undefined;
+          const handleToggle =
+            defId && onToggle ? () => onToggle(defId) : undefined;
 
           if (chart.subtype === 'noteCard')
             return (
-              <Card key={chart.id} shadow="sm" padding="sm" radius="md" withBorder>
+              <Card
+                key={chart.id}
+                shadow="sm"
+                padding="sm"
+                radius="md"
+                withBorder
+              >
                 <Text size="sm" c="dimmed">
                   {chart.notes}
                 </Text>
@@ -343,7 +373,13 @@ export const ChartStack = <TData extends Record<string, any>>({
           if (!ChartComponent) return null;
           if (!chart.data || chart.data.length === 0)
             return (
-              <Card key={chart.id} shadow="sm" padding="lg" radius="md" withBorder>
+              <Card
+                key={chart.id}
+                shadow="sm"
+                padding="lg"
+                radius="md"
+                withBorder
+              >
                 <Text>
                   No data available from {`${chart.title}`}
                   {chart.description ? ` for ${chart.description}` : ''}.

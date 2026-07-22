@@ -13,7 +13,6 @@ import os
 from pathlib import Path
 
 import duckdb
-import pandas as pd
 
 _project_root = Path.cwd()
 while not (_project_root / "api").exists():
@@ -98,7 +97,7 @@ def save_suitability_data():
 
     build_suitability_color_table()
     con.execute(
-        f"COPY (SELECT * FROM soil_suitability_type_colors) TO '{proc_dir / 'soil_suitability' / f'soil_suitability_colors.parquet'}' "
+        f"COPY (SELECT * FROM soil_suitability_type_colors) TO '{proc_dir / 'soil_suitability' / 'soil_suitability_colors.parquet'}' "
     )
 
     info_table_names = []
@@ -139,21 +138,21 @@ def save_suitability_data():
                 f"""INSERT INTO geom_soil_suit SELECT * FROM {geom_table_names[tables]};"""
             )
 
-    con.execute(f"""CREATE SEQUENCE info_id_sequence START 1;""")
+    con.execute("""CREATE SEQUENCE info_id_sequence START 1;""")
     con.execute(
-        f"""ALTER TABLE info_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('info_id_sequence');"""
+        """ALTER TABLE info_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('info_id_sequence');"""
     )
 
-    con.execute(f"""CREATE SEQUENCE geom_id_sequence START 1;""")
+    con.execute("""CREATE SEQUENCE geom_id_sequence START 1;""")
     con.execute(
-        f"""ALTER TABLE geom_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('geom_id_sequence');"""
+        """ALTER TABLE geom_soil_suit ADD COLUMN ID INTEGER DEFAULT nextval('geom_id_sequence');"""
     )
 
     con.execute(
-        f"COPY (SELECT * FROM info_soil_suit) TO '{proc_dir / 'soil_suitability' / f'info_soil_suit.parquet'}' "
+        f"COPY (SELECT * FROM info_soil_suit) TO '{proc_dir / 'soil_suitability' / 'info_soil_suit.parquet'}' "
     )
     con.execute(
-        f"COPY (SELECT * FROM geom_soil_suit) TO '{proc_dir / 'soil_suitability' / f'geom_soil_suit.parquet'}' "
+        f"COPY (SELECT * FROM geom_soil_suit) TO '{proc_dir / 'soil_suitability' / 'geom_soil_suit.parquet'}' "
     )
 
 
@@ -182,7 +181,7 @@ def build_suitability_geom_table(table_name):
 
 
 def build_suitability_color_table():
-    con.execute(f"""--sql
+    con.execute("""--sql
     CREATE TABLE soil_suitability_type_colors (
         soil_suitability   TEXT PRIMARY KEY,
         hex_color       TEXT NOT NULL,
@@ -240,7 +239,6 @@ def build_wastewater_service_miscellaneous_info_table():
 
 
 def save_wastewater_service_area_tables():
-
     load_wastewater_service_data()
     build_wastewater_service_info_table()
     build_wastewater_service_geom_table()

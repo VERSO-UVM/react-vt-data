@@ -27,24 +27,15 @@ interface ExploratoryMappingGridProps {
   links: LinkItem[];
 }
 
-function getIcon(label: string) {
-  switch (label) {
-    case 'Zoning':
-      return IconMap2;
-
-    case 'Soil Suitability':
-      return IconDroplet;
-
-    case 'Flood Insurance':
-      return IconShield;
-
-    default:
-      return IconMap2;
-  }
-}
+// static component lookup — selecting (not creating) a component per render
+const ICONS: Record<string, typeof IconMap2> = {
+  Zoning: IconMap2,
+  'Soil Suitability': IconDroplet,
+  'Flood Insurance': IconShield,
+};
 
 function MappingCard({ item }: { item: LinkItem }) {
-  const Icon = getIcon(item.label);
+  const Icon = ICONS[item.label] ?? IconMap2;
 
   return (
     <Card
@@ -118,7 +109,7 @@ export default function ExploratoryMappingGrid({
   if (!links?.length) return null;
 
   return (
-    <Grid justify="center" gutter="xl">
+    <Grid justify="center" gap="xl">
       {links.map((item) => (
         <Grid.Col key={item.link} span={{ base: 12, sm: 6, md: 4 }}>
           <MappingCard item={item} />

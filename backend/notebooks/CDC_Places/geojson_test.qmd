@@ -49,7 +49,7 @@ from app_utils.data_loading import crs_set
 ```{python}
 con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
 con.execute("LOAD spatial")
-df = con.execute("SELECT * FROM cdc_places").df()
+df = con.execute("SELECT * FROM cdc_county_places").df()
 df.head()
 ```
 
@@ -71,7 +71,7 @@ single_var_sql = """--sql
         p.bin,
         c.CountyFIPS,
         ST_ASGEOJSON(c.geom) AS geometry
-    FROM cdc_places p
+    FROM cdc_county_places p
     LEFT JOIN vermont_counties c ON p.LocationID = c.CountyFIPS
 """
 ```
@@ -131,15 +131,35 @@ Not exactly stunning, but this should do okay on the front end. Fine tuning the 
 ```{python}
 measure = 'Binge drinking among adults' 
 edges = con.execute("""
-    SELECT * FROM cdc_edges 
+    SELECT * FROM cdc_county_edges 
     WHERE Measure IN ('Binge drinking among adults')
  """).df()
 edges.head()
 ```
 
 ```{python}
+measure = "Binge drinking among adults"
+edges = con.execute("""
+    SELECT * FROM cdc_county_edges 
+    WHERE Measure IN ('Binge drinking among adults')
+ """).df()
+edges.head()
+```
+
+```{python}
+con.execute("""--sql
+    SELECT * FROM cdc_tract_places
+    WHERE Measure IN ('Binge drinking among adults')
+    JOIN
+""").df()
+```
+
+
+```{python}
 edges_x = edges[edges["Measure"]==measure].drop(columns="Measure").iloc[0].tolist()
 edges_x
 
 ```
+
+
 
