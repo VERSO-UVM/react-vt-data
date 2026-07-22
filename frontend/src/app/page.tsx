@@ -423,6 +423,154 @@ function HeroSection({
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
+<<<<<<< HEAD
+    <>
+      <div>
+        <Center mb="lg">
+          <Title order={2}>Explore the Platform</Title>
+        </Center>
+
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
+          <Card
+            component={Link}
+            href="/mapping/zoning"
+            withBorder
+            radius="lg"
+            shadow="sm"
+            padding="lg"
+            style={{
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = 'sm';
+            }}
+          >
+            <ThemeIcon size={50} radius="md" variant="light">
+              <IconMap2 size={28} />
+            </ThemeIcon>
+            <Text fw={700} mt="md">
+              Mapping
+            </Text>
+
+            <Text size="sm" c="dimmed" mt="xs">
+              Explore zoning, flood risk, wastewater suitability, and other
+              Vermont spatial datasets.
+            </Text>
+          </Card>
+
+          <Card
+            component={Link}
+            href="/data-comparison"
+            withBorder
+            radius="lg"
+            shadow="sm"
+            padding="lg"
+            style={{
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = 'sm';
+            }}
+          >
+            <ThemeIcon size={50} radius="md" variant="light">
+              <IconChartBar size={28} />
+            </ThemeIcon>
+
+            <Text fw={700} mt="md">
+              Data Analysis
+            </Text>
+
+            <Text size="sm" c="dimmed" mt="xs">
+              Generate charts, summaries, and comparisons from Vermont datasets.
+            </Text>
+          </Card>
+
+          <Card
+            component={Link}
+            href="/data-export"
+            withBorder
+            radius="lg"
+            shadow="sm"
+            padding="lg"
+            style={{
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = 'sm';
+            }}
+          >
+            <ThemeIcon size={50} radius="md" variant="light">
+              <IconDownload size={28} />
+            </ThemeIcon>
+
+            <Text fw={700} mt="md">
+              Data Export
+            </Text>
+
+            <Text size="sm" c="dimmed" mt="xs">
+              Download clean, analysis-ready datasets with readable variable
+              names.
+            </Text>
+          </Card>
+
+          <Card
+            component={Link}
+            href="/resources/benefits-estimator"
+            withBorder
+            radius="lg"
+            shadow="sm"
+            padding="lg"
+            style={{
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow =
+                '0 4px 12px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'none';
+              e.currentTarget.style.boxShadow = 'sm';
+            }}
+          >
+            <ThemeIcon size={50} radius="md" variant="light">
+              <IconHeartHandshake size={28} />
+            </ThemeIcon>
+
+            <Text fw={700} mt="md">
+              Benefits Estimator
+            </Text>
+
+            <Text size="sm" c="dimmed" mt="xs">
+              Estimate eligibility for Vermont assistance programs and benefits.
+            </Text>
+          </Card>
+        </SimpleGrid>
+      </div>
+    </>
+=======
     <Text
       style={{
         fontFamily: FONT_MONO,
@@ -435,6 +583,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Text>
+>>>>>>> origin/main
   );
 }
 
