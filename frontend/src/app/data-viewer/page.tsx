@@ -1,7 +1,25 @@
 'use client';
 
-import { Box, Grid, Text, Title, Tabs, ScrollArea } from '@mantine/core';
-import { HouseLineIcon, UserListIcon, TreeIcon, GraduationCapIcon, TrendUpIcon, Icon } from '@phosphor-icons/react';
+import {
+  Box,
+  Grid,
+  Text,
+  Title,
+  Tabs,
+  Container,
+  Group,
+  Button,
+  Stack,
+} from '@mantine/core';
+import {
+  HouseLineIcon,
+  UserListIcon,
+  TreeIcon,
+  GraduationCapIcon,
+  TrendUpIcon,
+  PencilSimpleIcon,
+  Icon,
+} from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -10,9 +28,15 @@ import {
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
 
-import classes  from './Tabs.module.css';
+import { motion } from 'motion/react';
+import classes from './Tabs.module.css';
 import { useEffect, useState } from 'react';
+
+// within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { FONT_MONO, COLOR } from './theme';
+import { FieldLabel } from './FieldLabel';
+import { MetricsPanel } from './MetricsPanels';
 
 // Imports needed for stat cards
 import { BASE_API_URL } from '@/config';
@@ -48,62 +72,20 @@ function StatCards() {
     return acc;
   }, {});
 
-  const formatNumber = (v?: number) =>
-    v === undefined || v === null ? '—' : v.toLocaleString();
-
-  return (
-    <Grid py="xl">
-      <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          {formatNumber(metrics['Population (ACS)'])}
-        </Text>
-        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
-          Population
-        </Text>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          ${formatNumber(metrics['Median Household Income'])}
-        </Text>
-        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
-          Household Income
-        </Text>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          {formatNumber(metrics['Median Age'])}
-        </Text>
-        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
-          Median Age
-        </Text>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          {formatNumber(metrics['Labor Force Participation Rate (16+)'])}
-        </Text>
-        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
-          In Labor Force (16+)
-        </Text>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2 }}>
-        <Text size="2rem" fw={700} lh={1} mb={10}>
-          ${formatNumber(metrics['Median Home Value'])}
-        </Text>
-        <Text size="sm" c="lightgrey" tt="uppercase" fw={300}>
-          Median Home Value
-        </Text>
-      </Grid.Col>
-    </Grid>
-  );
+  return <MetricsPanel metrics={metrics} />;
 }
 
-interface Section {id: string; label: string; icon: Icon}
+interface Section {
+  id: string;
+  label: string;
+  icon: Icon;
+}
 
-function ChartTabs({sections, activeTab, setActiveTab}: {
+function ChartTabs({
+  sections,
+  activeTab,
+  setActiveTab,
+}: {
   sections: Section[];
   activeTab: string | null;
   setActiveTab: (v: string | null) => void;
@@ -112,11 +94,10 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
     <Tabs
       value={activeTab}
       onChange={setActiveTab}
-      variant="default"
+      variant="outline"
       radius="md"
       defaultValue="Land Use"
-      mt={0}
-      color="green"
+      c={'#F6F5EF'}
       classNames={{ tab: classes.tab }}
     >
       <Tabs.List>
@@ -134,9 +115,232 @@ function ChartTabs({sections, activeTab, setActiveTab}: {
   );
 }
 
+function HeroSection({
+  myLocation,
+  comparison,
+  interests,
+  yearMin,
+  yearMax,
+  openProfileModal,
+  sections,
+  activeTab,
+  setActiveTab,
+}: {
+  myLocation: any;
+  comparison: any;
+  interests: string[];
+  yearMin: number;
+  yearMax: number;
+  openProfileModal: () => void;
+  sections: Section[];
+  activeTab: string | null;
+  setActiveTab: (v: string | null) => void;
+}) {
+  return (
+    // Full-bleed: breaks out of the page's centered Container so the hero
+    // touches both edges of the viewport instead of floating as a card.
+    <Box
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        width: '100vw',
+        left: '50%',
+        marginLeft: '-50vw',
+        background: `linear-gradient(160deg, ${COLOR.spruceDeep} 0%, ${COLOR.spruce} 100%)`,
+        paddingTop: 70,
+        paddingBottom: 40,
+      }}
+    >
+      <Container size="xl">
+        <Grid gap="md" align="center">
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Text
+                style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 12,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: COLOR.amberSoft,
+                }}
+              >
+                Data Viewer
+              </Text>
+            </motion.div>
+            <Title
+              order={1}
+              style={{
+                fontFamily: FONT_DISPLAY,
+                fontWeight: 600,
+                fontSize: 'clamp(2.3rem, 5.4vw, 3.7rem)',
+                lineHeight: 1.04,
+                color: COLOR.birch,
+                marginTop: 14,
+                maxWidth: 640,
+              }}
+            >
+              {myLocation?.name || 'No Location Selected'}
+              {comparison?.name && (
+                <Text
+                  span
+                  style={{
+                    fontFamily: FONT_DISPLAY,
+                    fontWeight: 400,
+                    fontSize: '0.4em',
+                    color: 'rgba(246,245,239,0.45)',
+                    display: 'block',
+                    marginTop: 8,
+                  }}
+                >
+                  compared to {comparison.name}
+                </Text>
+              )}
+            </Title>
+          </Grid.Col>
+          {/* Profile panel — sits beside the title, always on the dark
+             background so the light text stays legible. Kept compact so
+             it doesn't compete with the location title. */}
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.7,
+                delay: 0.4,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Box
+                style={{
+                  background: 'rgba(246,245,239,0.07)',
+                  border: '1px solid rgba(246,245,239,0.18)',
+                  borderRadius: 14,
+                  padding: '16px 18px',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <Group justify="space-between" align="center" mb={10}>
+                  <Text
+                    style={{
+                      fontFamily: FONT_MONO,
+                      color: COLOR.amberSoft,
+                      fontSize: 12,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Your profile
+                  </Text>
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    rightSection={<PencilSimpleIcon size={16} weight="bold" />}
+                    onClick={openProfileModal}
+                    styles={{ root: { color: COLOR.amberSoft } }}
+                  >
+                    Edit
+                  </Button>
+                </Group>
+                <Stack gap={10}>
+                  <ProfileField
+                    label="Location"
+                    value={myLocation?.name}
+                    small
+                  />
+                  <ProfileField
+                    label="Comparing to"
+                    value={comparison?.name}
+                    small
+                  />
+                  <ProfileField
+                    label="Years"
+                    value={`${yearMin}–${yearMax}`}
+                    small
+                  />
+                  <Box>
+                    <FieldLabel small>Interests</FieldLabel>
+                    {interests.length > 0 ? (
+                      <Text
+                        size="sm"
+                        style={{ color: COLOR.birch, fontWeight: 500 }}
+                      >
+                        {interests.join(' · ')}
+                      </Text>
+                    ) : (
+                      <Text
+                        size="sm"
+                        style={{ color: 'rgba(246,245,239,0.55)' }}
+                      >
+                        None selected
+                      </Text>
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+            </motion.div>
+          </Grid.Col>
+        </Grid>
+
+        {/* Stat cards — quick-glance snapshot for the selected location */}
+        <Box mt={40}>
+          <StatCards />
+        </Box>
+
+        {/* Category tabs live in the hero so they read as part of the
+           location's summary rather than a separate page section. */}
+        <Box
+          style={{
+            borderTop: '1px solid rgba(246,245,239,0.14)',
+          }}
+        >
+          <Container size="xl" mt={30} mb={-40}>
+            <ChartTabs
+              sections={sections}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </Container>
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+function ProfileField({
+  label,
+  value,
+  small,
+}: {
+  label: string;
+  value?: string;
+  small?: boolean;
+}) {
+  return (
+    <Box>
+      <FieldLabel small={small}>{label}</FieldLabel>
+      <Text
+        size={small ? 'sm' : 'md'}
+        style={{ color: COLOR.birch, fontWeight: 500 }}
+      >
+        {value || '—'}
+      </Text>
+    </Box>
+  );
+}
 
 export default function DataViewerPage() {
-  const { myLocation, comparison, interests, yearMin, yearMax } = useProfile();
+  const {
+    myLocation,
+    comparison,
+    interests,
+    yearMin,
+    yearMax,
+    openProfileModal,
+  } = useProfile();
   const [chartData, setChartData] = useState<
     Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
   >({});
@@ -147,8 +351,8 @@ export default function DataViewerPage() {
     Record<string, any[]>
   >({});
 
-
   const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const applyFilters = useApplyFilters();
   const tableDefs = chartDefs.filter((c) =>
@@ -166,26 +370,30 @@ export default function DataViewerPage() {
     'Labor & Economy': TrendUpIcon,
   };
 
-  const sections = [...new Set(chartDefs.flatMap((c) => c.categories ?? []))]
-  .map((category) => ({
+  const sections = [
+    ...new Set(chartDefs.flatMap((c) => c.categories ?? [])),
+  ].map((category) => ({
     id: category.toLowerCase().replace(/\s+/g, '-'),
     label: category,
     icon: categoryIcons[category] ?? HouseLineIcon,
   }));
-
 
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
       const url = chart.url;
       const filters = buildFilters(myLocation, {
         col: 'year',
-        selected: [chart.chartParams?.fixedYear ?? yearMin,
-                  chart.chartParams?.fixedYear ?? yearMax],
+        selected: [
+          chart.chartParams?.fixedYear ?? yearMin,
+          chart.chartParams?.fixedYear ?? yearMax,
+        ],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
-        selected: [chart.chartParams?.fixedYear ?? yearMin,
-                  chart.chartParams?.fixedYear ?? yearMax],
+        selected: [
+          chart.chartParams?.fixedYear ?? yearMin,
+          chart.chartParams?.fixedYear ?? yearMax,
+        ],
       });
 
       applyFilters({
@@ -279,7 +487,7 @@ export default function DataViewerPage() {
         notes: `County-level data (${employmentCounty} County) — QCEW does not report employment at the town level.`,
       });
     }
-    
+
     return createChartItem({
       title: myLocation.name,
       xField: chart.xField,
@@ -321,7 +529,6 @@ export default function DataViewerPage() {
   );
 
   const allItems = [...charts, ...tableItems];
-  
   let filteredItems = allItems;
 
   if (focusMode === 'focus' && interests.length > 0) {
@@ -330,81 +537,43 @@ export default function DataViewerPage() {
     );
   }
 
-  const [activeTab, setActiveTab] = useState<string | null>(null);
-
-
   if (activeTab) {
-  const section = sections.find(
-    (s) => s.id === activeTab
-  );
+    const section = sections.find((s) => s.id === activeTab);
 
-  if (section) {
-    filteredItems = filteredItems.filter((item) =>
-      item.categories?.includes(section.label)
-    );
+    if (section) {
+      filteredItems = filteredItems.filter((item) =>
+        item.categories?.includes(section.label),
+      );
+    }
   }
-}
 
-const visibleItems = filteredItems;
+  const visibleItems = filteredItems;
 
-return (
-  <Box h="100vh">
-    <Box px={0}>
-      {/* Hero */}
-      <Box
-        pos="relative"
-        pt={40}
-        pb={0}
-        px="xl"
-        style={{
-          backgroundColor: "#143460",
-          backgroundImage: "radial-gradient(rgba(255,255,255,0.14) 0.5px, transparent 0.5px)",
-          backgroundSize: "3px 3px",
-          borderBottom: "1px solid #eef0f3",
-          color: "#ffffff",
-        }}
-      >
-        {/* Hero content */}
-        <Box pos="relative" style={{ zIndex: 1 }}>
-          <Text size="xs" fw={700} c="lightgrey" tt="uppercase" mb={8}>
-            Data Viewer
-          </Text>
-
-          <Title fw={600}>
-            {myLocation.name}
-          </Title>
-
-          <Text size="lg" c="lightgrey" mt={8} mb={-10}>
-            Compared with {comparison.name}
-          </Text>
-
-          <StatCards />
-
-          <Box mr={-40} ml={0}>
-            <ChartTabs
-              sections={sections}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
-          </Box>
-          
-        </Box>
-      </Box>
-
-      {/* Charts... */}
-      <Box py="xs">
+  return (
+    <Box h="100vh">
+      <Box px={0}>
+        <HeroSection
+          myLocation={myLocation}
+          comparison={comparison}
+          interests={interests}
+          yearMin={yearMin}
+          yearMax={yearMax}
+          openProfileModal={openProfileModal}
+          sections={sections}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+        {/* Charts... */}
+        <Box py="xs">
           <ChartStack
             charts={visibleItems}
             action="add"
             userInterests={interests}
-            defIds={visibleItems.map(
-              (c) => c.chartParams?.defId
-            )}
+            defIds={visibleItems.map((c) => c.chartParams?.defId)}
             view="gallery"
           />
         </Box>
-
+      </Box>
     </Box>
-  </Box>
-);
+  );
 }
