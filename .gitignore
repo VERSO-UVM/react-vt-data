@@ -10,6 +10,7 @@ venv/
 *_trash*
 *zoning.json*
 *tidy.csv*
+*.ipynb
 
 # Large geodata files — not for version control
 backend/Data/Parcels/
