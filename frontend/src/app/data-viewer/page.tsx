@@ -11,7 +11,6 @@ import {
   Button,
   Stack,
 } from '@mantine/core';
-import Link from 'next/link';
 import {
   HouseLineIcon,
   UserListIcon,
@@ -32,7 +31,12 @@ import {
 import { motion } from 'motion/react';
 import classes from './Tabs.module.css';
 import { useEffect, useState } from 'react';
+
+// within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { FONT_MONO, COLOR } from './theme';
+import { FieldLabel } from './FieldLabel';
+import { MetricsPanel } from './MetricsPanels';
 
 // Imports needed for stat cards
 import { BASE_API_URL } from '@/config';
@@ -43,22 +47,6 @@ type Row = {
   Value: number;
   Variable: string;
 };
-
-const COLOR = {
-  spruce: '#1B3A2F',
-  spruceDeep: '#122820',
-  slate: '#40525A',
-  birch: '#F6F5EF',
-  birchDim: '#EEEBE0',
-  ink: '#1B211D',
-  amber: '#dd9a2f',
-  amberSoft: '#E7B563',
-  amberYellow: '#FFD100',
-  line: 'rgba(27, 58, 47, 0.14)',
-};
-const FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', serif";
-const FONT_BODY = "'General Sans', 'Inter', sans-serif";
-const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
 
 function StatCards() {
   const { myLocation, yearMin, yearMax } = useProfile();
@@ -84,95 +72,7 @@ function StatCards() {
     return acc;
   }, {});
 
-  const formatNumber = (v?: number) =>
-    v === undefined || v === null ? '—' : v.toLocaleString();
-
-  /* REQUESTED CHANGE: Put the values (eg (population (ACS) population )) into an array
- and the just map them into metric and field label rather than repeating the ode. 
-    */
-  return (
-    <Grid>
-      <Grid.Col span={{ base: 6, md: 2.4 }}>
-        <Text
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: '1.9rem',
-            fontWeight: 600,
-            lineHeight: 1,
-            color: COLOR.birch,
-            marginBottom: 8,
-          }}
-        >
-          {formatNumber(metrics['Population (ACS)'])}
-        </Text>
-        <FieldLabel>Population</FieldLabel>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2.4 }}>
-        <Text
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: '1.9rem',
-            fontWeight: 600,
-            lineHeight: 1,
-            color: COLOR.birch,
-            marginBottom: 8,
-          }}
-        >
-          ${formatNumber(metrics['Median Household Income'])}
-        </Text>
-        <FieldLabel>Household Income</FieldLabel>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2.4 }}>
-        <Text
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: '1.9rem',
-            fontWeight: 600,
-            lineHeight: 1,
-            color: COLOR.birch,
-            marginBottom: 8,
-          }}
-        >
-          {formatNumber(metrics['Median Age'])}
-        </Text>
-        <FieldLabel>Median Age</FieldLabel>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2.4 }}>
-        <Text
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: '1.9rem',
-            fontWeight: 600,
-            lineHeight: 1,
-            color: COLOR.birch,
-            marginBottom: 8,
-          }}
-        >
-          {formatNumber(metrics['Labor Force Participation Rate (16+)'])}
-        </Text>
-        <FieldLabel>In Labor Force (16+)</FieldLabel>
-      </Grid.Col>
-
-      <Grid.Col span={{ base: 6, md: 2.4 }}>
-        <Text
-          style={{
-            fontFamily: FONT_DISPLAY,
-            fontSize: '1.9rem',
-            fontWeight: 600,
-            lineHeight: 1,
-            color: COLOR.birch,
-            marginBottom: 8,
-          }}
-        >
-          ${formatNumber(metrics['Median Home Value'])}
-        </Text>
-        <FieldLabel>Median Home Value</FieldLabel>
-      </Grid.Col>
-    </Grid>
-  );
+  return <MetricsPanel metrics={metrics} />;
 }
 
 interface Section {
@@ -407,29 +307,6 @@ function HeroSection({
         </Box>
       </Container>
     </Box>
-  );
-}
-
-function FieldLabel({
-  children,
-  small,
-}: {
-  children: React.ReactNode;
-  small?: boolean;
-}) {
-  return (
-    <Text
-      style={{
-        fontFamily: FONT_MONO,
-        fontSize: small ? 10 : 11,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        color: 'rgba(246,245,239,0.5)',
-        marginBottom: 4,
-      }}
-    >
-      {children}
-    </Text>
   );
 }
 
