@@ -30,7 +30,7 @@ export {
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 import {
   Badge,
   Card,
@@ -54,13 +54,11 @@ import { usePdfMode } from '@/contexts/PdfModeContext';
 // ChartCard
 interface ChartCardProps<TData extends DataRow> {
   chart: ChartItem<TData>;
-  ChartComponent: React.FC<{
-    chart: ChartItem<TData>;
-    view?: 'gallery' | 'report';
-  }>;
+  ChartComponent: React.FC<{ chart: ChartItem<TData>; view?: 'gallery' | 'report' }>;
   TrendComponent?: React.FC<{
     chart: ChartItem<TData>;
     view?: 'gallery' | 'report';
+    onPlotData?: (rows: DataRow[]) => void;
   }>;
   matchedCategories?: string[];
   action?: 'add' | 'remove' | 'toggle';
@@ -90,6 +88,7 @@ export const ChartCard = <TData extends DataRow>({
   const isTablePrimary = chart.subtype.startsWith('renderTable');
   const [localView, setLocalView] = useState<'chart' | 'table'>('chart');
 
+
   const selfManagesViews = !!chart.chartParams?.noViewSwitch;
 
   const showViewSwitch =
@@ -97,19 +96,23 @@ export const ChartCard = <TData extends DataRow>({
     !isGallery &&
     (isTablePrimary ? !!TrendComponent : true);
 
+  const [trendPlotData, setTrendPlotData] = useState<DataRow[] | undefined>();
+
   const content = selfManagesViews ? (
     <ChartComponent chart={chart} view={view} />
-  ) : isTablePrimary ? (
-    localView === 'chart' && TrendComponent ? (
-      <TrendComponent chart={chart} view={view} />
-    ) : (
+    ) : isTablePrimary ? (
+      localView === 'chart' && TrendComponent ? (
+        <TrendComponent chart={chart} view={view} onPlotData={setTrendPlotData} />
+      ) : TrendComponent ? (
+        <TableView chart={chart} rows={trendPlotData} />
+      ) : (
+        <ChartComponent chart={chart} view={view} />
+      )
+    ) : localView === 'chart' ? (
       <ChartComponent chart={chart} view={view} />
-    )
-  ) : localView === 'chart' ? (
-    <ChartComponent chart={chart} view={view} />
-  ) : (
-    <TableView chart={chart} />
-  );
+    ) : (
+      <TableView chart={chart} />
+    );
 
   const isHighlighted = matchedCategories.length > 0;
   const allCategories = chart.categories ?? [];
