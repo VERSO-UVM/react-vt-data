@@ -46,3 +46,8 @@ backend/logger/*.log
 out/
 dist/
 backend/Data/Census/**/*.csv
+backend/Data/_Processed/parcels/
+**/.jupyter_cache/
+backend/notebooks/**/*.html
+backend/notebooks/**/*_files/
+backend/notebooks/**/*.ipynb
