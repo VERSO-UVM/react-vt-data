@@ -1,0 +1,144 @@
+---
+title: "ambulance data sql workthrough"
+author: Atticus Tarleton
+date: today
+description:  builds SQL tables from wastewater data.
+format:
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute:
+  cache: true
+editor:
+    render-on-save: true
+---
+
+# Setup
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+```
+
+```{python}
+con = duckdb.connect()
+```
+
+# Examining the School District dataset
+```{python}
+data_dir= Path("Data")
+path = data_dir / "school-districts" / "school_districts.parquet"
+school_data = gpd.read_parquet(path)
+school_data = crs_set(school_data)
+
+display(school_data.head())
+print(f'The number of rows is: {len(school_data)}')
+```
+
+# Reading the dataset in SQL
+```{python}
+con.execute("INSTALL spatial; LOAD spatial")
+```
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW school_districts AS
+  SELECT * FROM read_parquet('{path}')
+""")
+```
+
+now checking that this worked, and getting column names
+```{python}
+df = con.execute("SELECT * FROM school_districts").df()
+for col in df.columns:
+  print(col)
+
+display(df.head())
+```
+
+Now to separate the table
+
+`OBJECTID` will be the main hash key
+
+There are two tables, District_Information and Union_Information
+- District_Information
+    - main hash key: `OBJECTID`
+    - goal: store all the useful information about the school district, including geometry information
+- Union_Information
+    - main hash key: `OBJECTID`
+    - goal: store the information pertaining to the school union, which is the group of administrators for a school. In some cases multiple districts can have the same union
+
+Geometry is not stored as a separate table because the table is so small
+
+```{python}
+district_info_cols = [
+    "OBJECTID",
+    "SCHOOLDIST",
+    "DISTNAME",
+    "PopDensity",
+    "Shape__Area",
+    "geometry"
+]
+
+union_info_cols = [
+    "OBJECTID",
+    "UNIONTYPE",
+    "SUNION",
+    "SUPERNAME"
+]
+```
+creating the school district info table
+```{python}
+school_dist_info_string = ", ".join(district_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW school_district_info AS
+  SELECT {school_dist_info_string}
+  FROM school_districts
+""")
+
+school_dist_info = con.execute("SELECT * FROM school_district_info").df()
+display(school_dist_info.head())
+```
+
+creating the school union info table
+```{python}
+school_union_info_string = ", ".join(union_info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW school_union_info AS
+  SELECT {school_union_info_string}
+  FROM school_districts
+""")
+
+school_union_info = con.execute("SELECT * FROM school_union_info").df()
+display(school_union_info.head())
+```
+getting counts of each kind of union
+```{python}
+school_union_info["UNIONTYPE"].value_counts()
+```
