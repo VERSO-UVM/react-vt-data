@@ -63,6 +63,12 @@ Located in `ETL/data_collection/`, this stage contains one script per data categ
 
 **`run_data_collection.py`** is the master collection script — it runs each individual collector and populates the results into the `lake.RAW` schema. The `lake.RAW` schema itself is built by `datastore/lake_build.py`.
 
+#### Known Collection Issues
+- All DP02-5 2010 fail for county subdivisions → problem with API format
+- The economic table fails for the years 2009 and 2010 on all geo levels
+- The education table fails for the years 2009-2011 on all geo levels
+- QCEW fails for the years 2009-2013 for all counties
+
 ### 2. Data Cleaning
 
 Located in `ETL/data_cleaning/`,
