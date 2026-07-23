@@ -189,7 +189,6 @@ export default function VariableComparison() {
         subtype: 'bar',
         xField: 'CountyName',
         yField: 'Health Burden',
-        // SamePerXBarChart draws one <Bar> per datakey, not from yField
         chartParams: { datakeys: [['Health Burden', '#3b7dd8']] },
         data: pcaRes.data,
         description:

@@ -24,8 +24,14 @@ const links = [
     links: [
       { link: '/mapping/zoning', label: 'Zoning' },
       { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
-      { link: '/mapping/treatment-facilities', label: 'Wastewater Treatment Facilities'},
-      {link: '/mapping/service-areas', label: 'Wastewater System Service Areas'},
+      {
+        link: '/mapping/treatment-facilities',
+        label: 'Wastewater Treatment Facilities',
+      },
+      {
+        link: '/mapping/service-areas',
+        label: 'Wastewater System Service Areas',
+      },
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
@@ -54,12 +60,12 @@ const links = [
     // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
       { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
-      { link: '/resources/data-sources', label: 'Data Sources '},
+      { link: '/resources/data-sources', label: 'Data Sources ' },
       // { link: '/resources/github', label: 'GitHub' },
       // { link: '/resources/tutorial', label: 'Tutorial' },
     ],
   },
-  // { link: '/scratch', label: 'Scratch' }, // For zoning rules filter development
+  { link: '/scratch', label: 'Scratch' }, // For any work in progress not yet migrated to main page.
   // Future sections of the "About" page outlined below
   {
     link: '/about',

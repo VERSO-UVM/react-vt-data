@@ -1,15 +1,15 @@
 /**
  * @author Fitz Koch
- * @since 2026-06-29
+ * @since 2026-07-22
  *
  * @description
- *   Component style checkbox filter -- calls api to get options, and then presents as groups.
+ *   scratch page; purely lists previous stuff.
  */
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BASE_API_URL } from '@/config';
-import { Checkbox, Stack, SimpleGrid, Paper } from '@mantine/core';
+import { Accordion, Group, Text, Badge, Chip } from '@mantine/core';
 import { apiFilterParams } from './filterTypes';
 
 export function CheckboxFilter(params: apiFilterParams) {
@@ -36,27 +36,45 @@ export function CheckboxFilter(params: apiFilterParams) {
   };
 
   return (
-    <Stack gap="md">
+    <Accordion multiple defaultValue={Object.keys(options)}>
       {Object.entries(options).map(([label, options]) => {
         const current = Array.isArray(spec.filters?.[label])
           ? (spec.filters[label] as string[])
           : options;
         return (
-          <Paper key={label}>
-            <Checkbox.Group
-              label={label}
-              value={current}
-              onChange={(selections) => handleToggle(label, selections)}
-            >
-              <SimpleGrid cols={2} spacing="xs" mt="xs">
-                {options.map((o) => (
-                  <Checkbox key={o} value={o} label={o} color="teal" />
-                ))}
-              </SimpleGrid>
-            </Checkbox.Group>
-          </Paper>
+          <Accordion.Item key={label} value={label}>
+            <Accordion.Control>
+              <Group justify="space-between" pr="sm">
+                <Text fw={500}>{label} </Text>
+                <Badge>
+                  {current.length} / {options.length}
+                </Badge>
+              </Group>
+            </Accordion.Control>
+            <Accordion.Panel>
+              <Chip.Group
+                multiple
+                value={current}
+                onChange={(selections) => handleToggle(label, selections)}
+              >
+                <Group gap="xs">
+                  {options.map((opt) => (
+                    <Chip
+                      key={opt}
+                      value={opt}
+                      color="teal"
+                      variant="light"
+                      size="xs"
+                    >
+                      {opt}
+                    </Chip>
+                  ))}
+                </Group>
+              </Chip.Group>
+            </Accordion.Panel>
+          </Accordion.Item>
         );
       })}
-    </Stack>
+    </Accordion>
   );
 }
