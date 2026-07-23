@@ -75,10 +75,10 @@ con.execute("CREATE OR REPLACE VIEW parcels_raw AS SELECT * FROM ST_Read('Data/P
 Here, we print all the columns in the parcels_raw view, of which there are many. commented out is the code to yield the total row count, with is 191156. Now looking at the column types and their respective names (what they represent in real life), and making a reproducible code chunk to investigate what each means and what it looks like
 ```{python}
 described_parcels_raw = con.execute("DESCRIBE parcels_raw").df()
-print(described_parcels_raw)
-print(con.execute("SELECT COUNT(*) AS row_count, COUNT (DISTINCT OBJECTID) AS distinct_ids, SUM((OBJECTID IS NULL)::INT) AS nulls FROM parcels_raw").df())
+#print(described_parcels_raw)
+# print(con.execute("SELECT COUNT(*) AS row_count, COUNT (DISTINCT OBJECTID) AS distinct_ids, SUM((OBJECTID IS NULL)::INT) AS nulls FROM parcels_raw").df())
 
-column_types = described_parcels_raw["column_type"].tolist()
+column_types = described_parcels_raw["column_type"].unique().tolist()
 columns_by_type = {}
 
 for thing, item in described_parcels_raw.iterrows():
@@ -90,8 +90,8 @@ for thing, item in described_parcels_raw.iterrows():
             columns_by_type[row].append(item["column_name"])
 print(columns_by_type)
 
-for key, value in columns_by_type.items():
-    print(f"{key}: {len(value)}")
+# for key, value in columns_by_type.items():
+#     print(f"{key}: {value}")
 
 ```
 
@@ -286,6 +286,10 @@ print(con.execute("""SELECT
 FROM parcels_raw""").df())
 #something of note: there are no span-null only rows, 7862 where both are nulls, and 1715 tname only nulls, meaninng that the span nulls are a subset of the tname nulls. 
 ```
+```{python}
+#before we create the tables, I thought it ould be nice to enrich the info one:
+con.execute("""SELECT CAT, RESCODE, CITYGL, STGL, ZIPGL, E911ADDR, DESCPROP, LOCAPROP FROM parcels_raw""").df()
+```
 
 ## CREATING THE INFAMOUS TABLES
 ```{python}
@@ -304,15 +308,22 @@ con.execute("""
 Fully creating three tables, parcels_geom, which has the objectid and geom, the parcels_info table, which ahs information like the access nuber, town, source, and year, and the parcels_value table, which has the acres, and all sorts of value metrics. - got rid of value the table
 ```{python}
 #changing the name to {thing}.parcel
+print(con.execute("DESCRIBE final_view").df()["column_name"].tolist())
+
 con.execute("""
 CREATE OR REPLACE VIEW geom AS
 SELECT OBJECTID, geom FROM final_view
 """)
 
 con.execute("""CREATE OR REPLACE VIEW info AS
-SELECT OBJECTID, SPAN, PARCID, TNAME, TOWN, PROPTYPE, SOURCENAME, YEAR,
+SELECT OBJECTID, SPAN, CAT, RESCODE, PARCID, CITYGL, TOWN, ZIPGL, PROPTYPE, DESCPROP, SOURCENAME, YEAR,
        ACRESGL, REAL_FLV, HSTED_FLV, IMPRV_LV
 FROM final_view""")
+
+#wont ship tax table just yet! - commented out for now
+#con.execute("""CREATE OR REPLACE VIEW tax AS SELECT OBJECTID, ZIPGL, DESCPROP, REAL_FLV, EQUIPVAL, AOEGL_NR FROM final_view""")
+
+con.execute("""SELECT CAT FROM info""").df()
 ```
 
 somethind of note to consider. the build.py agglomerates parquets, not FGBS, so im 
@@ -321,11 +332,20 @@ path = Path("Data/_Processed/parcels")
 path.mkdir(parents=True, exist_ok=True)
 
 #changing the name to be more terse adn to the point, in the hopes that the glob agglomerator will add the "parcels/" prefix
-for item in ["info", "geom"]:
+#Not doing tax just yet 
+for item in ["info", "geom"]:#tax commented out
     con.execute(f"COPY (SELECT * FROM {item}) TO '{path / f'{item}.parquet'}' (FORMAT PARQUET)")
 ```
 
 #checking that it worked - (especially the uppercasing of the town name and columns)
 ```{python}
-con.execute(f"SELECT DISTINCT TNAME FROM '{path / 'info.parquet'}'  LIMIT 15").df()
+con.execute(f"SELECT DISTINCT ZIPGL FROM '{path / 'info.parquet'}'  LIMIT 15").df()
+```
+
+```{python}
+import duckdb
+db = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+print(db.execute("SHOW TABLES").df())
+print(db.execute("SELECT COUNT(*) FROM parcels_info").df())
+print(db.execute("SELECT COUNT(*) FROM parcels_geom").df())
 ```

@@ -14,6 +14,7 @@ def main():
     acs5.main()
     cdc.main()
     zoning.main()
+    parcels.main()
 
 
 if __name__ == "__main__":

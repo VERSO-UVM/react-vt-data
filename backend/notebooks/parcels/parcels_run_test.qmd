@@ -19,3 +19,37 @@ editor:
     render-on-save: true
 ---
 #ill get to this later
+```{python}
+from pathlib import Path 
+import os
+import sys
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+sys.path.insert(0, str(_project_root))
+print(os.getcwd())
+
+from api.models import FilterSource
+from sql_render import sql_filter_block
+
+
+
+sql_dir = Path("query/sql/parcels")
+src = FilterSource(filter_table="parcels_info", filters={"TOWN": ["PUTNEY"]},
+                   join_key="OBJECTID", join_type="inner")
+sql, params = sql_filter_block(sql_dir / "geo_query_parcels.sql", [src])
+print(sql)          # ← actually read the rendered SQL; watch the CTE appear
+```
+
+```{python}
+#testing tnat the rendering worked correctly 
+#correctly outputted PUTNEY town property, land with building, with 120.9 acres 
+
+import json
+from query.processed_db import DB
+res = DB.execute(sql, params).fetchone()[0]
+fc = json.loads(res)
+print(len(fc["features"]))
+print(fc["features"][0])
+```

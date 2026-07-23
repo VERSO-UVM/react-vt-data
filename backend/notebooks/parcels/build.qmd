@@ -18,4 +18,29 @@ execute:
 editor:
     render-on-save: true
 ---
+#root finder 
+```{python}
+import os
+from pathlib import Path
+import pandas as pd
+import duckdb
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+
+import logging
+
+from api.models import FilterSource
+from query.processed_db import DB
+from sql_render import sql_filter_block
+```
+
+```{python}
+
+
+
+```
 
