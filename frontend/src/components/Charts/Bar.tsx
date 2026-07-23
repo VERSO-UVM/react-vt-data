@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 
 // recharts
 import {
@@ -156,6 +156,7 @@ interface CompareDiffChartItem extends ChartItem<DataRow> {
     fixedYear?: number;
     percentFormat?: boolean;
     includeCategories?: string[];
+    unit?: string;
   };
 }
 
@@ -213,24 +214,54 @@ const CompareDiffPerXBarChartSVG = ({
 
 const CompareDiffPerXBarChart = ({
   chart,
+  view,
+  onPlotData,
 }: {
   chart: CompareDiffChartItem;
+  view?: 'gallery' | 'report';
+  onPlotData?: (rows: DataRow[]) => void;
 }) => {
   const isPdfMode = usePdfMode();
-  if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
 
   const includeCategories = chart.chartParams?.includeCategories;
-  const filteredData = includeCategories
-    ? chart.data.filter((entry: any) =>
-        includeCategories.includes(entry[chart.xField]),
-      )
-    : chart.data;
 
-  const filteredCompareData = includeCategories
-    ? chart.compareData.filter((entry: any) =>
-        includeCategories.includes(entry[chart.xField]),
-      )
-    : chart.compareData;
+  // Filter primary dataset based on categories if specified
+  const filteredData = useMemo(() => {
+    return includeCategories
+      ? chart.data.filter((entry: any) =>
+          includeCategories.includes(entry[chart.xField]),
+        )
+      : chart.data;
+  }, [chart.data, includeCategories, chart.xField]);
+
+  // Filter comparison dataset based on categories if specified
+  const filteredCompareData = useMemo(() => {
+    return includeCategories && chart.compareData
+      ? chart.compareData.filter((entry: any) =>
+          includeCategories.includes(entry[chart.xField]),
+        )
+      : chart.compareData ?? [];
+  }, [chart.compareData, includeCategories, chart.xField]);
+
+  // Derive exact plottable rows and report back to ChartCard for TableView
+  const plotData = useMemo(() => {
+    return filteredData.map((entry: any, i: number) => {
+      const cmpEntry = filteredCompareData[i];
+      return {
+        [chart.xField]: entry[chart.xField],
+        [chart.yField]: entry[chart.yField],
+        ...(cmpEntry
+          ? { [`${chart.yField} (cmp)`]: cmpEntry[chart.yField] }
+          : {}),
+      };
+    });
+  }, [filteredData, filteredCompareData, chart.xField, chart.yField]);
+
+  useEffect(() => {
+    onPlotData?.(plotData);
+  }, [plotData, onPlotData]);
+
+  if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
 
   const labels = filteredData.map((entry: any) => entry[chart.xField]);
 
@@ -251,6 +282,7 @@ const CompareDiffPerXBarChart = ({
     chart.yField,
     `${chart.yField} (compare)`,
   ];
+
   const data = {
     labels,
     datasets: [
@@ -355,35 +387,33 @@ const cleanUseType = (useType: string) => useType.replace(/_/g, ' ');
 
 const ZoningAllowanceStackedBarChart = <TData,>({
   chart,
+  onPlotData,
 }: {
-  chart: CompareDiffChartItem<TData>;
+  chart: CompareDiffChartItem;
+  onPlotData?: (rows: DataRow[]) => void;
 }) => {
   // const isPdfMode = usePdfMode();
   // if (isPdfMode) return <ZoningAllowanceStackedBarChartSVG chart={chart} />;
 
-  const mainRows = ((chart.data || []) as AllowanceRow[]).filter((r) =>
-    INCLUDED_USE_TYPES.has(r.use_type),
+  const mainRows = useMemo(
+    () => ((chart.data || []) as AllowanceRow[]).filter((r) => INCLUDED_USE_TYPES.has(r.use_type)),
+    [chart.data]
   );
 
-  const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter(
-    (r) => INCLUDED_USE_TYPES.has(r.use_type),
+  const compareRows = useMemo(
+    () => ((chart.compareData || []) as AllowanceRow[]).filter((r) => INCLUDED_USE_TYPES.has(r.use_type)),
+    [chart.compareData]
   );
 
   type PivotRow = { use_type: string } & Record<string, number | string>;
   const pivot = (rows: AllowanceRow[]): Record<string, PivotRow> => {
     const map: Record<string, PivotRow> = {};
-
     for (const r of rows) {
       const useType = cleanUseType(r.use_type);
       const group = groupVal(r.val);
-
-      if (!map[useType]) {
-        map[useType] = { use_type: useType };
-      }
-      map[useType][group] =
-        ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
+      if (!map[useType]) map[useType] = { use_type: useType };
+      map[useType][group] = ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
     }
-
     return map;
   };
 
@@ -399,6 +429,32 @@ const ZoningAllowanceStackedBarChart = <TData,>({
   );
 
   const stackKeys = VAL_ORDER;
+
+  const plotData = useMemo(() => {
+    return labels.map((useType) => {
+      const row: DataRow = { 'Residential Type': useType };
+
+      stackKeys.forEach((key) => {
+        row[key] = main[useType]?.[key] ?? 0;
+      });
+
+      if (Object.keys(compare).length > 0) {
+        stackKeys.forEach((key) => {
+          row[`${key} (cmp)`] = compare[useType]?.[key] ?? 0;
+        });
+      }
+
+      return row;
+    });
+  }, [labels, main, compare, stackKeys]);
+
+  // 3. Serialize plotData in the dependency array to break reference-equality loops!
+  const serializedPlotData = JSON.stringify(plotData);
+
+  useEffect(() => {
+    onPlotData?.(plotData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serializedPlotData, onPlotData]);
 
   const colorForGroup = (group: string) => VAL_GROUP_COLORS[group] ?? '#999999';
 
@@ -428,11 +484,26 @@ const ZoningAllowanceStackedBarChart = <TData,>({
     [stackKeys, labels, main, compare, colorForGroup],
   );
 
-  const data = { labels, datasets };
+  const data = useMemo(
+    () => ({
+      labels,
+      datasets,
+    }),
+    [labels, datasets],
+  );
 
-  const options = {
+  const options = useMemo(
+  () => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: {duration: 250},
+    transitions: {
+      active: {
+        animation: {
+          duration: 0, // Disables jerky animation when hovering over bars
+        },
+      },
+    },
     plugins: {
       legend: {
         display: true,
@@ -489,7 +560,9 @@ const ZoningAllowanceStackedBarChart = <TData,>({
       x: { stacked: true },
       y: { stacked: true },
     },
-  };
+  }),
+  [stackKeys],
+  );
 
   return <BarJS data={data} options={options} />;
 };

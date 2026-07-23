@@ -55,7 +55,11 @@ import { usePdfMode } from '@/contexts/PdfModeContext';
 // ChartCard
 interface ChartCardProps<TData extends DataRow> {
   chart: ChartItem<TData>;
-  ChartComponent: React.FC<{ chart: ChartItem<TData>; view?: 'gallery' | 'report' }>;
+  ChartComponent: React.FC<{ 
+    chart: ChartItem<TData>; 
+    view?: 'gallery' | 'report';
+    onPlotData?: (rows: DataRow[]) => void;
+  }>;
   TrendComponent?: React.FC<{
     chart: ChartItem<TData>;
     view?: 'gallery' | 'report';
@@ -113,12 +117,22 @@ export const ChartCard = <TData extends DataRow>({
     ) : (
       <ChartComponent chart={chart} view={view} />
     )
-  ) : localView === 'chart' ? (
-    <ChartComponent chart={chart} view={view} />
   ) : (
-    <Box h={800}>
-      <TableView chart={chart} />
-    </Box>
+    <>
+      <Box display={localView === 'chart' ? 'block' : 'none'} h="100%">
+        <ChartComponent
+          chart={chart}
+          view={view}
+          onPlotData={setTrendPlotData} // TypeScript will now accept this cleanly!
+        />
+      </Box>
+
+      {localView === 'table' && (
+        <Box h={400}>
+          <TableView chart={chart} rows={trendPlotData} />
+        </Box>
+      )}
+    </>
   );
 
   const isHighlighted = matchedCategories.length > 0;
