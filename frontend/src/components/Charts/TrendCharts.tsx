@@ -424,7 +424,7 @@ export const PopulationTrendChart = <TData,>({
 }) =>
   single(
     chart,
-    { seriesKey: null, valueField: 'Value', format: 'number' },
+    { seriesKey: null, valueField: 'Population', format: 'number' },
     view,
     onPlotData,
   );
