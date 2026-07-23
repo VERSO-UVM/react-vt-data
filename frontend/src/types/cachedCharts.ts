@@ -11,6 +11,7 @@ interface ChartParams {
   datakey?: string;
   datakeys?: [string, string][];
   defId?: string;
+  fixedYear?: number;
   legendLabels?: string[];
   noViewSwitch?: boolean;
   xInterval?: number;
@@ -44,6 +45,12 @@ interface TableColumnConfig {
   label?: string; // optional nicer display name
   visible?: boolean; // client-side filtering
 }
+
+type ChartPayload = {
+  data: DataRow[];
+  metadata?: ChartMetadata;
+  tableData?: DataRow[];
+};
 
 interface ChartItem<TData = DataRow> extends BaseItem<TData> {
   type: 'chart';
@@ -86,4 +93,5 @@ export type {
   MapItem,
   ItemDataRef,
   TableColumnConfig,
+  ChartPayload,
 };

@@ -43,6 +43,7 @@ import {
   ActionIcon,
   Modal,
   Container,
+  ScrollArea,
 } from '@mantine/core';
 import { CornersOutIcon, CornersInIcon } from '@phosphor-icons/react';
 import * as motion from 'motion/react-client';
@@ -100,19 +101,25 @@ export const ChartCard = <TData extends DataRow>({
 
   const content = selfManagesViews ? (
     <ChartComponent chart={chart} view={view} />
-    ) : isTablePrimary ? (
-      localView === 'chart' && TrendComponent ? (
-        <TrendComponent chart={chart} view={view} onPlotData={setTrendPlotData} />
-      ) : TrendComponent ? (
-        <TableView chart={chart} rows={trendPlotData} />
-      ) : (
-        <ChartComponent chart={chart} view={view} />
-      )
-    ) : localView === 'chart' ? (
-      <ChartComponent chart={chart} view={view} />
+  ) : isTablePrimary ? (
+    localView === 'chart' && TrendComponent ? (
+      <TrendComponent
+        chart={chart}
+        view={view}
+        onPlotData={setTrendPlotData}
+      />
+    ) : TrendComponent ? (
+      <TableView chart={chart} rows={trendPlotData} />
     ) : (
+      <ChartComponent chart={chart} view={view} />
+    )
+  ) : localView === 'chart' ? (
+    <ChartComponent chart={chart} view={view} />
+  ) : (
+    <Box h={800}>
       <TableView chart={chart} />
-    );
+    </Box>
+  );
 
   const isHighlighted = matchedCategories.length > 0;
   const allCategories = chart.categories ?? [];
@@ -134,7 +141,6 @@ export const ChartCard = <TData extends DataRow>({
         padding={isGallery ? 'sm' : 'lg'}
         radius="md"
         withBorder={showBorder}
-        display="flex"
         data-chart-id={chart.id}
         data-chart-subtype={chart.subtype}
         onMouseEnter={isGallery ? () => setIsHovered(true) : undefined}
@@ -148,8 +154,6 @@ export const ChartCard = <TData extends DataRow>({
             : undefined
         }
         style={{
-          flexDirection: 'column',
-          minHeight: 0,
           ...(isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : {}),
           breakInside: 'avoid',
           pageBreakInside: 'avoid',
@@ -226,18 +230,21 @@ export const ChartCard = <TData extends DataRow>({
             )}
           </Group>
         </Box>
-
-        <Box
-          data-chart-box
-          style={{
-            height: chartBoxHeight,
-            overflow: isGallery ? 'hidden' : 'visible',
-            flex: '1 1 auto',
-            minHeight: isGallery ? 220 : 400,
-            ...(isGallery ? {} : { minHeight: 400 }),
-          }}
-        >
-          {content}
+        
+        <Box w="100%">
+          <ScrollArea>
+            <Box
+              data-chart-box
+              style={{
+                height: chartBoxHeight,
+                overflow: isGallery ? 'hidden' : 'visible',
+                minHeight: isGallery ? 220 : 400,
+                ...(isGallery ? {} : { minHeight: 400 }),
+              }}
+            >
+              {content}
+            </Box>
+          </ScrollArea>
         </Box>
 
         {!isGallery && (

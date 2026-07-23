@@ -57,7 +57,7 @@ export const TableView = <TData extends DataRow>({
     const findRow = (x: unknown) => rows.find((r) => r[xKey] === x);
     
   return (
-    <Box>
+    <Box h="100%">
       {hasCompare && (
         <Group mb="xs" gap="sm" align="center">
           <Button
@@ -99,62 +99,62 @@ export const TableView = <TData extends DataRow>({
       )}
 
       <ScrollArea>
-        <Table striped withTableBorder withColumnBorders fz="xs">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th></Table.Th>
-              {xValues.map((x) => (
-                <Table.Th key={String(x)}>{String(x)}</Table.Th>
-              ))}
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {seriesKeys.map((key) => (
-              <Table.Tr key={key}>
-                <Table.Td>{key}</Table.Td>
-                {xValues.map((x) => {
-                  const row = findRow(x);
-                  const mainVal = row?.[key];
-                  if (!showCompare || !hasCompare) {
+          <Table striped withTableBorder withColumnBorders fz="xs">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th></Table.Th>
+                {xValues.map((x) => (
+                  <Table.Th key={String(x)}>{String(x)}</Table.Th>
+                ))}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {seriesKeys.map((key) => (
+                <Table.Tr key={key}>
+                  <Table.Td>{key}</Table.Td>
+                  {xValues.map((x) => {
+                    const row = findRow(x);
+                    const mainVal = row?.[key];
+                    if (!showCompare || !hasCompare) {
+                      return (
+                        <Table.Td key={String(x)}>
+                          {formatCell(mainVal)}
+                        </Table.Td>
+                      );
+                    }
+                    const cmpVal = row?.[`${key}${CMP_SUFFIX}`];
                     return (
-                      <Table.Td key={String(x)}>
-                        {formatCell(mainVal)}
+                      <Table.Td key={String(x)} style={{ padding: 0 }}>
+                        <div style={{ display: 'flex', minWidth: 90 }}>
+                          <div
+                            style={{
+                              flex: 1,
+                              padding: '3px 6px',
+                              background: HOME_BG,
+                              textAlign: 'right',
+                            }}
+                          >
+                            {formatCell(mainVal)}
+                          </div>
+                          <div
+                            style={{
+                              flex: 1,
+                              padding: '3px 6px',
+                              background: COMP_BG,
+                              borderLeft: SPLIT_BORDER,
+                              textAlign: 'right',
+                            }}
+                          >
+                            {formatCell(cmpVal)}
+                          </div>
+                        </div>
                       </Table.Td>
                     );
-                  }
-                  const cmpVal = row?.[`${key}${CMP_SUFFIX}`];
-                  return (
-                    <Table.Td key={String(x)} style={{ padding: 0 }}>
-                      <div style={{ display: 'flex', minWidth: 90 }}>
-                        <div
-                          style={{
-                            flex: 1,
-                            padding: '3px 6px',
-                            background: HOME_BG,
-                            textAlign: 'right',
-                          }}
-                        >
-                          {formatCell(mainVal)}
-                        </div>
-                        <div
-                          style={{
-                            flex: 1,
-                            padding: '3px 6px',
-                            background: COMP_BG,
-                            borderLeft: SPLIT_BORDER,
-                            textAlign: 'right',
-                          }}
-                        >
-                          {formatCell(cmpVal)}
-                        </div>
-                      </div>
-                    </Table.Td>
-                  );
-                })}
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+                  })}
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
       </ScrollArea>
     </Box>
   );

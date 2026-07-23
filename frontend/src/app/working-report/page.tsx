@@ -29,14 +29,9 @@ import {
   XIcon,
 } from '@phosphor-icons/react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
-import { ChartItem, ChartMetadata, DataRow } from '@/types/cachedCharts';
+import { ChartItem, ChartMetadata, DataRow, ChartPayload } from '@/types/cachedCharts';
 
-// one chart's backend payload, keyed by chart def id in state below
-type ChartPayload = {
-  data: DataRow[];
-  metadata?: ChartMetadata;
-  tableData?: DataRow[];
-};
+
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';
 import { PdfModeContext } from '@/contexts/PdfModeContext';

@@ -35,7 +35,6 @@ export function MetricsPanel({ metrics }: { metrics: Record<string, number> }) {
     <Grid>
       {METRICS.map(({ label, field, prefix }) => (
         <Grid.Col key={field} span={{ base: 6, md: 2.4 }}>
-          s
           <Text style={metricValueStyle}>
             {prefix}
             {formatNumber(metrics[field])}
