@@ -3,7 +3,7 @@ import { useItems } from '../ItemsProvider';
 import { useProfile } from '@/components/profile/profileStore';
 import { Button, Transition } from '@mantine/core';
 import { CheckIcon, XIcon } from '@phosphor-icons/react';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 
 // Toggle include/exclude for auto-populated working report charts
 interface ToggleProps {
@@ -31,26 +31,49 @@ interface AddChartProps {
   chart: ChartItem<DataRow>;
   defId?: string;
 }
-export function AddChart({ chart, defId }: AddChartProps) {
-  const { addItem, removeItem, includeById, excludeById, items } = useItems();
 
+export function AddChart({ chart, defId }: AddChartProps) {
+  const { addItem, removeItem, items } = useItems();
   const { interests } = useProfile();
 
-  const stableId = [
-    chart.title,
-    chart.subtype,
-    ...(chart.chartParams?.legendLabels ?? []),
-  ].join('::');
+  const stableId =
+    defId ??
+    chart.id ??
+    [
+      chart.title,
+      chart.subtype,
+      chart.chartParams?.xKey,
+      chart.chartParams?.yKey,
+      ...(chart.chartParams?.legendLabels ?? []),
+    ]
+      .filter(Boolean)
+      .join('::');
 
+  // Check if the chart categories match any of the user's profile interests
+  const chartCategories = chart.categories ?? []; // Adjust field name to match your ChartItem schema
+  const matchesInterests =
+    interests.length === 0 || // If no interests set, default to showing/including
+    chartCategories.some((category) => interests.includes(category));
+
+  // Auto-exclude initial state check based on interests if needed,
+  // or track state relative to items in report:
   const inReport = items.some((item) => item.id === stableId);
 
-  const handleClick = () => {
-    if (inReport) {
-      removeItem(stableId);
-    } else {
-      addItem({ ...chart, id: stableId });
-    }
-  };
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  // Prevent parent elements (like ChartCard or Modal triggers) from catching the click
+  e.stopPropagation();
+
+  if (inReport) {
+    removeItem(stableId);
+  } else {
+    addItem({ ...chart, id: stableId });
+  }
+};
+
+  // Optional: If you want to dim or hide the button when interests don't match
+  if (!matchesInterests && !inReport) {
+    return null; // or render a muted/disabled state based on your UX needs
+  }
 
   return (
     <Button

@@ -246,19 +246,17 @@ export const ChartCard = <TData extends DataRow>({
         </Box>
         
         <Box w="100%">
-          <ScrollArea>
-            <Box
-              data-chart-box
-              style={{
-                height: chartBoxHeight,
-                overflow: isGallery ? 'hidden' : 'visible',
-                minHeight: isGallery ? 220 : 400,
-                ...(isGallery ? {} : { minHeight: 400 }),
-              }}
-            >
-              {content}
-            </Box>
-          </ScrollArea>
+          <Box
+            data-chart-box
+            style={{
+              height: chartBoxHeight,
+              overflow: isGallery ? 'hidden' : 'visible',
+              minHeight: isGallery ? 220 : 400,
+              ...(isGallery ? {} : { minHeight: 400 }),
+            }}
+          >
+            {content}
+          </Box>
         </Box>
 
         {!isGallery && (
