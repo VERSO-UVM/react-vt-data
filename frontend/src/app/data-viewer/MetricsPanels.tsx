@@ -1,4 +1,4 @@
-import { FONT_DISPLAY, COLOR } from './theme';
+import { COLORS, FONTS } from '@/app/theme'
 import { FieldLabel } from './FieldLabel';
 
 import { Grid, Text } from '@mantine/core';
@@ -19,11 +19,11 @@ const METRICS: { label: string; field: string; prefix?: string }[] = [
 ];
 
 const metricValueStyle = {
-  fontFamily: FONT_DISPLAY,
+  fontFamily: FONTS.display,
   fontSize: '1.9rem',
   fontWeight: 600,
   lineHeight: 1,
-  color: COLOR.birch,
+  color: COLORS.birch,
   marginBottom: 8,
 };
 

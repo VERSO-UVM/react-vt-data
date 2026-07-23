@@ -11,9 +11,7 @@ import {
   Group,
   Divider,
   Box,
-  Paper,
   Grid,
-  Badge,
 } from '@mantine/core';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -25,11 +23,11 @@ import { motion } from 'motion/react';
 import {
   PencilSimpleIcon,
   DownloadSimpleIcon,
-  Icon,
   XIcon,
 } from '@phosphor-icons/react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 import { ChartItem, ChartMetadata, DataRow } from '@/types/cachedCharts';
+import { COLORS, FONTS } from '@/app/theme'
 
 // one chart's backend payload, keyed by chart def id in state below
 type ChartPayload = {
@@ -41,21 +39,6 @@ import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';
 import { PdfModeContext } from '@/contexts/PdfModeContext';
 
-const COLOR = {
-  spruce: '#1B3A2F',
-  spruceDeep: '#122820',
-  slate: '#40525A',
-  birch: '#F6F5EF',
-  birchDim: '#EEEBE0',
-  ink: '#1B211D',
-  amber: '#dd9a2f',
-  amberSoft: '#E7B563',
-  amberYellow: '#FFD100',
-  line: 'rgba(27, 58, 47, 0.14)',
-};
-const FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', serif";
-const FONT_BODY = "'General Sans', 'Inter', sans-serif";
-const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
 
 function HeroSection({
   myLocation,
@@ -88,7 +71,7 @@ function HeroSection({
         width: '100vw',
         left: '50%',
         marginLeft: '-50vw',
-        background: `linear-gradient(160deg, ${COLOR.spruceDeep} 0%, ${COLOR.spruce} 100%)`,
+        background: `linear-gradient(160deg, ${COLORS.spruceDeep} 0%, ${COLORS.spruce} 100%)`,
         paddingTop: 70,
         paddingBottom: 40,
       }}
@@ -103,11 +86,11 @@ function HeroSection({
             >
               <Text
                 style={{
-                  fontFamily: FONT_MONO,
+                  fontFamily: FONTS.mono,
                   fontSize: 12,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  color: COLOR.amberSoft,
+                  color: COLORS.amberSoft,
                 }}
               >
                 Working Report
@@ -116,11 +99,11 @@ function HeroSection({
             <Title
               order={1}
               style={{
-                fontFamily: FONT_DISPLAY,
+                fontFamily: FONTS.display,
                 fontWeight: 600,
                 fontSize: 'clamp(2.3rem, 5.4vw, 3.7rem)',
                 lineHeight: 1.04,
-                color: COLOR.birch,
+                color: COLORS.birch,
                 marginTop: 14,
                 maxWidth: 640,
               }}
@@ -130,7 +113,7 @@ function HeroSection({
                 <Text
                   span
                   style={{
-                    fontFamily: FONT_DISPLAY,
+                    fontFamily: FONTS.display,
                     fontWeight: 400,
                     fontSize: '0.4em',
                     color: 'rgba(246, 245, 239, 0.58)',
@@ -173,8 +156,8 @@ function HeroSection({
                 <Group justify="space-between" align="center" mb={10}>
                   <Text
                     style={{
-                      fontFamily: FONT_MONO,
-                      color: COLOR.amberSoft,
+                      fontFamily: FONTS.mono,
+                      color: COLORS.amberSoft,
                       fontSize: 12,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
@@ -187,7 +170,7 @@ function HeroSection({
                     variant="subtle"
                     rightSection={<PencilSimpleIcon size={16} weight="bold" />}
                     onClick={openProfileModal}
-                    styles={{ root: { color: COLOR.amberSoft } }}
+                    styles={{ root: { color: COLORS.amberSoft } }}
                   >
                     Edit
                   </Button>
@@ -213,7 +196,7 @@ function HeroSection({
                     {interests.length > 0 ? (
                       <Text
                         size="sm"
-                        style={{ color: COLOR.birch, fontWeight: 500 }}
+                        style={{ color: COLORS.birch, fontWeight: 500 }}
                       >
                         {interests.join(' · ')}
                       </Text>
@@ -246,7 +229,7 @@ function FieldLabel({
   return (
     <Text
       style={{
-        fontFamily: FONT_MONO,
+        fontFamily: FONTS.mono,
         fontSize: small ? 10 : 11,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
@@ -273,7 +256,7 @@ function ProfileField({
       <FieldLabel small={small}>{label}</FieldLabel>
       <Text
         size={small ? 'sm' : 'md'}
-        style={{ color: COLOR.birch, fontWeight: 500 }}
+        style={{ color: COLORS.birch, fontWeight: 500 }}
       >
         {value || '—'}
       </Text>
@@ -300,10 +283,10 @@ function ReportActions({
         onClick={onDownload}
         leftSection={<DownloadSimpleIcon size={16} weight="bold" />}
         style={{
-          backgroundColor: COLOR.birchDim,
-          color: COLOR.spruceDeep,
+          backgroundColor: COLORS.birchDim,
+          color: COLORS.spruceDeep,
           border: 'none',
-          fontFamily: FONT_BODY,
+          fontFamily: FONTS.body,
         }}
       >
         Download PDF
@@ -317,7 +300,7 @@ function ReportActions({
         leftSection={<XIcon size={16} weight="bold" />}
         style={{
           border: 'none',
-          fontFamily: FONT_BODY,
+          fontFamily: FONTS.body,
         }}
       >
         Clear report
