@@ -301,7 +301,7 @@ con.execute("""
 """)
 ```
 ### Finally sending off the tables created
-Fully creating three tables, parcels_geom, which has the objectid and geom, the parcels_info table, which ahs information like the access nuber, town, source, and year, and the parcels_value table, which has the acres, and all sorts of value metrics. 
+Fully creating three tables, parcels_geom, which has the objectid and geom, the parcels_info table, which ahs information like the access nuber, town, source, and year, and the parcels_value table, which has the acres, and all sorts of value metrics. - got rid of value the table
 ```{python}
 #changing the name to {thing}.parcel
 con.execute("""
@@ -309,17 +309,10 @@ CREATE OR REPLACE VIEW geom AS
 SELECT OBJECTID, geom FROM final_view
 """)
 
-con.execute("""
-CREATE OR REPLACE VIEW info AS
-SELECT OBJECTID, SPAN, PARCID, TNAME, TOWN, PROPTYPE, SOURCENAME, YEAR
-FROM final_view
-""")
-
-con.execute("""
-CREATE OR REPLACE VIEW value AS
-SELECT OBJECTID, ACRESGL, REAL_FLV, HSTED_FLV, IMPRV_LV
-FROM final_view
-""")
+con.execute("""CREATE OR REPLACE VIEW info AS
+SELECT OBJECTID, SPAN, PARCID, TNAME, TOWN, PROPTYPE, SOURCENAME, YEAR,
+       ACRESGL, REAL_FLV, HSTED_FLV, IMPRV_LV
+FROM final_view""")
 ```
 
 somethind of note to consider. the build.py agglomerates parquets, not FGBS, so im 
@@ -328,7 +321,7 @@ path = Path("Data/_Processed/parcels")
 path.mkdir(parents=True, exist_ok=True)
 
 #changing the name to be more terse adn to the point, in the hopes that the glob agglomerator will add the "parcels/" prefix
-for item in ["info", "value", "geom"]:
+for item in ["info", "geom"]:
     con.execute(f"COPY (SELECT * FROM {item}) TO '{path / f'{item}.parquet'}' (FORMAT PARQUET)")
 ```
 
