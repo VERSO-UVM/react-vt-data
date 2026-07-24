@@ -1,10 +1,12 @@
 """
 **Author**:
-    Fitz Koch
+    Isaac Wedaman
 **Created**:
-    2026-06-01
+    2026-07-23
 **Description**:
-    Functions for serving zoning_info data to the API from the parquet files.
+    Something of note: this is a "girder" for the sql queries between
+    the front end (website), and the backend dbeaver database
+
 """
 
 import logging
@@ -16,8 +18,9 @@ from api.models import FilterSource
 from query.processed_db import DB
 from sql_render import sql_filter_block
 
+# changed sql directory to parcels in the sql folder
 logger = logging.getLogger(__name__)
-sql_dir = Path(__file__).resolve().parent / "sql" / "zoning"
+sql_dir = Path(__file__).resolve().parent / "sql" / "parcels"
 
 
 def get_zoning_geojson(sources: list[FilterSource]):

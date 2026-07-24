@@ -45,11 +45,9 @@ print(sql)          # ← actually read the rendered SQL; watch the CTE appear
 ```{python}
 #testing tnat the rendering worked correctly 
 #correctly outputted PUTNEY town property, land with building, with 120.9 acres 
-
 import json
 from query.processed_db import DB
 res = DB.execute(sql, params).fetchone()[0]
 fc = json.loads(res)
-print(len(fc["features"]))
 print(fc["features"][0])
 ```
