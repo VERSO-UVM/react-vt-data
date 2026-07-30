@@ -46,6 +46,15 @@
         "Measure": "Measure",
         "Prevalence Measure": "Data_Value_Type"
       }
+    },
+        "parcels_info": {
+      "join_key": "OBJECTID",
+      "join_type": "inner",
+      "columns": {
+        "Town": "TOWN",
+        "Category": "CAT",
+        "Property Type": "PROPTYPE"
+      }
     }
   }
 }
