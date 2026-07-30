@@ -7,4 +7,4 @@ SELECT
     i.TOWN AS Town,
     i.DESCPROP AS "Property Description"
 FROM parcels_info AS i
-INNER {{ join_filter_block }}
+ {{ join_filter_block }}

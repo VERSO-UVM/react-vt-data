@@ -51,3 +51,29 @@ res = DB.execute(sql, params).fetchone()[0]
 fc = json.loads(res)
 print(fc["features"][0])
 ```
+
+```{python}
+from query.parcels import get_parcels_geojson, get_parcels_table, get_parcels_filters
+from api.models import FilterSource
+
+src = FilterSource(
+    filter_table="parcels_info",
+    filters={"TOWN": ["PUTNEY"]},
+    join_key="OBJECTID",
+    join_type="inner",
+)
+
+# geojson
+fc = json.loads(get_parcels_geojson([src]))
+print("features:", len(fc["features"]))
+print("one feature:", fc["features"][0])
+
+# info table
+df = get_parcels_table([src])
+print("table rows:", len(df))
+df.head()
+
+tree = get_parcels_filters()
+print(sorted(tree.tree.keys(), key=len, reverse=True)[:10])  # first few towns
+
+```
