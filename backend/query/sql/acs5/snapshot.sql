@@ -1,8 +1,8 @@
-SELECT 
-    year, 
-    NAME, 
-    Value, 
+SELECT
+    year,
+    NAME,
+    Value,
     Variable
 FROM acs5_snapshot
-{where_string}
+{{ where_string }}
 ORDER BY year

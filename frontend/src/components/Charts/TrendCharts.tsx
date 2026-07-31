@@ -1,5 +1,7 @@
+// TrendCharts.tsx
 'use client';
 
+import { useState } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -10,606 +12,631 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
+
+// tidy ACS-style row consumed by the trend charts
+interface TrendRow extends DataRow {
+  year?: number | string;
+  Variable?: string;
+  Value?: number;
+  Percent?: number;
+}
 import { Text } from '@mantine/core';
 
-/** Small label shown above the chart when comparison data is present. */
 const CompareNote = ({ name }: { name: string }) => (
   <Text size="xs" c="dimmed" mb={4}>
     <span style={{ letterSpacing: 2, marginRight: 6 }}>– – –</span>
-    dashed lines = {name}
+    Dashed Lines = {name}
   </Text>
 );
 
 // ---------------------------------------------------------------------------
-// Demographics: Under 18 vs 65+
+// Shared formatters
 // ---------------------------------------------------------------------------
 
-export const DemographicsTrendChart = <TData,>({
+type FormatType = 'currency' | 'percent' | 'number' | 'years';
+
+const FORMATTERS: Record<
+  FormatType,
+  {
+    unit?: string;
+    axisFormatter?: (v: any) => string;
+    tooltip: (v: any, decimals?: number) => string;
+  }
+> = {
+  currency: {
+    axisFormatter: (v) => `$${(v / 1000).toFixed(0)}k`,
+    tooltip: (v) =>
+      v != null
+        ? `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+        : '—',
+  },
+  percent: {
+    unit: '%',
+    tooltip: (v, decimals) =>
+      v != null
+        ? `${decimals != null ? Number(v).toFixed(decimals) : v}%`
+        : '—',
+  },
+  number: {
+    axisFormatter: (v) => `${(v / 1000).toFixed(0)}k`,
+    tooltip: (v) => (v != null ? Number(v).toLocaleString() : '—'),
+  },
+  years: {
+    axisFormatter: (v) => Number(v).toFixed(0),
+    tooltip: (v) => (v != null ? `${Number(v).toFixed(1)} years` : '—'),
+  },
+};
+
+const useToggle = () => {
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  const legendFormatter = (value: string) => (
+    <span
+      style={{
+        color: hidden.has(value) ? '#999' : '#222',
+        textDecoration: hidden.has(value) ? 'line-through' : 'none',
+      }}
+    >
+      {value}
+    </span>
+  );
+  return { hidden, toggleSeries, legendFormatter };
+};
+
+// ---------------------------------------------------------------------------
+// Single-series trend chart
+// Covers: Population, MedianAge, HomeValue, HousingUnits, HousingTenure,
+//         LaborForce (both), Unemployment, HouseholdIncome, PerCapitaIncome
+// ---------------------------------------------------------------------------
+
+export interface SingleSeriesConfig {
+  /** r.Variable value to match. Use null when rows have no Variable column
+   *  (e.g. Population, Unemployment) and should just be matched by year. */
+  seriesKey: string | null;
+  /** Field to read off the matched row, e.g. 'Value' | 'Percent' | 'Population'. */
+  valueField: string;
+  format: FormatType;
+  /** For percent format, forces toFixed(decimals) in the tooltip (Unemployment uses 1). */
+  decimals?: number;
+  color?: string;
+  compareColor?: string;
+  lineWidth?: number;
+
+  showHelperText?: boolean;
+}
+
+export const SingleSeriesTrendChart = <TData,>({
   chart,
+  config,
+  view,
 }: {
   chart: ChartItem<TData>;
+  config: SingleSeriesConfig;
+  view?: 'gallery' | 'report';
 }) => {
+  const isGallery = view === 'gallery';
+  const {
+    seriesKey,
+    valueField,
+    format,
+    decimals,
+    color = '#154734',
+    compareColor = '#1c7ed6',
+    lineWidth = 3,
+    showHelperText = true,
+  } = config;
+
+  const { hidden, toggleSeries, legendFormatter } = useToggle();
+
   const data = chart.data as any[];
   const compareData = (chart.compareData ?? []) as any[];
   if (!data || data.length === 0) return null;
 
   const years = Array.from(new Set(data.map((r) => r.year))).sort();
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
+    [string, string] | undefined;
+  const seriesName = seriesKey ?? valueField;
 
-  const buildPoint = (rows: any[], year: number) => {
-    const find = (label: string) =>
-      rows.find((r) => r.year === year && r.Variable === label)?.Percent ??
-      null;
-    const p65_74 = find('65 to 74') ?? 0;
-    const p75plus = find('75 Plus') ?? 0;
-    return {
-      'Under 18': find('Under 18'),
-      '65+':
-        p65_74 + p75plus > 0 ? Math.round((p65_74 + p75plus) * 10) / 10 : null,
-    };
+  const findValue = (rows: any[], year: number) => {
+    const row = seriesKey
+      ? rows.find((r) => r.year === year && r.Variable === seriesKey)
+      : rows.find((r) => r.year === year);
+    return row?.[valueField] ?? null;
   };
 
   const plotData = years.map((year) => ({
     year,
-    ...buildPoint(data, year),
+    [seriesName]: findValue(data, year),
     ...(compareData.length > 0
-      ? {
-          'Under 18 (cmp)': buildPoint(compareData, year)['Under 18'],
-          '65+ (cmp)': buildPoint(compareData, year)['65+'],
-        }
+      ? { [`${seriesName} (cmp)`]: findValue(compareData, year) }
       : {}),
   }));
 
+  const fmt = FORMATTERS[format];
+
   return (
     <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
+      {showHelperText && !isGallery && (
+        <Text size="xs" c="dimmed" mb={4}>
+          Click legend items to show or hide locations.
+        </Text>
+      )}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={plotData}
-          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+          margin={
+            isGallery
+              ? { top: 4, right: 8, left: 0, bottom: 0 }
+              : { top: 10, right: 20, left: 0, bottom: 5 }
+          }
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="Under 18"
-            stroke="#154734"
-            strokeWidth={2}
-            dot={false}
+          <XAxis
+            dataKey="year"
+            tick={{ fontSize: isGallery ? 11 : 11 }}
+            interval={1}
           />
+          <YAxis
+            unit={fmt.unit}
+            tick={{ fontSize: isGallery ? 9 : 11 }}
+            domain={['auto', 'auto']}
+            tickFormatter={fmt.axisFormatter}
+          />
+          {!isGallery && (
+            <Tooltip formatter={(v: any) => fmt.tooltip(v, decimals)} />
+          )}
+          {!isGallery && (
+            <Legend
+              align="right"
+              verticalAlign="bottom"
+              onClick={(e: any) => toggleSeries(e.dataKey)}
+              formatter={legendFormatter}
+              wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
+            />
+          )}
           <Line
             type="monotone"
-            dataKey="65+"
-            stroke="#e07b39"
-            strokeWidth={2}
+            dataKey={seriesName}
+            name={labels?.[0] ?? 'Main'}
+            stroke={color}
+            strokeWidth={lineWidth}
             dot={false}
+            animationBegin={0}
+            animationDuration={!isGallery ? 1500 : 0}
+            hide={hidden.has(seriesName)}
           />
           {compareData.length > 0 && (
-            <>
-              <Line
-                type="monotone"
-                dataKey="Under 18 (cmp)"
-                name="Under 18"
-                stroke="#154734"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-              <Line
-                type="monotone"
-                dataKey="65+ (cmp)"
-                name="65+"
-                stroke="#e07b39"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            </>
+            <Line
+              type="monotone"
+              dataKey={`${seriesName} (cmp)`}
+              name={labels?.[1] ?? 'Comparison'}
+              stroke={compareColor}
+              strokeWidth={lineWidth}
+              dot={false}
+              animationBegin={0}
+              animationDuration={!isGallery ? 1500 : 0}
+              hide={hidden.has(`${seriesName} (cmp)`)}
+            />
           )}
         </LineChart>
       </ResponsiveContainer>
     </>
   );
 };
+// ---------------------------------------------------------------------------
+// Multi-series trend chart
+// Covers: Demographics (Under 18 / 65+ w/ aggregation), Education, Earnings
+// ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Demographics: Median Age Chart
-// ---------------------------------------------------------------------------
+export interface SeriesDef {
+  key: string; // display key / legend label
+  matchVariable?: string; // r.Variable to match (defaults to `key`)
+  aggregateFrom?: string[]; // sum these r.Variable matches instead (Demographics 65+)
+  color: string;
+}
+
+export interface MultiSeriesConfig {
+  series: SeriesDef[];
+  valueField: string; // 'Value' | 'Percent'
+  format: FormatType;
+  showHelperText?: boolean;
+  showCompareNote?: boolean;
+  legendPosition?: 'default' | 'bottom-right';
+  /** Education's legend shows bare series names with no "(Main)" suffix. */
+  nameSuffix?: boolean;
+}
+
+export const MultiSeriesTrendChart = <TData,>({
+  chart,
+  config,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  config: MultiSeriesConfig;
+  view?: 'gallery' | 'report';
+}) => {
+  const isGallery = view === 'gallery';
+
+  const {
+    series,
+    valueField,
+    format,
+    showHelperText = true,
+    showCompareNote = true,
+    legendPosition = 'bottom-right',
+    nameSuffix = true,
+  } = config;
+
+  const { hidden, toggleSeries, legendFormatter } = useToggle();
+
+  const data = chart.data as any[];
+  const compareData = (chart.compareData ?? []) as any[];
+  if (!data || data.length === 0) return null;
+
+  const years = Array.from(new Set(data.map((r) => r.year))).sort();
+  const labels = chart.chartParams?.legendLabels as
+    [string, string] | undefined;
+
+  const getValue = (rows: any[], year: number, s: SeriesDef) => {
+    if (s.aggregateFrom) {
+      const sum = s.aggregateFrom.reduce((acc, label) => {
+        const v =
+          rows.find((r) => r.year === year && r.Variable === label)?.[
+            valueField
+          ] ?? 0;
+        return acc + v;
+      }, 0);
+      return sum > 0 ? Math.round(sum * 10) / 10 : null;
+    }
+    const label = s.matchVariable ?? s.key;
+    return (
+      rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ??
+      null
+    );
+  };
+
+  const plotData = years.map((year) => {
+    const pt: Record<string, any> = { year };
+    for (const s of series) {
+      pt[s.key] = getValue(data, year, s);
+      if (compareData.length > 0)
+        pt[`${s.key} (cmp)`] = getValue(compareData, year, s);
+    }
+    return pt;
+  });
+
+  const fmt = FORMATTERS[format];
+
+  return (
+    <>
+      {compareData.length > 0 && !isGallery && (
+        <CompareNote name={labels?.[1] ?? 'Comparison'} />
+      )}
+      {!isGallery && (
+        <Text size="xs" c="dimmed" mb={4}>
+          Click legend items to show or hide categories.
+        </Text>
+      )}
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis
+            dataKey="year"
+            tick={{ fontSize: isGallery ? 11 : 11 }}
+            interval={1}
+          />
+          <YAxis
+            unit={fmt.unit}
+            tick={{ fontSize: isGallery ? 9 : 11 }}
+            domain={['auto', 'auto']}
+            tickFormatter={fmt.axisFormatter}
+          />
+          {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v)} />}
+          {!isGallery && (
+            <Legend
+              align="right"
+              verticalAlign="bottom"
+              onClick={(e: any) => toggleSeries(e.dataKey)}
+              formatter={legendFormatter}
+              wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
+            />
+          )}
+          {series.map((s) => (
+            <Line
+              key={s.key}
+              dataKey={s.key}
+              name={
+                nameSuffix ? `${s.key} (${labels?.[0] ?? 'Main'})` : undefined
+              }
+              stroke={s.color}
+              strokeWidth={2}
+              dot={false}
+              animationDuration={!isGallery ? 1500 : 0}
+              hide={hidden.has(s.key)}
+            />
+          ))}
+          {compareData.length > 0 &&
+            series.map((s) => (
+              <Line
+                key={`${s.key}-cmp`}
+                dataKey={`${s.key} (cmp)`}
+                name={
+                  nameSuffix
+                    ? `${s.key} (${labels?.[1] ?? 'Comparison'})`
+                    : undefined
+                }
+                stroke={s.color}
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                legendType="none"
+                animationDuration={!isGallery ? 1500 : 0}
+                dot={false}
+                hide={hidden.has(s.key)}
+              />
+            ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
+  );
+};
+
+// SINGLE CHARTS
+const single = (
+  chart: ChartItem<any>,
+  config: SingleSeriesConfig,
+  view?: 'gallery' | 'report',
+) => <SingleSeriesTrendChart chart={chart} config={config} view={view} />;
+
+export const PopulationTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: null, valueField: 'Population', format: 'number' },
+    view,
+  );
+
 export const MedianAgeTrendChart = <TData,>({
   chart,
+  view,
 }: {
   chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
-  if (!data || data.length === 0) return null;
-
-  const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
-
-  const buildPoint = (rows: any[], year: number) => {
-    const find = (label: string) =>
-      rows.find((r) => r.year === year && r.Variable === label)?.Value ?? null;
-    return { 'Median Age': find('Median Age') };
-  };
-
-  const plotData = years.map((year) => ({
-    year,
-    ...buildPoint(data, year),
-    ...(compareData.length > 0
-      ? {
-          'Median Age (cmp)': buildPoint(compareData, year)['Median Age'],
-        }
-      : {}),
-  }));
-
-  return (
-    <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={plotData}
-          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis
-            tick={{ fontSize: 12 }}
-            domain={['auto', 'auto']}
-            tickFormatter={(value) => Number(value).toFixed(0)}
-          />
-          <Tooltip
-            formatter={(val: any) =>
-              val != null ? `${Number(val).toFixed(1)} years` : '—'
-            }
-          />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="Median Age"
-            stroke="#154734"
-            strokeWidth={2}
-            dot={false}
-          />
-          {compareData.length > 0 && (
-            <>
-              <Line
-                type="monotone"
-                dataKey="Median Age (cmp)"
-                name="Median Age"
-                stroke="#154734"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            </>
-          )}
-        </LineChart>
-      </ResponsiveContainer>
-    </>
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: 'Median Age', valueField: 'Value', format: 'years' },
+    view,
   );
-};
 
-// ---------------------------------------------------------------------------
-// Education: all attainment levels except "Some College, No Degree"
-// ---------------------------------------------------------------------------
-
-const EDU_SERIES = [
-  { key: 'No High School Diploma', color: '#c0392b' },
-  { key: 'High School Graduate', color: '#e07b39' },
-  { key: "Associate's Degree", color: '#4c9be8' },
-  { key: "Bachelor's Degree", color: '#154734' },
-  { key: 'Postgraduate Degree', color: '#7d4caf' },
-];
-
-export const EducationTrendChart = <TData,>({
+export const HomeValueTrendChart = <TData,>({
   chart,
+  view,
 }: {
   chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
-  if (!data || data.length === 0) return null;
-
-  const keys = new Set(EDU_SERIES.map((s) => s.key));
-  const filtered = data.filter((r) => keys.has(r.Variable));
-  const cmpFiltered = compareData.filter((r) => keys.has(r.Variable));
-  const years = Array.from(new Set(filtered.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
-
-  const plotData = years.map((year) => {
-    const rows = filtered.filter((r) => r.year === year);
-    const cmpRows = cmpFiltered.filter((r) => r.year === year);
-    const pt: Record<string, any> = { year };
-    for (const { key } of EDU_SERIES) {
-      pt[key] = rows.find((r) => r.Variable === key)?.Percent ?? null;
-      if (compareData.length > 0) {
-        pt[`${key} (cmp)`] =
-          cmpRows.find((r) => r.Variable === key)?.Percent ?? null;
-      }
-    }
-    return pt;
-  });
-
-  return (
-    <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={plotData}
-          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-          <Legend />
-          {EDU_SERIES.map((s) => (
-            <Line
-              key={s.key}
-              type="monotone"
-              dataKey={s.key}
-              stroke={s.color}
-              strokeWidth={2}
-              dot={false}
-            />
-          ))}
-          {compareData.length > 0 &&
-            EDU_SERIES.map((s) => (
-              <Line
-                key={`${s.key}-cmp`}
-                type="monotone"
-                dataKey={`${s.key} (cmp)`}
-                stroke={s.color}
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            ))}
-        </LineChart>
-      </ResponsiveContainer>
-    </>
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: 'Median Home Value', valueField: 'Value', format: 'currency' },
+    view,
   );
-};
 
-// ---------------------------------------------------------------------------
-// Housing: Total Housing Units (left) vs Median Home Value (right, dual axis)
-// ---------------------------------------------------------------------------
-
-const HOUSING_SERIES = [
-  { key: 'Total Housing Units', color: '#154734', axis: 'left' as const },
-  { key: 'Renter-Occupied Units', color: '#e07b39', axis: 'left' as const },
-  { key: 'Median Home Value', color: '#8b5e3c', axis: 'right' as const },
-];
-
-export const HousingTrendChart = <TData,>({
+export const HousingUnitsTrendChart = <TData,>({
   chart,
+  view,
 }: {
   chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
-  if (!data || data.length === 0) return null;
-
-  const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
-
-  const plotData = years.map((year) => {
-    const rows = data.filter((r) => r.year === year);
-    const cmpRows = compareData.filter((r) => r.year === year);
-    const find = (src: any[], label: string) =>
-      src.find((r) => r.Variable === label)?.Value ?? null;
-    const pt: Record<string, any> = { year };
-    for (const { key } of HOUSING_SERIES) {
-      pt[key] = find(rows, key);
-      if (compareData.length > 0) pt[`${key} (cmp)`] = find(cmpRows, key);
-    }
-    return pt;
-  });
-
-  const fmtTooltip = (val: any, name: string) => {
-    const base = name.replace(' (cmp)', '');
-    if (base === 'Total Housing Units' || base === 'Renter-Occupied Units')
-      return [val?.toLocaleString() ?? '—', name];
-    if (base === 'Median Home Value')
-      return [`$${val?.toLocaleString() ?? '—'}`, name];
-    return [val, name];
-  };
-
-  return (
-    <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={plotData}
-          margin={{ top: 10, right: 50, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis
-            yAxisId="left"
-            tick={{ fontSize: 12 }}
-            tickFormatter={(v) => v.toLocaleString()}
-            label={{
-              value: 'Units',
-              angle: -90,
-              position: 'insideLeft',
-              offset: -5,
-              style: { fontSize: 11 },
-            }}
-          />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            tick={{ fontSize: 12 }}
-            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-            label={{
-              value: 'Home Value',
-              angle: 90,
-              position: 'insideRight',
-              offset: 15,
-              style: { fontSize: 11 },
-            }}
-          />
-          <Tooltip formatter={fmtTooltip} />
-          <Legend />
-          {HOUSING_SERIES.map((s) => (
-            <Line
-              key={s.key}
-              yAxisId={s.axis}
-              type="monotone"
-              dataKey={s.key}
-              stroke={s.color}
-              strokeWidth={2}
-              dot={false}
-            />
-          ))}
-          {compareData.length > 0 &&
-            HOUSING_SERIES.map((s) => (
-              <Line
-                key={`${s.key}-cmp`}
-                yAxisId={s.axis}
-                type="monotone"
-                dataKey={`${s.key} (cmp)`}
-                stroke={s.color}
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            ))}
-        </LineChart>
-      </ResponsiveContainer>
-    </>
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    { seriesKey: 'Total Housing Units', valueField: 'Value', format: 'number' },
+    view,
   );
-};
 
-// ---------------------------------------------------------------------------
-// Economics: Unemployment Rate
-// ---------------------------------------------------------------------------
+export const HousingTenureAreaChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Renter-Occupied Units',
+      valueField: 'Percent',
+      format: 'percent',
+    },
+    view,
+  );
+
+export const LaborForceTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Labor Force Participation Rate (16+)',
+      valueField: 'Percent',
+      format: 'percent',
+    },
+    view,
+  );
+
+export const LaborForceTrendChartPrimeAge = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Prime-Age Labor Force Participation Rate (25-54)',
+      valueField: 'Percent',
+      format: 'percent',
+    },
+    view,
+  );
 
 export const UnemploymentTrendChart = <TData,>({
   chart,
+  view,
 }: {
   chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
-  if (!data || data.length === 0) return null;
-
-  const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
-
-  const buildPoint = (rows: any[], year: number) => {
-    const row = rows.find((r) => r.year === year);
-    return {
-      'Unemployment Rate': row?.Value ?? null,
-    };
-  };
-
-  const plotData = years.map((year) => ({
-    year,
-    ...buildPoint(data, year),
-    ...(compareData.length > 0
-      ? {
-          'Unemployment Rate (cmp)': buildPoint(compareData, year)[
-            'Unemployment Rate'
-          ],
-        }
-      : {}),
-  }));
-
-  return (
-    <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={plotData}
-          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis unit="%" tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip formatter={(val: any) => (val != null ? `${val}%` : '—')} />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="Unemployment Rate"
-            stroke="#154734"
-            strokeWidth={2}
-            dot={false}
-          />
-          {compareData.length > 0 && (
-            <>
-              <Line
-                type="monotone"
-                dataKey="Unemployment Rate (cmp)"
-                name="Unemployment Rate"
-                stroke="#e07b39"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            </>
-          )}
-        </LineChart>
-      </ResponsiveContainer>
-    </>
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: null,
+      valueField: 'Value',
+      format: 'percent',
+      decimals: 1,
+    },
+    view,
   );
-};
 
-// ---------------------------------------------------------------------------
-// Economics: Median Earnings (Male vs Female vs All Workers)
-// ---------------------------------------------------------------------------
+export const HouseholdIncomeTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Median Household Income',
+      valueField: 'Value',
+      format: 'currency',
+      showHelperText: false,
+    },
+    view,
+  );
+
+export const PerCapitaIncomeTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: 'Per Capita Income',
+      valueField: 'Value',
+      format: 'currency',
+      showHelperText: false,
+    },
+    view,
+  );
+
+// MULTI CHARTS
+const multi = (
+  chart: ChartItem<any>,
+  config: MultiSeriesConfig,
+  view?: 'gallery' | 'report',
+) => <MultiSeriesTrendChart chart={chart} config={config} view={view} />;
+
+export const DemographicsTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  multi(
+    chart,
+    {
+      valueField: 'Percent',
+      format: 'percent',
+      series: [
+        { key: 'Under 18', color: '#154734' },
+        {
+          key: '65+',
+          aggregateFrom: ['65 to 74', '75 Plus'],
+          color: '#1c7ed6',
+        },
+      ],
+    },
+    view,
+  );
+
+export const EducationTrendChart = <TData,>({
+  chart,
+  view,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+}) =>
+  multi(
+    chart,
+    {
+      valueField: 'Percent',
+      format: 'percent',
+      nameSuffix: false,
+      legendPosition: 'default',
+      series: [
+        { key: 'No High School Diploma', color: '#d62828' },
+        { key: 'High School Graduate', color: '#f77f00' },
+        { key: "Associate's Degree", color: '#fcbf49' },
+        { key: "Bachelor's Degree", color: '#003049' },
+        { key: 'Postgraduate Degree', color: '#457b9d' },
+      ],
+    },
+    view,
+  );
 
 export const EarningsTrendChart = <TData,>({
   chart,
+  view,
 }: {
   chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
-  if (!data || data.length === 0) return null;
-
-  const years = Array.from(new Set(data.map((r) => r.year))).sort();
-  const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
-  const cmpName = labels?.[1] ?? 'Comparison';
-
-  const buildPoint = (rows: any[], year: number) => {
-    const find = (label: string) =>
-      rows.find((r) => String(r.year) === String(year) && r.Variable === label)
-        ?.Value ?? null;
-    return {
-      'Male Full-Time Workers': find('DP03_0093'),
-      'Female Full-Time Workers': find('DP03_0094'),
-      'All Workers': find('DP03_0092'),
-    };
-  };
-
-  const plotData = years.map((year) => ({
-    year,
-    ...buildPoint(data, year),
-    ...(compareData.length > 0
-      ? {
-          'Male Full-Time Workers (cmp)': buildPoint(compareData, year)[
-            'Male Full-Time Workers'
-          ],
-          'Female Full-Time Workers (cmp)': buildPoint(compareData, year)[
-            'Female Full-Time Workers'
-          ],
-          'All Workers (cmp)': buildPoint(compareData, year)['All Workers'],
-        }
-      : {}),
-  }));
-  return (
-    <>
-      {compareData.length > 0 && <CompareNote name={cmpName} />}
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={plotData}
-          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-          <YAxis
-            tick={{ fontSize: 12 }}
-            domain={['auto', 'auto']}
-            tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
-          />
-          <Tooltip
-            formatter={(value: any) =>
-              value != null
-                ? `$${Number(value).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-                : '—'
-            }
-          />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="Male Full-Time Workers"
-            stroke="#1432ab"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="Female Full-Time Workers"
-            stroke="#e03fd0"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="All Workers"
-            stroke="#494b4d60"
-            strokeWidth={2}
-            dot={false}
-          />
-          {compareData.length > 0 && (
-            <>
-              <Line
-                type="monotone"
-                dataKey="Male Full-Time Workers (cmp)"
-                name="Male Full-Time Workers (cmp)"
-                stroke="#1432ab"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-              <Line
-                type="monotone"
-                dataKey="Female Full-Time Workers (cmp)"
-                name="Female Full-Time Workers (cmp)"
-                stroke="#e03fd0"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-              <Line
-                type="monotone"
-                dataKey="All Workers (cmp)"
-                name="All Workers (cmp)"
-                stroke="#494b4d60"
-                strokeWidth={1.5}
-                strokeDasharray="6 4"
-                dot={false}
-                legendType="none"
-              />
-            </>
-          )}
-        </LineChart>
-      </ResponsiveContainer>
-    </>
+  view?: 'gallery' | 'report';
+}) =>
+  multi(
+    chart,
+    {
+      valueField: 'Value',
+      format: 'currency',
+      series: [
+        {
+          key: 'Male Full-Time Workers',
+          matchVariable: 'DP03_0093',
+          color: '#161E54',
+        },
+        {
+          key: 'Female Full-Time Workers',
+          matchVariable: 'DP03_0094',
+          color: '#F16D34',
+        },
+        { key: 'All Workers', matchVariable: 'DP03_0092', color: '#9BB0C1' },
+      ],
+    },
+    view,
   );
-};
 
 // ---------------------------------------------------------------------------
 // Generic two-location trend chart for the DP-combined explorer
@@ -619,13 +646,9 @@ export const EarningsTrendChart = <TData,>({
 // chartParams.measure:      raw measure string (e.g. 'Percent') for formatting
 // ---------------------------------------------------------------------------
 
-export const DPTrendChart = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => {
-  const data = chart.data as any[];
-  const compareData = (chart.compareData ?? []) as any[];
+export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
+  const data = chart.data;
+  const compareData = chart.compareData ?? [];
   const lbls = chart.chartParams?.legendLabels as [string, string] | undefined;
   const primaryName = lbls?.[0] ?? 'Side A';
   const compareName = lbls?.[1] ?? 'Side B';
@@ -635,7 +658,7 @@ export const DPTrendChart = <TData,>({
 
   const allYears = Array.from(
     new Set([...data, ...compareData].map((r) => r.year)),
-  ).sort((a, b) => a - b);
+  ).sort((a, b) => Number(a) - Number(b));
 
   const plotData = allYears.map((year) => ({
     year,
@@ -643,7 +666,7 @@ export const DPTrendChart = <TData,>({
     compare: compareData.find((r) => r.year === year)?.Value ?? null,
   }));
 
-  const fmt = (v: any) =>
+  const fmt = (v: unknown) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
 
   if (!data || data.length === 0) return null;
@@ -663,7 +686,11 @@ export const DPTrendChart = <TData,>({
           }
           domain={['auto', 'auto']}
         />
-        <Tooltip formatter={(val: any, name: string) => [fmt(val), name]} />
+        <Tooltip
+          formatter={(value) => {
+            return (Number(value) || 0).toLocaleString();
+          }}
+        />
         <Legend />
         <Line
           type="monotone"

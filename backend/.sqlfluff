@@ -1,6 +1,35 @@
+# SQL linting for the Jinja SQL templates in query/sql/ and build/sql/.
+# Run from backend/:  uv run sqlfluff lint query/sql build/sql
+#
+# The [templater:jinja:context] section supplies representative values for the
+# fragments that Python (sql_render.py) injects at runtime, so the linter
+# checks a realistic rendering of each template. The $1/$2 placeholders mirror
+# the numbered prepared-statement parameters the filter compiler emits.
+
 [sqlfluff]
 dialect = duckdb
-templater = placeholder
+templater = jinja
+max_line_length = 88
+# CP02/CP03: identifiers/functions keep their source casing (mixed-case dataset
+#   columns like District_Type).
+# RF04/RF05: column names like NAME/geometry and display aliases with spaces
+#   ("District Type") are part of the frontend data contract.
+# ST06: SELECT column order is part of the API response shape.
+# ST07: USING joins are idiomatic DuckDB and what the filter compiler
+#   (sql_render.py) generates.
+exclude_rules = CP02, CP03, RF04, RF05, ST06, ST07
 
-[sqlfluff:templater:placeholder]
-param_style = pyformat
+# DuckDB preserves identifier case, so quoted aliases that only change case
+# (e.g. variable AS "Variable") are meaningful, not redundant.
+[sqlfluff:rules:references.quoting]
+case_sensitive = True
+
+[sqlfluff:templater:jinja:context]
+table = acs5_b10_census
+where_string = WHERE "Measure" IN ($1)
+cte_filter_block = WITH f0 AS (SELECT DISTINCT OBJECT_ID FROM zoning_info WHERE "County" IN ($1))
+join_filter_block = JOIN f0 USING (OBJECT_ID)
+info_string = OBJECT_ID, County
+rule_string = CAST("Residential_Min_Lot" AS VARCHAR) AS residential_min_lot
+indicators = 'ASTHMA', 'DIABETES'
+path = dummy.csv

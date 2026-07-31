@@ -1,12 +1,11 @@
 import { Button } from '@mantine/core';
 import { FilterSpec } from './filterTypes';
 import { postRequest } from './filterRequest';
-import axios from 'axios';
 
 interface ApplyButtonProps {
   dataURL: string;
   specs: FilterSpec[];
-  onData: (data: any) => void;
+  onData: (data: unknown) => void;
   disabled?: boolean;
 }
 
@@ -17,10 +16,13 @@ export default function ApplyButton(params: ApplyButtonProps) {
     const payload = specs.filter(
       (s) => s.filters && Object.keys(s.filters).length > 0,
     );
+    
     try {
       const data = await postRequest({ dataURL, payload });
       onData(data);
-    } catch (e) {}
+    } catch {
+      // postRequest already logged the failure
+    }
   };
 
   return (

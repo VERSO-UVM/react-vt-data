@@ -1,14 +1,7 @@
 'use client';
 
 import React from 'react';
-import {
-  Title,
-  Center,
-  Container,
-  Text,
-  SimpleGrid,
-  Paper,
-} from '@mantine/core';
+import { Title, Center, Container, Text } from '@mantine/core';
 import ExploratoryMappingGrid from '@/components/Grids/ExploratoryMappingOptions';
 
 export const links = [
@@ -25,6 +18,20 @@ export const links = [
     description:
       'Assess soil limitations and suitability for on-site wastewater systems and rural development.',
     badges: ['NRCS', 'Septic'],
+  },
+  {
+    link: '/mapping/treatment-facilities',
+    label: 'Wastewater Treatment Facilities',
+    description:
+      'Explore locations of current public wastewater treatment facilities and their capacities.',
+    badges: ['ANR', 'Wastewater'],
+  },
+  {
+    link: '/mapping/service-areas',
+    label: 'Wastewater System Service Areas',
+    description:
+      'Examine current service areas of public wastewater systems.',
+    badges: ['ANR', 'Wastewater'],
   },
   {
     link: '/mapping/flood-legal',

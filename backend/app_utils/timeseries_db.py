@@ -57,47 +57,61 @@ _VALID_COLS: dict[str, set[str]] = {
         "estimate",
     },
     "historic_population": {
-        "X_geoid",
+        "geoid",
         "NAME",
+        "geo_type",
         "Jurisdiction",
         "County",
-        "Year",
+        # "Year",
         "Population",
     },
 }
 
+TIMESERIES_FILTER_COLS = {
+    "historic_population": {
+        "Location": "NAME",
+        # no year mapping for this one
+    }
+}
+
 
 def query_timeseries(table_name: str, filters: dict | None = None):
-    """
-    Query a timeseries table with optional column-value filters.
-
-    Filters are applied as WHERE col IN (...) clauses. Unknown columns are
-    silently ignored (safe against injection via whitelist).
-
-    Returns a pandas DataFrame.
-    """
     if table_name not in _VALID_COLS:
         raise KeyError(f"No timeseries table registered under '{table_name}'")
 
+    # Map frontend filter labels to table columns
+    mapping = TIMESERIES_FILTER_COLS.get(table_name, {})
+    mapped_filters = {}
+
+    for label, value in (filters or {}).items():
+        col = mapping.get(label)
+        if col is None:
+            continue
+        mapped_filters[col] = value
+
+    print(
+        f"query_timeseries: table_name={table_name}, filters={filters}, mapped_filters={mapped_filters}"
+    )
     valid_cols = _VALID_COLS[table_name]
-    where_clauses: list[str] = []
-    params: list = []
+    where_clauses = []
+    params = []
 
-    if filters:
-        for col, values in filters.items():
-            if col not in valid_cols:
-                logger.warning(
-                    "timeseries_db: skipping unknown filter column '%s' on table '%s'",
-                    col,
-                    table_name,
-                )
-                continue
-            if isinstance(values, str):
-                values = [values]
-            placeholders = ", ".join(["?" for _ in values])
-            where_clauses.append(f'"{col}" IN ({placeholders})')
-            params.extend(values)
+    for col, values in mapped_filters.items():
+        if col not in valid_cols:
+            logger.warning(
+                "timeseries_db: skipping unknown filter column '%s' on table '%s'",
+                col,
+                table_name,
+            )
+            continue
 
-    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+        if isinstance(values, str):
+            values = [values]
+
+        placeholders = ", ".join("?" for _ in values)
+        where_clauses.append(f'"{col}" IN ({placeholders})')
+        params.extend(values)
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
     sql = f'SELECT * FROM "{table_name}" {where_sql}'
     return DB.execute(sql, params).df()

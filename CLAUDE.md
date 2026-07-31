@@ -8,7 +8,7 @@ Vermont Data Exploration App — a full-stack web application for visualizing Ve
 
 ## Tips
 
-- Use `conda activate leahy_data` before executing any python commands to try stuff.
+- Use `uv run` to run things.
 
 ## Commands
 
@@ -28,7 +28,15 @@ npm run format:check # Check formatting without modifying
 uvicorn api.main:app --reload --port 6767  # API server on localhost:6767
 pip install -r requirements.txt            # Install dependencies
 streamlit run Home.py                      # Legacy Streamlit interface (not primary)
+uv run sqlfluff lint query/sql build/sql   # Lint the Jinja SQL templates
+uv run sqlfluff fix query/sql build/sql    # Auto-fix SQL lint issues
 ```
+
+SQL templates under `backend/query/sql/` and `backend/build/sql/` are Jinja
+templates rendered by `sql_render.py`, which also holds the
+general-purpose filter compiler (it emits `$N` prepared-statement placeholders
+plus a params list — execute with `DB.execute(sql, params)`). Lint-time
+template context lives in `backend/.sqlfluff`.
 
 ## Architecture
 

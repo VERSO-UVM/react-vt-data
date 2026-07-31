@@ -11,6 +11,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@mantine/carousel": "^9.4.1",
     "@mantine/charts": "^9.4.1",
     "@mantine/core": "^9.4.1",
     "@mantine/form": "^9.4.1",
@@ -24,10 +25,12 @@
     "cors": "^2.8.6",
     "d3": "^7.9.0",
     "deck.gl": "^9.3.5",
+    "embla-carousel-react": "^8.6.0",
     "html2pdf": "^0.0.11",
     "html2pdf.js": "^0.14.0",
     "mantine-datatable": "^9.3.1",
     "maplibre-gl": "^5.24.0",
+    "motion": "^12.42.2",
     "next": "^16.2.10",
     "react": "19.2.7",
     "react-chartjs-2": "^5.3.1",

@@ -1,9 +1,7 @@
 // Source: https://info.healthconnect.vermont.gov/compare-plans/medicaid-and-dr-dynasaur
 
 export type MedicaidLimitType =
-  | 'MedicaidForAdults'
-  | 'PregnantWomen'
-  | 'ChildrenUnder19';
+  'MedicaidForAdults' | 'PregnantWomen' | 'ChildrenUnder19';
 
 const MEDICAID_VALUES: Record<MedicaidLimitType, Record<number, number>> = {
   MedicaidForAdults: {

@@ -13,8 +13,9 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource, RangeFilter
-from query.core_functions import filter_tree, sql_filter_block
+from query.core_functions import filter_tree
 from query.processed_db import DB
+from sql_render import sql_filter_block
 
 logger = logging.getLogger(__name__)
 sql_path = Path(__file__).resolve().parent / "sql" / "acs5"
@@ -76,9 +77,9 @@ def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
         fixed_filters=config["fixed_filters"],
     )
 
-    sql = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
+    sql, params = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
 
-    result = DB.execute(sql).df()
+    result = DB.execute(sql, params).df()
 
     if result is None:
         logger.error(
@@ -94,9 +95,9 @@ def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
 def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="acs5_unemployment_rate", filters=filters)
 
-    sql = sql_filter_block(sql_path / "unemployment_rate.sql", [source])
+    sql, params = sql_filter_block(sql_path / "unemployment_rate.sql", [source])
 
-    result = DB.execute(sql).df()
+    result = DB.execute(sql, params).df()
 
     if result is None or result.empty:
         logger.error("Unemployment rate query returned no rows for filters=%s", filters)
@@ -108,9 +109,9 @@ def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
 def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="acs5_median_earnings", filters=filters)
 
-    sql = sql_filter_block(sql_path / "median_earnings.sql", [source])
+    sql, params = sql_filter_block(sql_path / "median_earnings.sql", [source])
 
-    result = DB.execute(sql).df()
+    result = DB.execute(sql, params).df()
 
     if result is None or result.empty:
         logger.error("Median earnings query returned no rows for filters=%s", filters)
@@ -122,9 +123,9 @@ def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
 def get_snapshot(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="snapshot", filters=filters)
 
-    sql = sql_filter_block(sql_path / "snapshot.sql", [source])
+    sql, params = sql_filter_block(sql_path / "snapshot.sql", [source])
 
-    result = DB.execute(sql).df()
+    result = DB.execute(sql, params).df()
 
     if result is None or result.empty:
         logger.error("Snapshot query returned no rows for filters=%s", filters)
