@@ -16,6 +16,12 @@ proc_dir = BACKEND / "Data" / "_Processed"
 proc_zoning = proc_dir / "zoning"
 SQL_DIR = BACKEND / "build" / "sql"
 
+# Town and zoning-district boundaries were digitised separately, so subtracting
+# one from the other leaves hairline slivers along nearly every town edge.
+# Dropping gap polygons below this size removes ~91% of the pieces while keeping
+# >99.7% of the genuinely unzoned acreage.
+MIN_GAP_ACRES = 10
+
 
 # hardcoded specifics:
 info_cols = [
@@ -83,27 +89,26 @@ def build_geom():
 def build_empty_geom():
     """
     Build the geometry for the polygons
-    *where we don't have zoning information*
+    *where we don't have zoning information*.
+
+    Requires build/FIPS_data.py to have run first (it writes towns.parquet);
+    build/main.py orders them accordingly.
     """
+    towns = proc_dir / "vermont" / "towns.parquet"
+    if not towns.exists():
+        raise FileNotFoundError(
+            f"{towns} is missing -- run build/FIPS_data.py before build/zoning.py"
+        )
+
     CON.execute(f"""--sql
         CREATE OR REPLACE VIEW town_boundaries
         AS SELECT *
-        FROM '{proc_dir / "vermont" / "towns.parquet"}'
+        FROM '{towns}'
     """)
 
-    CON.execute("""--sql
-        CREATE OR REPLACE VIEW emptyGeom AS 
-        WITH covered AS (
-        SELECT GEO_ID, ST_Union_Agg(ST_MakeValid(geom)) AS geom
-        FROM zoning_raw GROUP BY GEO_ID
-        )
-
-        SELECT * FROM (
-            SELECT t.FIPS_ID, t.TOWN_NAME, ST_Difference(t.geometry, COALESCE(c.geom, ST_GeomFromText('POLYGON EMPTY'))) AS geom
-            FROM town_boundaries t LEFT JOIN covered c on t.FIPS_ID = c.GEO_ID
-        )
-        WHERE NOT ST_ISEmpty(geom)
-    """)
+    CON.execute(
+        render_sql(SQL_DIR / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES)
+    )
 
 
 def get_rule_cols():
@@ -177,7 +182,7 @@ def main():
     build_empty_geom()
     build_full()
     proc_zoning.mkdir(parents=True, exist_ok=True)
-    for table in ["info", "geom", "rules", "colors", "wide", "emptyGeom"]:
+    for table in ["info", "geom", "rules", "colors", "wide", "empty_geom"]:
         CON.execute(
             f"COPY (SELECT * FROM {table}) TO '{proc_zoning / f'{table}.parquet'}' "
         )

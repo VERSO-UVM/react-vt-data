@@ -143,7 +143,7 @@ const pcaURL = `${BASE_API_URL}/load/mapping/cdc/places/pca_summary`;
 function DataSetSelector({
   handleSelect,
 }: {
-  handleSelect: (value: string) => void;
+  handleSelect: (value: string | null) => void;
 }) {
   return (
     <Select
@@ -163,7 +163,8 @@ export default function VariableComparison() {
   );
   const [pcaChart, setPCAChart] = useState<ChartItem | null>(null);
 
-  const handleSelectDataSet = (value: string): void => {
+  const handleSelectDataSet = (value: string | null): void => {
+    if (value === null) return;
     setComparisonURL(validDatasets[value as keyof typeof validDatasets]);
     if (value === 'CDC, County Level') {
       // setPCASummaryURL(pcaURL);

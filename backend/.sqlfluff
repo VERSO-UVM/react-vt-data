@@ -33,3 +33,4 @@ info_string = OBJECT_ID, County
 rule_string = CAST("Residential_Min_Lot" AS VARCHAR) AS residential_min_lot
 indicators = 'ASTHMA', 'DIABETES'
 path = dummy.csv
+min_acres = 10

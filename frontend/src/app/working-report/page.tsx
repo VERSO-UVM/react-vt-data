@@ -411,15 +411,15 @@ export default function WorkingReport() {
       const filters = buildFilters(myLocation, {
         col: 'year',
         selected: [
-          chart.chartParams?.fixedYear ?? yearMin,
-          chart.chartParams?.fixedYear ?? yearMax,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
         ],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
         selected: [
-          chart.chartParams?.fixedYear ?? yearMin,
-          chart.chartParams?.fixedYear ?? yearMax,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
         ],
       });
 

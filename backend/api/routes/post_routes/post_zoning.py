@@ -4,6 +4,7 @@ from api.core_functions import request_to_source, spec_to_source
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, FilterSpec, make_response
 from query.zoning import (
+    get_unzoned_geojson,
     get_zoning_aggregated_acres,
     get_zoning_allowances,
     get_zoning_geojson,
@@ -22,7 +23,13 @@ router = APIRouter()
 async def zoning_geo_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_zoning_geojson(sources)
-    print(data)
+    return Response(content=data, media_type="application/json")
+
+
+@router.get("/load/mapping/zoning/unzoned")
+async def zoning_unzoned():
+    """Grey "no zoning information" backdrop. GET: it takes no filters."""
+    data = get_unzoned_geojson()
     return Response(content=data, media_type="application/json")
 
 

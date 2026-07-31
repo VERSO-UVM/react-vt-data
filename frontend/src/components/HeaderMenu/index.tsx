@@ -65,7 +65,6 @@ const links = [
       // { link: '/resources/tutorial', label: 'Tutorial' },
     ],
   },
-  { link: '/scratch', label: 'Scratch' }, // For any work in progress not yet migrated to main page.
   // Future sections of the "About" page outlined below
   {
     link: '/about',

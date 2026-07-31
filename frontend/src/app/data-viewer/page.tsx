@@ -34,6 +34,14 @@ import { useEffect, useState } from 'react';
 
 // within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { ChartMetadata, DataRow } from '@/types/cachedCharts';
+
+// one chart's backend payload, keyed by chart def id in state below
+type ChartPayload = {
+  data: DataRow[];
+  metadata?: ChartMetadata;
+  tableData?: DataRow[];
+};
 import { FONT_MONO, COLOR, FONT_DISPLAY } from './theme';
 import { FieldLabel } from './FieldLabel';
 import { MetricsPanel } from './MetricsPanels';
@@ -384,15 +392,15 @@ export default function DataViewerPage() {
       const filters = buildFilters(myLocation, {
         col: 'year',
         selected: [
-          chart.chartParams?.fixedYear ?? yearMin,
-          chart.chartParams?.fixedYear ?? yearMax,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
         ],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
         selected: [
-          chart.chartParams?.fixedYear ?? yearMin,
-          chart.chartParams?.fixedYear ?? yearMax,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
         ],
       });
 
@@ -583,7 +591,9 @@ export default function DataViewerPage() {
             charts={visibleItems}
             action="add"
             userInterests={interests}
-            defIds={visibleItems.map((c) => c.chartParams?.defId)}
+            defIds={visibleItems.map(
+              (c) => c.chartParams?.defId as string | undefined,
+            )}
             view="gallery"
           />
         </Box>

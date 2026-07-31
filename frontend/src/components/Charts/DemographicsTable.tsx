@@ -150,10 +150,10 @@ export const renderTable = ({ chart }: { chart: ChartItem<AcsRow> }) => (
   />
 );
 
-export const renderTableEstimates = <TData,>({
+export const renderTableEstimates = ({
   chart,
 }: {
-  chart: ChartItem<TData>;
+  chart: ChartItem<AcsRow>;
 }) => (
   <DemographicsTableBase
     chart={chart}
@@ -164,11 +164,7 @@ export const renderTableEstimates = <TData,>({
 );
 
 /** Shows Percent when available, falls back to Value — for mixed tables like Housing. */
-export const renderTableMixed = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => (
+export const renderTableMixed = ({ chart }: { chart: ChartItem<AcsRow> }) => (
   <DemographicsTableBase
     chart={chart}
     renderCell={(row) => {

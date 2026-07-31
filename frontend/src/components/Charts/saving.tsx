@@ -3,7 +3,7 @@ import { useItems } from '../ItemsProvider';
 import { useProfile } from '@/components/profile/profileStore';
 import { Button, Transition } from '@mantine/core';
 import { CheckIcon, XIcon } from '@phosphor-icons/react';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 
 // Toggle include/exclude for auto-populated working report charts
 interface ToggleProps {

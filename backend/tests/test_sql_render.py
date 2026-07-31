@@ -63,6 +63,14 @@ QUERY_TEMPLATE_SOURCES = {
     "query/sql/zoning/agg_info_table.sql": [CTE_SOURCE],
     "query/sql/zoning/info_table.sql": [CTE_SOURCE],
     "query/sql/zoning/geo_query.sql": [CTE_SOURCE],
+    "query/sql/zoning/unzoned.sql": [],
+    "query/sql/zoning/agg_rules_table.sql": [CTE_SOURCE],
+    "query/sql/zoning/geo_rule_table.sql": [CTE_SOURCE],
+    "query/sql/zoning/rules_table.sql": [CTE_SOURCE],
+    "query/sql/wastewater/service_area_geo_query.sql": [CTE_SOURCE],
+    "query/sql/wastewater/soil_suitability_geo_query.sql": [CTE_SOURCE],
+    "query/sql/wastewater/waste_treatment_geo_query.sql": [CTE_SOURCE],
+    "query/sql/wastewater/waste_treatment_permit_table.sql": [CTE_SOURCE],
     "query/sql/zoning/rules.sql": [CTE_SOURCE],
 }
 
@@ -73,6 +81,7 @@ BUILD_TEMPLATE_CONTEXT = {
         "path": "dummy.csv",
     },
     "build/sql/zoning_colors.sql": {},
+    "build/sql/zoning_empty_geom.sql": {"min_acres": 10},
     "build/sql/zoning_info.sql": {"info_string": "OBJECT_ID, County"},
     "build/sql/zoning_rules.sql": {
         "rule_string": 'CAST("Residential_Min_Lot" AS VARCHAR) AS residential_min_lot'
