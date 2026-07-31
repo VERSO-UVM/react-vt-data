@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import DPSeriesRequest, FilterRequest, make_response
-from app_utils.db import DB
+from query.processed_db import DB
 
 # TODO: Simplify / Refactor this script using the new query folder functions
 from query.acs5 import (
@@ -112,7 +112,7 @@ async def dp_combined_tree():
     rows = DB.execute(
         """--sql
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
-        FROM dp_combined
+        FROM acs5_dp_combined
         ORDER BY "table", Category, Subcategory, Variable, Measure
         """
     ).df()
@@ -128,7 +128,7 @@ async def dp_combined_series(request: DPSeriesRequest):
         """--sql
         SELECT CAST(year AS INTEGER) AS year,
                CAST(Value AS DOUBLE) AS Value
-        FROM dp_combined
+        FROM acs5_dp_combined
         WHERE NAME = ?
           AND "table" = ?
           AND Category = ?
