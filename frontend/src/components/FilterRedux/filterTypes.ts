@@ -33,8 +33,8 @@ export type apiFilterParams = {
 
 // type to define a cascade/checkbox filter, etc.
 export interface FilterUIProps {
-  style: filterStyle,
-  params: apiFilterParams
+  style: filterStyle;
+  params: apiFilterParams;
 }
 
 ////////// Types for pre-defining filters to hydrate
@@ -42,5 +42,6 @@ type filterStyle = 'Cascade' | 'Checkbox';
 export type filterDef = {
   filter_table: string;
   filter_style: filterStyle;
+  targetTable?: string;
+  label?: string; // section heading shown above this filter's controls
 };
-

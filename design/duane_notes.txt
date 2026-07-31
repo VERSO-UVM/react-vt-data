@@ -1,0 +1,28 @@
+Hey Fitz,
+
+I got everything up today. you were right that lfs isn't needed, thanks for that. one thing though: `uv run build/main.py` doesn't actually work as a bootstrap. it calls cdc.main() which reads Data/CDC/*.csv, and those are the lfs files I don't have. it also rewrites parquet that's already committed and fine.
+
+what did work:
+
+    cd backend
+    uv run build/consolidate.py   # builds _Processed/all_data.duckdb
+    uv run build/build_db.py      # builds Data/vt_data.duckdb
+
+Took me a while to figure out there are two duckdb files with separate builders and consumers, and you need both. app_utils/db.py raises at import time and main.py imports every router, so a missing vt_data.duckdb means the api won't boot at all.
+
+-- Fitz to port over the other one
+-- 
+
+Questions:
+
+    is that two-step the right bootstrap?
+    is the two-db split temporary? build_db.py says "to be deprecated once the individual build.py scripts are built."
+    vt_data.duckdb is tracked through lfs but also gitignored, so my rebuild shows up as a 162mb modified file I could commit by accident. What should we do about that?
+
+couple smaller ones:
+
+- post_cdc.py:12 passes "cdc_places" but schema.json only has "cdc_county_places", so /cdc/places/single 500s. wrong key or wip?
+- /load/mapping/flood_legal wants frontend/public/data/flood-legal.json which was never committed. do you have it locally?
+- test_export_route.py can't collect, httpx2 missing from dev deps. ok if I add it?
+
+No rush, if you want to leave this until we meet!
