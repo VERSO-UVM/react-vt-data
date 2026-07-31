@@ -50,3 +50,5 @@ backend/logger/*.log
 out/
 dist/
 backend/Data/Census/**/*.csv
+
+tmp/
