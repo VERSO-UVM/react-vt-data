@@ -3,7 +3,7 @@ SELECT
     p.Measure,
     p.Data_Value,
     p.bin,
-    ROUND(p.natl_pct * 100, 2)  AS natl_pct, 
+    ROUND(p.natl_pct * 100, 2) AS natl_pct,
     c.CountyFIPS,
     c.CountyName,
     ST_ASGEOJSON(c.geom) AS geometry
