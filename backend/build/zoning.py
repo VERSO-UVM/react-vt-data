@@ -7,18 +7,14 @@
     Build script to convert the `zoning_update.fgb` into four SQL tables.
 """
 
-import numpy as np
 import pandas as pd
 
 from build import BACKEND, CON, data_dir
 from sql_render import render_sql
 
-proc_dir = BACKEND / "Data" / "_Processed" / "zoning"
+proc_dir = BACKEND / "Data" / "_Processed"
+proc_zoning = proc_dir / "zoning"
 SQL_DIR = BACKEND / "build" / "sql"
-
-
-def func_x(x: np.ndarray) -> int:
-    return 5
 
 
 # hardcoded specifics:
@@ -81,6 +77,32 @@ def build_geom():
         CREATE OR REPLACE VIEW geom AS
         SELECT {geo_string}
         FROM zoning_raw
+    """)
+
+
+def build_empty_geom():
+    """
+    Build the geometry for the polygons
+    *where we don't have zoning information*
+    """
+    CON.execute(f"""--sql
+        CREATE OR REPLACE VIEW town_boundaries
+        AS SELECT *
+        FROM '{proc_dir / "vermont" / "towns.parquet"}'
+    """)
+
+    CON.execute("""--sql
+        CREATE OR REPLACE VIEW emptyGeom AS 
+        WITH covered AS (
+        SELECT GEO_ID, ST_Union_Agg(ST_MakeValid(geom)) AS geom
+        FROM zoning_raw GROUP BY GEO_ID
+        )
+
+        SELECT * FROM (
+            SELECT t.FIPS_ID, t.TOWN_NAME, ST_Difference(t.geometry, COALESCE(c.geom, ST_GeomFromText('POLYGON EMPTY'))) AS geom
+            FROM town_boundaries t LEFT JOIN covered c on t.FIPS_ID = c.GEO_ID
+        )
+        WHERE NOT ST_ISEmpty(geom)
     """)
 
 
@@ -152,11 +174,12 @@ def main():
     build_geom()
     build_rules()
     build_color()
+    build_empty_geom()
     build_full()
-    proc_dir.mkdir(parents=True, exist_ok=True)
-    for table in ["info", "geom", "rules", "colors", "wide"]:
+    proc_zoning.mkdir(parents=True, exist_ok=True)
+    for table in ["info", "geom", "rules", "colors", "wide", "emptyGeom"]:
         CON.execute(
-            f"COPY (SELECT * FROM {table}) TO '{proc_dir / f'{table}.parquet'}' "
+            f"COPY (SELECT * FROM {table}) TO '{proc_zoning / f'{table}.parquet'}' "
         )
 
 

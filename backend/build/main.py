@@ -7,7 +7,7 @@
     Runs all the build scripts one after the other.
 """
 
-from build import cdc, wastewater, zoning
+from build import cdc, wastewater, zoning, FIPS_data
 
 
 def main():
@@ -15,6 +15,7 @@ def main():
     cdc.main()
     zoning.main()
     wastewater.main()
+    FIPS_data.main()
 
 
 if __name__ == "__main__":

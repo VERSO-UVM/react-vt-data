@@ -1,4 +1,4 @@
-SELECT
+ SELECT
     i.County,
     i.Municipal_Name || ' ' || i.District_Name AS "Jurisdiction District Name",
     i.District_Type AS "District Type",

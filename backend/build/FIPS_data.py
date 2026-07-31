@@ -38,11 +38,24 @@ def build_tracts():
         """)
 
 
+def build_towns():
+    path = data_dir / "vermont" / "municipalities.json"
+    CON.execute(f"""--sql
+        CREATE OR REPLACE VIEW towns AS
+        SELECT
+            GEOID AS FIPS_ID,
+            "NAME" as TOWN_NAME,
+            ST_Transform(geom, 'EPSG:4269', 'EPSG:4326', true) AS geometry
+        FROM ST_Read('{path}')
+    """)
+
+
 def main():
     build_counties()
     build_tracts()
+    build_towns()
     proc_dir.mkdir(parents=True, exist_ok=True)
-    for table in ["counties", "tracts"]:
+    for table in ["counties", "tracts", "towns"]:
         CON.execute(
             f"COPY (SELECT * FROM {table}) TO '{proc_dir / f'{table}.parquet'}' "
         )

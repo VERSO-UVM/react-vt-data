@@ -4,8 +4,6 @@ SELECT
     SUM(i.Acres) AS Acres
 FROM main.zoning_rules AS r
 INNER JOIN main.zoning_info AS i USING (OBJECT_ID)
-
-
 {{ where_string }}
     AND r.rule = 'Allowance'
     AND i.District_Type IN ('Residential', 'Mixed')

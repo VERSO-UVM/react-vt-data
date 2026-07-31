@@ -58,6 +58,7 @@ def build_PCA_table(us_df: pd.DataFrame) -> pd.DataFrame:
     return pv_vt
 
 
+
 def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
     df = us_df.copy()
     df["natl_pct"] = df.groupby("Measure")["Data_Value"].rank(pct=True)
