@@ -99,3 +99,4 @@ template context lives in `backend/.sqlfluff`.
 - **TypeScript:** strict mode, path alias `@/*` → `./src/*`.
 - Run `npm run format` then `npm run lint` before committing frontend changes.
 - Ruff for python linting. `ruff check --fix`
+- Formatting is enforced by pre-commit hooks (`.pre-commit-config.yaml`) and the Format Check CI workflow; a Claude Code PostToolUse hook (`.claude/hooks/format.py`) also formats edited files automatically.
