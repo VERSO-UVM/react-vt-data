@@ -3,8 +3,6 @@ title: "Flood Hazard Table Build"
 format: html
 ---
 
-## This is half ai-slop right now REMEMBER TO CLEAN IT UP BEFORE PUSHING
-
 ## Load dataset
 
 ```{sql}
