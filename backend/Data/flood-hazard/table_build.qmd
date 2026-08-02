@@ -1,0 +1,87 @@
+---
+title: "Flood Hazard Table Build"
+format: html
+---
+
+## This is half ai-slop right now REMEMBER TO CLEAN IT UP BEFORE PUSHING
+
+## Load dataset
+
+```{sql}
+SELECT *
+FROM read_parquet("backend/Data/flood-hazard/vt-flood-hazard.parquet")
+LIMIT 20;
+
+```markdown
+## Explore schema
+
+```{sql}
+SELECT *
+FROM read_parquet("backend/Data/flood-hazard/vt-flood-hazard.parquet")
+LIMIT 1;
+
+The dataset contains the following columns:
+
+- OBJECTID (int32) — unique feature identifier
+- DFIRM_ID (object) — FEMA map ID
+- VERSION_ID (object)
+- FLD_AR_ID (object)
+- STUDY_TYP (object)
+- FLD_ZONE (object)
+- ZONE_SUBTYP (object)
+- SFHA_TF (object)
+- STATIC_BFE (int32)
+- V_DATUM (object)
+- DEPTH (int32)
+- LEN_UNIT (object)
+- VELOCITY (int32)
+- VEL_UNIT (object)
+- AR_REVERT (object)
+- AR_SUBTRV (int32)
+- BFE_REVERT (int32)
+- DEP_REVERT (int32)
+- DUAL_ZONE (Int32)
+- SOURCE_CIT (object)
+- geometry (object)
+
+```{sql}
+-- info.sql
+CREATE OR REPLACE TABLE info AS
+SELECT
+    OBJECTID AS id,
+    DFIRM_ID,
+    VERSION_ID,
+    FLD_AR_ID,
+    STUDY_TYP,
+    FLD_ZONE,
+    ZONE_SUBTYP,
+    SFHA_TF,
+    STATIC_BFE,
+    V_DATUM,
+    DEPTH,
+    LEN_UNIT,
+    VELOCITY,
+    VEL_UNIT,
+    AR_REVERT,
+    AR_SUBTRV,
+    BFE_REVERT,
+    DEP_REVERT,
+    DUAL_ZONE,
+    SOURCE_CIT
+FROM raw;
+
+-- geom.sql
+CREATE OR REPLACE TABLE geom AS
+SELECT
+    OBJECTID AS id,
+    geometry
+FROM raw;
+
+-- build.sql
+CREATE OR REPLACE TABLE flood AS
+SELECT
+    i.*,
+    g.geometry AS geom
+FROM info i
+JOIN geom g USING (id);
+

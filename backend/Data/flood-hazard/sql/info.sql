@@ -1,0 +1,23 @@
+CREATE OR REPLACE TABLE info AS
+SELECT
+    OBJECTID AS id,
+    DFIRM_ID,
+    VERSION_ID,
+    FLD_AR_ID,
+    STUDY_TYP,
+    FLD_ZONE,
+    ZONE_SUBTY,
+    SFHA_TF,
+    STATIC_BFE,
+    V_DATUM,
+    DEPTH,
+    LEN_UNIT,
+    VELOCITY,
+    VEL_UNIT,
+    AR_REVERT,
+    AR_SUBTRV,
+    BFE_REVERT,
+    DEP_REVERT,
+    DUAL_ZONE,
+    SOURCE_CIT
+FROM raw;
