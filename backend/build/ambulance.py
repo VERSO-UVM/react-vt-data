@@ -38,14 +38,14 @@ ambulance_info_cols = [
     "Per_No_Tran",
     "Re_Per_Tran",
     "Cost_Per",
-    "Cost_Call"
+    "Cost_Call",
 ]
 
 ambulance_geom_cols = [
     "OBJECTID",
     "Shape__Area",
     "Shape__Length",
-    "geometry"
+    "geometry",
 ]
 
 # functions:

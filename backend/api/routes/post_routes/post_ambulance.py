@@ -15,6 +15,7 @@ async def ambulance_info_geojson(request: FilterRequest):
     data = get_ambulance_geojson([source])
     return Response(content=data, media_type="application/json")
 
+
 @router.post("/load/mapping/ambulance/service_area_new")
 async def ambulance_info_geojson_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]

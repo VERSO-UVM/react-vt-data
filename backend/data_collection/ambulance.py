@@ -13,6 +13,7 @@ STORAGE_LOCATION = "../Data/ambulance"
 
 # Fetch ambulance data from goverment arcgis website (geojson files)
 
+
 def fetch_service_areas() -> pd.DataFrame | None:
     r = requests.get(AMBULANCE_SERVICE_AREA, timeout=30)
     r.raise_for_status()
