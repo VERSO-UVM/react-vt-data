@@ -110,7 +110,7 @@ async def tidy_snapshot(request: FilterRequest):
 async def dp_combined_tree():
     """Return the global set of distinct cascade options across all DP tables."""
     rows = DB.execute(
-        """
+        """--sql
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
         FROM dp_combined
         ORDER BY "table", Category, Subcategory, Variable, Measure
@@ -125,7 +125,7 @@ async def dp_combined_series(request: DPSeriesRequest):
     (location, table, Category, Subcategory, Variable, Measure) selection.
     """
     rows = DB.execute(
-        """
+        """--sql
         SELECT CAST(year AS INTEGER) AS year,
                CAST(Value AS DOUBLE) AS Value
         FROM dp_combined

@@ -28,17 +28,11 @@ export function ToggleChart({ isIncluded, onToggle }: ToggleProps) {
 // storing a copy. Initial inclusion is determined by profile interests — charts
 // whose categories don't match any interest start excluded.
 interface AddChartProps {
-  chart: ChartItem<any>;
+  chart: ChartItem<DataRow>;
   defId?: string;
 }
 export function AddChart({ chart, defId }: AddChartProps) {
-  const {
-    addItem,
-    removeItem,
-    includeById,
-    excludeById,
-    items,
-  } = useItems();
+  const { addItem, removeItem, includeById, excludeById, items } = useItems();
 
   const { interests } = useProfile();
 
@@ -46,37 +40,39 @@ export function AddChart({ chart, defId }: AddChartProps) {
     chart.title,
     chart.subtype,
     ...(chart.chartParams?.legendLabels ?? []),
-  ].join("::");
+  ].join('::');
 
-const inReport = items.some(item => item.id === stableId);
+  const inReport = items.some((item) => item.id === stableId);
 
-const handleClick = () => {
-  if (inReport) {
-    removeItem(stableId);
-  } else {
-    addItem({ ...chart, id: stableId });
-  }
-};
+  const handleClick = () => {
+    if (inReport) {
+      removeItem(stableId);
+    } else {
+      addItem({ ...chart, id: stableId });
+    }
+  };
 
   return (
     <Button
       onClick={handleClick}
-      color={inReport ? "red" : "blue"}
-      variant={inReport ? "filled" : "light"}
+      color={inReport ? 'red' : 'blue'}
+      variant={inReport ? 'filled' : 'light'}
       leftSection={
-        inReport ? <XIcon size={12} weight="bold" /> : <CheckIcon size={16} weight="bold" />
+        inReport ? (
+          <XIcon size={12} weight="bold" />
+        ) : (
+          <CheckIcon size={16} weight="bold" />
+        )
       }
     >
-      {inReport
-        ? "Remove from working report"
-        : "Add to working report"}
+      {inReport ? 'Remove from working report' : 'Add to working report'}
     </Button>
   );
 }
 
 // Remove a manually-saved chart from the working report
 interface RemoveChartProps {
-  chart: ChartItem<any>;
+  chart: ChartItem<DataRow>;
 }
 export function RemoveChart({ chart }: RemoveChartProps) {
   const { removeItem } = useItems();

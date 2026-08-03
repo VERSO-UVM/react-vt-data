@@ -44,6 +44,15 @@ cd vermont-livability
    npm install
    ```
 
+5. **Install** the git pre-commit hooks (from the project root):
+
+   ```sh
+   uv tool install pre-commit
+   pre-commit install
+   ```
+
+   - This makes `ruff format` (python) and `prettier` (typescript) run automatically on the files you commit. The same checks run in CI on every pull request, so installing the hooks saves you a failed build later.
+
 ## Running the website locally
 
 1. Create the **Local API** Instance in one terminal (from the project root)
@@ -69,7 +78,7 @@ cd vermont-livability
 
 All development must:
 
-- Use the `prettier` formatter and `eslint` linter for reliable diffs in typescript, and `ruff format` in python.
+- Use the `prettier` formatter and `eslint` linter for reliable diffs in typescript, and `ruff format` in python. Formatting is applied automatically at commit time if you've run `pre-commit install` (see Installation & Setup), and enforced in CI by the Format Check workflow.
 
 All development should:
 

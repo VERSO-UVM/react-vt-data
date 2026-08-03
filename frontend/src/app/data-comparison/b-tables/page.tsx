@@ -16,6 +16,7 @@ import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
+import { DataRow } from '@/types/cachedCharts';
 
 // ---------------------------------------------------------------------------
 // Section config — url and which field to use as the bar value
@@ -77,8 +78,8 @@ export default function DataComparisonPage() {
   const { myLocation, comparison, yearMax: profileYearMax } = useProfile();
 
   const [section, setSection] = useState<string>('Demographics');
-  const [primaryData, setPrimaryData] = useState<any[]>([]);
-  const [compareData, setCompareData] = useState<any[]>([]);
+  const [primaryData, setPrimaryData] = useState<DataRow[]>([]);
+  const [compareData, setCompareData] = useState<DataRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +88,7 @@ export default function DataComparisonPage() {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const cfg = SECTIONS[section];
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: reset status before the async request
     setLoading(true);
     setError(null);
 
@@ -120,6 +122,7 @@ export default function DataComparisonPage() {
       const nearest = availableYears.reduce((a, b) =>
         Math.abs(b - year) < Math.abs(a - year) ? b : a,
       );
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clamp selection when the section's year range shifts
       setYear(nearest);
     }
   }, [availableYears.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps

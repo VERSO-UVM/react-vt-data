@@ -1,10 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import countyTownNames from '@/data/county_town_names.json';
-
-const VT_COUNTIES = Object.keys(countyTownNames);
-const randomCounty = () =>
-  VT_COUNTIES[Math.floor(Math.random() * VT_COUNTIES.length)];
 
 export interface Location {
   type: 'state' | 'county' | 'town' | 'rpc' | 'national';

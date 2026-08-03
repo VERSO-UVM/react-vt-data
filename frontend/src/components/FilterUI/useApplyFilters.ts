@@ -6,7 +6,7 @@ export type FilterValue = string[] | { min: number; max: number };
 type apiFilterParams = {
   dataURL: string;
   filters: Record<string, FilterValue>;
-  onData?: (data: any, metadata?: any, tableData?: any) => void;
+  onData?: (data: unknown, metadata?: unknown, tableData?: unknown) => void;
 };
 
 export function useApplyFilters() {

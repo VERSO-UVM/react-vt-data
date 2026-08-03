@@ -1,3 +1,4 @@
+{{ cte_filter_block }}
 SELECT
     i.County,
     i.Municipal_Name || ' ' || i.District_Name AS "Jurisdiction District Name",
@@ -6,4 +7,4 @@ SELECT
     c.hex_color
 FROM zoning_info AS i
 LEFT JOIN zoning_colors AS c ON i.District_Type = c.district_type
-{{ where_string }}
+{{ join_filter_block }}

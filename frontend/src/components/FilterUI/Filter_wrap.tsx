@@ -6,7 +6,7 @@ import { useFilter } from './FilterContext';
 type FilterContainerProps = {
   apiURL: string;
   dataURL: string;
-  onData?: (data: any) => void;
+  onData?: (data: unknown) => void;
 };
 
 export default function FilterContainer({
