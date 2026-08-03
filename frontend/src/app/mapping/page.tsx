@@ -29,8 +29,7 @@ export const links = [
   {
     link: '/mapping/service-areas',
     label: 'Wastewater System Service Areas',
-    description:
-      'Examine current service areas of public wastewater systems.',
+    description: 'Examine current service areas of public wastewater systems.',
     badges: ['ANR', 'Wastewater'],
   },
   {
