@@ -4,7 +4,7 @@ import { useApplyFilters, FilterValue } from './useApplyFilters';
 
 type ApplyButtonProps = {
   dataURL: string;
-  onData?: (data: any) => void;
+  onData?: (data: unknown) => void;
   disabled?: boolean;
 };
 

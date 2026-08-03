@@ -14,7 +14,7 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
-  background: rgba(255,255,255,.82);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .hidden {
@@ -41,9 +41,9 @@
   border-radius: 999px;
 
   transition:
-    background .2s ease,
-    color .2s ease,
-    transform .2s ease;
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .link:hover {
@@ -54,8 +54,8 @@
 .active {
   background: linear-gradient(
     135deg,
-    rgba(25,113,194,.15),
-    rgba(25,113,194,.08)
+    rgba(25, 113, 194, 0.15),
+    rgba(25, 113, 194, 0.08)
   );
 
   color: var(--mantine-color-blue-7);
@@ -89,10 +89,9 @@
 :global(.mantine-Menu-dropdown) {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(255,255,255,.92);
+  background: rgba(255, 255, 255, 0.92);
 
-  border: 1px solid rgba(0,0,0,.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 
-  box-shadow:
-    0 20px 40px rgba(0,0,0,.12);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }

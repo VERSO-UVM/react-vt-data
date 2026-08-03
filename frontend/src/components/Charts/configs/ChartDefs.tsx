@@ -1,6 +1,6 @@
 // chartDefs.ts\
 import { BASE_API_URL } from '@/config';
-import { TableColumnConfig } from '@/types/cachedCharts';
+import { ChartParams, TableColumnConfig } from '@/types/cachedCharts';
 
 export interface TableRowDef {
   label: string;
@@ -21,7 +21,7 @@ export interface ChartDef {
   subtype: string;
   trendChart?: string; // optional trend chart component name for table-primary defs
   categories?: string[]; // topic areas for interest-based filtering
-  chartParams?: any;
+  chartParams?: ChartParams;
   url: string;
   filterKey?: string;
   dataKey?: string;
@@ -59,11 +59,12 @@ export const chartDefs: ChartDef[] = [
     subtype: 'ZoningAllowanceStackedBarChart',
     chartParams: {
       legendLabels: ['Allowed', 'Conditional', 'Not Allowed', 'Public Hearing'],
-      color: 'hex_color'
+      color: 'hex_color',
     },
     url: `${BASE_API_URL}/load/data/zoning/allowances`,
     filterKey: '',
-    notes: 'Acreage distribution by family allowance (Residential + Mixed use).',
+    notes:
+      'Acreage distribution by family allowance (Residential + Mixed use).',
     showCols: [
       { key: 'use_type', label: 'Residential Type' },
       { key: 'val', label: 'Zoning Outcome' },
@@ -105,20 +106,20 @@ export const chartDefs: ChartDef[] = [
     xField: 'Variable',
     yField: 'Percent',
     subtype: 'CompareDiffPerXBarChart',
-    chartParams: { 
+    chartParams: {
       legendLabels: ['Main', 'Compare'],
       fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
       percentFormat: true,
       includeCategories: [
-        "Under 18",
-        "18 to 24",
-        "25 to 34",
-        "35 to 44",
-        "45 to 54",
-        "55 to 64",
-        "65 to 74",
-        "75 plus",
-      ]
+        'Under 18',
+        '18 to 24',
+        '25 to 34',
+        '35 to 44',
+        '45 to 54',
+        '55 to 64',
+        '65 to 74',
+        '75 plus',
+      ],
     },
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
     filterKey: '',
@@ -188,10 +189,10 @@ export const chartDefs: ChartDef[] = [
     xField: 'Variable',
     yField: 'Percent',
     subtype: 'CompareDiffPerXBarChart',
-    chartParams: { 
+    chartParams: {
       legendLabels: ['Main', 'Compare'],
       fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
-      percentFormat: true
+      percentFormat: true,
     },
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
     filterKey: '',

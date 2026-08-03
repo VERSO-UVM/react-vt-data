@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { ScrollArea, SegmentedControl, Table } from '@mantine/core';
 import { useState } from 'react';
 import { usePdfMode } from '@/contexts/PdfModeContext';
@@ -41,7 +41,7 @@ const INNER_H = 345;
 // density consistent everywhere gallery-vs-report matters.
 const computeGalleryTicks = (
   values: string[],
-  keepEvery = 4
+  keepEvery = 4,
 ): string[] | undefined => {
   if (values.length === 0) return undefined;
   if (values.length <= keepEvery) return values;
@@ -74,7 +74,7 @@ export const EmploymentAreaChart = ({
 
   const q1Ticks = data
     .filter((d) => String(d.quarter_label).endsWith('Q1'))
-    .map((d) => d.quarter_label);
+    .map((d) => d.quarter_label as string);
 
   const galleryTicks = computeGalleryTicks(q1Ticks, 4);
 
@@ -82,7 +82,7 @@ export const EmploymentAreaChart = ({
     ...row,
     Total: sectors.reduce((sum, s) => {
       const v = row[s];
-      return v != null && !isNaN(v) ? sum + Number(v) : sum;
+      return v != null && !isNaN(Number(v)) ? sum + Number(v) : sum;
     }, 0),
   }));
 
@@ -301,7 +301,7 @@ export const EmploymentAreaChart = ({
             </Table.Thead>
             <Table.Tbody>
               {tableRows.map((row) => (
-                <Table.Tr key={row.quarter_label}>
+                <Table.Tr key={String(row.quarter_label)}>
                   <Table.Td>{row.quarter_label}</Table.Td>
                   {sectors.map((s) => (
                     <Table.Td key={s} style={{ textAlign: 'right' }}>

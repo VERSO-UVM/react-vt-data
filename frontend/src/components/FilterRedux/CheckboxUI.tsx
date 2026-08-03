@@ -42,9 +42,8 @@ export function CheckboxFilter(params: apiFilterParams) {
           ? (spec.filters[label] as string[])
           : options;
         return (
-          <Paper>
+          <Paper key={label}>
             <Checkbox.Group
-              key={label}
               label={label}
               value={current}
               onChange={(selections) => handleToggle(label, selections)}

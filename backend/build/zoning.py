@@ -14,7 +14,7 @@ from build import BACKEND, CON, data_dir
 from sql_render import render_sql
 
 proc_dir = BACKEND / "Data" / "_Processed" / "zoning"
-sql_path = BACKEND / "build" / "sql"
+SQL_DIR = BACKEND / "build" / "sql"
 
 
 def func_x(x: np.ndarray) -> int:
@@ -68,7 +68,7 @@ def data_load():
 
 def build_info():
     info_string = ", ".join(info_cols)
-    CON.execute(render_sql(sql_path / "zoning_info.sql", info_string=info_string))
+    CON.execute(render_sql(SQL_DIR / "zoning_info.sql", info_string=info_string))
     info_df = CON.execute("SELECT * FROM raw_info").df()
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
@@ -113,7 +113,7 @@ def build_rules():
         for rule_col, clean_col in zip(rule_cols, clean_rule_cols, strict=True)
     ]
     rule_string = ", ".join(rule_strings)
-    CON.execute(render_sql(sql_path / "zoning_rules.sql", rule_string=rule_string))
+    CON.execute(render_sql(SQL_DIR / "zoning_rules.sql", rule_string=rule_string))
     rules = CON.execute("SELECT * FROM raw_rules").df()
 
     # separate by use type and filter:
@@ -143,7 +143,7 @@ def build_full():
 
 
 def build_color():
-    CON.execute((sql_path / "zoning_colors.sql").read_text())
+    CON.execute((SQL_DIR / "zoning_colors.sql").read_text())
 
 
 def main():
