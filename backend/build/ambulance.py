@@ -48,6 +48,7 @@ ambulance_geom_cols = [
     "geometry",
 ]
 
+
 # functions:
 def load_ambulance_data():
     con.execute("LOAD spatial")
@@ -67,6 +68,7 @@ def build_ambulance_info_table():
       FROM ambulance_service_areas
     """)
 
+
 def build_ambulance_geom_table():
     geom_string = ", ".join(ambulance_geom_cols)
 
@@ -75,6 +77,7 @@ def build_ambulance_geom_table():
       SELECT {geom_string}
       FROM ambulance_service_areas
     """)
+
 
 def build_ambulance_color_table():
     con.execute("""--sql
@@ -90,20 +93,18 @@ def build_ambulance_color_table():
         ('Paramedic - Critical Care Endorsement',   '#fd7e14', '[253, 126, 20, 180]')
     """)
 
+
 def save_ambulance_tables():
     load_ambulance_data()
     build_ambulance_info_table()
     build_ambulance_geom_table()
     build_ambulance_color_table()
 
-    for table in [
-        "ambulance_info",
-        "ambulance_geom",
-        "ambulance_colors"
-    ]:
+    for table in ["ambulance_info", "ambulance_geom", "ambulance_colors"]:
         con.execute(
             f"COPY (SELECT * FROM {table}) TO '{proc_dir / f'{table}.parquet'}' "
         )
+
 
 ## Putting everything together
 def main():

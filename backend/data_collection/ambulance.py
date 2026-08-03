@@ -33,7 +33,9 @@ def run_ambulance_scrape() -> None:
     service_areas = fetch_service_areas()
 
     if service_areas is not None:
-        service_areas.to_parquet(f"{STORAGE_LOCATION}/ambulance_service_areas.parquet", index=False)
+        service_areas.to_parquet(
+            f"{STORAGE_LOCATION}/ambulance_service_areas.parquet", index=False
+        )
 
 
 if __name__ == "__main__":
