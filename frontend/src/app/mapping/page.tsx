@@ -44,7 +44,7 @@ export const links = [
     label: 'Ambulance Service Areas',
     description:
       'Cover ambulance service areas in Vermont and the summary statistics of their calls',
-    badges: ['Health']
+    badges: ['Health'],
   },
 ];
 
