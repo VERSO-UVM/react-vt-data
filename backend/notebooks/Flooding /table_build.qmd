@@ -1,0 +1,138 @@
+---
+title: "Flood Hazard Table Build"
+author: Fitz Koch and Ethan Elbert
+description: Builds SQL tables from flood hazard data.
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+---
+
+# Setup
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+
+```
+
+```{python}
+con = duckdb.connect()
+```
+
+## Load dataset
+
+```{python}
+con.execute("INSTALL spatial ; LOAD spatial")
+```
+
+```{python} 
+con.execute(f"""
+    CREATE OR REPLACE TABLE raw AS
+    SELECT *
+    FROM read_parquet("Data/flood-hazard/vt-flood-hazard.parquet")
+""")
+```
+
+# Analysis
+```{python}
+con.execute("""DESCRIBE raw""").df()
+```
+
+Per the describe, the dataset contains the following columns:
+
+- OBJECTID (int32) — unique feature identifier
+- DFIRM_ID (object) — FEMA map ID
+- VERSION_ID (object)
+- FLD_AR_ID (object)
+- STUDY_TYP (object)
+- FLD_ZONE (object)
+- ZONE_SUBTYP (object)
+- SFHA_TF (object)
+- STATIC_BFE (int32)
+- V_DATUM (object)
+- DEPTH (int32)
+- LEN_UNIT (object)
+- VELOCITY (int32)
+- VEL_UNIT (object)
+- AR_REVERT (object)
+- AR_SUBTRV (int32)
+- BFE_REVERT (int32)
+- DEP_REVERT (int32)
+- DUAL_ZONE (Int32)
+- SOURCE_CIT (object)
+- geometry (object)
+
+
+Now we want to look at the what these columns mean. First, go to [this link](https://www.fema.gov/sites/default/files/2020-02/FIRM_Database_Technical_Reference_Feb_2019.pdf) and search (ctrl + f) for the column names, then see what values we actually have. 
+
+## study type
+For example, for the column `STUDY_TYP`, we can see that it is the study type based on the manual. Then we run a query to see what value counts we have for that column. 
+
+```{python}
+df = con.execute("SELECT * FROM raw").df()
+df["STUDY_TYP"].value_counts()
+```
+
+All the values are `NP`, which means "No Study". This is not very useful, so we we'll make a mental note to drop this column.
+
+
+## static_bfe 
+For another example, we'll check out another column, the `STATIC_BFE` column. This is the static base flood elevation, which is the elevation of the base flood in feet above the vertical datum. That is, the area where there is *always* a flood, which are basically in lakes and costal zones. To quote the manual, 
+
+> Static Base Flood Elevation. This field will be populated for areas that have been determined to have a constant Base Flood Elevation (BFE) over a flood zone. The BFE value will be shown beneath the zone label. In this situation the same BFE applies to the entire polygon. This normally occurs in lakes or coastal zones.
+
+```{python}
+df["STATIC_BFE"].value_counts()
+```
+
+Hmm, this is kind of weird. Lots of `-9999`... let's check the manual (see above) to see what that means... okay, so it means the null value.  That will be annoying if we want to do any kind of math on this, so we'll convert these to NULL in a format that makes sense for DuckDB. Namely, we'll convert them to `NULL` in the SQL table creation step.
+
+For a preview of this, where we are updating the `raw` table instead of creating a new table (which is what we'll do in the final SQL file), we can run the following:
+
+```{python}
+con.execute("""
+    UPDATE raw
+    SET STATIC_BFE = NULL
+    WHERE STATIC_BFE = -9999
+""")
+```
+
+```{python}
+df = con.execute("SELECT * FROM raw").df()
+df["STATIC_BFE"].value_counts(dropna=False)
+```
+
+Okay, that looks better, now they're correctly stored as Null values.
+
+
+# Ethan Analysis 
+
+Ethan, please do similar checks for the **all** the other columns, either cleaning the data (e.g., converting -9999 to NULL) or dropping columns that are not useful. 
+
+Once you have figured out all that logic, combine it into a single SQL file that creates the final tables. This is what goes in the 'backend/build/sql' folder. Then we can run the build script to create the final tables (I moved them there, you can update them once you've done this). 
