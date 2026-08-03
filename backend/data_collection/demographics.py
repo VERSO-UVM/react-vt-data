@@ -8,7 +8,7 @@ Fetch ACS 5-Year demographics data for Vermont:
 Output: vt_acs5_b_demographics_tidy.parquet
 """
 
-from data_collection.base import GEOS, YEARS, VarGroup, run_scrape
+from data_collection.base import YEARS, VarGroup, run_scrape
 
 # ---------------------------------------------------------------------------
 # Age band definitions: (label, male_suffix_range, female_suffix_range)

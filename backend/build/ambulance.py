@@ -11,7 +11,6 @@ import os
 from pathlib import Path
 
 import duckdb
-import pandas as pd
 
 _project_root = Path.cwd()
 while not (_project_root / "api").exists():
@@ -78,7 +77,7 @@ def build_ambulance_geom_table():
     """)
 
 def build_ambulance_color_table():
-    con.execute(f"""--sql
+    con.execute("""--sql
     CREATE TABLE ambulance_colors (
         certification_level   TEXT PRIMARY KEY,
         hex_color       TEXT NOT NULL,
