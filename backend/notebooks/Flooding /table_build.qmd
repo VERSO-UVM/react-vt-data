@@ -131,6 +131,20 @@ df["STATIC_BFE"].value_counts(dropna=False)
 Okay, that looks better, now they're correctly stored as Null values.
 
 
+## sfha
+
+Basically this column means whether the area is in a Special Flood Hazard Area (SFHA) or not. The values are either `Y` or `N`, which is pretty straightforward. We don't see any nulls or anything that doesn't make sense, so we can leave this column as is.
+
+```{python}
+con.execute("""
+    SELECT SFHA_TF, COUNT(*)
+    FROM raw
+    GROUP BY SFHA_TF
+""").df()
+```
+
+
+
 # Ethan Analysis 
 
 Ethan, please do similar checks for the **all** the other columns, either cleaning the data (e.g., converting -9999 to NULL) or dropping columns that are not useful. 
