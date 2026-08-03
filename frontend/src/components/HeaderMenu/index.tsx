@@ -24,8 +24,14 @@ const links = [
     links: [
       { link: '/mapping/zoning', label: 'Zoning' },
       { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
-      { link: '/mapping/treatment-facilities', label: 'Wastewater Treatment Facilities'},
-      {link: '/mapping/service-areas', label: 'Wastewater System Service Areas'},
+      {
+        link: '/mapping/treatment-facilities',
+        label: 'Wastewater Treatment Facilities',
+      },
+      {
+        link: '/mapping/service-areas',
+        label: 'Wastewater System Service Areas',
+      },
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
       { link: '/mapping/ambulance', label: 'Ambulance Service Areas'}
     ],
@@ -55,7 +61,7 @@ const links = [
     // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
       { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
-      { link: '/resources/data-sources', label: 'Data Sources '},
+      { link: '/resources/data-sources', label: 'Data Sources ' },
       // { link: '/resources/github', label: 'GitHub' },
       // { link: '/resources/tutorial', label: 'Tutorial' },
     ],
