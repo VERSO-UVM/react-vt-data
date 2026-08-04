@@ -259,6 +259,7 @@ function DatasetDrawer({
             leftSection={<ArrowLeftIcon size={20} />}
             style={{
               width: 250,
+              color: COLORS.spruceDeep
             }}
             size="sm"
             onClick={onBack}

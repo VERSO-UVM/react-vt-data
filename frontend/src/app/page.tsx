@@ -301,13 +301,13 @@ function HeroSection({
                 maxWidth: 640,
               }}
             >
-              <motion.span style={{ display: 'block' }}>
+              <motion.span style={{ display: 'block', fontWeight: 700 }}>
                 <TypewriterLine
                   text={HERO_LINE_1}
                   startDelay={TYPE_LINE1_START}
                 />
               </motion.span>
-              <motion.span style={{ display: 'block' }}>
+              <motion.span style={{ display: 'block', fontWeight: 700 }}>
                 <TypewriterLine
                   text={HERO_LINE_2}
                   startDelay={TYPE_LINE2_START}
@@ -401,11 +401,11 @@ function HeroSection({
                 <Group justify="space-between" align="center" mb={18}>
                   <Text
                     style={{
+                      color: COLORS.amberSoft,
                       fontFamily: FONTS.mono,
-                      fontSize: 11,
+                      fontSize: 12,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
-                      color: 'rgba(246,245,239,0.5)',
                     }}
                   >
                     Your profile
@@ -704,10 +704,11 @@ function FeaturedDatasets() {
 function ValueAdds() {
   const rows = [
     { label: 'Free, no account required', us: true, others: false },
-    { label: 'Plain-language field names', us: true, others: false },
-    { label: 'Vermont-specific, town-level detail', us: true, others: false },
+    { label: 'Plain-language', us: true, others: false },
+    { label: 'Tailored to Vermont’s towns', us: true, others: false },
     { label: 'Maintained with community input', us: true, others: false },
-    { label: 'Updated on a public schedule', us: true, others: false },
+    { label: 'Customized reporting', us: true, others: false },
+    { label: 'Historical trends', us: true, others: false },
   ];
 
   return (

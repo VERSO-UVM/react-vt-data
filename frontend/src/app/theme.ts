@@ -12,13 +12,13 @@ export const COLORS = {
   amberSoft: '#E7B563',
   amberYellow: '#FFD100',
   line: 'rgba(27, 58, 47, 0.14)',
-};
+} as const;
 
 export const FONTS = {
-  display: "'Fraunces', 'Iowan Old Style', serif",
-  body: "'General Sans', 'Inter', sans-serif",
-  mono: "'IBM Plex Mono', ui-monospace, monospace",
-}
+  display: "'Satoshi', sans-serif",
+  body: "'Inter', sans-serif",
+  mono: "'IBM Plex Mono', monospace",
+} as const;
 
 export const theme = createTheme({
   primaryColor: 'green',
