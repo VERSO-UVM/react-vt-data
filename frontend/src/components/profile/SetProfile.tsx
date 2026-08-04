@@ -26,7 +26,7 @@ import * as motion from 'motion/react-client';
 import county_town_names from '@/data/county_town_names.json';
 import { IconMapPin, IconTags, IconCalendarStats } from '@tabler/icons-react';
 import { UserCircleIcon } from '@phosphor-icons/react';
-import { COLORS, FONTS} from '@/app/theme'
+import { COLORS, FONTS } from '@/app/theme';
 
 type CountyKey = keyof typeof county_town_names;
 
@@ -285,7 +285,6 @@ export const ProfileModal: React.FC = () => {
         }}
       >
         <Stack gap="xl">
-
           {!profileSet && (
             <Alert
               variant="light"
@@ -310,10 +309,7 @@ export const ProfileModal: React.FC = () => {
             }}
           >
             <Group gap={8} mb={4}>
-              <IconMapPin
-                size={16}
-                color={COLORS.spruce}
-              />
+              <IconMapPin size={16} color={COLORS.spruce} />
 
               <Text
                 tt="uppercase"
@@ -329,10 +325,7 @@ export const ProfileModal: React.FC = () => {
               </Text>
             </Group>
 
-            <Text
-              size="sm"
-              c={COLORS.slate}
-            >
+            <Text size="sm" c={COLORS.slate}>
               Choose where you live and what to compare against.
             </Text>
 
@@ -360,13 +353,9 @@ export const ProfileModal: React.FC = () => {
             }}
           >
             <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
-
               <Box>
                 <Group gap={8} mb={4}>
-                  <IconTags
-                    size={17}
-                    color={COLORS.spruce}
-                  />
+                  <IconTags size={17} color={COLORS.spruce} />
 
                   <Text
                     fw={600}
@@ -401,10 +390,7 @@ export const ProfileModal: React.FC = () => {
 
               <Box>
                 <Group gap={8} mb={4}>
-                  <IconCalendarStats
-                    size={17}
-                    color={COLORS.spruce}
-                  />
+                  <IconCalendarStats size={17} color={COLORS.spruce} />
 
                   <Text
                     fw={600}
@@ -424,12 +410,8 @@ export const ProfileModal: React.FC = () => {
                   mb="xl"
                   style={{ fontFamily: FONTS.body }}
                 >
-                  Display data from{" "}
-                  <Text
-                    span
-                    fw={700}
-                    c={COLORS.spruce}
-                  >
+                  Display data from{' '}
+                  <Text span fw={700} c={COLORS.spruce}>
                     {tempYearRange[0]}–{tempYearRange[1]}
                   </Text>
                   .
@@ -447,17 +429,13 @@ export const ProfileModal: React.FC = () => {
                   color={COLORS.spruce}
                 />
               </Box>
-
             </SimpleGrid>
           </Box>
 
           <Group justify="space-between">
-            <Text
-              size="xs"
-              c="dimmed"
-              style={{ fontFamily: FONTS.body }}
-            >
-              Your profile personalizes charts and comparisons throughout the platform.
+            <Text size="xs" c="dimmed" style={{ fontFamily: FONTS.body }}>
+              Your profile personalizes charts and comparisons throughout the
+              platform.
             </Text>
 
             <Group>
@@ -487,7 +465,6 @@ export const ProfileModal: React.FC = () => {
               </Button>
             </Group>
           </Group>
-
         </Stack>
       </Modal>
     </>

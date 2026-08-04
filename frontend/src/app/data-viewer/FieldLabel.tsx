@@ -1,4 +1,4 @@
-import { COLORS, FONTS } from '@/app/theme'
+import { COLORS, FONTS } from '@/app/theme';
 import { Text } from '@mantine/core';
 
 export function FieldLabel({

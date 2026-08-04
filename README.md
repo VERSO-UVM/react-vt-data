@@ -19,7 +19,7 @@ cd vermont-livability
 
 3. **Install** python dependencies:
    - First, set up (uv)[https://docs.astral.sh/uv/] if you don't already have it.
-   - Then run `uv sync` from the backend to make sure everything will work for you. This is strictly not necessary but will help identify issues early. 
+   - Then run `uv sync` from the backend to make sure everything will work for you. This is strictly not necessary but will help identify issues early.
 
    ```sh
    cd backend
@@ -33,7 +33,7 @@ cd vermont-livability
    uv run uvicorn api.main:app --reload --port 6767
    ```
 
-   - If you need to add any python packages later, use `uv add` from the `backend` directory.  
+   - If you need to add any python packages later, use `uv add` from the `backend` directory.
 
 4. **Install** backend react dependencies:
    - First, set up [npm](https://docs.npmjs.com/cli/v6/commands/npm)
@@ -56,6 +56,7 @@ cd vermont-livability
 2. Setup your build to access the local API by adding `NEXT_PUBLIC_API_URL=http://localhost:6767` in `frontend.env.local`
 
 3. **Run** the website from **a different terminal instance** (from the project root):
+
    ```sh
    cd frontend
    npm run dev

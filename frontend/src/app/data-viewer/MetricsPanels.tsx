@@ -1,4 +1,4 @@
-import { COLORS, FONTS } from '@/app/theme'
+import { COLORS, FONTS } from '@/app/theme';
 import { FieldLabel } from './FieldLabel';
 
 import { Grid, Text } from '@mantine/core';

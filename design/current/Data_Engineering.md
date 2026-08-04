@@ -1,59 +1,57 @@
 # Motivation
 
-* Clean and orderly code 
-* Replicable and testable processes
-* Separation of concerns between:
-    * collecting
-    * cleaning 
-    * run-time query logic 
-        * subselection from tables written out 
-        * additional filtering of selections 
-    * serving
-* cross-reference and filtering:
-    * easily use filters from datasets that don't otherwise "talk" to each other, for example, getting a zoning and a flooding and a soil suitability and a population count all in the same place. 
-* LLM layering. 
-    * At some point we want to have an LLM that makes interacting with all this easier. Setting up default routes it can use to get data cleanly and easily will make it more efficient and reliable
-* Reference: [Tidy Data](https://vita.had.co.nz/papers/tidy-data.pdf). 
+- Clean and orderly code
+- Replicable and testable processes
+- Separation of concerns between:
+  - collecting
+  - cleaning
+  - run-time query logic
+    - subselection from tables written out
+    - additional filtering of selections
+  - serving
+- cross-reference and filtering:
+  - easily use filters from datasets that don't otherwise "talk" to each other, for example, getting a zoning and a flooding and a soil suitability and a population count all in the same place.
+- LLM layering.
+  - At some point we want to have an LLM that makes interacting with all this easier. Setting up default routes it can use to get data cleanly and easily will make it more efficient and reliable
+- Reference: [Tidy Data](https://vita.had.co.nz/papers/tidy-data.pdf).
 
-# Overview of  Steps
+# Overview of Steps
 
 1. COLLECTION: data is collected, either in direct download or via an API or scrape. API is preferred.
 2. BUILD: data is processed into a clean dataset and stored in SQL tables.
-    * how these decisions are arrived in light of the data should be well articulated in the corresponding `.qmd` in the notebooks folder, with ample code included. 
-3. QUERY and FILTER: 
-    * queries are built for the data in SQL and wrapped up in python functions. This is how the data tables are manipulated to serve the precise data the frontend needs.
-    * Filtering is done in reference to `backend/api/schema.json`
-        * see the [schema](#schema) section below for an explanation of fields
-        * see `backend/api/routes/get_routes/get_filters.py` and `backend/api/routes/get_routes/get_filters.py` for how those fields are used in practice. 
+   - how these decisions are arrived in light of the data should be well articulated in the corresponding `.qmd` in the notebooks folder, with ample code included.
+3. QUERY and FILTER:
+   - queries are built for the data in SQL and wrapped up in python functions. This is how the data tables are manipulated to serve the precise data the frontend needs.
+   - Filtering is done in reference to `backend/api/schema.json`
+     - see the [schema](#schema) section below for an explanation of fields
+     - see `backend/api/routes/get_routes/get_filters.py` and `backend/api/routes/get_routes/get_filters.py` for how those fields are used in practice.
 4. API: thin wrapper of fastapi stuff around the queries.
-
 
 # Schema
 
 The schema governs filtering and joining. It is laid out as follows:
 
+- target_table (formerly primary dataset): the dataset to be joined onto. falls back to "default." This what the 'main logic' is done to in the SELECT clause of the SQL query.
+  - filter_table (formerly secondary dataset): the dataset we're using to filter the primary dataset
+    - join_key: the column to join on. see FilterSource in request_models.py
+    - join_type: what type of join, either SQL standard (eg left) or spatial
+    - value_col: the column where data _values_ are stored.
+    - var_col: the column where _variable names_ are stored.
+    - columns: ORDERED {label, column} pairs. The order is the filter cascade order; the label is what frontend shows; the column is what is sent back to the sql
+    - range: if the final value shouldn't be a set of categories, but instead a numerical range, then it goes in this column.
 
-* target_table (formerly primary dataset): the dataset to be joined onto. falls back to "default." This what the 'main logic' is done to in the SELECT clause of the SQL query.
-    * filter_table (formerly secondary dataset): the dataset we're using to filter the primary dataset
-        * join_key: the column to join on. see FilterSource in request_models.py
-        * join_type: what type of join, either SQL standard (eg left) or spatial
-        * value_col: the column where data *values* are stored. 
-        * var_col: the column where *variable names* are stored. 
-        * columns: ORDERED {label, column} pairs. The order is the filter cascade order; the label is what frontend shows; the column is what is sent back to the sql
-        * range: if the final value shouldn't be a set of categories, but instead a numerical range, then it goes in this column. 
-
-Note that value_col and var_col both are premised on the idea that the dataset is in a **tidy** format: one row per observation, with variable in the 'discriminator; column. 
+Note that value_col and var_col both are premised on the idea that the dataset is in a **tidy** format: one row per observation, with variable in the 'discriminator; column.
 
 # Future
+
 If needed, the scheme can at some point be updated to instead type each column in the ordered column list, or something like that. The hope is that the schema can hold only the "hand controlled" meta data, and that some other function can actually define/type the columns, etc., so that, for example:
-* boolean columns are grouped and returned by checkbox
-* category columns are grouped and returned by cascade
 
+- boolean columns are grouped and returned by checkbox
+- category columns are grouped and returned by cascade
 
+## Example
 
-
-## Example 
-We want to *generate* something like the below. 
+We want to _generate_ something like the below.
 
 ```
 {

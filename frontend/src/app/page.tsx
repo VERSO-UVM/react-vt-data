@@ -37,7 +37,7 @@ import {
 
 import { useProfile } from '@/components/profile/profileStore';
 
-import { COLORS, FONTS } from '@/app/theme'
+import { COLORS, FONTS } from '@/app/theme';
 
 /* ---------------------------------------------------------------
    Hero title typewriter timing

@@ -12,7 +12,7 @@ Six categories matching the Annual Report:
 Output: vt_acs5_b_education_tidy.parquet
 """
 
-from data_collection.base import GEOS, YEARS, VarGroup, run_scrape
+from data_collection.base import YEARS, VarGroup, run_scrape
 
 TOTAL = "B15003_001E"
 S = "Educational Attainment"

@@ -31,8 +31,7 @@ import { ArrowLeftIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import * as motion from 'motion/react-client';
 import { DATA_SOURCES } from './source_description';
 
-import { COLORS, FONTS } from '@/app/theme'
-
+import { COLORS, FONTS } from '@/app/theme';
 
 // -----------------------------------------------------------------------------
 // Components
@@ -260,7 +259,7 @@ function DatasetDrawer({
             leftSection={<ArrowLeftIcon size={20} />}
             style={{
               width: 250,
-              color: COLORS.spruceDeep
+              color: COLORS.spruceDeep,
             }}
             size="sm"
             onClick={onBack}
