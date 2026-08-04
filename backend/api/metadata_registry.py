@@ -94,10 +94,7 @@ METADATA: dict[str, dict] = {
 TOPIC_INFO: dict[str, dict] = {
     "Economics": {
         "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates)",
-        "tables": {
-            "Selected Economic Characteristics (Table DP04)",
-            ""
-        },
+        "tables": {"Selected Economic Characteristics (Table DP04)", ""},
         "LastUpdate": "2023",
         "caveats": [
             "5-year estimates reflect averages over the survey period, not point-in-time values.",
@@ -195,7 +192,6 @@ TOPIC_INFO: dict[str, dict] = {
         ),
     },
 }
-
 
 
 def get_metadata(key: str) -> dict:

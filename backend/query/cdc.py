@@ -158,6 +158,4 @@ def get_cdc_county_pca():
     df["CountyName"] = df["CountyName"].str.title()
     df = df.sort_values(by="CountyName")
     ret = df[["CountyName", "Health Burden"]].to_dict(orient="records")
-    print(ret)
-    print("WhATS GOING ON")
     return ret
