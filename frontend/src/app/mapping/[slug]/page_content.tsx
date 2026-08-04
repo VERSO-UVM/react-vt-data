@@ -19,6 +19,10 @@ import FilterContainer from '@/components/FilterUI/Filter_wrap';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 
+//testing my legend here
+import MapLegend from '@/components/Legend';
+//end test code
+
 const SOIL_RPCS = [
   { value: 'ACRPC', label: 'Addison County (ACRPC)' },
   { value: 'BCRC', label: 'Bennington County (BCRC)' },
@@ -31,7 +35,13 @@ const SOIL_RPCS = [
 
 const MAP_CONFIG: Record<
   string,
-  { title: string; initialURL?: string; filterURL?: string; dataURL?: string }
+  {
+    title: string;
+    initialURL?: string;
+    filterURL?: string;
+    dataURL?: string;
+    legendURL?: string;
+  }
 > = {
   zoning: {
     title: 'Zoning',
@@ -48,6 +58,7 @@ const MAP_CONFIG: Record<
     initialURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=soil_suitability_info_soil_suit`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
+    legendURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_legend`,
   },
   'treatment-facilities': {
     title: 'Wastewater Treatment Facilities',
@@ -71,6 +82,8 @@ export default function MappingContent() {
   const [rpc, setRpc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCountyLines, setShowCountyLines] = useState(true);
+
+  const [legendData, setLegendData] = useState<string>('null');
 
   const config = slug ? MAP_CONFIG[slug] : undefined;
 
@@ -106,6 +119,19 @@ export default function MappingContent() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [rpc]);
+
+  useEffect(() => {
+    if (!slug || !config?.legendURL) return;
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
+    setLoading(true);
+
+    axios
+      .get(config.legendURL) //get the data
+      .then((res) => setLegendData(res.data)) //set the data
+      .catch(console.error) //catch any errors
+      .finally(() => setLoading(false)); //say that loading is done
+  }, [slug, config?.legendURL]); //do only once on initial render ideally
 
   return (
     <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>
@@ -164,6 +190,14 @@ export default function MappingContent() {
               />
             )}
           </Stack>
+
+          {/* this is the right spot for a legend I think (underneath the filters*/}
+          <MapLegend
+            legend_header={'null'}
+            hex_color={'null'}
+            rgba={'[0, 0, 0, 0]'}
+            test={legendData}
+          ></MapLegend>
         </Paper>
 
         {/* Map */}
