@@ -61,9 +61,34 @@ QUERY_TEMPLATE_SOURCES = {
         )
     ],
     "query/sql/zoning/agg_info_table.sql": [CTE_SOURCE],
+    "query/sql/zoning/agg_rules_table.sql": [CTE_SOURCE],
     "query/sql/zoning/info_table.sql": [CTE_SOURCE],
     "query/sql/zoning/geo_query.sql": [CTE_SOURCE],
     "query/sql/zoning/rules.sql": [CTE_SOURCE],
+    "query/sql/zoning/rules_table.sql": [CTE_SOURCE],
+    "query/sql/wastewater/service_area_geo_query.sql": [
+        FilterSource(
+            filter_table="service_areas_service_area_info",
+            filters={"County": ["Addison"]},
+            join_key="ID",
+        )
+    ],
+    "query/sql/wastewater/soil_suitability_geo_query.sql": [
+        FilterSource(
+            filter_table="soil_suitability_info_soil_suit",
+            filters={"Suitability": ["Well Suited"]},
+            join_key="ID",
+        )
+    ],
+    "query/sql/wastewater/waste_treatment_geo_query.sql": [
+        FilterSource(
+            filter_table="treatment_facilities_treatment_facility_info",
+            filters={"County": ["Addison"]},
+            join_key="ID",
+        )
+    ],
+    # takes no filter fragments; renders as-is
+    "query/sql/wastewater/waste_treatment_permit_table.sql": [],
 }
 
 # build templates take plain string context instead of FilterSources

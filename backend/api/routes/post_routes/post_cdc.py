@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.post("/load/mapping/cdc/places/single")
 async def cdc_single_geojson(request: FilterRequest):
-    source = request_to_source(request, "cdc_places", "default")
+    source = request_to_source(request, "cdc_county_places", "default")
     data = single_var_geojson([source])
     return data
 

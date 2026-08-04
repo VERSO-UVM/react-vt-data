@@ -57,7 +57,7 @@ export const ViewSwitch = ({ view, setView }: ViewSwitchProps) => (
     <Title order={4}></Title>
     <SegmentedControl
       value={view}
-      defaultValue='chart'
+      defaultValue="chart"
       transitionDuration={300}
       transitionTimingFunction="linear"
       onChange={(v) => setView(v as 'chart' | 'table')}

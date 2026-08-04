@@ -16,7 +16,7 @@ export default function ApplyButton(params: ApplyButtonProps) {
     const payload = specs.filter(
       (s) => s.filters && Object.keys(s.filters).length > 0,
     );
-    
+
     try {
       const data = await postRequest({ dataURL, payload });
       onData(data);
