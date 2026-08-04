@@ -317,7 +317,7 @@ SELECT OBJECTID, geom FROM final_view
 
 con.execute("""CREATE OR REPLACE VIEW info AS
 SELECT OBJECTID, SPAN, CAT, RESCODE, PARCID, CITYGL, TOWN, ZIPGL, PROPTYPE, DESCPROP, SOURCENAME, YEAR,
-       ACRESGL, REAL_FLV, HSTED_FLV, IMPRV_LV
+       ACRESGL, REAL_FLV, HSTED_FLV, IMPRV_LV, SOURCENAME
 FROM final_view""")
 
 #wont ship tax table just yet! - commented out for now
@@ -348,4 +348,8 @@ db = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
 print(db.execute("SHOW TABLES").df())
 print(db.execute("SELECT COUNT(*) FROM parcels_info").df())
 print(db.execute("SELECT COUNT(*) FROM parcels_geom").df())
+```
+
+```{python}
+con.execute("SELECT DISTINCT TOWN FROM parcels_raw").df()
 ```

@@ -77,3 +77,225 @@ tree = get_parcels_filters()
 print(sorted(tree.tree.keys(), key=len, reverse=True)[:10])  # first few towns
 
 ```
+#here, I am starting to look at the towns and area of chittenden county, to figure out what this dataset ould be used for, with all sql queries
+
+```{python}
+import duckdb
+con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+con.execute("LOAD spatial")
+con.execute("SHOW TABLES").df() 
+```
+all the towns in chittenden county, and all the ciolumns.
+```{python}
+chittenden = ('BURLINGTON','SOUTH BURLINGTON','ESSEX','COLCHESTER','WILLISTON',
+              'SHELBURNE','WINOOSKI','MILTON','JERICHO','RICHMOND','HINESBURG',
+              'CHARLOTTE','WESTFORD','UNDERHILL','ST. GEORGE','BOLTON','HUNTINGTON','BUELS GORE')
+
+con.execute("""DESCRIBE parcels_info""").df()
+```
+First starting off with all the parcel_counts and median value for each chittenden county town, and median acres
+```{python}
+#median value + parcel count per town
+parcels_medians = con.execute(f"""
+    SELECT TOWN,
+           COUNT(*) AS parcels,
+           ROUND(MEDIAN(REAL_FLV)) AS median_value,
+           ROUND(MEDIAN(ACRESGL), 2) AS median_acres
+    FROM parcels_info
+    WHERE TOWN IN {chittenden}
+    GROUP BY TOWN
+    ORDER BY parcels DESC
+""").df()
+
+print(parcels_medians)
+
+#now trying again - seeing why these three are nan
+#nulls are in burlington, charlotte, bolton - now checking their actual values in the table - no way they are all null
+milton = con.execute("SELECT * FROM parcels_info WHERE TOWN='MILTON'").df()
+burlington = con.execute("SELECT * FROM parcels_info WHERE TOWN='BURLINGTON'").df()
+charlotte = con.execute("SELECT * FROM parcels_info WHERE TOWN='CHARLOTTE'").df()
+bolton = con.execute("SELECT * FROM parcels_info WHERE TOWN='BOLTON'").df()
+
+for item in [milton, burlington, charlotte, bolton]:
+    print(item[["TOWN", "REAL_FLV", "ACRESGL", "TOWN", "OBJECTID", "SPAN", "CITYGL"]].head(5))
+```
+#okay, we have a problem - there are some NAN values in towns, where there are no values for a row here and there (WHILE ALWAYS HAVING AN OBJECT ID AND TOWN NAME, BUT NOT ANY VALID IDENTIFYING INFO). however, for the towns of Burlington, Charlotte, and BOLTON, it seems there are no values for any of the identifying info - basically the surrounding info is blank, or nan, but the name of the town and the object id is present. I looked it up online and this may result for from these three municipalities doing things their own way, and from prematurely updating the way they handle thigns without having coordinated with the state of vermont. Ill check how it fares for counties foreign
+
+```{python}
+#now checking with different counties - startin with rutland
+rutland = ["BENSON", "BRANDON", "CASTLETON", "CHITTENDEN", "CLARENDON", "DANBY", "FAIR HAVEN", "HUBBARDTON", "IRA", "KILLINGTON", "MENDON", "MIDDLETOWN SPRINGS", "MOUNT HOLLY", "MOUNT TABOR", "PAWLET", "PITTSFIELD", "PITTSFORD", "POULTNEY", "PROCTOR", "RUTLAND TOWN", "SHREWSBURY", "SUDBURY", "TINMOUTH", "WALLINGFORD", "WELLS", "WEST HAVEN", "WEST RUTLAND"]
+parcels_medians_rutland = con.execute(f"""
+    SELECT TOWN,
+           COUNT(*) AS parcels,
+           ROUND(MEDIAN(REAL_FLV)) AS median_value,
+           ROUND(MEDIAN(ACRESGL), 2) AS median_acres
+    FROM parcels_info
+    WHERE TOWN IN {rutland}
+    GROUP BY TOWN
+    ORDER BY parcels DESC
+""").df()
+
+print(parcels_medians_rutland[["TOWN", "parcels", "median_value", "median_acres"]])
+
+
+#looks like the last four are misiing - Castleton, chittenden, brandon, benson
+
+#ill do this one more time for washington county
+washington_county_towns = ["BARRE TOWN", "BERLIN", "CABOT", "CALAIS", "DUXBURY", "EAST MONTPELIER", "FAYSTON", "MARSHFIELD", "MIDDLESEX", "MORETOWN", "NORTHFIELD", "PLAINFIELD", "ROXBURY", "WAITSFIELD", "WARREN", "WATERBURY", "WOODBURY", "WORCESTER"]
+
+parcels_medians_washington = con.execute(f"""
+    SELECT TOWN,
+           COUNT(*) AS parcels,
+           ROUND(MEDIAN(REAL_FLV)) AS median_value,
+           ROUND(MEDIAN(ACRESGL), 2) AS median_acres
+    FROM parcels_info
+    WHERE TOWN IN {washington_county_towns}
+    GROUP BY TOWN
+    ORDER BY parcels DESC
+""").df()
+
+print(parcels_medians_washington[["TOWN", "parcels", "median_value", "median_acres"]])
+
+
+
+```
+
+```{python}
+con.execute("""
+    SELECT COUNT(*) AS n,
+           SUM((REAL_FLV IS NULL)::INT) AS null_val,
+           SUM((SPAN IS NULL)::INT) AS null_span,
+           SUM((ACRESGL IS NULL)::INT) AS null_acres
+    FROM parcels_info
+    WHERE TOWN = 'BURLINGTON'
+""").df()
+```
+
+```{python}
+con.execute("SELECT DISTINCT PROPTYPE, COUNT(*) FROM parcels_info WHERE TOWN='BURLINGTON' GROUP BY PROPTYPE").df()
+```
+MAJOR FINDING ALERT! Burlington, and some of the other largest cities (like Barre) in the state of vermont just didn't send in their data - Burlington's parcels, of which it has 187 (Milton, with all informatino valid, has 4.3 thousand), all but 77 arent even parcels of property, but are instead row_road, water, and row_rail prop type. this proves my theory that the problem of missing data is due to some municipalities just not sending in their data, or collaborating with VCGI like smaller towns might have, thus leaving the leftover data to represent parcels that are borders and non-private property
+
+#now, we must find the percentage of extant data for each town, to see which ones are a worthy candidate for valid analysis - ill also filter by county for more in-depth analysis. 
+```{python}
+
+#incipient converage table
+coverage = con.execute("""
+    SELECT
+        TOWN,
+        COUNT(*) AS total_features,
+        SUM((PROPTYPE = 'PARCEL')::INT) AS parcels,
+        SUM((REAL_FLV IS NOT NULL)::INT) AS has_value,
+        ROUND(100.0 * SUM((REAL_FLV IS NOT NULL)::INT) / COUNT(*), 1) AS pct_valued
+    FROM parcels_info
+    GROUP BY TOWN
+    ORDER BY pct_valued DESC
+""").df()
+
+
+#print(coverage["pct_valued"].value_counts())
+#there are 31 towns with no parcel data, and 140 that do
+print(sum(coverage["pct_valued"] == 0.0))
+coverage_valid = coverage[coverage["pct_valued"] == 0.0].sort_values(by = "parcels", ascending = False)
+print(coverage_valid)
+
+```
+#here, we investigate colcheseter, which has all parcels present, and burlington and charlotte, which have comparatively less parcels, and no accompanying information on those parcels (median values, etc). we find that 7087 of the 7277 parcels in colcehster are "valued" whereas non for the other towns are - and that the "source" is not distinct for colchester, where it is for burlington & charlotte, leading me to believe the a source of null is VGIS data, and that self provided data tends to be less informative
+```{python}
+con.execute("""
+    SELECT TOWN,
+           COUNT(*) AS n,
+           SUM((REAL_FLV IS NOT NULL)::INT) AS valued,
+           COUNT(DISTINCT SOURCENAME) AS sources
+    FROM parcels_info
+    WHERE TOWN IN ('BURLINGTON','COLCHESTER','CHARLOTTE')
+    GROUP BY TOWN
+""").df()
+
+```
+Echeking the previous hypothesis. source == NAN is VGIS data
+```{python}
+con.execute("""
+    SELECT TOWN, SOURCENAME, COUNT(*) AS n,
+           SUM((REAL_FLV IS NOT NULL)::INT) AS valued
+    FROM parcels_info
+    WHERE TOWN IN ('BURLINGTON','CHARLOTTE','COLCHESTER')
+    GROUP BY TOWN, SOURCENAME
+    ORDER BY TOWN, n DESC
+""").df()
+```
+#really seeing if burlington only has 187 parcels, and that they are all null. in a perfect world, I got the column name wrong, but this isn't the case, and the data is missing. 
+```{python}
+con.execute("SELECT DISTINCT TOWN FROM parcels_info WHERE TOWN ILIKE '%burl%'").df()
+```
+#here, we investigate the feature source, where if the SOURCENAME is null, where it happens to be for the towns with a loarge amount of parcels (and extant data), it is likely that the data was provided and submitted by VGIS, where if it is not null, it was self submitted, which leads to strange occurrences where the City of Burlington has 187 parcels, provided by themselves, but no data to go along with it
+```{python}
+con.execute("""
+    SELECT
+        CASE WHEN SOURCENAME IS NULL THEN 'VGIS standard' ELSE 'self-submitted' END AS pipeline,
+        COUNT(*) AS features,
+        SUM((REAL_FLV IS NOT NULL)::INT) AS valued,
+        COUNT(DISTINCT TOWN) AS towns
+    FROM parcels_info
+    GROUP BY 1
+""").df()
+
+```
+
+#work for now : adding a column to parcels_info for county. first we must joing sourcename to parcels info and get 
+#TODO: add sourcename to parcels_info then run build.py
+(quick check for sql database integrity)
+```{python}
+# import duckdb
+# con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+# con.execute("LOAD spatial")
+# print(con.execute("SHOW TABLES").df())
+```
+```{python}
+towns = con.execute("SELECT DISTINCT TOWN FROM parcels_info").df()
+counties = []
+not_stateless = []
+#all counties 
+ADDISON = ["ADDISON", "BRIDPORT", "BRISTOL", "CORNWALL", "FERRISBURGH", "GOSHEN", "GRANVILLE", "HANCOCK", "LEICESTER", "LINCOLN", "MIDDLEBURY", "MONKTON", "NEW HAVEN", "ORWELL", "PANTON", "RIPTON", "SALISBURY", "SHOREHAM", "STARKSBORO", "WALTHAM", "WEYBRIDGE", "WHITING"]
+BENNINGTON = ["ARLINGTON", "BENNINGTON", "DORSET", "GLASTENBURY", "LANDGROVE", "MANCHESTER", "PERU", "POWNAL", "READSBORO", "RUPERT", "SANDGATE", "SEARSBURG", "SHAFTSBURY", "STAMFORD", "SUNDERLAND", "WINHALL", "WOODFORD"]
+CALEDONIA = ["BARNET", "BURKE", "DANVILLE", "GROTON", "HARDWICK", "KIRBY", "LYNDON", "NEWARK", "PEACHAM", "RYEGATE", "SAINT JOHNSBURY", "SHEFFIELD", "STANNARD", "SUTTON", "WALDEN", "WATERFORD", "WHEELOCK"]
+CHITTENDEN = ["BOLTON", "CHARLOTTE", "COLCHESTER", "ESSEX", "HINESBURG", "HUNTINGTON", "JERICHO", "MILTON", "RICHMOND", "SAINT GEORGE", "SHELBURNE", "UNDERHILL", "WESTFORD", "WILLISTON"]
+ESSEX = ["AVERILL", "BLOOMFIELD", "BRIGHTON", "BRUNSWICK", "CANAAN", "CONCORD", "EAST HAVEN", "FERDINAND", "GRANBY", "GUILDHALL", "LEMINGTON", "LEWIS", "LUNENBURG", "MAIDSTONE", "NORTON", "VICTORY"]
+FRANKLIN = ["BAKERSFIELD", "BERKSHIRE", "ENOSBURGH", "FAIRFAX", "FAIRFIELD", "FLETCHER", "FRANKLIN", "GEORGIA", "HIGHGATE", "MONTGOMERY", "RICHFORD", "SAINT ALBANS", "SHELDON", "SWANTON"]
+GRAND_ISLE = ["ALBURGH", "GRAND ISLE", "ISLE LA MOTTE", "NORTH HERO", "SOUTH HERO"]
+LAMOILLE = ["BELVIDERE", "CAMBRIDGE", "EDEN", "ELMORE", "HYDE PARK", "JOHNSON", "MORRISTOWN", "STOWE", "WATERVILLE", "WOLCOTT"]
+ORANGE = ["BRADFORD", "BRAINTREE", "BROOKFIELD", "CHELSEA", "CORINTH", "FAIRLEE", "NEWBURY", "ORANGE", "RANDOLPH", "STRAFFORD", "THETFORD", "TOPSHAM", "TUNBRIDGE", "VERSHIRE", "WASHINGTON", "WEST FAIRLEE", "WILLIAMSTOWN"]
+ORLEANS = ["ALBANY", "BARTON", "BROWNINGTON", "CHARLESTON", "COVENTRY", "CRAFTSBURY", "DERBY", "GLOVER", "GREENSBORO", "HOLLAND", "IRASBURG", "JAY", "LOWELL", "MORGAN", "NEWPORT", "TROY", "WESTFIELD", "WESTMORE"]
+RUTLAND = ["BENSON", "BRANDON", "CASTLETON", "CHITTENDEN", "CLARENDON", "DANBY", "FAIR HAVEN", "HUBBARDTON", "IRA", "KILLINGTON", "MENDON", "MIDDLETOWN SPRINGS", "MOUNT HOLLY", "MOUNT TABOR", "PAWLET", "PITTSFIELD", "PITTSFORD", "POULTNEY", "PROCTOR", "RUTLAND", "SHREWSBURY", "SUDBURY", "TINMOUTH", "WALLINGFORD", "WELLS", "WEST HAVEN", "WEST RUTLAND"]
+WASHINGTON = ["BARRE", "BERLIN", "CABOT", "CALAIS", "DUXBURY", "EAST MONTPELIER", "FAYSTON", "MARSHFIELD", "MIDDLESEX", "MORETOWN", "NORTHFIELD", "PLAINFIELD", "ROXBURY", "WAITSFIELD", "WARREN", "WATERBURY", "WOODBURY", "WORCESTER"]
+WINDHAM = ["ATHENS", "BRATTLEBORO", "BROOKLINE", "DOVER", "DUMMERSTON", "GRAFTON", "GUILFORD", "HALIFAX", "JAMAICA", "LONDONDERRY", "MARLBORO", "NEWFANE", "PUTNEY", "ROCKINGHAM", "SOMERSET", "STRATTON", "TOWNSHEND", "VERNON", "WARDSBORO", "WESTMINSTER", "WHITINGHAM", "WILMINGTON", "WINDHAM"]
+WINDSOR = ["ANDOVER", "BALTIMORE", "BARNARD", "BETHEL", "BRIDGEWATER", "CAVENDISH", "CHESTER", "HARTFORD", "HARTLAND", "LUDLOW", "NORWICH", "PLYMOUTH", 'POMFRET', 'READING', 'ROCHESTER', 'ROYALTON', 'SHARON', 'SPRINGFIELD', 'STOCKBRIDGE', 'WEATHERSFIELD', 'WEST WINDSOR', 'WESTON', 'WINDSOR', 'WOODSTOCK']
+counties_key = [ADDISON, BENNINGTON, CALEDONIA, CHITTENDEN, ESSEX, FRANKLIN, GRAND_ISLE, LAMOILLE, ORANGE, ORLEANS, RUTLAND, WASHINGTON, WINDHAM, WINDSOR]
+names_key = ["ADDISON", "BENNINGTON", "CALEDONIA", "CHITTENDEN", "ESSEX", "FRANKLIN", "GRAND_ISLE", "LAMOILLE", "ORANGE", "ORLEANS", "RUTLAND", "WASHINGTON", "WINDHAM", "WINDSOR"]
+
+
+for i in range(len(towns)):
+  for item in counties_key:
+    if towns["TOWN"].iloc[i] in item:
+            counties.append(names_key[(counties_key.index(item))])
+            not_stateless.append(towns["TOWN"].iloc[i])
+
+
+
+#looks good so far 
+print(towns)
+print(counties)
+print(not_stateless)
+
+#now seeing the outliers
+cities_to_investigate = set(towns["TOWN"].to_list()) - set(not_stateless)
+print(cities_to_investigate)
+
+# towns.head(5)
+    
+    
+
+
+
+
+```
