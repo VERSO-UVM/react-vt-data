@@ -256,46 +256,89 @@ towns = con.execute("SELECT DISTINCT TOWN FROM parcels_info").df()
 counties = []
 not_stateless = []
 #all counties 
-ADDISON = ["ADDISON", "BRIDPORT", "BRISTOL", "CORNWALL", "FERRISBURGH", "GOSHEN", "GRANVILLE", "HANCOCK", "LEICESTER", "LINCOLN", "MIDDLEBURY", "MONKTON", "NEW HAVEN", "ORWELL", "PANTON", "RIPTON", "SALISBURY", "SHOREHAM", "STARKSBORO", "WALTHAM", "WEYBRIDGE", "WHITING"]
+ADDISON = ["ADDISON", "BRIDPORT", "BRISTOL", "CORNWALL", "FERRISBURGH", "GOSHEN", "GRANVILLE", "HANCOCK", "LEICESTER", "LINCOLN", "MIDDLEBURY", "MONKTON", "NEW HAVEN", "ORWELL", "PANTON", "RIPTON", "SALISBURY", "SHOREHAM", "STARKSBORO", "WALTHAM", "WEYBRIDGE", "WHITING", "VERGENNES"]
 BENNINGTON = ["ARLINGTON", "BENNINGTON", "DORSET", "GLASTENBURY", "LANDGROVE", "MANCHESTER", "PERU", "POWNAL", "READSBORO", "RUPERT", "SANDGATE", "SEARSBURG", "SHAFTSBURY", "STAMFORD", "SUNDERLAND", "WINHALL", "WOODFORD"]
 CALEDONIA = ["BARNET", "BURKE", "DANVILLE", "GROTON", "HARDWICK", "KIRBY", "LYNDON", "NEWARK", "PEACHAM", "RYEGATE", "SAINT JOHNSBURY", "SHEFFIELD", "STANNARD", "SUTTON", "WALDEN", "WATERFORD", "WHEELOCK"]
-CHITTENDEN = ["BOLTON", "CHARLOTTE", "COLCHESTER", "ESSEX", "HINESBURG", "HUNTINGTON", "JERICHO", "MILTON", "RICHMOND", "SAINT GEORGE", "SHELBURNE", "UNDERHILL", "WESTFORD", "WILLISTON"]
+CHITTENDEN = ["BOLTON", "CHARLOTTE", "COLCHESTER", "ESSEX", "HINESBURG", "HUNTINGTON", "JERICHO", "MILTON", "RICHMOND", "SAINT GEORGE", "SHELBURNE", "UNDERHILL", "WESTFORD", "WILLISTON", "BURLINGTON"]
 ESSEX = ["AVERILL", "BLOOMFIELD", "BRIGHTON", "BRUNSWICK", "CANAAN", "CONCORD", "EAST HAVEN", "FERDINAND", "GRANBY", "GUILDHALL", "LEMINGTON", "LEWIS", "LUNENBURG", "MAIDSTONE", "NORTON", "VICTORY"]
-FRANKLIN = ["BAKERSFIELD", "BERKSHIRE", "ENOSBURGH", "FAIRFAX", "FAIRFIELD", "FLETCHER", "FRANKLIN", "GEORGIA", "HIGHGATE", "MONTGOMERY", "RICHFORD", "SAINT ALBANS", "SHELDON", "SWANTON"]
+FRANKLIN = ["BAKERSFIELD", "BERKSHIRE", "ENOSBURGH", "FAIRFAX", "FAIRFIELD", "FLETCHER", "FRANKLIN", "GEORGIA", "HIGHGATE", "MONTGOMERY", "RICHFORD", "SAINT ALBANS CITY", "SHELDON", "SWANTON"]
 GRAND_ISLE = ["ALBURGH", "GRAND ISLE", "ISLE LA MOTTE", "NORTH HERO", "SOUTH HERO"]
 LAMOILLE = ["BELVIDERE", "CAMBRIDGE", "EDEN", "ELMORE", "HYDE PARK", "JOHNSON", "MORRISTOWN", "STOWE", "WATERVILLE", "WOLCOTT"]
 ORANGE = ["BRADFORD", "BRAINTREE", "BROOKFIELD", "CHELSEA", "CORINTH", "FAIRLEE", "NEWBURY", "ORANGE", "RANDOLPH", "STRAFFORD", "THETFORD", "TOPSHAM", "TUNBRIDGE", "VERSHIRE", "WASHINGTON", "WEST FAIRLEE", "WILLIAMSTOWN"]
 ORLEANS = ["ALBANY", "BARTON", "BROWNINGTON", "CHARLESTON", "COVENTRY", "CRAFTSBURY", "DERBY", "GLOVER", "GREENSBORO", "HOLLAND", "IRASBURG", "JAY", "LOWELL", "MORGAN", "NEWPORT", "TROY", "WESTFIELD", "WESTMORE"]
-RUTLAND = ["BENSON", "BRANDON", "CASTLETON", "CHITTENDEN", "CLARENDON", "DANBY", "FAIR HAVEN", "HUBBARDTON", "IRA", "KILLINGTON", "MENDON", "MIDDLETOWN SPRINGS", "MOUNT HOLLY", "MOUNT TABOR", "PAWLET", "PITTSFIELD", "PITTSFORD", "POULTNEY", "PROCTOR", "RUTLAND", "SHREWSBURY", "SUDBURY", "TINMOUTH", "WALLINGFORD", "WELLS", "WEST HAVEN", "WEST RUTLAND"]
-WASHINGTON = ["BARRE", "BERLIN", "CABOT", "CALAIS", "DUXBURY", "EAST MONTPELIER", "FAYSTON", "MARSHFIELD", "MIDDLESEX", "MORETOWN", "NORTHFIELD", "PLAINFIELD", "ROXBURY", "WAITSFIELD", "WARREN", "WATERBURY", "WOODBURY", "WORCESTER"]
+RUTLAND = ["BENSON", "BRANDON", "CASTLETON", "CHITTENDEN", "CLARENDON", "DANBY", "FAIR HAVEN", "HUBBARDTON", "IRA", "KILLINGTON", "MENDON", "MIDDLETOWN SPRINGS", "MOUNT HOLLY", "MOUNT TABOR", "PAWLET", "PITTSFIELD", "PITTSFORD", "POULTNEY", "PROCTOR", "RUTLAND TOWN", "SHREWSBURY", "SUDBURY", "TINMOUTH", "WALLINGFORD", "WELLS", "WEST HAVEN", "WEST RUTLAND"]
+WASHINGTON = ["BARRE TOWN", "BERLIN", "CABOT", "CALAIS", "DUXBURY", "EAST MONTPELIER", "FAYSTON", "MARSHFIELD", "MIDDLESEX", "MORETOWN", "NORTHFIELD", "PLAINFIELD", "ROXBURY", "WAITSFIELD", "WARREN", "WATERBURY", "WOODBURY", "WORCESTER", "BARRE CITY", "MONTPELIER"]
 WINDHAM = ["ATHENS", "BRATTLEBORO", "BROOKLINE", "DOVER", "DUMMERSTON", "GRAFTON", "GUILFORD", "HALIFAX", "JAMAICA", "LONDONDERRY", "MARLBORO", "NEWFANE", "PUTNEY", "ROCKINGHAM", "SOMERSET", "STRATTON", "TOWNSHEND", "VERNON", "WARDSBORO", "WESTMINSTER", "WHITINGHAM", "WILMINGTON", "WINDHAM"]
 WINDSOR = ["ANDOVER", "BALTIMORE", "BARNARD", "BETHEL", "BRIDGEWATER", "CAVENDISH", "CHESTER", "HARTFORD", "HARTLAND", "LUDLOW", "NORWICH", "PLYMOUTH", 'POMFRET', 'READING', 'ROCHESTER', 'ROYALTON', 'SHARON', 'SPRINGFIELD', 'STOCKBRIDGE', 'WEATHERSFIELD', 'WEST WINDSOR', 'WESTON', 'WINDSOR', 'WOODSTOCK']
 counties_key = [ADDISON, BENNINGTON, CALEDONIA, CHITTENDEN, ESSEX, FRANKLIN, GRAND_ISLE, LAMOILLE, ORANGE, ORLEANS, RUTLAND, WASHINGTON, WINDHAM, WINDSOR]
 names_key = ["ADDISON", "BENNINGTON", "CALEDONIA", "CHITTENDEN", "ESSEX", "FRANKLIN", "GRAND_ISLE", "LAMOILLE", "ORANGE", "ORLEANS", "RUTLAND", "WASHINGTON", "WINDHAM", "WINDSOR"]
 
-
+#perfected the 7 without a county
 for i in range(len(towns)):
   for item in counties_key:
     if towns["TOWN"].iloc[i] in item:
             counties.append(names_key[(counties_key.index(item))])
             not_stateless.append(towns["TOWN"].iloc[i])
+#adding counties to towns
+towns["COUNTY"] = counties
+```
+now creating the by county and town availiability map 
+```{python}
+#town level group by
+con.execute("""
+SELECT c.COUNTY, i.TOWN,
+       COUNT(*) AS parcels,
+       SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) AS valued,
+       ROUND(100.0 * SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) / COUNT(*), 1) AS pct_valued
+FROM parcels_info i
+LEFT JOIN towns c USING (TOWN)
+GROUP BY c.COUNTY, i.TOWN""").df()
 
+#county_level
+con.execute("""SELECT c.COUNTY,
+       COUNT(*) AS parcels,
+       SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) AS valued,
+       ROUND(100.0 * SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) / COUNT(*), 1) AS pct_valued
+FROM parcels_info i
+LEFT JOIN towns c USING (TOWN)
+GROUP BY c.COUNTY ORDER BY pct_valued DESC""").df()
+```
+now that we have the parcels and parcels' percentages based on county and town, we must read in the vermont VCGI boundary dataset using the api option, and build the chloropleth from there
+```{python}
+import geopandas as gpd
 
+TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"  
+towns_gdf = gpd.read_file(TOWN_URL)
+print(towns_gdf.shape)
+print(towns_gdf.columns.tolist())
+print(towns_gdf.crs)
 
-#looks good so far 
-print(towns)
-print(counties)
-print(not_stateless)
+#just certifying that the town namese are both uppercase and devoic of whitespace
+towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
+```
+```{python}
+#now, merging the town level merge i made earlier with the town_gdf geojson file
+town_coverage = con.execute("""
+    SELECT c.COUNTY, i.TOWN,
+           COUNT(*) AS parcels,
+           SUM((i.REAL_FLV > 0)::INT) AS valued,
+           ROUND(100.0 * SUM((i.REAL_FLV > 0)::INT) / COUNT(*), 1) AS pct_valued
+    FROM parcels_info i
+    LEFT JOIN towns c USING (TOWN)
+    GROUP BY c.COUNTY, i.TOWN
+""").df()
 
-#now seeing the outliers
-cities_to_investigate = set(towns["TOWN"].to_list()) - set(not_stateless)
-print(cities_to_investigate)
+towns_map = towns_gdf.merge(town_coverage, on="TOWN", how="left")
 
-# towns.head(5)
-    
-    
+#making sure that all towns are matched
+print("unmatched towns:", towns_map["pct_valued"].isna().sum())
+print(towns_map[towns_map["pct_valued"].isna()]["TOWN"].tolist())
+```
 
-
-
-
+```{python}
+#diagnosing the problem at hadn
+parcels_towns = set(town_coverage["TOWN"])
+boundary_towns = set(towns_gdf["TOWN"])
+print("in boundary, not parcels:", sorted(boundary_towns - parcels_towns))
+print("in parcels, not boundary:", sorted(parcels_towns - boundary_towns))
 ```
