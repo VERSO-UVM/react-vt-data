@@ -476,6 +476,7 @@ export const ProfileModal: React.FC = () => {
                 radius="xl"
                 size="md"
                 color={COLORS.spruce}
+                onClick={handleSave}
                 style={{
                   fontFamily: FONTS.body,
                   fontWeight: 600,
