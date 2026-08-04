@@ -54,7 +54,8 @@ export default function MapLegend({
                   .split(/,\s*/)[1]
                   .split(/:\s*/)[1]
                   .replaceAll('"', ''),
-                // backgroundColor: 'blue', for some reason sometimes the above line does not work
+                //for some reason sometimes the above line does not work
+                // backgroundColor: 'blue',
                 width: '20px',
                 height: '10px',
               }}
