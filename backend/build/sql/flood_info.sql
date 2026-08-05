@@ -14,10 +14,6 @@ SELECT
     LEN_UNIT,
     VELOCITY,
     VEL_UNIT,
-    AR_REVERT,
-    AR_SUBTRV,
-    BFE_REVERT,
-    DEP_REVERT,
     DUAL_ZONE,
     SOURCE_CIT
 FROM raw;
