@@ -68,7 +68,6 @@ export default function MapLegend({
               ></span>
             </td>
           </tr>
-          // <li key={index}>{items_in_jsons}</li>
         ))}
       </table>
     </div>
