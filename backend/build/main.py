@@ -7,11 +7,11 @@
     Runs all the build scripts one after the other.
 """
 
-from build import cdc, wastewater, zoning
+from build import acs5, cdc, wastewater, zoning
 
 
 def main():
-    # acs5.main()
+    acs5.main()
     cdc.main()
     zoning.main()
     wastewater.main()
