@@ -143,7 +143,7 @@ const pcaURL = `${BASE_API_URL}/load/mapping/cdc/places/pca_summary`;
 function DataSetSelector({
   handleSelect,
 }: {
-  handleSelect: (value: string) => void;
+  handleSelect: (value: string | null) => void;
 }) {
   return (
     <Select
