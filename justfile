@@ -6,15 +6,18 @@ export DATA_DIR := justfile_directory() / "Data"
 # CLI Development  #
 ################
 
+# turns on non-containerized backend. note: turns off containers
 [working-directory("backend")]
-local-api:
+local-api: down
     ALLOW_DEV_CORS=1 uv run uvicorn api.main:app --reload --port 6767
 
+# turns on non-container frontend. note: turns off containers
 [working-directory("frontend")]
-local-frontend:
+local-frontend: down
     NEXT_PUBLIC_API_URL=http://localhost:6767/api npm run dev
 
-local-dev:
+# turns on non-container full apps, interleaved in terminal. Note: turns off containers
+local-dev: down
     uvx honcho start
 
 ########################################################
