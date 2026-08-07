@@ -19,13 +19,13 @@ The ACS replaced the decennial Census long-form starting with the 2010 cycle. Be
 
 ## Historical Coverage Reference
 
-| Period       | Source                          | Resolution  | Town-level? |
-|--------------|---------------------------------|-------------|-------------|
-| 2009–2024    | ACS 5-year estimates            | Annual      | Yes         |
-| 2005–2008    | ACS 1-year estimates            | Annual      | No (≥65k pop only) |
+| Period           | Source                        | Resolution  | Town-level?             |
+| ---------------- | ----------------------------- | ----------- | ----------------------- |
+| 2009–2024        | ACS 5-year estimates          | Annual      | Yes                     |
+| 2005–2008        | ACS 1-year estimates          | Annual      | No (≥65k pop only)      |
 | 2000, 2010, 2020 | Decennial Census (short form) | Every 10 yr | Yes (limited variables) |
-| 1970–2000    | Decennial Census long-form      | Every 10 yr | Partial     |
-| Pre-1970     | NHGIS / IPUMS summary files     | Every 10 yr | Very sparse |
+| 1970–2000        | Decennial Census long-form    | Every 10 yr | Partial                 |
+| Pre-1970         | NHGIS / IPUMS summary files   | Every 10 yr | Very sparse             |
 
 ## Realistic Path for Pre-2009 Historical Data
 
