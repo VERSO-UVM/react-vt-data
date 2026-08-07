@@ -29,7 +29,12 @@ import {
 
 import { ArrowLeftIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import * as motion from 'motion/react-client';
-import { DATA_SOURCES } from './source_description';
+import {
+  Category,
+  Dataset,
+  DATA_SOURCES,
+  Variable,
+} from './source_description';
 
 import { COLORS, FONTS } from '@/app/theme';
 
