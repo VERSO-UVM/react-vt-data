@@ -20,7 +20,7 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
 Output: vt_acs5_b_economic_tidy.parquet
 """
 
-from data_collection.base import GEOS, YEARS, VarGroup, run_scrape
+from data_collection.base import YEARS, VarGroup, run_scrape
 
 SL = "Labor Force"
 SI = "Income"

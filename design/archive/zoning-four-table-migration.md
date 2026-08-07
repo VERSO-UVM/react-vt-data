@@ -7,12 +7,12 @@ split into four tables instead of one.
 
 ## The tables (keyed on `OBJECT_ID`)
 
-| table | rows | contents |
-|---|---|---|
-| `info` | 1739 | identity + summary attrs + `Acres`, `District_Type` pre-cleaned |
-| `geom` | 1739 | `OBJECT_ID` + geometry (GeoParquet; loads back as native `GEOMETRY`) |
-| `rules` | 74536 | long format: `OBJECT_ID, use_type, rule, val` (no consumer yet) |
-| `colors` | 4 | `district_type -> hex_color, rgba` (rgba is a JSON string `[r,g,b,a]`) |
+| table    | rows  | contents                                                               |
+| -------- | ----- | ---------------------------------------------------------------------- |
+| `info`   | 1739  | identity + summary attrs + `Acres`, `District_Type` pre-cleaned        |
+| `geom`   | 1739  | `OBJECT_ID` + geometry (GeoParquet; loads back as native `GEOMETRY`)   |
+| `rules`  | 74536 | long format: `OBJECT_ID, use_type, rule, val` (no consumer yet)        |
+| `colors` | 4     | `district_type -> hex_color, rgba` (rgba is a JSON string `[r,g,b,a]`) |
 
 ## The access pattern: IDs first, geometry last
 
@@ -30,7 +30,7 @@ step (`geojson()`), never a default.
 
 - **Access:** read the `_Processed` parquet into an **in-memory DuckDB at API
   startup** (parquet is the single source of truth; no `.duckdb` artifact to keep
-  in sync). This module is the forward home for *all* dataset access as sources
+  in sync). This module is the forward home for _all_ dataset access as sources
   migrate to parquet — `vt_data.duckdb`/`db.py` gets strangled later.
 - **Contract:** alias columns back to the frontend's names **in the serving
   query** (`District_Type AS "District Type"`, `Municipal_Name AS Jurisdiction`,
@@ -101,6 +101,7 @@ DB = _build()
 ```
 
 Notes:
+
 - `geom` loads back as native `GEOMETRY` (GeoParquet metadata + spatial loaded),
   so **no `ST_GeomFromWKB`** is needed — use `g.geom` directly in spatial funcs.
 - Single global connection, matching the `db.py` precedent. Routes are `async`
@@ -341,19 +342,20 @@ def _load_zoning():
 
 ## Frontend contract (must stay satisfied — do not change frontend)
 
-| consumer | expects |
-|---|---|
-| `mapping/index.tsx` | `properties.rgba_color` (array), `properties.tooltip` (`{__title__, District, Type, Acreage}`) |
-| `mapping/[slug]/page_content.tsx` | GeoJSON props `"District Type"`, `"Acres"` |
-| `Charts/configs/ChartDefs.tsx` (acreage) | `data`: `"District Type"`, `"Acres"`, `hex_color`; `tableData`: `County`, `"Jurisdiction District Name"`, `"District Type"`, `"Acres"`, `hex_color` |
-| `FilterUI/useApplyFilters.ts` (`buildFilters`) | sends filter keys `County`, `RPC`, `Jurisdiction` |
-| `FilterUI/GetFilterTreeFromAPI.tsx` | `{tree, labels}` from `/zoning/filters` |
+| consumer                                       | expects                                                                                                                                             |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mapping/index.tsx`                            | `properties.rgba_color` (array), `properties.tooltip` (`{__title__, District, Type, Acreage}`)                                                      |
+| `mapping/[slug]/page_content.tsx`              | GeoJSON props `"District Type"`, `"Acres"`                                                                                                          |
+| `Charts/configs/ChartDefs.tsx` (acreage)       | `data`: `"District Type"`, `"Acres"`, `hex_color`; `tableData`: `County`, `"Jurisdiction District Name"`, `"District Type"`, `"Acres"`, `hex_color` |
+| `FilterUI/useApplyFilters.ts` (`buildFilters`) | sends filter keys `County`, `RPC`, `Jurisdiction`                                                                                                   |
+| `FilterUI/GetFilterTreeFromAPI.tsx`            | `{tree, labels}` from `/zoning/filters`                                                                                                             |
 
 Name mapping reference (storage -> frontend):
 `Municipal_Name -> Jurisdiction`, `District_Name -> "District Name"`,
 `District_Type -> "District Type"`, `Municipal_Name + " " + District_Name -> "Jurisdiction District Name"`.
 
 Response shapes (unchanged from current):
+
 - **GET** `/load/mapping/zoning` -> raw `FeatureCollection`.
 - **POST** `/load/mapping/zoning` (default) -> `APIResponse{ data: FeatureCollection }`.
 - **POST** `format=aggregated_acres` -> `APIResponse{ data: [...], tableData: [...] }`.
@@ -385,4 +387,7 @@ you want the hard 400 back, raise inside `_attr_where` when `col is None`.
 - [ ] `POST /load/mapping/zoning` `{}` -> map renders; `{filters:{Jurisdiction:["Rockingham"]}}` -> filtered.
 - [ ] `POST /load/mapping/zoning` `{format:"aggregated_acres"}` -> acreage chart + detail table.
 - [ ] `conda run -n leahy_data pytest backend/tests/` green (esp. `test_export_route.py`).
+
+```
+
 ```

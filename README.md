@@ -19,7 +19,7 @@ cd vermont-livability
 
 3. **Install** python dependencies:
    - First, set up (uv)[https://docs.astral.sh/uv/] if you don't already have it.
-   - Then run `uv sync` from the backend to make sure everything will work for you. This is strictly not necessary but will help identify issues early. 
+   - Then run `uv sync` from the backend to make sure everything will work for you. This is strictly not necessary but will help identify issues early.
 
    ```sh
    cd backend
@@ -33,7 +33,7 @@ cd vermont-livability
    uv run uvicorn api.main:app --reload --port 6767
    ```
 
-   - If you need to add any python packages later, use `uv add` from the `backend` directory.  
+   - If you need to add any python packages later, use `uv add` from the `backend` directory.
 
 4. **Install** backend react dependencies:
    - First, set up [npm](https://docs.npmjs.com/cli/v6/commands/npm)
@@ -43,6 +43,15 @@ cd vermont-livability
    cd frontend
    npm install
    ```
+
+5. **Install** the git pre-commit hooks (from the project root):
+
+   ```sh
+   uv tool install pre-commit
+   pre-commit install
+   ```
+
+   - This makes `ruff format` (python) and `prettier` (typescript) run automatically on the files you commit. The same checks run in CI on every pull request, so installing the hooks saves you a failed build later.
 
 ## Running the website locally
 
@@ -56,6 +65,7 @@ cd vermont-livability
 2. Setup your build to access the local API by adding `NEXT_PUBLIC_API_URL=http://localhost:6767` in `frontend.env.local`
 
 3. **Run** the website from **a different terminal instance** (from the project root):
+
    ```sh
    cd frontend
    npm run dev
@@ -69,7 +79,7 @@ cd vermont-livability
 
 All development must:
 
-- Use the `prettier` formatter and `eslint` linter for reliable diffs in typescript, and `ruff format` in python.
+- Use the `prettier` formatter and `eslint` linter for reliable diffs in typescript, and `ruff format` in python. Formatting is applied automatically at commit time if you've run `pre-commit install` (see Installation & Setup), and enforced in CI by the Format Check workflow.
 
 All development should:
 
