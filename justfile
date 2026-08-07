@@ -14,9 +14,9 @@ local-api: down
 # turns on non-container frontend. note: turns off containers
 [working-directory("frontend")]
 local-frontend: down
-    NEXT_PUBLIC_API_URL=http://localhost:6767/api npm run dev
+    NEXT_PUBLIC_API_URL=http://localhost:6767/api npm run dev -- --port 3000
 
-# turns on non-container full apps, interleaved in terminal. Note: turns off containers
+# turns on non-container full apps, interleaved in terminal (from Procfile). Note: turns off containers
 local-dev: down
     uvx honcho start
 
@@ -46,7 +46,9 @@ reset-pod:
 #########
 
 # Run and build both containers as dev
-dev: dev-api dev-frontend
+dev: down dev-api dev-frontend
+    @echo "frontend hosted @ http://localhost:3000"
+    @echo "api hosted @ http://localhost:3000/api/docs"
 
 # just run containers (if already built) as dev
 dev-run: run-api run-frontend
