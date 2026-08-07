@@ -6,8 +6,6 @@ Use query_timeseries(table_name, filters) to filter any registered table.
 
 import logging
 
-from app_utils.db import DB
-
 logger = logging.getLogger(__name__)
 
 # Allowed filter columns per table (whitelist guards against injection)
@@ -76,6 +74,7 @@ TIMESERIES_FILTER_COLS = {
 
 
 def query_timeseries(table_name: str, filters: dict | None = None):
+    pass
     if table_name not in _VALID_COLS:
         raise KeyError(f"No timeseries table registered under '{table_name}'")
 

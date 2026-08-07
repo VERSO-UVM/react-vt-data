@@ -10,10 +10,10 @@
 from pathlib import Path
 
 import pandas as pd
+from app_utils.sql_render import render_sql
 from sklearn.decomposition import PCA
 
 from build import BACKEND, CON, SQL_DIR, bin_measures, data_dir
-from sql_render import render_sql
 
 proc_dir = BACKEND / "Data" / "_Processed" / "cdc"
 TABLES = [

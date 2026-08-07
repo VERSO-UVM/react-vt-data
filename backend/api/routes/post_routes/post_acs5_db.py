@@ -4,7 +4,6 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import DPSeriesRequest, FilterRequest, make_response
-from app_utils.db import DB
 
 # TODO: Simplify / Refactor this script using the new query folder functions
 from query.acs5 import (
@@ -109,6 +108,7 @@ async def tidy_snapshot(request: FilterRequest):
 @router.get("/load/acs5-db/dp-combined/tree")
 async def dp_combined_tree():
     """Return the global set of distinct cascade options across all DP tables."""
+    pass
     rows = DB.execute(
         """--sql
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
@@ -124,6 +124,7 @@ async def dp_combined_series(request: DPSeriesRequest):
     """Return the annual time-series for a single
     (location, table, Category, Subcategory, Variable, Measure) selection.
     """
+    pass
     rows = DB.execute(
         """--sql
         SELECT CAST(year AS INTEGER) AS year,

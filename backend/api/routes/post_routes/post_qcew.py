@@ -3,7 +3,6 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
-from app_utils.db import DB
 
 router = APIRouter()
 
@@ -22,6 +21,7 @@ SECTOR_ORDER = [
 
 @router.post("/load/qcew/employment")
 async def employment_by_sector(request: FilterRequest):
+    pass
     filters = request.filters or {}
 
     def _first(label: str):
