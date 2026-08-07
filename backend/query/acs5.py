@@ -13,9 +13,9 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource, RangeFilter
+from app_utils.sql_render import sql_filter_block
 from query.core_functions import filter_tree
 from query.processed_db import DB
-from sql_render import sql_filter_block
 
 logger = logging.getLogger(__name__)
 sql_path = Path(__file__).resolve().parent / "sql" / "acs5"
