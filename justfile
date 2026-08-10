@@ -103,9 +103,8 @@ logs:
 
 # kill the localhost app and everything in it
 down:
-    odman pod rm -f app
+    podman pod rm -f app
 
 # see what containers are running
 see-running:
     podman ps
-p
