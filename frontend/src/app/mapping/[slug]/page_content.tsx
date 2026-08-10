@@ -19,19 +19,7 @@ import FilterContainer from '@/components/FilterUI/Filter_wrap';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 
-//testing my legend here
 import MapLegend from '@/components/Legend';
-//end test code
-
-const SOIL_RPCS = [
-  { value: 'ACRPC', label: 'Addison County (ACRPC)' },
-  { value: 'BCRC', label: 'Bennington County (BCRC)' },
-  { value: 'CCRPC', label: 'Chittenden County (CCRPC)' },
-  { value: 'CVRPC', label: 'Central Vermont (CVRPC)' },
-  { value: 'LCPC', label: 'Lamoille County (LCPC)' },
-  { value: 'MARC', label: 'Mount Ascutney (MARC)' },
-  { value: 'NWRPC', label: 'Northwest (NWRPC)' },
-];
 
 // NOTE: zoning is NOT here — it has its own route at /mapping/zoning, which
 // takes precedence over this dynamic segment.
@@ -75,7 +63,6 @@ export default function MappingContent() {
   const slug = params?.slug as string | undefined;
 
   const [data, setData] = useState<FeatureCollection | null>(null);
-  const [rpc, setRpc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCountyLines, setShowCountyLines] = useState(true);
 
@@ -86,7 +73,6 @@ export default function MappingContent() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset map state on navigation to another slug
     setData(null);
-    setRpc(null);
   }, [slug]);
 
   useEffect(() => {
@@ -163,12 +149,7 @@ export default function MappingContent() {
           </Stack>
 
           {/* this is the right spot for a legend I think (underneath the filters*/}
-          <MapLegend
-            legend_header={'null'}
-            hex_color={'null'}
-            rgba={'[0, 0, 0, 0]'}
-            test={legendData}
-          ></MapLegend>
+          <MapLegend data={legendData}></MapLegend>
         </Paper>
 
         {/* Map */}
