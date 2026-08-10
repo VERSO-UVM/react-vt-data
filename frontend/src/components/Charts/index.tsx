@@ -30,7 +30,7 @@ export {
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 import {
   Badge,
   Card,
@@ -306,7 +306,7 @@ interface ChartStackProps<TData extends DataRow> {
   charts: ChartItem<TData>[];
   action?: 'add' | 'remove' | 'toggle';
   userInterests?: string[];
-  defIds?: string[];
+  defIds?: (string | undefined)[];
   view?: 'gallery' | 'report';
   onToggle?: (defId: string) => void;
   isIncludedFn?: (defId: string) => boolean;

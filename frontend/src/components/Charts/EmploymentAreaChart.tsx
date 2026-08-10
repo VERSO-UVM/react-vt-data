@@ -168,7 +168,7 @@ export const EmploymentAreaChart = ({
             />
             {!isGallery && (
               <Tooltip
-                formatter={(val: any, name: string) => [tooltipFmt(val), name]}
+                formatter={(val, name) => [tooltipFmt(val), name]}
                 labelFormatter={(label) => `Quarter: ${label}`}
               />
             )}
@@ -264,7 +264,7 @@ export const EmploymentAreaChart = ({
               }}
             />
             <Tooltip
-              formatter={(val: any, name: string) => [tooltipFmt(val), name]}
+              formatter={(val, name) => [tooltipFmt(val), name]}
               labelFormatter={(label) => `Quarter: ${label}`}
             />
             <Line

@@ -1,4 +1,4 @@
-import { FONT_MONO } from './theme';
+import { COLORS, FONTS } from '@/app/theme';
 import { Text } from '@mantine/core';
 
 export function FieldLabel({
@@ -11,7 +11,7 @@ export function FieldLabel({
   return (
     <Text
       style={{
-        fontFamily: FONT_MONO,
+        fontFamily: FONTS.mono,
         fontSize: small ? 10 : 11,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',

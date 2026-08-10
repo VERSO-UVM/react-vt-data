@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Button,
   Divider,
+  Paper,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -25,6 +26,7 @@ import * as motion from 'motion/react-client';
 import county_town_names from '@/data/county_town_names.json';
 import { IconMapPin, IconTags, IconCalendarStats } from '@tabler/icons-react';
 import { UserCircleIcon } from '@phosphor-icons/react';
+import { COLORS, FONTS } from '@/app/theme';
 
 type CountyKey = keyof typeof county_town_names;
 
@@ -255,44 +257,85 @@ export const ProfileModal: React.FC = () => {
         opened={opened}
         onClose={closeProfileModal}
         title="Profile"
-        radius="lg"
+        radius="xl"
         centered
         size={900}
         shadow="xl"
         overlayProps={{
           backgroundOpacity: 0.55,
-          blur: 3,
+          blur: 4,
         }}
         styles={{
-          title: { fontWeight: 700, fontSize: '1.15rem' },
-          body: { overflowX: 'hidden', maxHeight: 450 },
+          content: {
+            borderRadius: 20,
+          },
+          header: {
+            paddingBottom: 20,
+          },
+          title: {
+            fontFamily: FONTS.display,
+            fontSize: '2rem',
+            color: COLORS.ink,
+            fontWeight: 500,
+          },
+          body: {
+            fontFamily: FONTS.body,
+            maxHeight: 600,
+          },
         }}
       >
-        <Stack gap="lg">
+        <Stack gap="xl">
           {!profileSet && (
-            <Alert variant="light" color="blue" radius="md">
+            <Alert
+              variant="light"
+              color="blue"
+              radius="md"
+              styles={{
+                root: {
+                  fontFamily: FONTS.body,
+                },
+              }}
+            >
               Select a profile before beginning. Only your location is required;
               other fields are optional.
             </Alert>
           )}
 
           {/* Locations */}
-          <Box>
-            <Group gap={6} mb={2}>
-              <IconMapPin size={16} stroke={1.75} />
-              <Text size="sm" fw={600}>
+          <Box
+            p="lg"
+            style={{
+              borderRadius: 18,
+            }}
+          >
+            <Group gap={8} mb={4}>
+              <IconMapPin size={16} color={COLORS.spruce} />
+
+              <Text
+                tt="uppercase"
+                fw={700}
+                fz={11}
+                c={COLORS.slate}
+                style={{
+                  letterSpacing: 1.2,
+                  fontFamily: FONTS.body,
+                }}
+              >
                 Locations
               </Text>
             </Group>
-            <Text size="xs" c="dimmed" mb="sm">
-              Choose where you are and what you'd like to compare against.
+
+            <Text size="sm" c={COLORS.slate}>
+              Choose where you live and what to compare against.
             </Text>
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 2 }} spacing="md">
+
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
               <ProfileLocationSelect
                 title="My Location"
                 location={tempMyLocation}
                 setLocation={setTempMyLocation}
               />
+
               <ProfileLocationSelect
                 title="Comparison"
                 location={tempComparison}
@@ -302,45 +345,78 @@ export const ProfileModal: React.FC = () => {
             </SimpleGrid>
           </Box>
 
-          <Divider />
+          {/* Interests + Years */}
+          <Box
+            p="lg"
+            style={{
+              borderRadius: 18,
+            }}
+          >
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
+              <Box>
+                <Group gap={8} mb={4}>
+                  <IconTags size={17} color={COLORS.spruce} />
 
-          {/* Interests + Year range, side by side */}
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xl">
-            <Box>
-              <Group gap={6} mb={2}>
-                <IconTags size={16} stroke={1.75} />
-                <Text size="sm" fw={600}>
-                  Areas of Interest
-                </Text>
-              </Group>
-              <Text size="xs" c="dimmed" mb="sm">
-                Highlight charts relevant to your focus areas.
-              </Text>
-              <MultiSelect
-                data={[...INTEREST_OPTIONS]}
-                value={tempInterests}
-                onChange={setTempInterests}
-                placeholder="Any topic"
-                clearable
-                radius="md"
-              />
-            </Box>
+                  <Text
+                    fw={600}
+                    style={{
+                      fontFamily: FONTS.display,
+                      color: COLORS.spruce,
+                      fontSize: '1.05rem',
+                    }}
+                  >
+                    Areas of Interest
+                  </Text>
+                </Group>
 
-            <Box>
-              <Group gap={6} mb={2}>
-                <IconCalendarStats size={16} stroke={1.75} />
-                <Text size="sm" fw={600}>
-                  Years of Interest
+                <Text
+                  size="sm"
+                  c="dimmed"
+                  mb="lg"
+                  style={{ fontFamily: FONTS.body }}
+                >
+                  Highlight charts related to the topics you care about most.
                 </Text>
-              </Group>
-              <Text size="xs" c="dimmed" mb="md">
-                Restrict trends to{' '}
-                <Text span fw={600} c="blue">
-                  {tempYearRange[0]}–{tempYearRange[1]}
+
+                <MultiSelect
+                  data={INTEREST_OPTIONS}
+                  value={tempInterests}
+                  onChange={setTempInterests}
+                  placeholder="Any topic"
+                  clearable
+                  radius="md"
+                />
+              </Box>
+
+              <Box>
+                <Group gap={8} mb={4}>
+                  <IconCalendarStats size={17} color={COLORS.spruce} />
+
+                  <Text
+                    fw={600}
+                    style={{
+                      fontFamily: FONTS.display,
+                      color: COLORS.spruce,
+                      fontSize: '1.05rem',
+                    }}
+                  >
+                    Years of Interest
+                  </Text>
+                </Group>
+
+                <Text
+                  size="sm"
+                  c="dimmed"
+                  mb="xl"
+                  style={{ fontFamily: FONTS.body }}
+                >
+                  Display data from{' '}
+                  <Text span fw={700} c={COLORS.spruce}>
+                    {tempYearRange[0]}–{tempYearRange[1]}
+                  </Text>
+                  .
                 </Text>
-                .
-              </Text>
-              <Box px="xs" pt={6}>
+
                 <RangeSlider
                   min={YEAR_MIN_OVERALL}
                   max={YEAR_MAX_OVERALL}
@@ -350,22 +426,44 @@ export const ProfileModal: React.FC = () => {
                   onChange={setTempYearRange}
                   marks={YEAR_MARKS}
                   label={(v) => String(v)}
-                  labelTransitionProps={{
-                    transition: 'slide-up',
-                    duration: 150,
-                    timingFunction: 'linear',
-                  }}
-                  size="sm"
+                  color={COLORS.spruce}
                 />
               </Box>
-            </Box>
-          </SimpleGrid>
+            </SimpleGrid>
+          </Box>
 
-          <Group justify="flex-end" mt="xs">
-            <Button variant="default" onClick={closeProfileModal}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>Save Profile</Button>
+          <Group justify="space-between">
+            <Text size="xs" c="dimmed" style={{ fontFamily: FONTS.body }}>
+              Your profile personalizes charts and comparisons throughout the
+              platform.
+            </Text>
+
+            <Group>
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={closeProfileModal}
+                style={{
+                  fontFamily: FONTS.body,
+                }}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                radius="xl"
+                size="md"
+                color={COLORS.spruce}
+                onClick={handleSave}
+                style={{
+                  fontFamily: FONTS.body,
+                  fontWeight: 600,
+                  paddingInline: 26,
+                }}
+              >
+                Save Profile
+              </Button>
+            </Group>
           </Group>
         </Stack>
       </Modal>

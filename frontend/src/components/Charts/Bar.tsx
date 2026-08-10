@@ -156,6 +156,7 @@ interface CompareDiffChartItem extends ChartItem<DataRow> {
     fixedYear?: number;
     percentFormat?: boolean;
     includeCategories?: string[];
+    unit?: string;
   };
 }
 
@@ -353,10 +354,10 @@ const VAL_ORDER = ['Allowed', 'May be Allowed', 'Prohibited', 'Not Mentioned'];
 
 const cleanUseType = (useType: string) => useType.replace(/_/g, ' ');
 
-const ZoningAllowanceStackedBarChart = <TData,>({
+const ZoningAllowanceStackedBarChart = ({
   chart,
 }: {
-  chart: CompareDiffChartItem<TData>;
+  chart: CompareDiffChartItem;
 }) => {
   // const isPdfMode = usePdfMode();
   // if (isPdfMode) return <ZoningAllowanceStackedBarChartSVG chart={chart} />;

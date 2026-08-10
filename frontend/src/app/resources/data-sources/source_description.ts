@@ -13,13 +13,13 @@ import {
 // Types
 // -----------------------------------------------------------------------------
 
-type Variable = {
+export type Variable = {
   name: string;
   description: string;
   key?: boolean;
 };
 
-type Dataset = {
+export type Dataset = {
   name: string;
   summary: string;
   source: string;
@@ -29,7 +29,7 @@ type Dataset = {
   href?: string;
 };
 
-type Category = {
+export type Category = {
   name: string;
   summary: string;
   icon: Icon;
