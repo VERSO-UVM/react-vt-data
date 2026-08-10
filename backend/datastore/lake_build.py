@@ -66,9 +66,10 @@ def insert_year(name: str, df: pd.DataFrame, year: int):
       the new rows are appended.
     """
 
+    # For static datasets
     if "year" not in list(map(str.lower, df.columns)):
         raise ValueError(
-            f"Cannot upsert by year: DataFrame for {name!r} "
+            f"Cannot insert that year: DataFrame for {name!r} "
             "does not contain a 'year' column."
         )
 
@@ -76,10 +77,11 @@ def insert_year(name: str, df: pd.DataFrame, year: int):
         df = df.copy()
         df["geometry"] = df.geometry.to_wkb()
 
+    # Temporary table for changing
     con.register("tmp_df", df)
 
     try:
-        # Check whether the destination table already exists.
+        # Check whether the table already exists.
         table_exists = (
             con.execute(
                 """--sql
@@ -117,6 +119,9 @@ def insert_year(name: str, df: pd.DataFrame, year: int):
             SELECT * FROM tmp_df 
             """
         )
+
+    except Exception as e:
+        print(e)
 
     finally:
         con.unregister("tmp_df")

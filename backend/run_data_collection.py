@@ -27,7 +27,8 @@ from data_collection import (
 from datastore.lake_build import insert_year, replace_table
 
 # Collection scripts to run.
-# You can comment out any ones you don't want to run below
+
+# Datasets WITH year columns (longitudinal)
 YEARLY_SCRAPERS = [
     acs5,
     demographics,
@@ -37,6 +38,7 @@ YEARLY_SCRAPERS = [
     qcew,
 ]
 
+# Datasets WITHOUT year columns (static)
 STATIC_SCRAPERS = [
     cdc,
     flood,
@@ -63,9 +65,10 @@ def run_scraper(scraper, yearly=False, year=None):
         for table_name, df in outputs.items():
             full_name = f"RAW.{table_name}"
             print(f"Loading {full_name}")
-
+            # If the dataset is longitudinal, replace or append that year's data
             if yearly:
                 insert_year(full_name, df, year)
+            # If a static dataset, replace the whole table
             else:
                 replace_table(full_name, df)
 
