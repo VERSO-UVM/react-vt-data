@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { Table } from '@mantine/core';
 
 interface LegendTable {
   legend_header: string;
@@ -31,27 +32,27 @@ export default function MapLegend({
   return (
     <div>
       <h2>Legend Table</h2>
-      <table>
-        <tr>
+      <Table>
+        <Table.Tr>
           {' '}
-          <th style={{ paddingRight: '15px' }}>
+          <Table.Th style={{ paddingRight: '15px' }}>
             {test_brackets[0]
               ?.split(/:\s*/)[0]
               ?.replaceAll('\"', '')
               ?.replaceAll('\{', '')}{' '}
-          </th>
-          <th>Color</th>
-        </tr>
+          </Table.Th>
+          <Table.Th>Color</Table.Th>
+        </Table.Tr>
 
         {test_brackets.map((items_in_jsons, index) => (
-          <tr key={index}>
-            <td style={{ paddingRight: '15px' }}>
+          <Table.Tr key={index}>
+            <Table.Td style={{ paddingRight: '15px' }}>
               {items_in_jsons
                 ?.split(/,\s*/)[0]
                 ?.split(/:\s*/)[1]
                 ?.replaceAll('"', '')}
-            </td>
-            <td>
+            </Table.Td>
+            <Table.Td>
               <span
                 style={{
                   display: 'inline-block',
@@ -66,10 +67,10 @@ export default function MapLegend({
                   height: '10px',
                 }}
               ></span>
-            </td>
-          </tr>
+            </Table.Td>
+          </Table.Tr>
         ))}
-      </table>
+      </Table>
     </div>
   );
 }
