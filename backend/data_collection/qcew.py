@@ -86,7 +86,7 @@ SECTOR_ORDER = [
 ]
 
 BASE_URL = "https://data.bls.gov/cew/data/api/{year}/{q}/area/{fips}.csv"
-YEARS = list(range(2009, 2024))
+# YEARS = list(range(2009, 2024))
 QUARTERS = [1, 2, 3, 4]
 
 
@@ -122,73 +122,72 @@ def parse_empl(val: str) -> float:
 # ---------------------------------------------------------------------------
 
 
-def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
+def process_county(area_fips: str, county_name: str, year: int) -> pd.DataFrame:
     """Fetch all quarters for one county and return long-format DataFrame."""
     rows = []
-    for year in YEARS:
-        for quarter in QUARTERS:
-            df = fetch_quarter(year, quarter, area_fips)
-            if df is None:
+    for quarter in QUARTERS:
+        df = fetch_quarter(year, quarter, area_fips)
+        if df is None:
+            continue
+        time.sleep(0.05)
+
+        df.columns = df.columns.str.strip()
+        df["industry_code"] = df["industry_code"].str.strip()
+        df["agglvl_code"] = df["agglvl_code"].str.strip()
+        df["own_code"] = df["own_code"].str.strip()
+        # disclosure_code 'N' means suppressed — treat employment as NaN
+        if "disclosure_code" in df.columns:
+            suppressed = df["disclosure_code"].str.strip().isin(["N", "ND"])
+            for col in ["month1_emplvl", "month2_emplvl", "month3_emplvl"]:
+                df[col] = df[col].apply(parse_empl)
+                df.loc[suppressed, col] = float("nan")
+        else:
+            for col in ["month1_emplvl", "month2_emplvl", "month3_emplvl"]:
+                df[col] = df[col].apply(parse_empl)
+        df["employment"] = df[["month1_emplvl", "month2_emplvl", "month3_emplvl"]].mean(
+            axis=1
+        )
+
+        base = {
+            "County": county_name,
+            "year": year,
+            "quarter": quarter,
+            "quarter_label": f"{year}Q{quarter}",
+        }
+
+        # --- Total employment (agglvl=70, own=0, industry=10) ---
+        total_row = df[
+            (df["agglvl_code"] == "70")
+            & (df["own_code"] == "0")
+            & (df["industry_code"] == "10")
+        ]
+        if not total_row.empty:
+            rows.append(
+                {
+                    **base,
+                    "sector": "Total",
+                    "employment": total_row["employment"].iloc[0],
+                }
+            )
+
+        # --- Government: federal + state + local (agglvl=71, own=1/2/3, industry=10) ---
+        gov_rows = df[
+            (df["agglvl_code"] == "71")
+            & (df["own_code"].isin(["1", "2", "3"]))
+            & (df["industry_code"] == "10")
+        ]
+        if not gov_rows.empty:
+            gov_empl = gov_rows["employment"].sum()
+            rows.append({**base, "sector": "Government", "employment": gov_empl})
+
+        # --- Private sector NAICS sectors (agglvl=74, own=5) ---
+        private_rows = df[(df["agglvl_code"] == "74") & (df["own_code"] == "5")]
+        for _, row in private_rows.iterrows():
+            code = row["industry_code"]
+            sector = SECTOR_MAP.get(code)
+            if sector is None:
                 continue
-            time.sleep(0.05)
-
-            df.columns = df.columns.str.strip()
-            df["industry_code"] = df["industry_code"].str.strip()
-            df["agglvl_code"] = df["agglvl_code"].str.strip()
-            df["own_code"] = df["own_code"].str.strip()
-            # disclosure_code 'N' means suppressed — treat employment as NaN
-            if "disclosure_code" in df.columns:
-                suppressed = df["disclosure_code"].str.strip().isin(["N", "ND"])
-                for col in ["month1_emplvl", "month2_emplvl", "month3_emplvl"]:
-                    df[col] = df[col].apply(parse_empl)
-                    df.loc[suppressed, col] = float("nan")
-            else:
-                for col in ["month1_emplvl", "month2_emplvl", "month3_emplvl"]:
-                    df[col] = df[col].apply(parse_empl)
-            df["employment"] = df[
-                ["month1_emplvl", "month2_emplvl", "month3_emplvl"]
-            ].mean(axis=1)
-
-            base = {
-                "County": county_name,
-                "year": year,
-                "quarter": quarter,
-                "quarter_label": f"{year}Q{quarter}",
-            }
-
-            # --- Total employment (agglvl=70, own=0, industry=10) ---
-            total_row = df[
-                (df["agglvl_code"] == "70")
-                & (df["own_code"] == "0")
-                & (df["industry_code"] == "10")
-            ]
-            if not total_row.empty:
-                rows.append(
-                    {
-                        **base,
-                        "sector": "Total",
-                        "employment": total_row["employment"].iloc[0],
-                    }
-                )
-
-            # --- Government: federal + state + local (agglvl=71, own=1/2/3, industry=10) ---
-            gov_rows = df[
-                (df["agglvl_code"] == "71")
-                & (df["own_code"].isin(["1", "2", "3"]))
-                & (df["industry_code"] == "10")
-            ]
-            if not gov_rows.empty:
-                gov_empl = gov_rows["employment"].sum()
-                rows.append({**base, "sector": "Government", "employment": gov_empl})
-
-            # --- Private sector NAICS sectors (agglvl=74, own=5) ---
-            private_rows = df[(df["agglvl_code"] == "74") & (df["own_code"] == "5")]
-            for _, row in private_rows.iterrows():
-                code = row["industry_code"]
-                sector = SECTOR_MAP.get(code)
-                if sector is None:
-                    continue
-                rows.append({**base, "sector": sector, "employment": row["employment"]})
+            rows.append({**base, "sector": sector, "employment": row["employment"]})
 
     if not rows:
         return pd.DataFrame()
@@ -204,9 +203,9 @@ def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
     df_out.reset_index(drop=True, inplace=True)
 
     # 4-quarter moving average per sector; forward-fill to bridge suppression gaps
-    df_out["employment_4qma"] = df_out.groupby("sector")["employment"].transform(
-        lambda s: s.rolling(4, min_periods=1).mean().ffill().round(0)
-    )
+    df_out["employment_4qma"] = df_out.groupby(["County", "sector"])[
+        "employment"
+    ].transform(lambda s: s.rolling(4, min_periods=1).mean().ffill().round(0))
 
     return df_out
 
@@ -216,13 +215,13 @@ def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
-def run_qcew_scrape() -> None:
+def run_qcew_scrape(year: int) -> pd.DataFrame:
     STORAGE_PATH.mkdir(parents=True, exist_ok=True)
     all_frames = []
 
     for fips, name in VT_COUNTIES.items():
         print(f"\n=== {name} County ({fips}) ===")
-        df = process_county(fips, name)
+        df = process_county(fips, name, year)
         if not df.empty:
             all_frames.append(df)
             print(f"  {len(df):,} rows")
@@ -231,7 +230,7 @@ def run_qcew_scrape() -> None:
 
     if not all_frames:
         print("No data fetched.")
-        return
+        return pd.DataFrame()
 
     combined = pd.concat(all_frames, ignore_index=True)
     combined.sort_values(["County", "year", "quarter", "sector"], inplace=True)
@@ -242,8 +241,8 @@ def run_qcew_scrape() -> None:
     return combined
 
 
-def collect():
-    df = run_qcew_scrape()
+def collect(year: int = 2024):
+    df = run_qcew_scrape(year)
     return df
 
 

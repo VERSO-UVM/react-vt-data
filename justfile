@@ -100,9 +100,11 @@ check-frontend:
 
 # build and run the backend collection image
 [working-directory("backend")]
-get-data:
+build-collection:
     podman build -t localhost/vdc-collection -f ETL/dockerfile.collect .
-    podman run --rm -v ../Data:/data:z localhost/vdc-collection
+
+get-data year:
+    podman run --rm -v ../Data:/data:z localhost/vdc-collection {{year}}
 
 
 # build and run the backend cleaning image

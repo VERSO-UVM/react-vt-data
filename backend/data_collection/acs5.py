@@ -70,20 +70,19 @@ def fetch_table(year, table, for_clause, in_clause):
         return None
 
 
-def run_acs5_scrape(geos: list = GEOS, append: bool = False):
+def run_acs5_scrape(year: int = 2024, geos: list = GEOS, append: bool = False):
     # Collect raw frames per table
     all_frames = {table: [] for table in TABLES}
 
-    for year in YEARS:
-        print(f"\n=== {year} ===")
-        for geo_label, for_clause, in_clause in geos:
-            for table in TABLES:
-                print(f"  {table} / {geo_label}...")
-                df = fetch_table(year, table, for_clause, in_clause)
-                if df is not None:
-                    df["geo_type"] = geo_label
-                    all_frames[table].append(df)
-                time.sleep(0.1)
+    print(f"\n=== {year} ===")
+    for geo_label, for_clause, in_clause in geos:
+        for table in TABLES:
+            print(f"  {table} / {geo_label}...")
+            df = fetch_table(year, table, for_clause, in_clause)
+            if df is not None:
+                df["geo_type"] = geo_label
+                all_frames[table].append(df)
+            time.sleep(0.1)
 
     # Save wide + tidy per table
     results = {}
@@ -125,10 +124,8 @@ def run_acs5_scrape(geos: list = GEOS, append: bool = False):
 
         # Tidy: run per-year so column labels are year-accurate
         tidy_frames = []
-        for year in YEARS:
-            year_df = combined[combined["year"] == year]
-            if year_df.empty:
-                continue
+        year_df = combined[combined["year"] == year]
+        if not year_df.empty:
             try:
                 tidy_year = tidy_census(year_df, year=year, id_vars=ID_VARS)
                 tidy_year["table"] = table
@@ -174,15 +171,13 @@ def merge_tidy_tables():
     return
 
 
-def collect(
-    geos=GEOS,
-    append=False,
-):
+def collect(year: int = 2024, geos=GEOS, append=False):
     """
     Collect ACS profile tables and return tidy datasets.
     """
 
     tables = run_acs5_scrape(
+        year=year,
         geos=geos,
         append=append,
     )
