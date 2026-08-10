@@ -103,20 +103,6 @@ export default function MappingContent() {
   }, [slug, config?.initialURL]);
 
   useEffect(() => {
-    if (!rpc) return;
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
-    setLoading(true);
-    setData(null);
-
-    axios
-      .get(`${BASE_API_URL}/load/mapping/wastewater/soil_septic/${rpc}`)
-      .then((res) => setData(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [rpc]);
-
-  useEffect(() => {
     if (!slug || !config?.legendURL) return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
@@ -161,17 +147,6 @@ export default function MappingContent() {
                   }
                   label="Show Town Borders"
                 />
-
-                {slug === 'soil-suitability' && (
-                  <Select
-                    label="Regional Planning Commission"
-                    placeholder="Select RPC"
-                    data={SOIL_RPCS}
-                    value={rpc}
-                    onChange={setRpc}
-                    searchable
-                  />
-                )}
               </Stack>
             </Paper>
 
