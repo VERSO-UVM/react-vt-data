@@ -146,7 +146,7 @@ def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.Dat
 # ---------------------------------------------------------------------------
 
 
-def run_scrape(
+def run_acs_b_scrape(
     fetch_specs: dict[str, list[str]],
     var_groups: list[VarGroup],
     output_filename: str,
@@ -223,5 +223,7 @@ def run_scrape(
         except FileNotFoundError:
             print(f"No existing file at {out}; writing fresh.")
 
-    tidy.to_parquet(out, index=False)
-    print(f"\nDone. {len(tidy):,} rows -> {out}")
+    # tidy.to_parquet(out, index=False)
+    # print(f"\nDone. {len(tidy):,} rows -> {out}")
+
+    return tidy

@@ -12,7 +12,7 @@ Six categories matching the Annual Report:
 Output: vt_acs5_b_education_tidy.parquet
 """
 
-from data_collection.base import YEARS, VarGroup, run_scrape
+from data_collection.base import YEARS, VarGroup, run_acs_b_scrape
 
 TOTAL = "B15003_001E"
 S = "Educational Attainment"
@@ -37,7 +37,8 @@ fetch_specs = {
     "B15003": [TOTAL] + [f"B15003_{str(i).zfill(3)}E" for i in range(2, 26)],
 }
 
-if __name__ == "__main__":
+
+def collect():
     import argparse
 
     from data_collection.base import ALL_GEOS
@@ -58,7 +59,7 @@ if __name__ == "__main__":
     )
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    run_scrape(
+    df = run_acs_b_scrape(
         fetch_specs,
         var_groups,
         "vt_acs5_b_education_tidy.parquet",
@@ -66,3 +67,9 @@ if __name__ == "__main__":
         selected_geos,
         append=args.append,
     )
+
+    return df
+
+
+if __name__ == "__main__":
+    df = collect()

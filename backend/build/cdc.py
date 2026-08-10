@@ -12,8 +12,8 @@ from pathlib import Path
 import pandas as pd
 from sklearn.decomposition import PCA
 
+from app_utils.sql_render import render_sql
 from build import BACKEND, CON, SQL_DIR, bin_measures, data_dir
-from sql_render import render_sql
 
 proc_dir = BACKEND / "Data" / "_Processed" / "cdc"
 TABLES = [
@@ -56,7 +56,6 @@ def build_PCA_table(us_df: pd.DataFrame) -> pd.DataFrame:
     pv_vt["pca_score"] = scores[:, 0]
     pv_vt = pv_vt.reset_index()
     return pv_vt
-
 
 
 def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
