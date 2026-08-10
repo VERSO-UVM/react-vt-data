@@ -33,6 +33,8 @@ const SOIL_RPCS = [
   { value: 'NWRPC', label: 'Northwest (NWRPC)' },
 ];
 
+// NOTE: zoning is NOT here — it has its own route at /mapping/zoning, which
+// takes precedence over this dynamic segment.
 const MAP_CONFIG: Record<
   string,
   {
@@ -43,12 +45,6 @@ const MAP_CONFIG: Record<
     legendURL?: string;
   }
 > = {
-  zoning: {
-    title: 'Zoning',
-    initialURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=zoning_info`,
-    dataURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
-  },
   'flood-legal': {
     title: 'Flood Insurance',
     initialURL: `${BASE_API_URL}/load/mapping/flood_legal`,
@@ -151,7 +147,7 @@ export default function MappingContent() {
             <Box>
               <Title order={2}>{config?.title ?? slug}</Title>
               <Text size="sm" c="dimmed" mt={4}>
-                Explore Vermont zoning districts and planning information.
+                Explore Vermont planning and environmental data.
               </Text>
             </Box>
 

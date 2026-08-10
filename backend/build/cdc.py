@@ -58,6 +58,7 @@ def build_PCA_table(us_df: pd.DataFrame) -> pd.DataFrame:
     return pv_vt
 
 
+
 def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
     df = us_df.copy()
     df["natl_pct"] = df.groupby("Measure")["Data_Value"].rank(pct=True)
@@ -67,8 +68,9 @@ def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
 def build_places(name: str, path: Path, indicators: str) -> None:
     sql = render_sql(SQL_DIR / "cdc_places.sql", indicators=indicators, path=str(path))
     df = CON.execute(sql).df()
+    # Needed to get rid of df variable assignment to pass ruff linting check
     if name == "county":
-        pca_df = build_PCA_table(df)
+        build_PCA_table(df)
     pct_df = add_national_percentile(df)  # df here is still national
     df = df[df["StateAbbr"] == "VT"].copy()
     df, edge_df = bin_measures(df, variable_col="Measure", value_col="Data_Value")

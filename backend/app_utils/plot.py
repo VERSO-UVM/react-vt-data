@@ -8,7 +8,7 @@ Plotting Utility Functions
 import altair as alt
 import pandas as pd
 
-from app_utils.analysis import get_column_type, get_skew
+from app_utils.analysis import get_column_type
 
 
 def make_time_series_plot(

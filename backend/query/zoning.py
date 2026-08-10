@@ -14,7 +14,7 @@ import pandas as pd
 
 from api.models import FilterSource
 from query.processed_db import DB
-from sql_render import sql_filter_block
+from sql_render import render_sql, sql_filter_block
 
 logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql" / "zoning"
@@ -26,6 +26,20 @@ def get_zoning_geojson(sources: list[FilterSource]):
     if result is None:
         logger.error("geo query returned no rows for filters: %s", sources)
         raise ValueError(f"no results for filters: {sources}")
+    return result[0]
+
+
+def get_unzoned_geojson() -> str:
+    """GeoJSON (as a string) for the areas we have no zoning information about.
+
+    Unfiltered by design -- it is the grey backdrop under the zoning districts,
+    so it is the same for every filter selection.
+    """
+    sql = render_sql(sql_dir / "unzoned.sql")
+    result = DB.execute(sql).fetchone()
+    if result is None:
+        logger.error("unzoned query returned no rows")
+        raise ValueError("no results for unzoned query")
     return result[0]
 
 
