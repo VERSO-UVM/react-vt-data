@@ -9,8 +9,7 @@
     and populate tables into the DuckLake's RAW schema.
 """
 
-from datastore.lake_build import replace_table
-from ETL.data_collection import (
+from data_collection import (
     acs5,
     cdc,
     demographics,
@@ -23,21 +22,22 @@ from ETL.data_collection import (
     wastewater,
     zoning,
 )
+from datastore.lake_build import replace_table
 
-# Collection scripts to run. 
+# Collection scripts to run.
 # You can comment out any ones you don't want to run below
 DATA_CATEGORIES = [
-    # acs5,
+    acs5,
     cdc,
-    # demographics,
-    # economic,
-    # education,
-    # flood,
-    # historic_population,
-    # housing,
-    # qcew,
-    # wastewater,
-    # zoning,
+    demographics,
+    economic,
+    education,
+    flood,
+    historic_population,
+    housing,
+    qcew,
+    wastewater,
+    zoning,
 ]
 
 

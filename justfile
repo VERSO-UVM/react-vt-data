@@ -94,6 +94,23 @@ dev-frontend: build-pod build-frontend run-frontend
 check-frontend:
     npx tsc --noEmit    
 
+
+## ETL (Pipeline) Container
+################
+
+# build the backend collection image
+[working-directory("backend")]
+build-collection:
+    podman build -t localhost/vdc-collection -f ETL/Dockerfile .
+
+# run the backend collection container
+[working-directory("backend")]
+collect: build-collection
+    podman run --rm \
+        -v ../Data:/data:z \
+        localhost/vdc-collection
+
+
 #####################
 # Abstracted podman util #
 #####################

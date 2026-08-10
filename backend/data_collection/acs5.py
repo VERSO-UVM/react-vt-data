@@ -11,7 +11,6 @@ Pass --geos on the CLI to scrape only specific geographic levels.
 Use --append to merge new rows into existing files instead of overwriting.
 """
 
-import argparse
 import time
 
 import pandas as pd
@@ -20,7 +19,9 @@ import requests
 from app_utils.census import tidy_census
 from data_collection.base import ALL_GEOS
 
-API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
+API_KEY = (
+    "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"  # TODO: Get this as a .env variable!!!
+)
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5/profile"
 STATE_FIPS = "50"  # Vermont
 TABLES = {
@@ -69,7 +70,7 @@ def fetch_table(year, table, for_clause, in_clause):
         return None
 
 
-def scrape(geos: list = GEOS, append: bool = False):
+def run_acs5_scrape(geos: list = GEOS, append: bool = False):
     # Collect raw frames per table
     all_frames = {table: [] for table in TABLES}
 
@@ -85,6 +86,7 @@ def scrape(geos: list = GEOS, append: bool = False):
                 time.sleep(0.1)
 
     # Save wide + tidy per table
+    results = {}
     for table, frames in all_frames.items():
         if not frames:
             print(f"  No frames for {table}, skipping.")
@@ -102,7 +104,7 @@ def scrape(geos: list = GEOS, append: bool = False):
         combined.reset_index(drop=True, inplace=True)
 
         wide_parquet_path = f"{STORAGE_LOCATION}/{title}.parquet"
-        wide_csv_path = f"{STORAGE_LOCATION}/{title}.csv"
+        # wide_csv_path = f"{STORAGE_LOCATION}/{title}.csv"
 
         if append:
             new_names = set(combined["NAME"].unique())
@@ -117,9 +119,9 @@ def scrape(geos: list = GEOS, append: bool = False):
             except FileNotFoundError:
                 pass
 
-        combined.to_csv(wide_csv_path, index=False)
-        combined.to_parquet(wide_parquet_path, index=False)
-        print(f"Saved wide: {title} ({len(combined):,} rows)")
+        # combined.to_csv(wide_csv_path, index=False)
+        # combined.to_parquet(wide_parquet_path, index=False)
+        # print(f"Saved wide: {title} ({len(combined):,} rows)")
 
         # Tidy: run per-year so column labels are year-accurate
         tidy_frames = []
@@ -136,15 +138,21 @@ def scrape(geos: list = GEOS, append: bool = False):
 
         if tidy_frames:
             tidy = pd.concat(tidy_frames, ignore_index=True)
-            tidy_parquet_path = f"{STORAGE_LOCATION}/{title}_tidy.parquet"
-            tidy_csv_path = f"{STORAGE_LOCATION}/{title}_tidy.csv"
+
+            label = TABLES[table]
+
+            results[f"acs5_{label.lower()}"] = tidy
+            # tidy_parquet_path = f"{STORAGE_LOCATION}/{title}_tidy.parquet"
+            # tidy_csv_path = f"{STORAGE_LOCATION}/{title}_tidy.csv"
 
             # No separate append needed for tidy: it's derived from the
             # already-merged wide frame, so it naturally contains all geos.
 
-            tidy.to_csv(tidy_csv_path, index=False)
-            tidy.to_parquet(tidy_parquet_path, index=False)
-            print(f"Saved tidy: {title}_tidy ({len(tidy):,} rows)")
+            # tidy.to_csv(tidy_csv_path, index=False)
+            # tidy.to_parquet(tidy_parquet_path, index=False)
+            # print(f"Saved tidy: {title}_tidy ({len(tidy):,} rows)")
+
+    return results
 
 
 def merge_tidy_tables():
@@ -159,30 +167,28 @@ def merge_tidy_tables():
 
     if tidy_frames:
         combined = pd.concat(tidy_frames, ignore_index=True)
-        combined.to_parquet(
-            f"{STORAGE_LOCATION}/vt_acs5_combined_TIDY.parquet", index=False
-        )
-        print(f"Combined tidy saved: {len(combined):,} rows")
+        # combined.to_parquet(f"{STORAGE_LOCATION}/vt_acs5_combined_TIDY.parquet", index=False)
+        # print(f"Combined tidy saved: {len(combined):,} rows")
+        return combined
+
+    return
+
+
+def collect(
+    geos=GEOS,
+    append=False,
+):
+    """
+    Collect ACS profile tables and return tidy datasets.
+    """
+
+    tables = run_acs5_scrape(
+        geos=geos,
+        append=append,
+    )
+
+    return tables
 
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(
-        description="Scrape ACS DP02-DP05 profile tables for Vermont."
-    )
-    p.add_argument(
-        "--geos",
-        nargs="+",
-        choices=list(ALL_GEOS),
-        default=list(ALL_GEOS),
-        metavar="GEO",
-        help=f"Geographies to scrape (default: all). Choices: {list(ALL_GEOS)}",
-    )
-    p.add_argument(
-        "--append",
-        action="store_true",
-        help="Merge new rows into existing parquet instead of overwriting.",
-    )
-    args = p.parse_args()
-    selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    scrape(geos=selected_geos, append=args.append)
-    merge_tidy_tables()
+    df = collect()

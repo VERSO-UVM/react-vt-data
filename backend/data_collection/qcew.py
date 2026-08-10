@@ -216,7 +216,7 @@ def process_county(area_fips: str, county_name: str) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
-def run_scrape() -> None:
+def run_qcew_scrape() -> None:
     STORAGE_PATH.mkdir(parents=True, exist_ok=True)
     all_frames = []
 
@@ -237,9 +237,15 @@ def run_scrape() -> None:
     combined.sort_values(["County", "year", "quarter", "sector"], inplace=True)
     combined.reset_index(drop=True, inplace=True)
 
-    combined.to_parquet(OUTPUT_FILE, index=False)
-    print(f"\nDone. {len(combined):,} rows → {OUTPUT_FILE}")
+    # combined.to_parquet(OUTPUT_FILE, index=False)
+    # print(f"\nDone. {len(combined):,} rows → {OUTPUT_FILE}")
+    return combined
+
+
+def collect():
+    df = run_qcew_scrape()
+    return df
 
 
 if __name__ == "__main__":
-    run_scrape()
+    df = collect()

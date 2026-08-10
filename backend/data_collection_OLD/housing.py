@@ -15,7 +15,7 @@ Variables match Table 4 of the Annual Report:
 Output: vt_acs5_b_housing_tidy.parquet
 """
 
-from ETL.data_collection.base import YEARS, VarGroup, run_acs_b_scrape
+from data_collection_OLD.base import YEARS, VarGroup, run_scrape
 
 S = "Housing"
 
@@ -41,11 +41,10 @@ fetch_specs = {
     "B25077": ["B25077_001E"],
 }
 
-
-def collect():
+if __name__ == "__main__":
     import argparse
 
-    from ETL.data_collection.base import ALL_GEOS
+    from data_collection_OLD.base import ALL_GEOS
 
     p = argparse.ArgumentParser(description="Scrape ACS B-table housing data.")
     p.add_argument(
@@ -63,7 +62,7 @@ def collect():
     )
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    df = run_acs_b_scrape(
+    run_scrape(
         fetch_specs,
         var_groups,
         "vt_acs5_b_housing_tidy.parquet",
@@ -71,9 +70,3 @@ def collect():
         selected_geos,
         append=args.append,
     )
-
-    return df
-
-
-if __name__ == "__main__":
-    df = collect()

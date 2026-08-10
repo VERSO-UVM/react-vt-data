@@ -8,7 +8,7 @@ Fetch ACS 5-Year demographics data for Vermont:
 Output: vt_acs5_b_demographics_tidy.parquet
 """
 
-from data_collection.base import YEARS, VarGroup, run_scrape
+from data_collection.base import YEARS, VarGroup, run_acs_b_scrape
 
 # ---------------------------------------------------------------------------
 # Age band definitions: (label, male_suffix_range, female_suffix_range)
@@ -86,7 +86,8 @@ fetch_specs = {
     "B03003": ["B03003_001E", "B03003_003E"],
 }
 
-if __name__ == "__main__":
+
+def collect():
     import argparse
 
     from data_collection.base import ALL_GEOS
@@ -107,7 +108,7 @@ if __name__ == "__main__":
     )
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    run_scrape(
+    df = run_acs_b_scrape(
         fetch_specs,
         var_groups,
         "vt_acs5_b_demographics_tidy.parquet",
@@ -115,3 +116,9 @@ if __name__ == "__main__":
         selected_geos,
         append=args.append,
     )
+
+    return df
+
+
+if __name__ == "__main__":
+    df = collect()
