@@ -98,17 +98,18 @@ check-frontend:
 ## ETL (Pipeline) Container
 ################
 
-# build the backend collection image
+# build and run the backend collection image
 [working-directory("backend")]
-build-collection:
-    podman build -t localhost/vdc-collection -f ETL/Dockerfile .
+get-data:
+    podman build -t localhost/vdc-collection -f ETL/dockerfile.collect .
+    podman run --rm -v ../Data:/data:z localhost/vdc-collection
 
-# run the backend collection container
+
+# build and run the backend cleaning image
 [working-directory("backend")]
-collect: build-collection
-    podman run --rm \
-        -v ../Data:/data:z \
-        localhost/vdc-collection
+clean-data:
+    podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
+    podman run --rm -v ../Data:/data:z localhost/vdc-cleaning
 
 
 #####################
