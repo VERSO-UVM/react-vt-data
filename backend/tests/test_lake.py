@@ -77,11 +77,26 @@ def inspect_schema(schema: str) -> None:
                 print(f"Could not inspect years: {e}")
 
 
-def main() -> None:
-    print("=" * 80)
-    print("DUCKLAKE INSPECTION")
-    print("=" * 80)
+def query_lake_metadata(
+    table: str = "ducklake_snapshot",
+) -> None:
+    """Query and print a DuckLake metadata table."""
 
+    metadata_table = f"__ducklake_metadata_lake.{table}"
+
+    df = con.execute(
+        f"""
+        SELECT *
+        FROM {metadata_table}
+        """
+    ).df()
+
+    print(f"\n{metadata_table}")
+    print("=" * 80)
+    print(df.head(8))
+
+
+def main() -> None:
     # Show the databases/catalogs available to this connection.
     print("\nDatabases:")
     try:
@@ -93,9 +108,24 @@ def main() -> None:
     for schema in ("RAW", "CLEANED"):
         inspect_schema(schema)
 
-    print("\n" + "=" * 80)
-    print("DONE")
-    print("=" * 80)
+    query_lake_metadata("ducklake_snapshot")
+    print("+" * 40)
+    query_lake_metadata("ducklake_snapshot_changes")
+    print("+" * 40)
+    query_lake_metadata("ducklake_schema")
+    print("+" * 40)
+    query_lake_metadata("ducklake_table")
+    print("+" * 40)
+    query_lake_metadata("ducklake_column")
+    print("+" * 40)
+    query_lake_metadata("ducklake_table_stats")
+    print("+" * 40)
+    query_lake_metadata("ducklake_table_column_stats")
+    print("+" * 40)
+    query_lake_metadata("ducklake_data_file")
+    print("+" * 40)
+
+    print("DONE!")
 
 
 if __name__ == "__main__":

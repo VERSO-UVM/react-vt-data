@@ -1,4 +1,3 @@
-import datetime
 import os
 from pathlib import Path
 
@@ -42,18 +41,17 @@ con.execute("""--sql CREATE SCHEMA IF NOT EXISTS lake.RAW""")
 con.execute("""--sql CREATE SCHEMA IF NOT EXISTS lake.CLEANED""")
 
 
-def insert_year(
-    name: str, df: pd.DataFrame, year: int, ingestion_id: str, ingestion_time: datetime
-):
+def insert_year(name: str, df: pd.DataFrame, year: int):
     """
-    Append a year's data into a DuckLake table as a new, immutable batch.
+    Insert a year's data into a DuckLake table.
 
-    - If the table does not exist, it's created (with ingestion_id /
-      ingestion_time columns included in the schema).
-    - Every call is a pure append. Prior batches for the same year are
-      never deleted — each row is tagged with the ingestion_id and
-      ingestion_time of the run that produced it, so "current" data is
-      derived (e.g. max(ingestion_id) per year)
+    - If the table does not exist, it's created.
+
+    - If the table already exists and contains the specified year,
+      rows are deleted and replaced with the new data.
+
+    - If the table exists but does not contain the specified year,
+      the new rows are appended.
     """
 
     # For static datasets
@@ -67,41 +65,43 @@ def insert_year(
         df = df.copy()
         df["geometry"] = df.geometry.to_wkb()
 
-    # Stamp ingestion metadata if not already present
-    # (in case insert_year is ever called outside run_scraper)
-    df = df.copy()
-    df.setdefault("ingestion_id", ingestion_id)
-    df.setdefault("ingestion_time", ingestion_time)
-
+    # Temporary table for changing
     con.register("tmp_df", df)
 
     try:
+        # Check whether the table already exists.
         table_exists = (
             con.execute(
                 """--sql
-                SELECT COUNT(*)
-                FROM information_schema.tables
-                WHERE table_schema = 'lake'
-                AND table_name = ?
-                """,
+            SELECT COUNT(*) 
+            FROM information_schema.tables 
+            WHERE table_schema = 'lake' 
+            AND table_name = ? 
+            """,
                 [name],
             ).fetchone()[0]
             > 0
         )
 
         if not table_exists:
-            con.execute(
-                f"""--sql
-                CREATE TABLE lake.{name} AS
-                SELECT * FROM tmp_df WHERE 1=0
-                """
-            )
+            try:
+                con.execute(
+                    f"""--sql
+                    CREATE TABLE IF NOT EXISTS lake.{name} AS
+                    SELECT * FROM tmp_df WHERE 1=0
+                    """
+                )
+                con.execute(f"INSERT INTO lake.{name} SELECT * FROM tmp_df")
+            except duckdb.CatalogException:
+                pass
+            else:
+                return
 
-        # Always append — never delete existing rows for this year.
+        # Insert the newly collected data.
         con.execute(
             f"""--sql
-            INSERT INTO lake.{name}
-            SELECT * FROM tmp_df
+            INSERT INTO lake.{name} 
+            SELECT * FROM tmp_df 
             """
         )
 
