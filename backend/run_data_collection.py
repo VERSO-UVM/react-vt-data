@@ -3,6 +3,8 @@
     Ian Sargent
 **Created**:
     2026-07-10
+** Updated**:
+    2026-08-10
 **Description**:
     This is the master orchestrating data scraping script.
     Running this document will call each individual category scraper
@@ -10,6 +12,8 @@
 """
 
 import argparse
+import uuid
+from datetime import datetime, timezone
 
 from data_collection import (
     acs5,
@@ -26,29 +30,13 @@ from data_collection import (
 )
 from datastore.lake_build import insert_year, replace_table
 
-# Collection scripts to run.
-
 # Datasets WITH year columns (longitudinal)
-YEARLY_SCRAPERS = [
-    acs5,
-    demographics,
-    economic,
-    education,
-    housing,
-    qcew,
-]
-
+YEARLY_SCRAPERS = [acs5, demographics, economic, education, housing, qcew]
 # Datasets WITHOUT year columns (static)
-STATIC_SCRAPERS = [
-    cdc,
-    flood,
-    historic_population,
-    wastewater,
-    zoning,
-]
+STATIC_SCRAPERS = [cdc, flood, historic_population, wastewater, zoning]
 
 
-def run_scraper(scraper, yearly=False, year=None):
+def run_scraper(scraper, ingestion_id, ingestion_time, yearly=False, year=None):
     name = scraper.__name__.split(".")[-1]
 
     try:
@@ -65,6 +53,12 @@ def run_scraper(scraper, yearly=False, year=None):
         for table_name, df in outputs.items():
             full_name = f"RAW.{table_name}"
             print(f"Loading {full_name}")
+
+            # Add ingestion metadata (id and time)
+            df = df.copy()
+            df["ingestion_id"] = ingestion_id
+            df["ingestion_time"] = ingestion_time
+
             # If the dataset is longitudinal, replace or append that year's data
             if yearly:
                 insert_year(full_name, df, year)
@@ -75,10 +69,17 @@ def run_scraper(scraper, yearly=False, year=None):
         print(f"Completed {name}")
 
     except Exception as e:
-        print(f"Failed {name}: {e}")
+        print(f"Failed to write {name}: {e}")
+        raise
 
 
 def run_master_scrape(year: int):
+    # Update ingestion id and time for every run (id created with uuid package)
+    ingestion_id = str(uuid.uuid4())
+    ingestion_time = datetime.now(timezone.utc)
+
+    print(f"Ingestion #{ingestion_id} started at {ingestion_time.isoformat()}")
+
     for scraper in YEARLY_SCRAPERS:
         run_scraper(scraper, yearly=True, year=year)
 
@@ -87,6 +88,7 @@ def run_master_scrape(year: int):
 
 
 def main():
+    # Accepts the year argument from justfile for collection
     parser = argparse.ArgumentParser()
     parser.add_argument("year", type=int)
     args = parser.parse_args()

@@ -95,23 +95,41 @@ check-frontend:
     npx tsc --noEmit    
 
 
-## ETL (Pipeline) Container
+################
+# ETL (Pipeline) Container
 ################
 
-# build and run the backend collection image
+# --------- 1. Data Collection (E) ---------------------
+# build the backend COLLECTION image
 [working-directory("backend")]
 build-collection:
     podman build -t localhost/vdc-collection -f ETL/dockerfile.collect .
 
-get-data year:
-    podman run --rm -v ../Data:/data:z localhost/vdc-collection {{year}}
-
-
-# build and run the backend cleaning image
+# Get the data for a specified year
 [working-directory("backend")]
-clean-data:
+get-data year: build-collection
+    podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-collection {{year}}
+
+
+
+# --------- 2. Data Cleaning (T) ---------------------
+# build and run the backend CLEANING image
+[working-directory("backend")]
+transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
     podman run --rm -v ../Data:/data:z localhost/vdc-cleaning
+
+
+# --------- 3. Data Loading (L) ---------------------
+# build and run the backend LOADING image (loads cleaned tables into a DuckDB)
+# [working-directory("backend")]
+# load-data:
+
+
+# --------- FULL PIPELINE RUN (ETL) ---------------------
+# [working-directory("backend")]
+# run-etl:
+
 
 
 #####################
@@ -128,3 +146,4 @@ down:
 # see what containers are running
 see-running:
     podman ps
+
