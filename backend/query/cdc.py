@@ -16,8 +16,8 @@ import xycmap
 from matplotlib import pyplot as plt
 
 from api.models import FilterSource
+from app_utils.sql_render import compile_where, sql_filter_block
 from query.processed_db import DB
-from sql_render import compile_where, sql_filter_block
 
 logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql" / "cdc"

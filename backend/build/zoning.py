@@ -9,8 +9,8 @@
 
 import pandas as pd
 
+from app_utils.sql_render import render_sql
 from build import BACKEND, CON, data_dir
-from sql_render import render_sql
 
 proc_dir = BACKEND / "Data" / "_Processed"
 proc_zoning = proc_dir / "zoning"
@@ -106,9 +106,7 @@ def build_empty_geom():
         FROM '{towns}'
     """)
 
-    CON.execute(
-        render_sql(SQL_DIR / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES)
-    )
+    CON.execute(render_sql(SQL_DIR / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES))
 
 
 def get_rule_cols():
