@@ -5,17 +5,20 @@
     2026-07-14
 **Description**:
     Data cleaning script for the raw `zoning` table in the DuckLake
-    Run with:
-python -m ETL.data_cleaning.clean_zoning
+**Run with**:
+python -m data_cleaning.clean_zoning
 """
 
 import pandas as pd
 
+from app_utils.sql_render import render_sql
 from build import BACKEND
 from datastore.lake_build import con
-from sql_render import render_sql
 
-sql_path = BACKEND / "ETL" / "data_cleaning" / "sql"
+sql_path = BACKEND / "data_cleaning" / "sql"
+proc_dir = BACKEND / "Data" / "_Processed"
+MIN_GAP_ACRES = 10
+
 
 # hardcoded specifics:
 info_cols = [
@@ -58,19 +61,10 @@ def _load_spatial() -> None:
     Load the spatial extension, installing it first if necessary.
     """
     try:
-        con.execute(
-            """--sql
-            LOAD spatial
-            """)
+        con.execute("""--sql LOAD spatial""")
     except Exception:
-        con.execute(
-            """--sql
-            INSTALL spatial
-            """)
-        con.execute(
-            """--sql
-            LOAD spatial
-            """)
+        con.execute("""--sql INSTALL spatial""")
+        con.execute("""--sql LOAD spatial""")
 
 
 def read_raw_data() -> pd.DataFrame:
@@ -78,7 +72,8 @@ def read_raw_data() -> pd.DataFrame:
         """--sql
         SELECT * 
         FROM lake.RAW.zoning
-        """).df()
+        """
+    ).df()
 
     con.register("zoning_raw", raw_df)
 
@@ -91,7 +86,8 @@ def build_info():
     info_df = con.execute(
         """--sql
         SELECT * FROM raw_info
-        """).df()
+        """
+    ).df()
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
     con.register("info", info_df)
@@ -105,15 +101,21 @@ def build_geom():
             OBJECT_ID,
             ST_GeomFromWKB(geometry) AS geometry
         FROM lake.RAW.zoning
-        """)
+        """
+    )
 
 
 def get_rule_cols():
     dropped_cols = ["Shape_Area", "Shape_Length"]
-    all_cols = con.execute(
-        """--sql
+    all_cols = (
+        con.execute(
+            """--sql
         DESCRIBE lake.RAW.zoning
-        """).df()["column_name"].tolist()
+        """
+        )
+        .df()["column_name"]
+        .tolist()
+    )
     rule_cols = set(all_cols)
     for item in geom_cols + info_cols + ["Acres"] + dropped_cols:
         if item in rule_cols:
@@ -148,7 +150,8 @@ def build_rules(raw_df: pd.DataFrame):
         rules = con.execute(
             """--sql
             SELECT * FROM raw_rules
-            """).df()
+            """
+        ).df()
     finally:
         con.register("zoning_raw", raw_df)  # restore original for downstream steps
 
@@ -176,7 +179,8 @@ def build_full():
         f"""--sql
         CREATE OR REPLACE VIEW wide AS
         SELECT * EXCLUDE ({exclude}) FROM zoning_raw
-        """)
+        """
+    )
 
 
 def build_color():
@@ -193,6 +197,31 @@ def build_color():
         ) AS t(district_type, hex_color, rgba);
         """
     )
+
+
+# TODO: Convert this function to the data_cleaning lake logic
+# ie. fix table references and overall sql/zoning_empty_geom.sql logic
+# def build_empty_geom():
+#     """
+#     Build the geometry for the polygons
+#     *where we don't have zoning information*.
+
+#     Requires build/FIPS_data.py to have run first (it writes towns.parquet);
+#     build/main.py orders them accordingly.
+#     """
+#     towns = proc_dir / "vermont" / "towns.parquet"
+#     if not towns.exists():
+#         raise FileNotFoundError(
+#             f"{towns} is missing -- run build/FIPS_data.py before build/zoning.py"
+#         )
+
+#     con.execute(f"""--sql
+#         CREATE OR REPLACE VIEW town_boundaries
+#         AS SELECT *
+#         FROM '{towns}'
+#     """)
+
+#     con.execute(render_sql(sql_path / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES))
 
 
 def clean():
@@ -218,7 +247,8 @@ def add_to_lake():
             f"""--sql
             CREATE OR REPLACE TABLE lake.CLEANED.VersoZoning_{name} AS
             SELECT * FROM {name}
-            """)
+            """
+        )
 
 
 def main():

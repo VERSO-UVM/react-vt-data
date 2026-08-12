@@ -5,8 +5,8 @@
     2026-07-13
 **Description**:
     Data cleaning script for the raw `historic_population` table in the DuckLake
-    Run with: 
-python -m ETL.data_cleaning.clean_historic_population
+**Run with**:
+python -m data_cleaning.clean_historic_population
 """
 
 import pandas as pd
@@ -19,7 +19,8 @@ def read_raw_data() -> pd.DataFrame:
         """--sql
         SELECT * 
         FROM lake.RAW.historic_population
-        """).df()
+        """
+    ).df()
 
     return raw_df
 
@@ -60,7 +61,6 @@ def add_NAME_column(long_df: pd.DataFrame):
     import requests
 
     json_file = "https://raw.githubusercontent.com/VERSO-UVM/react-vt-data/refs/heads/main/frontend/public/data/municipalites.json"
-
     response = requests.get(json_file)
     geo = response.json()
 
@@ -117,9 +117,8 @@ def clean():
     # Add a census-style "NAME" column for easier filtering
     df_long_clean = add_NAME_column(df_long)
     # Reorder columns
-    df = df_long_clean[
-        ["geoid", "NAME", "county", "town", "Year", "Population", "geo_type"]
-    ]
+    column_order = ["geoid", "NAME", "county", "town", "Year", "Population", "geo_type"]
+    df = df_long_clean[column_order]
     # Append county + state aggregations (total sum)
     df = add_population_aggregations(df)
 
@@ -135,7 +134,8 @@ def add_to_lake(clean_df: pd.DataFrame):
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.VCGI_historicPopulation_timeseries AS
         SELECT * FROM clean_df
-        """)
+        """
+    )
 
 
 def main():
