@@ -27,7 +27,6 @@ from dataclasses import dataclass
 import pandas as pd
 import requests
 
-from app_utils.census import split_name_col
 
 API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5"
@@ -202,7 +201,12 @@ def run_acs_b_scrape(
     combined = pd.concat(all_frames, ignore_index=True, sort=False)
     tidy = compute_tidy_generic(combined, var_groups)
     tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
-    tidy = split_name_col(tidy)  # keeps NAME and adds Jurisdiction + County
+    # The below code keeps NAME and adds Jurisdiction + County
+    tidy[["Jurisdiction", "County"]] = tidy["NAME"].str.extract(
+        r"^(.*?),\s*(.*?) County,"
+    )
+    if "year" in tidy.columns:
+        tidy["year"] = tidy["year"].astype(str)
     tidy.reset_index(drop=True, inplace=True)
 
     out = f"{STORAGE_LOCATION}/{output_filename}"
