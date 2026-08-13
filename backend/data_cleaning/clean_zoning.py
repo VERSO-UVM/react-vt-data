@@ -17,6 +17,10 @@ from datastore.lake_build import con
 
 sql_path = BACKEND / "data_cleaning" / "sql"
 proc_dir = BACKEND / "Data" / "_Processed"
+# Town and zoning-district boundaries were digitised separately, so subtracting
+# one from the other leaves hairline slivers along nearly every town edge.
+# Dropping gap polygons below this size removes ~91% of the pieces while keeping
+# >99.7% of the genuinely unzoned acreage.
 MIN_GAP_ACRES = 10
 
 
@@ -83,11 +87,7 @@ def read_raw_data() -> pd.DataFrame:
 def build_info():
     info_string = ", ".join(info_cols)
     con.execute(render_sql(sql_path / "zoning_info.sql", info_string=info_string))
-    info_df = con.execute(
-        """--sql
-        SELECT * FROM raw_info
-        """
-    ).df()
+    info_df = con.execute("""--sql SELECT * FROM raw_info""").df()
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
     con.register("info", info_df)
@@ -126,11 +126,11 @@ def get_rule_cols():
 
 def split_col(col: str, use_types: set[str]):
     for use_type in use_types:
-        if col.startswith(use_type):
+        if col.startswith(f"{use_type}_"):
             rule = col[len(use_type) + 1 :]
             rule = rule.replace("/", "_")
             return use_type, rule
-    return False, False
+    return None, None
 
 
 def build_rules(raw_df: pd.DataFrame):
@@ -147,11 +147,7 @@ def build_rules(raw_df: pd.DataFrame):
     try:
         rule_string = ", ".join(clean_rule_cols)
         con.execute(render_sql(sql_path / "zoning_rules.sql", rule_string=rule_string))
-        rules = con.execute(
-            """--sql
-            SELECT * FROM raw_rules
-            """
-        ).df()
+        rules = con.execute("""--sql SELECT * FROM raw_rules""").df()
     finally:
         con.register("zoning_raw", raw_df)  # restore original for downstream steps
 
@@ -199,29 +195,36 @@ def build_color():
     )
 
 
-# TODO: Convert this function to the data_cleaning lake logic
-# ie. fix table references and overall sql/zoning_empty_geom.sql logic
-# def build_empty_geom():
-#     """
-#     Build the geometry for the polygons
-#     *where we don't have zoning information*.
+def build_empty_geom():
+    """
+    Build the geometry for the polygons
+    *where we don't have zoning information*.
 
-#     Requires build/FIPS_data.py to have run first (it writes towns.parquet);
-#     build/main.py orders them accordingly.
-#     """
-#     towns = proc_dir / "vermont" / "towns.parquet"
-#     if not towns.exists():
-#         raise FileNotFoundError(
-#             f"{towns} is missing -- run build/FIPS_data.py before build/zoning.py"
-#         )
+    Requires build/FIPS_data.py to have run first (it writes towns.parquet);
+    build/main.py orders them accordingly.
+    """
 
-#     con.execute(f"""--sql
-#         CREATE OR REPLACE VIEW town_boundaries
-#         AS SELECT *
-#         FROM '{towns}'
-#     """)
+    # TODO: Remove dependency on the Data/_Processed folder --> Change to lake.RAW.towns
+    # towns = con.execute("""--sql SELECT * FROM lake.RAW.towns""").df()
 
-#     con.execute(render_sql(sql_path / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES))
+    towns = proc_dir / "vermont" / "towns.parquet"
+    if not towns.exists():
+        raise FileNotFoundError(
+            f"{towns} is missing -- run build/FIPS_data.py before data_cleaning/zoning.py"
+        )
+
+    # TODO: Replace with `FROM lake.RAW.towns``
+    con.execute(f"""--sql
+        CREATE OR REPLACE VIEW town_boundaries
+        AS SELECT *
+        FROM '{towns}'
+    """)
+
+    empty_geom_df = con.execute(
+        render_sql(sql_path / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES)
+    ).df()
+
+    con.register("empty_geom", empty_geom_df)
 
 
 def clean():
@@ -230,6 +233,7 @@ def clean():
     build_info()
     build_geom()
     build_rules(df)
+    build_empty_geom()
     build_color()
     build_full()
 
@@ -238,10 +242,10 @@ def clean():
 
 def add_to_lake():
     """
-    Persists each cleaned zoning table (info, geom, rules, wide, colors)
+    Persists each cleaned zoning table (info, geom, rules, empty_geom, wide, colors)
     into the CLEANED schema in DuckLake.
     """
-    tables = ["info", "geom", "rules", "wide", "colors"]
+    tables = ["info", "geom", "rules", "empty_geom", "wide", "colors"]
     for name in tables:
         con.execute(
             f"""--sql

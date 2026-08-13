@@ -13,12 +13,13 @@
 -- grey outlines around the whole state. Filtering parts under {{ min_acres }}
 -- acres removes ~91% of the pieces while keeping >99.7% of the genuinely
 -- unzoned area.
+
 CREATE OR REPLACE VIEW empty_geom AS
 WITH covered AS (
     SELECT
         GEO_ID,
         ST_UNION_AGG(ST_MAKEVALID(geom)) AS geom
-    FROM zoning_raw
+    FROM lake.RAW.zoning
     GROUP BY GEO_ID
 ),
 

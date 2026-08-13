@@ -105,25 +105,25 @@ def main() -> None:
         print(f"Could not list databases: {e}")
 
     # Inspect both of your schemas.
-    for schema in ("RAW", "CLEANED"):
+    for schema in ["CLEANED"]:
         inspect_schema(schema)
 
-    query_lake_metadata("ducklake_snapshot")
-    print("+" * 40)
-    query_lake_metadata("ducklake_snapshot_changes")
-    print("+" * 40)
-    query_lake_metadata("ducklake_schema")
-    print("+" * 40)
-    query_lake_metadata("ducklake_table")
-    print("+" * 40)
-    query_lake_metadata("ducklake_column")
-    print("+" * 40)
-    query_lake_metadata("ducklake_table_stats")
-    print("+" * 40)
-    query_lake_metadata("ducklake_table_column_stats")
-    print("+" * 40)
-    query_lake_metadata("ducklake_data_file")
-    print("+" * 40)
+    # query_lake_metadata("ducklake_snapshot")
+    # print("+" * 40)
+    # query_lake_metadata("ducklake_snapshot_changes")
+    # print("+" * 40)
+    # query_lake_metadata("ducklake_schema")
+    # print("+" * 40)
+    # query_lake_metadata("ducklake_table")
+    # print("+" * 40)
+    # query_lake_metadata("ducklake_column")
+    # print("+" * 40)
+    # query_lake_metadata("ducklake_table_stats")
+    # print("+" * 40)
+    # query_lake_metadata("ducklake_table_column_stats")
+    # print("+" * 40)
+    # query_lake_metadata("ducklake_data_file")
+    # print("+" * 40)
 
     print("DONE!")
 
