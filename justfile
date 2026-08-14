@@ -126,9 +126,11 @@ transform-data:
 
 
 # --------- FULL PIPELINE RUN (ETL) ---------------------
-# [working-directory("backend")]
-# run-etl:
-
+[working-directory("backend")]
+run-etl year:
+    just get-data {{year}}
+    just transform-data
+    #just load-data #THIS IS THE LAST STEP!
 
 
 #####################
