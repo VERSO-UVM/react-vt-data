@@ -96,36 +96,64 @@ def query_lake_metadata(
     print(df.head(8))
 
 
+def inspect_table_files(schema: str, table: str) -> None:
+    """Inspect DuckLake metadata for the physical files belonging to a table."""
+
+    df = con.execute(
+        f"""--sql
+        SELECT *
+        FROM lake.{schema}.{table}
+        """
+    ).df()
+
+    print(df.columns)
+
+
+def find_stale_file() -> None:
+    """Find the stale demographics parquet reference in DuckLake metadata."""
+
+    metadata_table = "__ducklake_metadata_lake.ducklake_data_file"
+
+    df = con.execute(
+        f"""
+        SELECT *
+        FROM {metadata_table}
+        WHERE CAST(file_path AS VARCHAR)
+              LIKE '%019ff1aa-37d5-75c6-8641-45e2a35075f1%'
+        """
+    ).fetchdf()
+
+    print("\nSTALE FILE REFERENCE")
+    print("=" * 80)
+
+    if df.empty:
+        print("No matching metadata entry found.")
+    else:
+        print(df.to_string(index=False))
+
+
+def inspect_demographics_files() -> None:
+    df = con.execute(
+        """
+        SELECT
+            data_file_id,
+            table_id,
+            path,
+            begin_snapshot,
+            end_snapshot
+        FROM __ducklake_metadata_lake.ducklake_data_file
+        WHERE table_id = 7
+        ORDER BY data_file_id
+        """
+    ).fetchdf()
+
+    print("\nDEMOGRAPHICS DATA FILES")
+    print("=" * 80)
+    print(df.to_string(index=False))
+
+
 def main() -> None:
-    # Show the databases/catalogs available to this connection.
-    print("\nDatabases:")
-    try:
-        print(con.execute("SHOW DATABASES").fetchdf().to_string(index=False))
-    except Exception as e:
-        print(f"Could not list databases: {e}")
-
-    # Inspect both of your schemas.
-    for schema in ["CLEANED"]:
-        inspect_schema(schema)
-
-    # query_lake_metadata("ducklake_snapshot")
-    # print("+" * 40)
-    # query_lake_metadata("ducklake_snapshot_changes")
-    # print("+" * 40)
-    # query_lake_metadata("ducklake_schema")
-    # print("+" * 40)
-    # query_lake_metadata("ducklake_table")
-    # print("+" * 40)
-    # query_lake_metadata("ducklake_column")
-    # print("+" * 40)
-    # query_lake_metadata("ducklake_table_stats")
-    # print("+" * 40)
-    # query_lake_metadata("ducklake_table_column_stats")
-    # print("+" * 40)
-    # query_lake_metadata("ducklake_data_file")
-    # print("+" * 40)
-
-    print("DONE!")
+    inspect_table_files("RAW", "vt_town_lines")
 
 
 if __name__ == "__main__":

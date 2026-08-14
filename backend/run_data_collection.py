@@ -19,6 +19,7 @@ from data_collection import (
     demographics,
     economic,
     education,
+    fips,
     flood,
     historic_population,
     housing,
@@ -34,6 +35,7 @@ YEARLY_SCRAPERS = [acs5, demographics, economic, education, housing, qcew]
 # Datasets WITHOUT year columns (static)
 STATIC_SCRAPERS = [
     cdc,
+    fips,
     flood,
     historic_population,
     wastewater,

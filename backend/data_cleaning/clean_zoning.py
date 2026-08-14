@@ -9,14 +9,14 @@
 python -m data_cleaning.clean_zoning
 """
 
+from pathlib import Path
+
 import pandas as pd
 
 from app_utils.sql_render import render_sql
-from build import BACKEND
 from datastore.lake_build import con
 
-sql_path = BACKEND / "data_cleaning" / "sql"
-proc_dir = BACKEND / "Data" / "_Processed"
+SQL_PATH = Path(__file__).resolve().parent / "sql"
 # Town and zoning-district boundaries were digitised separately, so subtracting
 # one from the other leaves hairline slivers along nearly every town edge.
 # Dropping gap polygons below this size removes ~91% of the pieces while keeping
@@ -65,10 +65,15 @@ def _load_spatial() -> None:
     Load the spatial extension, installing it first if necessary.
     """
     try:
-        con.execute("""--sql LOAD spatial""")
-    except Exception:
-        con.execute("""--sql INSTALL spatial""")
-        con.execute("""--sql LOAD spatial""")
+        con.execute("INSTALL spatial;")
+    except Exception as e:
+        print(f"Spatial install note: {e}")
+
+    try:
+        con.execute("LOAD spatial;")
+    except Exception as e:
+        print(f"CRITICAL: Failed to load spatial extension: {e}")
+        raise e
 
 
 def read_raw_data() -> pd.DataFrame:
@@ -86,8 +91,18 @@ def read_raw_data() -> pd.DataFrame:
 
 def build_info():
     info_string = ", ".join(info_cols)
-    con.execute(render_sql(sql_path / "zoning_info.sql", info_string=info_string))
-    info_df = con.execute("""--sql SELECT * FROM raw_info""").df()
+
+    info_sql = render_sql(
+        SQL_PATH / "zoning_info.sql",
+        info_string=info_string,
+    )
+
+    # 1. Execute DDL to create the view
+    con.execute(info_sql)
+
+    # 2. Execute SELECT query ONCE and convert to DataFrame
+    info_df = con.execute("SELECT * FROM raw_info").df()
+
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
     con.register("info", info_df)
@@ -146,10 +161,14 @@ def build_rules(raw_df: pd.DataFrame):
     con.register("zoning_raw", cast_df)  # temporary swap
     try:
         rule_string = ", ".join(clean_rule_cols)
-        con.execute(render_sql(sql_path / "zoning_rules.sql", rule_string=rule_string))
-        rules = con.execute("""--sql SELECT * FROM raw_rules""").df()
+
+        # 1. Execute DDL query to create the view (Do NOT call .df() here)
+        con.execute(render_sql(SQL_PATH / "zoning_rules.sql", rule_string=rule_string))
+
+        # 2. Fetch results with SELECT and convert to DataFrame
+        rules = con.execute("SELECT * FROM raw_rules").df()
     finally:
-        con.register("zoning_raw", raw_df)  # restore original for downstream steps
+        con.register("zoning_raw", raw_df)
 
     # separate by use type and filter:
     use_types = set([col.split("_")[0] for col in clean_rule_cols])
@@ -204,25 +223,17 @@ def build_empty_geom():
     build/main.py orders them accordingly.
     """
 
-    # TODO: Remove dependency on the Data/_Processed folder --> Change to lake.RAW.towns
-    # towns = con.execute("""--sql SELECT * FROM lake.RAW.towns""").df()
-
-    towns = proc_dir / "vermont" / "towns.parquet"
-    if not towns.exists():
-        raise FileNotFoundError(
-            f"{towns} is missing -- run build/FIPS_data.py before data_cleaning/zoning.py"
-        )
-
-    # TODO: Replace with `FROM lake.RAW.towns``
-    con.execute(f"""--sql
+    con.execute("""--sql
         CREATE OR REPLACE VIEW town_boundaries
         AS SELECT *
-        FROM '{towns}'
+        FROM lake.RAW.vt_town_lines
     """)
 
-    empty_geom_df = con.execute(
-        render_sql(sql_path / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES)
-    ).df()
+    # First execute the view creation SQL
+    con.execute(render_sql(SQL_PATH / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES))
+
+    # Then query the created view into a dataframe
+    empty_geom_df = con.execute("SELECT * FROM empty_geom").df()
 
     con.register("empty_geom", empty_geom_df)
 

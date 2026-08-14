@@ -43,71 +43,60 @@ con.execute("""--sql CREATE SCHEMA IF NOT EXISTS lake.CLEANED""")
 
 def insert_year(name: str, df: pd.DataFrame, year: int):
     """
-    Insert a year's data into a DuckLake table.
-
-    - If the table does not exist, it's created.
-
-    - If the table already exists and contains the specified year,
-      rows are deleted and replaced with the new data.
-
-    - If the table exists but does not contain the specified year,
-      the new rows are appended.
+    Insert or replace one year's data in a DuckLake table.
     """
 
-    # For static datasets
-    if "year" not in list(map(str.lower, df.columns)):
-        raise ValueError(
-            f"Cannot insert that year: DataFrame for {name!r} "
-            "does not contain a 'year' column."
-        )
+    if "year" not in map(str.lower, df.columns):
+        raise ValueError(f"DataFrame for {name!r} does not contain a 'year' column.")
 
     if isinstance(df, gpd.GeoDataFrame):
         df = df.copy()
         df["geometry"] = df.geometry.to_wkb()
 
-    # Temporary table for changing
     con.register("tmp_df", df)
 
     try:
-        # Check whether the table already exists.
+        schema, table = name.split(".", 1) if "." in name else ("RAW", name)
+
         table_exists = (
             con.execute(
-                """--sql
-            SELECT COUNT(*) 
-            FROM information_schema.tables 
-            WHERE table_schema = 'lake' 
-            AND table_name = ? 
+                """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_catalog = 'lake'
+              AND table_schema = ?
+              AND table_name = ?
             """,
-                [name],
+                [schema, table],
             ).fetchone()[0]
             > 0
         )
 
         if not table_exists:
-            try:
-                con.execute(
-                    f"""--sql
-                    CREATE TABLE IF NOT EXISTS lake.{name} AS
-                    SELECT * FROM tmp_df WHERE 1=0
-                    """
-                )
-                con.execute(f"INSERT INTO lake.{name} SELECT * FROM tmp_df")
-            except duckdb.CatalogException:
-                pass
-            else:
-                return
+            con.execute(
+                f"""
+                CREATE TABLE lake.{schema}.{table}
+                AS SELECT * FROM tmp_df
+                """
+            )
+            return
 
-        # Insert the newly collected data.
+        # Remove this year's existing data.
         con.execute(
-            f"""--sql
-            INSERT INTO lake.{name} 
-            SELECT * FROM tmp_df 
-            """
+            f"""
+            DELETE FROM lake.{schema}.{table}
+            WHERE year = ?
+            """,
+            [year],
         )
 
-    except Exception as e:
-        print(f"Failed to write {name}: {e}")
-        raise
+        # Insert the replacement.
+        con.execute(
+            f"""
+            INSERT INTO lake.{schema}.{table}
+            SELECT * FROM tmp_df
+            """
+        )
 
     finally:
         con.unregister("tmp_df")

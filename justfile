@@ -111,13 +111,12 @@ get-data year: build-collection
     podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-collection {{year}}
 
 
-
 # --------- 2. Data Cleaning (T) ---------------------
 # build and run the backend CLEANING image
 [working-directory("backend")]
 transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
-    podman run --rm -v ../Data:/data:z localhost/vdc-cleaning
+    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
 
 
 # --------- 3. Data Loading (L) ---------------------

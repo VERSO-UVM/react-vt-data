@@ -18,47 +18,47 @@ CREATE OR REPLACE VIEW empty_geom AS
 WITH covered AS (
     SELECT
         GEO_ID,
-        ST_UNION_AGG(ST_MAKEVALID(geom)) AS geom
+        ST_UNION_AGG(ST_MAKEVALID(ST_GeomFromWKB(geometry))) AS geom
     FROM lake.RAW.zoning
     GROUP BY GEO_ID
 ),
 
 gaps AS (
     SELECT
-        t.FIPS_ID,
-        t.TOWN_NAME,
+        t.id,
+        t.NAME,
         ST_DIFFERENCE(
-            t.geometry,
+            ST_GeomFromWKB(geometry),
             COALESCE(c.geom, ST_GEOMFROMTEXT('POLYGON EMPTY'))
         ) AS geom
     FROM town_boundaries AS t
-    LEFT JOIN covered AS c ON t.FIPS_ID = c.GEO_ID
+    LEFT JOIN covered AS c ON t.GEOID = c.GEO_ID
 ),
 
 -- recursive := true expands the ST_Dump STRUCT into plain `geom`/`path`
 -- columns, one row per polygon
 exploded AS (
     SELECT
-        g.FIPS_ID,
-        g.TOWN_NAME,
-        UNNEST(ST_DUMP(g.geom), recursive := true)  -- noqa: AL03
+        g.id,
+        g.NAME,
+        UNNEST(ST_DUMP(geom), recursive := true)  -- noqa: AL03
     FROM gaps AS g
     WHERE NOT ST_ISEMPTY(g.geom)
 ),
 
 sized AS (
     SELECT
-        e.FIPS_ID,
-        e.TOWN_NAME,
+        e.id,
+        e.NAME,
         e.geom,
         ST_AREA_SPHEROID(e.geom) / 4046.8564224 AS Acres
     FROM exploded AS e
 )
 
 SELECT
-    s.FIPS_ID,
-    s.TOWN_NAME,
-    s.geom,
+    s.id AS GEOID,
+    s.NAME AS TOWN_NAME,
+    s.geom AS geom,
     ROUND(s.Acres, 2) AS Acres
 FROM sized AS s
 WHERE s.Acres >= {{ min_acres }};

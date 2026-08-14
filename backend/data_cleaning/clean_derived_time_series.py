@@ -163,7 +163,7 @@ def add_to_lake(clean_df: pd.DataFrame, output_table: str) -> None:
         f"""--sql
         CREATE OR REPLACE TABLE lake.CLEANED.{output_table} AS
         SELECT * 
-        FROM {clean_df}
+        FROM clean_df
         """
     )
 
