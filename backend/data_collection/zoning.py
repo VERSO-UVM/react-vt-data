@@ -7,7 +7,6 @@
     Fetches Vermont zoning data from the Zoning Atlas GitHub repository
 """
 
-
 from io import BytesIO
 
 import pandas as pd
