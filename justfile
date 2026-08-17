@@ -121,16 +121,22 @@ transform-data:
 
 # --------- 3. Data Loading (L) ---------------------
 # build and run the backend LOADING image (loads cleaned tables into a DuckDB)
-# [working-directory("backend")]
-# load-data:
+[working-directory("backend")]
+load-data:
+    podman build -t localhost/vdc-loading -f ETL/dockerfile.load .
+    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
+
 
 
 # --------- FULL PIPELINE RUN (ETL) ---------------------
 [working-directory("backend")]
 run-etl year:
+    # Collect the data for a certain year
     just get-data {{year}}
+    # Clean the RAW populated lake tables into CLEANED
     just transform-data
-    #just load-data #THIS IS THE LAST STEP!
+    # Load CLEANED tables into DuckDB instance
+    just load-data 
 
 
 #####################
