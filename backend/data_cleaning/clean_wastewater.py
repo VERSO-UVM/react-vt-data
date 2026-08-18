@@ -10,7 +10,7 @@
 python -m data_cleaning.clean_wastewater
 """
 
-from datastore.lake_build import con
+from lake_build import con
 
 # TODO: Path is useful when sql files are created!
 # from build import BACKEND

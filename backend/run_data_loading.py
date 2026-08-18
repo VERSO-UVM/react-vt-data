@@ -15,7 +15,7 @@ python -m run_data_loading
 import duckdb
 
 # DuckLake connection
-from datastore.lake_build import con
+from lake_build import con
 
 # New DuckDB connection (where CLEANED lake tables will go)
 db_con = duckdb.connect()

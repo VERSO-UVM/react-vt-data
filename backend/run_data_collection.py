@@ -27,7 +27,7 @@ from data_collection import (
     wastewater,
     zoning,
 )
-from datastore.lake_build import insert_year, replace_table
+from lake_build import insert_year, replace_table
 
 # Datasets WITH year columns (longitudinal)
 YEARLY_SCRAPERS = [acs5, demographics, economic, education, housing, qcew]

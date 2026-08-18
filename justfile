@@ -100,6 +100,13 @@ check-frontend:
 ## ETL (Pipeline) Container
 ################
 
+# --------- Pre-step: Lake Builder ---------------------
+[working-directory("backend")]
+build-lake:
+    podman build -t localhost/vdc-lake -f ETL/dockerfile.lake .
+    podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-lake
+
+
 # --------- 1. Data Collection (E) ---------------------
 # build the backend COLLECTION image
 [working-directory("backend")]

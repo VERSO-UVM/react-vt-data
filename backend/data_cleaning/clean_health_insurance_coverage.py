@@ -13,7 +13,7 @@ python -m data_cleaning.clean_health_insurance_coverage
 import numpy as np
 import pandas as pd
 
-from datastore.lake_build import con
+from lake_build import con
 
 
 def read_raw_data() -> pd.DataFrame:
