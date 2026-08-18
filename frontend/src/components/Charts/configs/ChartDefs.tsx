@@ -71,18 +71,6 @@ export const chartDefs: ChartDef[] = [
       { key: 'Acres', label: 'Total Acres' },
     ],
   },
-  // tenure bar chart removed — not adding enough information (4.3)
-  // {
-  //   id: 'tenure',
-  //   title: 'Housing Tenure',
-  //   categories: ['Housing'],
-  //   xField: 'Occupied Tenure',
-  //   yField: 'Value',
-  //   subtype: 'CompareDiffPerXBarChart',
-  //   chartParams: { colorScheme: 'schemeAccent', legendLabels: ['Main', 'Compare'] },
-  //   dataKey: 'plot_data.tenure_df',
-  //   url: `${BASE_API_URL}/load/census/housing/snapshot`,
-  // },
   {
     id: 'demographics',
     title: 'Changes in Age Composition',

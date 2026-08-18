@@ -8,7 +8,6 @@ from app_utils.df_filtering import (
     filter_from_request,
     mass_filter_from_requests,
 )
-from app_utils.housing import housing_df_metric_dict
 
 router = APIRouter()
 
@@ -58,36 +57,6 @@ async def read_census_data(category: str, request: FilterRequest):
     metadata = {}
 
     return make_response(data, metadata)
-
-
-@router.post("/load/census/housing/snapshot")
-async def get_housing_snapshot(request: FilterRequest):
-    dfs = data_loading.masterload("census_housing")
-    dfs = mass_filter_from_requests(dfs, request)
-    metrics, plot_dfs = housing_df_metric_dict(dfs)
-
-    # Convert metrics to JSON-serializable
-    metrics_json = {k: float(v) if v is not None else None for k, v in metrics.items()}
-
-    # Convert plot dataframes
-    plot_data = {k: v.to_dict(orient="records") for k, v in plot_dfs.items()}
-
-    response = {"metrics": metrics_json, "plot_data": plot_data}
-
-    # Filter response if specific includes requested
-    if request and request.include:
-        filtered_response = {}
-        if "metrics" in request.include:
-            filtered_response["metrics"] = metrics_json
-
-        # Filter plot_data to only included charts
-        plot_includes = [i for i in request.include if i in plot_dfs]
-        if plot_includes:
-            filtered_response["plot_data"] = {k: plot_data[k] for k in plot_includes}
-
-        return filtered_response
-
-    return response
 
 
 # Load the Census Dataset by `category`(housing, economic, etc.) and `subcategory`(special csv files)
