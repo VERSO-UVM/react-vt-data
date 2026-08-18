@@ -26,7 +26,7 @@ def _load_spatial() -> None:
         con.execute("""--sql LOAD spatial""")
     except Exception:
         con.execute("""--sql INSTALL spatial""")
-        con.execute("""--sqlLOAD spatial""")
+        con.execute("""--sql LOAD spatial""")
 
 
 ## ADD UNIQUE ID COLUMNS --------------------
