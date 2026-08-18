@@ -12,16 +12,16 @@
 python -m run_data_loading
 """
 
+import os
+from pathlib import Path
+
 import duckdb
 
-# DuckLake connection
-from lake_build import con
-
-# New DuckDB connection (where CLEANED lake tables will go)
-db_con = duckdb.connect()
+ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "Data"))
 
 
-def get_cleaned_tables() -> list[str]:
+def get_cleaned_tables(db_con: duckdb.DuckDBPyConnection) -> list[str]:
     """
     List all active DuckLake tables within the 'CLEANED' lake schema.
     """
@@ -34,33 +34,64 @@ def get_cleaned_tables() -> list[str]:
         WHERE s.schema_name = 'CLEANED'
             AND t.end_snapshot IS NULL 
             AND s.end_snapshot IS NULL
+        ORDER BY table_name
     """
-    tables = [row[0] for row in con.execute(query).fetchall()]
+    tables = [row[0] for row in db_con.execute(query).fetchall()]
 
     return tables
 
 
 def create_duckdb():
-    # Fetch CLEANED table names
-    tables = get_cleaned_tables()
+    warehouse_path = DATA_DIR / "warehouse.duckdb"
+    lake_db_path = DATA_DIR / "lake"
+    storage_path = DATA_DIR / "lake.files"
+
+    db_con = duckdb.connect(str(warehouse_path))
+
+    db_con.execute(
+        f"""
+        ATTACH '{lake_db_path.as_posix()}'
+        AS lake (
+            TYPE ducklake,
+            DATA_PATH '{storage_path.as_posix()}',
+            OVERRIDE_DATA_PATH TRUE
+        )
+        """
+    )
+
+    tables = get_cleaned_tables(db_con)
     total_tables = len(tables)
 
-    # Each table gets written to the DuckDB as its own table
-    try:
-        for i, table in enumerate(tables):
-            df = con.sql(f"SELECT * FROM lake.CLEANED.{table}").df()  # noqa: F841
-            db_con.execute(f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM df")
+    failed = []
 
-            print(
-                f"\r{i + 1} / {total_tables} tables added to the database",
-                end="",
-                flush=True,
+    for i, table in enumerate(tables):
+        try:
+            db_con.execute(
+                f'''
+                CREATE OR REPLACE TABLE "{table}"
+                AS
+                SELECT *
+                FROM lake.CLEANED."{table}"
+                '''
             )
+        except Exception as e:
+            failed.append((table, str(e)))
 
-    except Exception as e:
-        print(f"Database creation failed: {e}")
+        print(
+            f"\r{i + 1}/{total_tables} processed",
+            end="",
+            flush=True,
+        )
 
-    print("\nDATABASE COMPLETED")
+    if failed:
+        print(f"\n{len(failed)} tables failed:")
+        for table, error in failed:
+            print(f"  {table}: {error}")
+
+    db_con.execute("DETACH lake")
+    db_con.close()
+
+    print("\nDATABASE COMPLETED!")
 
 
 def main():
