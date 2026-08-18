@@ -1,26 +1,19 @@
 'use client';
-import React from 'react';
 import { Table } from '@mantine/core';
 
+// One record from a dataset's colors table. The label column is named per
+// dataset (e.g. "soil_suitability") so it is read positionally, but every
+// legend is expected to carry a hex_color.
+export type LegendRow = { hex_color: string } & Record<string, string>;
+
 interface LegendTable {
-  data: string;
+  data: LegendRow[];
 }
 
-export default function MapLegend({ data = 'noDataGiven' }: LegendTable) {
-  const split_data = data.split(/},\s*/);
-  // const legend_string = JSON.parse(test_brackets);
-  // console.log(test_brackets);
-  // I am confused why this part above prints null
-  // for (const [key, value] of Object.entries(legend_string)) {
-  //   console.log(`${key}: ${value}`);
-  // }
-  // console.log(test)
-  // same with this part
-  // {
-  //   test_brackets.map((items_in_jsons, index) =>
-  //     console.log({ items_in_jsons }),
-  //   );
-  // }
+export default function MapLegend({ data = [] }: LegendTable) {
+  if (data.length === 0) return null;
+
+  const labelKey = Object.keys(data[0])[0];
 
   return (
     <div>
@@ -29,39 +22,31 @@ export default function MapLegend({ data = 'noDataGiven' }: LegendTable) {
         <b>Legend</b>
       </h2>
       <Table>
-        <Table.Tr>
-          <Table.Th style={{ paddingRight: '15px' }}>
-            {split_data[0]
-              ?.split(/:\s*/)[0]
-              ?.replaceAll('\"', '')
-              ?.replaceAll('\{', '')}{' '}
-          </Table.Th>
-          <Table.Th>Color</Table.Th>
-        </Table.Tr>
-
-        {split_data.map((items_in_jsons, index) => (
-          <Table.Tr key={index}>
-            <Table.Td style={{ paddingRight: '15px' }}>
-              {items_in_jsons
-                ?.split(/,\s*/)[0]
-                ?.split(/:\s*/)[1]
-                ?.replaceAll('"', '')}
-            </Table.Td>
-            <Table.Td>
-              <span
-                style={{
-                  display: 'inline-block',
-                  backgroundColor: items_in_jsons
-                    ?.split(/,\s*/)[1]
-                    ?.split(/:\s*/)[1]
-                    ?.replaceAll('"', ''),
-                  width: '20px',
-                  height: '10px',
-                }}
-              ></span>
-            </Table.Td>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th style={{ paddingRight: '15px' }}>{labelKey}</Table.Th>
+            <Table.Th>Color</Table.Th>
           </Table.Tr>
-        ))}
+        </Table.Thead>
+        <Table.Tbody>
+          {data.map((row, index) => (
+            <Table.Tr key={index}>
+              <Table.Td style={{ paddingRight: '15px' }}>
+                {row[labelKey]}
+              </Table.Td>
+              <Table.Td>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    backgroundColor: row.hex_color,
+                    width: '20px',
+                    height: '10px',
+                  }}
+                ></span>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
       </Table>
     </div>
   );

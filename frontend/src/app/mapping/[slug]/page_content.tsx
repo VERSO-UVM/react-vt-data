@@ -19,7 +19,7 @@ import FilterContainer from '@/components/FilterUI/Filter_wrap';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 
-import MapLegend from '@/components/Legend';
+import MapLegend, { type LegendRow } from '@/components/Legend';
 
 // NOTE: zoning is NOT here — it has its own route at /mapping/zoning, which
 // takes precedence over this dynamic segment.
@@ -39,20 +39,17 @@ const MAP_CONFIG: Record<
   },
   'soil-suitability': {
     title: 'Soil Suitability',
-    initialURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=soil_suitability_info_soil_suit`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     legendURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_legend`,
   },
   'treatment-facilities': {
     title: 'Wastewater Treatment Facilities',
-    initialURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=treatment_facilities_treatment_facility_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
   },
   'service-areas': {
     title: 'Wastewater Service Areas',
-    initialURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=service_areas_service_area_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
@@ -66,7 +63,7 @@ export default function MappingContent() {
   const [loading, setLoading] = useState(false);
   const [showCountyLines, setShowCountyLines] = useState(true);
 
-  const [legendData, setLegendData] = useState<string>('null');
+  const [legendData, setLegendData] = useState<LegendRow[]>([]);
 
   const config = slug ? MAP_CONFIG[slug] : undefined;
 
@@ -76,17 +73,21 @@ export default function MappingContent() {
   }, [slug]);
 
   useEffect(() => {
-    if (!slug || !config?.initialURL) return;
+    if (!slug || (!config?.dataURL && !config?.initialURL)) return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
     setLoading(true);
 
-    axios
-      .get(config.initialURL)
+    // Filterable maps are POST-only and take a FilterRequest body, for now. TODO: At some point we'll go to FilterSource
+    const request = config.dataURL
+      ? axios.post(config.dataURL, { filters: {} })
+      : axios.get(config.initialURL!);
+
+    request
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [slug, config?.initialURL]);
+  }, [slug, config?.dataURL, config?.initialURL]);
 
   useEffect(() => {
     if (!slug || !config?.legendURL) return;
@@ -148,7 +149,7 @@ export default function MappingContent() {
             )}
           </Stack>
 
-          {/* this is the right spot for a legend I think (underneath the filters*/}
+          {/* Legend */}
           <MapLegend data={legendData}></MapLegend>
         </Paper>
 

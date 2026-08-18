@@ -56,23 +56,11 @@ def get_soil_suit_geojson(sources: list[FilterSource]):
     return result[0]
 
 
-## creating this for the legend
 def get_soil_suit_legend():
-    # result = DB.execute("select * from soil_suitability_soil_suitability_colors").fetchall()
     result = DB.execute(
         "SELECT json_group_array(to_json(soil_suitability_soil_suitability_colors)) FROM soil_suitability_soil_suitability_colors;"
-    ).fetchall()
+    ).fetchone()
     if result is None:
-        logger.error("color query returned no rows for filters: %s")
+        logger.error("color query returned no rows for the colors dataset")
         raise ValueError("no results for colors dataset")
-    # print(result)
-    # print("\n\n")
-    # json_result = json.dumps(result)
-    # print(json_result)
-    # return json_result
-    # print(result[0][0])
-    # print("\n\n")
-    end_result = result[0][0].strip("[")
-    end_result = end_result.strip("]")
-    print(end_result)
-    return end_result
+    return result[0]
