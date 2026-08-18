@@ -4,9 +4,10 @@
 **Created**:
     2026-07-13
 **Description**:
-    Data cleaning script for the raw (curated variables) `economic` table in the DuckLake
-    Run with:
-python -m ETL.data_cleaning.clean_economic
+    Data cleaning script for the raw (curated variables) `economic`
+    table in the DuckLake
+**Run with**:
+python -m data_cleaning.clean_economic
 """
 
 import pandas as pd
@@ -19,7 +20,8 @@ def read_raw_data() -> pd.DataFrame:
         """--sql
         SELECT * 
         FROM lake.RAW.economic
-        """).df()
+        """
+    ).df()
 
     return raw_df
 

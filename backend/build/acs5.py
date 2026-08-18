@@ -128,6 +128,9 @@ def build_dp_combined():
 
 
 def build_county_geoids():
+    """
+    County GEOIDs table
+    """
     values = ", ".join(f"('{name}', {geoid})" for name, geoid in COUNTY_GEOIDS.items())
     CON.execute(f"""--sql
         CREATE OR REPLACE TABLE county_geoids AS

@@ -20,7 +20,7 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
 Output: vt_acs5_b_economic_tidy.parquet
 """
 
-from data_collection.base import YEARS, VarGroup, run_acs_b_scrape
+from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
 
 SL = "Labor Force"
 SI = "Income"
@@ -71,38 +71,39 @@ fetch_specs = {
 }
 
 
-def collect():
+def collect(year: int = 2024, geos=None, append=False):
+    if geos is None:
+        geos = [(k, *ALL_GEOS[k]) for k in ALL_GEOS]
+
+    return run_acs_b_scrape(
+        fetch_specs,
+        var_groups,
+        "vt_acs5_b_economic_tidy.parquet",
+        year=year,
+        geos=geos,
+        append=append,
+    )
+
+
+if __name__ == "__main__":
     import argparse
 
-    from data_collection.base import ALL_GEOS
-
-    p = argparse.ArgumentParser(description="Scrape ACS B-table economic data.")
-    p.add_argument(
+    parser = argparse.ArgumentParser(description="Scrape ACS B-table economic data.")
+    parser.add_argument("year", type=int, nargs="?", default=2024)
+    parser.add_argument(
         "--geos",
         nargs="+",
         choices=list(ALL_GEOS),
         default=list(ALL_GEOS),
-        metavar="GEO",
-        help=f"Geographies to scrape (default: all). Choices: {list(ALL_GEOS)}",
     )
-    p.add_argument(
-        "--append",
-        action="store_true",
-        help="Merge new rows into existing parquet instead of overwriting.",
-    )
-    args = p.parse_args()
+    parser.add_argument("--append", action="store_true")
+
+    args = parser.parse_args()
+
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
-    df = run_acs_b_scrape(
-        fetch_specs,
-        var_groups,
-        "vt_acs5_b_economic_tidy.parquet",
-        YEARS,
-        selected_geos,
+
+    df = collect(
+        year=args.year,
+        geos=selected_geos,
         append=args.append,
     )
-
-    return df
-
-
-if __name__ == "__main__":
-    df = collect()

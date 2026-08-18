@@ -8,16 +8,13 @@
     Orginal Data Source: https://geodata.vermont.gov/datasets/VTANR::flood-hazard-areas-only-fema-digitized-data/explore?location=43.838610%2C-72.732276%2C7
 """
 
-
 from io import BytesIO
 
 import pandas as pd
 import requests
 from pyogrio import read_dataframe
 
-BASE_URL = (
-    "https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&f=geojson"
-)
+BASE_URL = "https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&f=geojson"
 STORAGE_LOCATION = "Data/flood"
 
 # ---------------------------------------------------------------------------

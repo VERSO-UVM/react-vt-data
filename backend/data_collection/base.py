@@ -32,7 +32,7 @@ from app_utils.census import split_name_col
 API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5"
 STATE_FIPS = "50"
-YEARS = list(range(2009, 2025))
+# YEARS = list(range(2009, 2025))
 STORAGE_LOCATION = "Data/Census/ACS_5"
 
 # ---------------------------------------------------------------------------
@@ -150,7 +150,7 @@ def run_acs_b_scrape(
     fetch_specs: dict[str, list[str]],
     var_groups: list[VarGroup],
     output_filename: str,
-    years: list[int] = YEARS,
+    year: int = 2024,
     geos: list = GEOS,
     append: bool = False,
 ) -> None:
@@ -167,33 +167,32 @@ def run_acs_b_scrape(
     """
     all_frames = []
 
-    for year in years:
-        print(f"\n=== {year} ===")
-        for geo_label, for_clause, in_clause in geos:
-            merged = None
-            failed = False
-            for table_name, codes in fetch_specs.items():
-                print(f"  {table_name} / {geo_label}...")
-                df = fetch(year, codes, for_clause, in_clause)
-                if df is None:
-                    failed = True
-                    break
-                if merged is None:
-                    merged = df.copy()
-                    merged["geo_type"] = geo_label
-                else:
-                    # Build merge key from whichever ID columns are present
-                    merge_cols = ["NAME"]
-                    for col in ("state", "county"):
-                        if col in merged.columns and col in df.columns:
-                            merge_cols.append(col)
-                    new_var_cols = [c for c in df.columns if c.startswith("B")]
-                    merged = merged.merge(
-                        df[merge_cols + new_var_cols], on=merge_cols, how="left"
-                    )
-            if not failed and merged is not None:
-                all_frames.append(merged)
-            time.sleep(0.1)
+    print(f"\n=== {year} ===")
+    for geo_label, for_clause, in_clause in geos:
+        merged = None
+        failed = False
+        for table_name, codes in fetch_specs.items():
+            print(f"  {table_name} / {geo_label}...")
+            df = fetch(year, codes, for_clause, in_clause)
+            if df is None:
+                failed = True
+                break
+            if merged is None:
+                merged = df.copy()
+                merged["geo_type"] = geo_label
+            else:
+                # Build merge key from whichever ID columns are present
+                merge_cols = ["NAME"]
+                for col in ("state", "county"):
+                    if col in merged.columns and col in df.columns:
+                        merge_cols.append(col)
+                new_var_cols = [c for c in df.columns if c.startswith("B")]
+                merged = merged.merge(
+                    df[merge_cols + new_var_cols], on=merge_cols, how="left"
+                )
+        if not failed and merged is not None:
+            all_frames.append(merged)
+        time.sleep(0.1)
 
     if not all_frames:
         print("No data fetched.")

@@ -4,9 +4,10 @@
 **Created**:
     2026-07-13
 **Description**:
-    Data cleaning script for the raw `qcew` table in the DuckLake
-    Run with:
-python -m ETL.data_cleaning.clean_qcew
+    Data cleaning script for the raw `qcew`
+    table in the DuckLake
+**Run with**:
+python -m data_cleaning.clean_qcew
 """
 
 import pandas as pd
@@ -19,7 +20,8 @@ def read_raw_data() -> pd.DataFrame:
         """--sql
         SELECT * 
         FROM lake.RAW.qcew
-        """).df()
+        """
+    ).df()
 
     return raw_df
 
@@ -39,7 +41,8 @@ def add_to_lake(clean_df: pd.DataFrame):
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.qcew_sectorEmployment_timeseries AS
         SELECT * FROM clean_df
-        """)
+        """
+    )
 
 
 def main():

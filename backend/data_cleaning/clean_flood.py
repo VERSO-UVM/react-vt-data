@@ -9,7 +9,6 @@
 python -m ETL.data_cleaning.clean_flood
 """
 
-import pandas as pd
 from datastore.lake_build import con
 
 
@@ -19,20 +18,10 @@ def _load_spatial() -> None:
     Load the spatial extension, installing it first if necessary.
     """
     try:
-        con.execute(
-            """--sql
-            LOAD spatial
-            """)
+        con.execute("""--sql LOAD spatial""")
     except Exception:
-        con.execute(
-            """--sql
-            INSTALL spatial
-            """)
-        con.execute(
-            """--sql
-            LOAD spatial
-            """)
-
+        con.execute("""--sql INSTALL spatial""")
+        con.execute("""--sql LOAD spatial""")
 
 
 def build_flood():
@@ -59,7 +48,8 @@ def build_flood():
             END AS rgba_color
         FROM lake.RAW.flood
         WHERE SFHA_TF = 'T'
-        """)
+        """
+    )
 
 
 def add_to_lake():
@@ -68,7 +58,8 @@ def add_to_lake():
         CREATE OR REPLACE TABLE lake.CLEANED.FEMA_floodHazard_geom AS
         SELECT *
         FROM flood
-        """)
+        """
+    )
 
 
 def clean():

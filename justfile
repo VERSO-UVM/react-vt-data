@@ -95,21 +95,48 @@ check-frontend:
     npx tsc --noEmit    
 
 
-## ETL (Pipeline) Container
+################
+# ETL (Pipeline) Container
 ################
 
-# build and run the backend collection image
+# --------- 1. Data Collection (E) ---------------------
+# build the backend COLLECTION image
 [working-directory("backend")]
-get-data:
+build-collection:
     podman build -t localhost/vdc-collection -f ETL/dockerfile.collect .
-    podman run --rm -v ../Data:/data:z localhost/vdc-collection
 
-
-# build and run the backend cleaning image
+# Get the data for a specified year
 [working-directory("backend")]
-clean-data:
+get-data year: build-collection
+    podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-collection {{year}}
+
+
+# --------- 2. Data Cleaning (T) ---------------------
+# build and run the backend CLEANING image
+[working-directory("backend")]
+transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
-    podman run --rm -v ../Data:/data:z localhost/vdc-cleaning
+    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
+
+
+# --------- 3. Data Loading (L) ---------------------
+# build and run the backend LOADING image (loads cleaned tables into a DuckDB)
+[working-directory("backend")]
+load-data:
+    podman build -t localhost/vdc-loading -f ETL/dockerfile.load .
+    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
+
+
+
+# --------- FULL PIPELINE RUN (ETL) ---------------------
+[working-directory("backend")]
+run-etl year:
+    # Collect the data for a certain year
+    just get-data {{year}}
+    # Clean the RAW populated lake tables into CLEANED
+    just transform-data
+    # Load CLEANED tables into DuckDB instance
+    just load-data 
 
 
 #####################
@@ -126,3 +153,4 @@ down:
 # see what containers are running
 see-running:
     podman ps
+
