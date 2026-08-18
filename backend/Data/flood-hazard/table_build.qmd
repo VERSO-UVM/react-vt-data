@@ -46,7 +46,6 @@ raw["VELOCITY"] = raw["VELOCITY"].replace(-9999, np.nan)
 
 
 drop_cols = [
-    "AR_REVERT",
     "AR_SUBTRV",
     "BFE_REVERT",
     "DEP_REVERT"
@@ -56,6 +55,7 @@ drop_cols
 
 info_cols = [
     "OBJECTID",
+    "AR_REVERT",
     "DFIRM_ID",
     "VERSION_ID",
     "FLD_AR_ID",
