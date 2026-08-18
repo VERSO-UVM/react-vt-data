@@ -1,13 +1,12 @@
-from importlib import import_module
-from pathlib import Path
 import pkgutil
+from importlib import import_module
 
-import ETL.data_cleaning as cleaning
+import data_cleaning as cleaning
 
 
 def get_cleaners():
     """
-    Return all cleaning scripts in ETL.data_cleaning.
+    Return all cleaning scripts in the backend/data_cleaning folder
     """
     cleaners = []
 
@@ -19,13 +18,25 @@ def get_cleaners():
         if module_name.startswith("_"):
             continue
 
-        module = import_module(f"ETL.data_cleaning.{module_name}")
+        module = import_module(f"data_cleaning.{module_name}")
 
         # Only include modules that expose a main() function
         if hasattr(module, "main"):
             cleaners.append(module)
 
     return cleaners
+
+
+# def create_duckdb_version():
+#     tables = con.execute(
+#         """--sql
+#         SELECT table_name
+#         FROM duckdb_tables
+#         WHERE database_name = 'lake'
+#           AND schema_name = 'CLEANED'
+#         """).fetchall()
+
+# for table in tables
 
 
 def run_master_clean():

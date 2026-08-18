@@ -47,7 +47,7 @@ def _load_spatial(con: duckdb.DuckDBPyConnection) -> None:
 
 def _build() -> duckdb.DuckDBPyConnection:
     print(DATA_DIR)
-    path = Path(DATA_DIR / "all_data.duckdb")
+    path = Path(proc_dir / "all_data.duckdb")
     con = duckdb.connect(path, read_only=True)
     _load_spatial(con)
     return con
