@@ -42,15 +42,17 @@ STATIC_SCRAPERS = [
     zoning,
 ]
 
+YEARS = range(2009, 2025)
 
-def run_scraper(scraper, yearly=False, year=None):
+
+def run_scraper(scraper, yearly: bool = False, years: range = YEARS):
     name = scraper.__name__.split(".")[-1]
 
     try:
         print(f"Running {name}...")
 
         if yearly:
-            outputs = scraper.collect(year=year)
+            outputs = scraper.collect(years)
         else:
             outputs = scraper.collect()
 
@@ -62,7 +64,7 @@ def run_scraper(scraper, yearly=False, year=None):
             print(f"Loading {full_name}")
             # If the dataset is longitudinal, replace or append that year's data
             if yearly:
-                insert_year(full_name, df, year)
+                insert_year(full_name, df, years)
             # If a static dataset, replace the whole table
             else:
                 replace_table(full_name, df)
@@ -74,9 +76,9 @@ def run_scraper(scraper, yearly=False, year=None):
         raise
 
 
-def run_master_scrape(year: int):
+def run_master_scrape(start_year: int = 2009, end_year: int = 2024):
     for scraper in YEARLY_SCRAPERS:
-        run_scraper(scraper, yearly=True, year=year)
+        run_scraper(scraper, yearly=True, years=range(start_year, end_year + 1))
 
     for scraper in STATIC_SCRAPERS:
         run_scraper(scraper, yearly=False)
@@ -85,12 +87,13 @@ def run_master_scrape(year: int):
 def main():
     # Accepts the year argument from justfile for collection
     parser = argparse.ArgumentParser()
-    parser.add_argument("year", type=int)
+    parser.add_argument("start_year", type=int)
+    parser.add_argument("end_year", type=int)
     args = parser.parse_args()
 
-    print(f"Collecting data for {args.year}")
+    print(f"Collecting data from {args.start_year} to {args.end_year}")
 
-    run_master_scrape(args.year)
+    run_master_scrape(args.start_year, args.end_year)
 
 
 if __name__ == "__main__":

@@ -115,13 +115,13 @@ build-collection:
 
 # Collect the data for a specified year and add to lake.RAW tables
 [working-directory("backend")]
-get-data year: build-collection
+get-data start_year end_year: build-collection
     echo "Using API key: $CENSUS_API_KEY"
     podman run --rm \
         -v "$(pwd)/Data:/data:z" \
         -e DATA_DIR=/data \
         -e CENSUS_API_KEY="$CENSUS_API_KEY" \
-        localhost/vdc-collection {{year}}
+        localhost/vdc-collection {{start_year}} {{end_year}}
 
 
 # --------- 2. Data Cleaning (T) ---------------------
@@ -142,9 +142,9 @@ load-data:
 
 # Collect (E), clean (T), and load (L) the data (Full pipeline run)
 [working-directory("backend")]
-run-etl year:
+run-etl start_year end_year:
     # Collect the data for a certain year
-    just get-data {{year}}
+    just get-data {{start_year}} {{end_year}}
     # Clean the RAW populated lake tables into CLEANED
     just transform-data
     # Load CLEANED tables into DuckDB instance

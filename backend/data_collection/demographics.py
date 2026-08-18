@@ -8,6 +8,8 @@ Fetch ACS 5-Year demographics data for Vermont:
 Output: vt_acs5_b_demographics_tidy.parquet
 """
 
+import pandas as pd
+
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
 
 # ---------------------------------------------------------------------------
@@ -24,6 +26,8 @@ _AGE_BANDS = [
     ("65 to 74", range(20, 23), range(44, 47)),
     ("75 Plus", range(23, 26), range(47, 50)),
 ]
+
+YEARS = range(2009, 2025)
 
 
 def _b01001_codes(male_r, female_r):
@@ -87,26 +91,32 @@ fetch_specs = {
 }
 
 
-def collect(year: int = 2024, geos=None, append=False):
+def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
     if geos is None:
         geos = [(k, *ALL_GEOS[k]) for k in ALL_GEOS]
 
-    df = run_acs_b_scrape(
-        fetch_specs,
-        var_groups,
-        "vt_acs5_b_demographics_tidy.parquet",
-        year=year,
-        geos=geos,
-        append=append,
-    )
+    frames = []
+    for year in years:
+        df = run_acs_b_scrape(
+            fetch_specs,
+            var_groups,
+            "vt_acs5_b_demographics_tidy.parquet",
+            year=year,
+            geos=geos,
+            append=append,
+        )
+        if df is not None:
+            frames.append(df)
 
-    return df
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 if __name__ == "__main__":
     import argparse
 
     p = argparse.ArgumentParser(description="Scrape ACS B-table demographics data.")
+    p.add_argument("--start-year", type=int, default=2009)
+    p.add_argument("--end-year", type=int, default=2024)
     p.add_argument(
         "--geos",
         nargs="+",
@@ -124,7 +134,7 @@ if __name__ == "__main__":
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
 
     df = collect(
-        year=args.year,
+        years=range(args.start_year, args.end_year + 1),
         geos=selected_geos,
         append=args.append,
     )
