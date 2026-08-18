@@ -4,11 +4,11 @@ from api.core_functions import request_to_source
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
 from query import (
+    get_soil_suit_geojson,
+    get_soil_suit_legend,
     get_waste_service_areas_geojson,
     get_waste_treatment_facility_geojson,
     get_waste_treatment_facility_permits,
-    get_soil_suit_geojson,
-    get_soil_suit_legend,
 )
 
 router = APIRouter()

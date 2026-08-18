@@ -8,7 +8,6 @@
 """
 
 import logging
-import json
 from pathlib import Path
 
 import pandas as pd
@@ -40,8 +39,10 @@ def get_waste_treatment_facility_geojson(sources: list[FilterSource]):
 
 
 def get_waste_treatment_facility_permits(sources: list[FilterSource]) -> pd.DataFrame:
-    table_sql = sql_filter_block(sql_dir / "waste_treatment_permit_table.sql", sources)
-    table_data = DB.execute(table_sql).df()
+    sql, params = sql_filter_block(
+        sql_dir / "waste_treatment_permit_table.sql", sources
+    )
+    table_data = DB.execute(sql, params).df()
 
     return table_data
 
