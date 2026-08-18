@@ -70,13 +70,24 @@ if not parcels_parquet.exists():
 ```{python}
 #creating the parcels_raw view on which to query things to learn
 con.execute("CREATE OR REPLACE VIEW parcels_raw AS SELECT * FROM ST_Read('Data/Parcels/parcels_f.fgb')")
+
+col_list = con.execute("SELECT * FROM parcels_raw LIMIT 0").df().columns.to_list()
+print(col_list)
 ```
 
 Here, we print all the columns in the parcels_raw view, of which there are many. commented out is the code to yield the total row count, with is 191156. Now looking at the column types and their respective names (what they represent in real life), and making a reproducible code chunk to investigate what each means and what it looks like
+
+HERE ARE THE COLUMNS
+OGC_FID: feature id         
+OBJECTID    YEAR    GLYEAR: specific tax year       REALFLV: total assessed value of real estate    HSTED_VAL:homestead value   NRES_FLV: non residentialhomestead value LAND_LV:land value, IMPROVE_LV: improvement land value, EQUIPVAL_ equipment value, INVENVAL:inventory value, HSITEVAL: home value and two surrounding acres    EXAMPT_HS: exemption amount homestead. EXAMPT_NR: exemption amount non-resdiential. UVREDUC_HS: use value reduction homestead. UVREDUC_NR: use value reduction non-residential
+
+SPAN: school property access number - property identifier. GLIST_SPAN: grand list property span number. MAPID: municipality tax identifier. PARCID: parcel identifier. PROPTYPE: what is on the parcel itself. TOWN: town name in code. TNAME: fully written out town name. SOURCENAME: name of infor source. SOURCETYPE: original data type. SOURCEDATE: date of original map publishing. EDITMETHOD: method to draw map. EDITOR initials. EDITDATE. MATCHSTAT: how well the parcel map shape attached to grand tax record. EDITNOTE. OWNER1. OWNER2. ADDRGL1. ADDRGL2. CITYGL. STATEGL. ZIPGL. DESCPROP: description of property. LOCAPROP. CAT: category of parcel use. RESCODE: where doesthe resident live - out of state?. EQUIPCODE: taxable equipcode. HSDECL: homestead declaration. ENDDATE: end of parcel data. STATUTE - reference ot vermont law if applicable to parcel. E911 ADRR: 911 address 
+
+ACRESGL: taxable acreage. GLVAL_HS: 1% of homestead value. GLVAL_NR: non residential - 1 percent of non residential tax. CRHOUSPCT: percentage of property subject to housing statutes. MUNGL1PCT: total value on which to calculate 1% of value per municipality. AOEGL_HS: homestead value for calculating education taxation. AOEGL_NR: non residential taxation value calculated for education property. 
+
+geom: The actual spatial map data (the points, lines, and polygons) that draws the shape and physical boundaries of the parcel. EPSG:4326 signifies that the coordinates are mapped using standard Latitude and Longitude (WGS 84), exactly like a GPS uses.
 ```{python}
 described_parcels_raw = con.execute("DESCRIBE parcels_raw").df()
-#print(described_parcels_raw)
-# print(con.execute("SELECT COUNT(*) AS row_count, COUNT (DISTINCT OBJECTID) AS distinct_ids, SUM((OBJECTID IS NULL)::INT) AS nulls FROM parcels_raw").df())
 
 column_types = described_parcels_raw["column_type"].unique().tolist()
 columns_by_type = {}
@@ -351,5 +362,5 @@ print(db.execute("SELECT COUNT(*) FROM parcels_geom").df())
 ```
 
 ```{python}
-con.execute("SELECT DISTINCT TOWN FROM parcels_raw").df()
+con.execute("SELECT DISTINCT RESCODE FROM parcels_raw").df()
 ```

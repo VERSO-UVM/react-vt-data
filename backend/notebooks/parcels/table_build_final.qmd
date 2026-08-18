@@ -1,0 +1,216 @@
+---
+title: "Vermont Parcels: making the new tables"
+author: Isaac Wedaman
+date: today
+description:  The second version of the vermotn parcels the exploratory motion
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+---
+```{python}
+import geopandas as gpd, pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+from pathlib import Path
+
+FGB = "Data/parcels/all_parcels_vermont.fgb"
+parcels = gpd.read_file(FGB)
+print("shape:", parcels.shape, "| CRS:", parcels.crs)
+print(parcels.geom_type.value_counts())
+
+# --- join key integrity (self-healing) ---
+if "OBJECTID" not in parcels.columns:
+    print("!! OBJECTID not in file (dropped before save). Minting a fresh stable id.")
+    parcels = parcels.reset_index(drop=True)
+    parcels["OBJECTID"] = 1_000_000 + parcels.index
+assert parcels["OBJECTID"].is_unique, "OBJECTID not unique — unusable as join key"
+assert parcels["OBJECTID"].notna().all(), "OBJECTID has nulls"
+print("OBJECTID ok | n =", parcels["OBJECTID"].nunique())
+
+# --- the columns that kept silently breaking on you ---
+for c in ["OOSOWNER", "INVESTMENTPROP", "EXEMPT", "VACANTLAND"]:
+    if c in parcels:
+        print(f"{c:16s} →", dict(parcels[c].value_counts(dropna=False)))
+
+# quick null scan on the fields the analysis leans on
+key = ["TOWN","COUNTY","REAL_FLV","LAND_LV","IMPRV_LV","ACRESGL","CAT","PURPOSE"]
+print((parcels[[c for c in key if c in parcels]].isna().mean()*100).round(1))
+
+```
+making a reusable chloropleth filter
+```{python}
+TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+towns_gdf = gpd.read_file(TOWN_URL)
+towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
+towns_gdf = towns_gdf[["TOWN", "geometry"]].copy()
+
+def town_choropleth(values: pd.Series, title, log=False, cmap="viridis"):
+    """values: a Series indexed by TOWN."""
+    v = values.rename("val").reset_index(); v.columns = ["TOWN", "val"]
+    m = towns_gdf.merge(v, on="TOWN", how="left")
+    if log:
+        m.loc[m["val"] <= 0, "val"] = np.nan          
+    fig, ax = plt.subplots(figsize=(8, 11))
+    kw = dict(column="val", cmap=cmap, legend=True, ax=ax,
+              edgecolor="gray", linewidth=0.3,
+              missing_kwds={"color": "lightgray", "label": "no data"})
+    if log:
+        pos = m["val"].dropna()
+        kw["norm"] = LogNorm(vmin=pos.min(), vmax=pos.max())
+    m.plot(**kw); ax.set_title(title); ax.axis("off"); plt.show()
+    print("unmatched towns:", m["val"].isna().sum())
+    return m
+```
+before vs after backfill
+```{python}
+import duckdb
+con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+
+# AFTER — the rebuilt layer
+new_n      = len(parcels)
+new_valued = int((parcels["REAL_FLV"] > 0).sum())
+new_sum    = float(parcels.loc[parcels["REAL_FLV"] > 0, "REAL_FLV"].sum())
+
+# BEFORE — the original statewide layer
+old = con.execute("""
+    SELECT TOWN, COUNT(*) n,
+           SUM((REAL_FLV > 0)::INT) valued,
+           SUM(CASE WHEN REAL_FLV > 0 THEN REAL_FLV ELSE 0 END) val_sum
+    FROM parcels_info GROUP BY TOWN
+""").df()
+old_n, old_valued, old_sum = int(old.n.sum()), int(old.valued.sum()), float(old.val_sum.sum())
+
+print(f"BEFORE: {old_n:>8,} parcels | {old_valued:>8,} valued ({100*old_valued/old_n:4.1f}%) | ${old_sum:,.0f}")
+print(f"AFTER : {new_n:>8,} parcels | {new_valued:>8,} valued ({100*new_valued/new_n:4.1f}%) | ${new_sum:,.0f}")
+print(f"Δ     : {new_n-old_n:>+8,} parcels | {new_valued-old_valued:>+8,} valued | ${new_sum-old_sum:+,.0f}")
+
+# --- tag each rebuilt parcel by how the OLD layer treated its town ---
+old_all    = set(old.TOWN)
+old_broken = set(old.loc[old.valued == 0, "TOWN"])
+def origin(t):
+    if t not in old_all:  return "absent_from_statewide"
+    if t in old_broken:   return "restored_by_rebuild"
+    return "covered_in_statewide"
+parcels["data_origin"] = parcels["TOWN"].map(origin)
+
+by_origin = (parcels.assign(valued=parcels["REAL_FLV"] > 0)
+             .groupby("data_origin")
+             .agg(parcels=("OBJECTID", "size"),
+                  valued=("valued", "sum"),
+                  grand_list=("REAL_FLV", lambda s: s[s > 0].sum())))
+print("\n", by_origin, sep="")
+
+restored = parcels[parcels.data_origin == "restored_by_rebuild"]
+print(f"\nRestored {len(restored):,} parcels worth "
+      f"${restored.loc[restored.REAL_FLV>0,'REAL_FLV'].sum():,.0f}")
+print(restored.groupby("TOWN")
+      .agg(n=("OBJECTID","size"), value=("REAL_FLV", lambda s: s[s>0].sum()))
+      .sort_values("n", ascending=False).head(10))
+
+# spelling-drift guard between the two TOWN keys
+print("\nin rebuilt, no old-layer match:", sorted(set(parcels.TOWN) - old_all)[:15])
+```
+
+MEDIAN PARCEL VALUE
+```{python}
+med_val = parcels.loc[parcels["REAL_FLV"] > 0].groupby("TOWN")["REAL_FLV"].median()
+town_choropleth(med_val, "Median parcel value (REAL_FLV) — log scale", log=True, cmap="viridis")
+print("highest:\n", med_val.sort_values(ascending=False).head(8))
+print("lowest:\n",  med_val.sort_values().head(8))
+```
+
+```{python}
+# EPSG:32145 = VT State Plane (meters); 1 acre = 4046.8564224 m²
+parcels["AREA_ACRES_GEOM"] = parcels.to_crs(32145).geometry.area / 4046.8564224
+
+size = (parcels.groupby("TOWN")
+        .agg(deeded=("ACRESGL", "median"), geom=("AREA_ACRES_GEOM", "median"))
+        .dropna())
+print("largest lots:\n", size.sort_values("geom", ascending=False).head(8))
+print("smallest lots:\n", size.sort_values("geom").head(8))
+print("corr deeded vs geom:",
+      parcels[["ACRESGL","AREA_ACRES_GEOM"]].dropna().corr().iloc[0,1].round(3))
+
+town_choropleth(size["geom"], "Median parcel size (geometry acres) — log scale", log=True, cmap="cividis")
+```
+
+LAND VS IMPROVEMENT VALUE
+```{python}
+val = parcels["REAL_FLV"]
+parcels["IMPR_SHARE"] = np.where(val > 0, parcels["IMPRV_LV"].fillna(0) / val, np.nan)
+
+# alt denominator (assessed components) — often cleaner than REAL_FLV
+den = parcels["LAND_LV"].fillna(0) + parcels["IMPRV_LV"].fillna(0)
+parcels["IMPR_SHARE_ALT"] = np.where(den > 0, parcels["IMPRV_LV"].fillna(0) / den, np.nan)
+
+print(parcels["IMPR_SHARE"].describe())
+print("share > 1 (quirks where IMPRV_LV exceeds REAL_FLV):", int((parcels["IMPR_SHARE"] > 1).sum()))
+
+med_share = parcels.groupby("TOWN")["IMPR_SHARE"].median().clip(0, 1)
+town_choropleth(med_share, "Median improvement share (building ÷ total value)", cmap="RdYlBu_r")
+print("most built-up:\n", med_share.sort_values(ascending=False).head(8))
+print("most land-heavy:\n", med_share.sort_values().head(8))
+```
+
+
+```{python}
+# PURPOSE already collapses CAT into the urban-rural-relevant buckets you engineered
+mix = pd.crosstab(parcels["TOWN"], parcels["PURPOSE"], normalize="index").mul(100).round(1)
+print(mix.head())
+
+res   = mix.get("PRIMARY RESIDENCE", pd.Series(0.0, index=mix.index))
+rural = mix.reindex(columns=["FARM","WOODLAND","SEASONAL PROPERTY"], fill_value=0).sum(axis=1)
+print("\nmost residential:\n", res.sort_values(ascending=False).head(10))
+print("\nmost farm/woodland/seasonal:\n", rural.sort_values(ascending=False).head(10))
+
+top = parcels["TOWN"].value_counts().head(12).index
+mix.loc[top].plot(kind="barh", stacked=True, figsize=(9, 7))
+plt.xlabel("% of parcels"); plt.title("PURPOSE mix — 12 largest towns")
+plt.legend(bbox_to_anchor=(1.02, 1)); plt.tight_layout(); plt.show()
+
+```
+
+
+```{python}
+out = Path("Data/parcels/tables"); out.mkdir(parents=True, exist_ok=True)
+def present(cols): return [c for c in cols if c in parcels.columns]   # tolerate dropped cols
+
+geom_cols = present(["OBJECTID", "TOWN", "COUNTY", "geometry"])
+info_cols = present(["OBJECTID","TOWN","COUNTY","SPAN","PROPTYPE","CAT","CATEGORY","PURPOSE",
+                     "DESCPROP","RESCODE","ACRESGL","AREA_ACRES_GEOM","CITYGL","STGL","ADDRESS",
+                     "SOURCENAME","MATCHSTAT","TNAME","INVESTMENTPROP","VACANTLAND","OOSOWNER",
+                     "data_origin","EDITOR","EDITDATE"])
+tax_cols  = present(["OBJECTID","TOWN","REAL_FLV","HSTED_FLV","NRES_FLV","LAND_LV","IMPRV_LV",
+                     "IMPR_SHARE","EQUIPVAL","EQUIPCODE","INVENVAL","HSDECL","VETEXAMT","EXPDESC",
+                     "STATUTE","EXEMPT","EXAMT_HS","EXAMT_NR","UVREDUC_HS","UVREDUC_NR",
+                     "GLVAL_HS","GLVAL_NR"])
+
+geom = parcels[geom_cols].copy()                 # GeoDataFrame → GeoParquet
+info = pd.DataFrame(parcels[info_cols])          # plain (no geometry)
+tax  = pd.DataFrame(parcels[tax_cols])
+
+geom.to_parquet(out / "parcels_geom.parquet")
+info.to_parquet(out / "parcels_info.parquet", index=False)
+tax.to_parquet(out / "parcels_tax.parquet",  index=False)
+print("geom:", geom.shape, "| info:", info.shape, "| tax:", tax.shape)
+
+# --- prove the three still join cleanly on OBJECTID ---
+g = gpd.read_parquet(out / "parcels_geom.parquet")
+i = pd.read_parquet(out / "parcels_info.parquet")
+t = pd.read_parquet(out / "parcels_tax.parquet")
+assert g.OBJECTID.is_unique and i.OBJECTID.is_unique and t.OBJECTID.is_unique
+assert set(g.OBJECTID) == set(i.OBJECTID) == set(t.OBJECTID), "OBJECTID sets differ!"
+three = g.merge(i, on="OBJECTID").merge(t, on="OBJECTID", suffixes=("_info","_tax"))
+print("3-way join rows:", len(three), "== parcel count?", len(three) == len(parcels))
+```
