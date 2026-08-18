@@ -106,7 +106,7 @@ check-frontend:
 build-collection:
     podman build -t localhost/vdc-collection -f ETL/dockerfile.collect .
 
-# Get the data for a specified year
+# Collect the data for a specified year and add to lake.RAW tables
 [working-directory("backend")]
 get-data year: build-collection
     echo "Using API key: $CENSUS_API_KEY"
@@ -114,7 +114,7 @@ get-data year: build-collection
 
 
 # --------- 2. Data Cleaning (T) ---------------------
-# build and run the backend CLEANING image
+# Run each RAW table through it's data cleaning script
 [working-directory("backend")]
 transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
@@ -122,15 +122,14 @@ transform-data:
 
 
 # --------- 3. Data Loading (L) ---------------------
-# build and run the backend LOADING image (loads cleaned tables into a DuckDB)
+# Load the lake.CLEANED tables into a DuckDB database
 [working-directory("backend")]
 load-data:
     podman build -t localhost/vdc-loading -f ETL/dockerfile.load .
     podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
 
 
-
-# --------- FULL PIPELINE RUN (ETL) ---------------------
+# Collect (E), clean (T), and load (L) the data (Full pipeline run)
 [working-directory("backend")]
 run-etl year:
     # Collect the data for a certain year
