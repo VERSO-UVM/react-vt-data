@@ -2,7 +2,7 @@
 
 export DATA_DIR := justfile_directory() / "Data"
 # Load environment variables
-set dotenv-filename := ".env.local"
+set dotenv-filename := ".env"
 
 ################
 # CLI Development  #
@@ -117,7 +117,11 @@ build-collection:
 [working-directory("backend")]
 get-data year: build-collection
     echo "Using API key: $CENSUS_API_KEY"
-    podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-collection {{year}}
+    podman run --rm \
+        -v "$(pwd)/Data:/data:z" \
+        -e DATA_DIR=/data \
+        -e CENSUS_API_KEY="$CENSUS_API_KEY" \
+        localhost/vdc-collection {{year}}
 
 
 # --------- 2. Data Cleaning (T) ---------------------
