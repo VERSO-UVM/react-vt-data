@@ -52,14 +52,3 @@ def add_zoning_tooltip(gdf):
             "Acreage": "Acres_fmt",
         },
     )
-
-
-def compute_acerage_metrics(gdf):
-    df = gdf.drop(columns=["geometry"])
-    metrics = {
-        "total_acreage": df["Acres"].sum(),
-        "num_districts": len(df),
-        "num_residential_districts": len(df[df["District Type"] == "Residential"]),
-        "residential_acreage": df[df["District Type"] == "Residential"]["Acres"].sum(),
-    }
-    return metrics

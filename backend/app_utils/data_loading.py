@@ -249,22 +249,7 @@ LOADERS = {
     "census_demographics": lambda: load_census_data_dict(DEMO_SOURCES),
     "census_social": lambda: load_census_data_dict(SOCIAL_SOURCES),
     "census_combined": lambda: load_combine_census(COMBINED_CENSUS),
-    # Joins
-    "flooding_with_zoning": lambda: add_cols_of_biggest_intersection(
-        donor_gdf=masterload("zoning"),
-        altered_gdf=masterload("flood_legal"),
-        add_columns=["County", "Jurisdiction"],
-    ),
-    "soil_septic_with_zoning": lambda rpc=None: add_cols_of_biggest_intersection(
-        donor_gdf=masterload("zoning"),
-        altered_gdf=masterload("flood_legal", rpc),
-        add_columns=["County"],
-    ),
 }
-
-
-def register_loader(name, func):
-    LOADERS[name] = func
 
 
 if __name__ == "__main__":
