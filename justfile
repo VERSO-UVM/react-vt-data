@@ -1,6 +1,8 @@
 ## Set up environment ##
 
 export DATA_DIR := justfile_directory() / "Data"
+# Load environment variables
+set dotenv-filename := ".env.local"
 
 ################
 # CLI Development  #
@@ -95,8 +97,7 @@ check-frontend:
     npx tsc --noEmit    
 
 
-################
-# ETL (Pipeline) Container
+## ETL (Pipeline) Container
 ################
 
 # --------- 1. Data Collection (E) ---------------------
@@ -108,6 +109,7 @@ build-collection:
 # Get the data for a specified year
 [working-directory("backend")]
 get-data year: build-collection
+    echo "Using API key: $CENSUS_API_KEY"
     podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-collection {{year}}
 
 

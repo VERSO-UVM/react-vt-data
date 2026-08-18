@@ -86,7 +86,6 @@ SECTOR_ORDER = [
 ]
 
 BASE_URL = "https://data.bls.gov/cew/data/api/{year}/{q}/area/{fips}.csv"
-# YEARS = list(range(2009, 2024))
 QUARTERS = [1, 2, 3, 4]
 
 

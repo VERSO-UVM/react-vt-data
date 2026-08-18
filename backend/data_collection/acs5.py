@@ -11,6 +11,7 @@ Pass --geos on the CLI to scrape only specific geographic levels.
 Use --append to merge new rows into existing files instead of overwriting.
 """
 
+import os
 import time
 
 import pandas as pd
@@ -19,9 +20,10 @@ import requests
 from app_utils.census import tidy_census
 from data_collection.base import ALL_GEOS
 
-API_KEY = (
-    "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"  # TODO: Get this as a .env variable!!!
-)
+# Define API key through the .env file
+API_KEY = os.environ.get("CENSUS_API_KEY")
+
+
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5/profile"
 STATE_FIPS = "50"  # Vermont
 TABLES = {
@@ -30,7 +32,6 @@ TABLES = {
     "DP04": "Housing",
     "DP05": "Demographic",
 }
-YEARS = list(range(2009, 2025))
 STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
 
