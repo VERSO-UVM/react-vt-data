@@ -5,6 +5,7 @@ from query.core_functions import filter_options, filter_tree
 from query.processed_db import DB
 from query.wastewater import (
     get_soil_suit_geojson,
+    get_soil_suit_legend,
     get_waste_service_areas_geojson,
     get_waste_treatment_facility_geojson,
     get_waste_treatment_facility_permits,
