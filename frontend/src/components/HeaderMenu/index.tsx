@@ -65,7 +65,6 @@ const links = [
       // { link: '/resources/tutorial', label: 'Tutorial' },
     ],
   },
-  // { link: '/scratch', label: 'Scratch' }, // For zoning rules filter development
   // Future sections of the "About" page outlined below
   {
     link: '/about',

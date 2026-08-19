@@ -1,444 +1,752 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="quarto-1.8.27" />
 
-<meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+    />
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>duckdb_consolidation</title>
+    <style>
+      code {
+        white-space: pre-wrap;
+      }
+      span.smallcaps {
+        font-variant: small-caps;
+      }
+      div.columns {
+        display: flex;
+        gap: min(4vw, 1.5em);
+      }
+      div.column {
+        flex: auto;
+        overflow-x: auto;
+      }
+      div.hanging-indent {
+        margin-left: 1.5em;
+        text-indent: -1.5em;
+      }
+      ul.task-list {
+        list-style: none;
+      }
+      ul.task-list li input[type="checkbox"] {
+        width: 0.8em;
+        margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */
+        vertical-align: middle;
+      }
+      /* CSS for syntax highlighting */
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      pre > code.sourceCode {
+        white-space: pre;
+        position: relative;
+      }
+      pre > code.sourceCode > span {
+        display: inline-block;
+        line-height: 1.25;
+      }
+      pre > code.sourceCode > span:empty {
+        height: 1.2em;
+      }
+      .sourceCode {
+        overflow: visible;
+      }
+      code.sourceCode > span {
+        color: inherit;
+        text-decoration: inherit;
+      }
+      div.sourceCode {
+        margin: 1em 0;
+      }
+      pre.sourceCode {
+        margin: 0;
+      }
+      @media screen {
+        div.sourceCode {
+          overflow: auto;
+        }
+      }
+      @media print {
+        pre > code.sourceCode {
+          white-space: pre-wrap;
+        }
+        pre > code.sourceCode > span {
+          text-indent: -5em;
+          padding-left: 5em;
+        }
+      }
+      pre.numberSource code {
+        counter-reset: source-line 0;
+      }
+      pre.numberSource code > span {
+        position: relative;
+        left: -4em;
+        counter-increment: source-line;
+      }
+      pre.numberSource code > span > a:first-child::before {
+        content: counter(source-line);
+        position: relative;
+        left: -1em;
+        text-align: right;
+        vertical-align: baseline;
+        border: none;
+        display: inline-block;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        padding: 0 4px;
+        width: 4em;
+      }
+      pre.numberSource {
+        margin-left: 3em;
+        padding-left: 4px;
+      }
+      div.sourceCode {
+      }
+      @media screen {
+        pre > code.sourceCode > span > a:first-child::before {
+          text-decoration: underline;
+        }
+      }
+    </style>
 
+    <script src="duckdb_consolidation_files/libs/clipboard/clipboard.min.js"></script>
+    <script
+      src="duckdb_consolidation_files/libs/quarto-html/quarto.js"
+      type="module"
+    ></script>
+    <script
+      src="duckdb_consolidation_files/libs/quarto-html/tabsets/tabsets.js"
+      type="module"
+    ></script>
+    <script
+      src="duckdb_consolidation_files/libs/quarto-html/axe/axe-check.js"
+      type="module"
+    ></script>
+    <script src="duckdb_consolidation_files/libs/quarto-html/popper.min.js"></script>
+    <script src="duckdb_consolidation_files/libs/quarto-html/tippy.umd.min.js"></script>
+    <script src="duckdb_consolidation_files/libs/quarto-html/anchor.min.js"></script>
+    <link
+      href="duckdb_consolidation_files/libs/quarto-html/tippy.css"
+      rel="stylesheet"
+    />
+    <link
+      href="duckdb_consolidation_files/libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css"
+      rel="stylesheet"
+      id="quarto-text-highlighting-styles"
+    />
+    <script src="duckdb_consolidation_files/libs/bootstrap/bootstrap.min.js"></script>
+    <link
+      href="duckdb_consolidation_files/libs/bootstrap/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link
+      href="duckdb_consolidation_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css"
+      rel="stylesheet"
+      append-hash="true"
+      id="quarto-bootstrap"
+      data-mode="light"
+    />
+  </head>
 
-<title>duckdb_consolidation</title>
-<style>
-code{white-space: pre-wrap;}
-span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
-div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-ul.task-list{list-style: none;}
-ul.task-list li input[type="checkbox"] {
-  width: 0.8em;
-  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
-  vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
-</style>
-
-
-<script src="duckdb_consolidation_files/libs/clipboard/clipboard.min.js"></script>
-<script src="duckdb_consolidation_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="duckdb_consolidation_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="duckdb_consolidation_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
-<script src="duckdb_consolidation_files/libs/quarto-html/popper.min.js"></script>
-<script src="duckdb_consolidation_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="duckdb_consolidation_files/libs/quarto-html/anchor.min.js"></script>
-<link href="duckdb_consolidation_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="duckdb_consolidation_files/libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="duckdb_consolidation_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="duckdb_consolidation_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="duckdb_consolidation_files/libs/bootstrap/bootstrap-9e3ffae467580fdb927a41352e75a2e0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
-
-
-</head>
-
-<body class="fullcontent quarto-light">
-
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
-<main class="content" id="quarto-document-content">
-
-
-
-
-<section id="duckdb-consolidation-report" class="level1">
-<h1>DuckDB Consolidation Report</h1>
-<p><em>Which data streams make sense to consolidate to DuckDB.</em></p>
-<hr>
-<section id="current-state" class="level2">
-<h2 class="anchored" data-anchor-id="current-state">Current State</h2>
-<p>DuckDB is <strong>already used</strong> in two routes:</p>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Route file</th>
-<th>Data</th>
-<th>DuckDB operations</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>post_acs5_db.py</code></td>
-<td>9 tidy parquets (ACS5 B-series + DP-series)</td>
-<td>9 views, WHERE + ORDER, UNION ALL across DP tables</td>
-</tr>
-<tr class="even">
-<td><code>post_qcew.py</code></td>
-<td><code>vt_qcew_employment.parquet</code> (53 KB)</td>
-<td>WHERE county, PIVOT sectors, ORDER year/quarter</td>
-</tr>
-</tbody>
-</table>
-<p>These are the right pattern. Everything else either uses the <code>masterload()</code> Geopandas pipeline (FGB/GeoJSON) or loads individual CSVs with pandas in <code>post_census.py</code>.</p>
-<hr>
-</section>
-<section id="data-inventory" class="level2">
-<h2 class="anchored" data-anchor-id="data-inventory">Data Inventory</h2>
-<section id="census-backenddatacensus" class="level3">
-<h3 class="anchored" data-anchor-id="census-backenddatacensus">Census (<code>backend/Data/Census/</code>)</h3>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>File</th>
-<th>Format</th>
-<th>Size</th>
-<th>Currently used by</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>vt_acs5_combined.csv</code></td>
-<td>CSV</td>
-<td>101 MB</td>
-<td>Not used by any active route</td>
-</tr>
-<tr class="even">
-<td><code>vt_acs5_combined.parquet</code></td>
-<td>Parquet</td>
-<td>15 MB</td>
-<td>Not used by any active route</td>
-</tr>
-<tr class="odd">
-<td><code>vt_acs5_combined_TIDY.parquet</code></td>
-<td>Parquet</td>
-<td>9.4 MB</td>
-<td><code>post_acs5_db.py</code> (DuckDB view <code>profile_census</code>)</td>
-</tr>
-<tr class="even">
-<td><code>vt_acs5_b_demographics_tidy.parquet</code></td>
-<td>Parquet</td>
-<td>274 KB</td>
-<td><code>post_acs5_db.py</code> (DuckDB view <code>b10_census</code>)</td>
-</tr>
-<tr class="odd">
-<td><code>vt_acs5_b_education_tidy.parquet</code></td>
-<td>Parquet</td>
-<td>94 KB</td>
-<td><code>post_acs5_db.py</code> (DuckDB view <code>b15003_education</code>)</td>
-</tr>
-<tr class="even">
-<td><code>vt_acs5_b_housing_tidy.parquet</code></td>
-<td>Parquet</td>
-<td>105 KB</td>
-<td><code>post_acs5_db.py</code> (DuckDB view <code>b_housing</code>)</td>
-</tr>
-<tr class="odd">
-<td><code>vt_acs5_b_economic_tidy.parquet</code></td>
-<td>Parquet</td>
-<td>102 KB</td>
-<td><code>post_acs5_db.py</code> (DuckDB view <code>b_economic</code>)</td>
-</tr>
-<tr class="even">
-<td><code>vt_acs5_{topic}_data_tidy.parquet</code> (×4)</td>
-<td>Parquet</td>
-<td>1–2.2 MB each</td>
-<td><code>post_acs5_db.py</code> (DuckDB views <code>dp02</code>–<code>dp05</code>)</td>
-</tr>
-<tr class="odd">
-<td><code>vt_acs5_{topic}_data.csv</code> (×4)</td>
-<td>CSV</td>
-<td>8–15 MB each</td>
-<td>Not used by any active route (superseded by tidy parquets)</td>
-</tr>
-<tr class="even">
-<td><code>vt_acs5_{topic}_data_tidy.csv</code> (×4)</td>
-<td>CSV</td>
-<td>100–200 MB each</td>
-<td>Not used by any active route</td>
-</tr>
-<tr class="odd">
-<td><code>VT_{topic}_ALL.fgb</code> (×4)</td>
-<td>FlatGeobuf</td>
-<td>600–900 KB each</td>
-<td><code>post_census.py</code> via <code>masterload()</code> + Geopandas</td>
-</tr>
-<tr class="even">
-<td><code>VT_HOUSING_ALL_2013.fgb</code></td>
-<td>FlatGeobuf</td>
-<td>852 KB</td>
-<td><code>post_census.py</code> (2013 snapshot comparison)</td>
-</tr>
-<tr class="odd">
-<td><code>VT_Historic_Population.csv</code></td>
-<td>CSV</td>
-<td>425 KB</td>
-<td><code>post_census.py</code> via pandas</td>
-</tr>
-<tr class="even">
-<td><code>unemployment_rate_by_year.csv</code></td>
-<td>CSV</td>
-<td>200 KB</td>
-<td><code>post_census.py</code> via pandas</td>
-</tr>
-<tr class="odd">
-<td><code>median_earnings_by_year.csv</code></td>
-<td>CSV</td>
-<td>717 KB</td>
-<td><code>post_census.py</code> via pandas</td>
-</tr>
-<tr class="even">
-<td><code>med_home_value_by_year.csv</code></td>
-<td>CSV</td>
-<td>242 KB</td>
-<td><code>post_census.py</code> via pandas</td>
-</tr>
-<tr class="odd">
-<td><code>med_smoc_by_year.csv</code></td>
-<td>CSV</td>
-<td>593 KB</td>
-<td><code>post_census.py</code> via pandas</td>
-</tr>
-<tr class="even">
-<td><code>commute_time_by_year.csv</code></td>
-<td>CSV</td>
-<td>203 KB</td>
-<td><code>post_census.py</code> via pandas</td>
-</tr>
-<tr class="odd">
-<td><code>commute_habits_by_year.csv</code></td>
-<td>CSV</td>
-<td>707 KB</td>
-<td><code>post_census.py</code> via pandas</td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="non-census" class="level3">
-<h3 class="anchored" data-anchor-id="non-census">Non-Census</h3>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>File</th>
-<th>Format</th>
-<th>Size</th>
-<th>Currently used by</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>vt_qcew_employment.parquet</code></td>
-<td>Parquet</td>
-<td>53 KB</td>
-<td><code>post_qcew.py</code> (DuckDB) — already optimal</td>
-</tr>
-<tr class="even">
-<td><code>vt-zoning-update.fgb</code></td>
-<td>FlatGeobuf</td>
-<td>17 MB</td>
-<td><code>post_zoning.py</code> via <code>masterload()</code> + Geopandas</td>
-</tr>
-<tr class="odd">
-<td><code>*_Soil_Septic.fgb</code> (×7)</td>
-<td>FlatGeobuf</td>
-<td>8–24 MB each (114 MB total)</td>
-<td><code>get_filters.py</code> via <code>masterload()</code> + Geopandas</td>
-</tr>
-<tr class="even">
-<td><code>VermontServiceArea.geojson</code></td>
-<td>GeoJSON</td>
-<td>4.8 MB</td>
-<td><code>masterload()</code>, infrequently queried</td>
-</tr>
-<tr class="odd">
-<td><code>VermontWWTF.geojson</code></td>
-<td>GeoJSON</td>
-<td>604 KB</td>
-<td><code>masterload()</code>, infrequently queried</td>
-</tr>
-<tr class="even">
-<td><code>flood-legal.json</code></td>
-<td>JSON</td>
-<td>~100 MB (frontend)</td>
-<td>Frontend only — served as static asset</td>
-</tr>
-</tbody>
-</table>
-<hr>
-</section>
-</section>
-<section id="consolidation-recommendations" class="level2">
-<h2 class="anchored" data-anchor-id="consolidation-recommendations">Consolidation Recommendations</h2>
-<section id="priority-1-high-value-low-risk-time-series-csvs-duckdb-views" class="level3">
-<h3 class="anchored" data-anchor-id="priority-1-high-value-low-risk-time-series-csvs-duckdb-views">Priority 1 — High value, low risk: time-series CSVs → DuckDB views</h3>
-<p><strong>Files:</strong> <code>unemployment_rate_by_year.csv</code>, <code>median_earnings_by_year.csv</code>, <code>med_home_value_by_year.csv</code>, <code>med_smoc_by_year.csv</code>, <code>commute_time_by_year.csv</code>, <code>commute_habits_by_year.csv</code>, <code>VT_Historic_Population.csv</code></p>
-<p><strong>Why:</strong> These are the only active non-spatial data still loaded by pandas in <code>post_census.py</code>. Each is loaded separately on every request with no query pushdown — all filtering happens in Python after loading the full file into memory.</p>
-<p><strong>Recommendation:</strong> - Register each CSV as a DuckDB view in <code>post_acs5_db.py</code> (alongside the existing parquet views) using <code>read_csv_auto()</code>. No file conversion needed — DuckDB reads CSVs natively and efficiently. - Apply WHERE filters in SQL before returning to Python, eliminating the full-file pandas load. - The <code>split_name_col()</code> NAME-parsing step (Jurisdiction + County extraction) is currently applied by <code>load_census_data()</code>; because these CSVs use NAME as the location key, filter them by NAME directly in DuckDB (matching the <code>post_acs5_db.py</code> pattern) rather than re-doing the regex split. - Update <code>post_census.py</code> <code>/{category}/{subcategory}</code> endpoints for these subcategories to call the DuckDB connection instead of <code>load_census_data()</code>.</p>
-<p><strong>Expected benefit:</strong> Eliminates ~3 MB of CSV I/O per request. Consolidates all tabular census data access into one DB connection and makes future cross-series queries trivial (e.g.&nbsp;unemployment vs.&nbsp;median earnings for the same location in one query).</p>
-<hr>
-</section>
-<section id="priority-2-medium-value-snapshot-fgbs-route-tabular-queries-to-tidy-parquets" class="level3">
-<h3 class="anchored" data-anchor-id="priority-2-medium-value-snapshot-fgbs-route-tabular-queries-to-tidy-parquets">Priority 2 — Medium value: snapshot FGBs → route tabular queries to tidy parquets</h3>
-<p><strong>Files:</strong> <code>VT_HOUSING_ALL.fgb</code>, <code>VT_ECONOMIC_ALL.fgb</code>, <code>VT_DEMOGRAPHIC_ALL.fgb</code>, <code>VT_SOCIAL_ALL.fgb</code>, <code>VT_HOUSING_ALL_2013.fgb</code></p>
-<p><strong>Why:</strong> These FGBs are loaded by Geopandas for metric calculations (sums, means by Jurisdiction/County) in <code>post_census.py</code>. Their geometry is not used by the tabular routes — they were the original data source before the tidy parquet pipeline was built. The tidy parquets (<code>vt_acs5_b_*_tidy.parquet</code>) already cover the same data in a better format.</p>
-<p><strong>Recommendation:</strong> - Audit which metrics in <code>post_census.py</code> are already covered by the existing DuckDB tidy parquets. Migrate those metric calculations to SQL queries. - For the 2013 vs.&nbsp;2023 delta comparison: export pre-computed delta values to a small parquet and query it with DuckDB. The current approach loads two full ~850 KB FGBs just to compute a handful of aggregate deltas. - Retain the FGBs only for routes that actually need geometry (GeoJSON map layers).</p>
-<p><strong>Expected benefit:</strong> Removes Geopandas overhead for purely tabular queries; unifies the data access model.</p>
-<hr>
-</section>
-<section id="priority-3-low-value-for-now-zoning-tabular-aggregation" class="level3">
-<h3 class="anchored" data-anchor-id="priority-3-low-value-for-now-zoning-tabular-aggregation">Priority 3 — Low value for now: zoning tabular aggregation</h3>
-<p><strong>File:</strong> <code>vt-zoning-update.fgb</code> (17 MB)</p>
-<p><strong>Why:</strong> Zoning acreage aggregations (totals by district type, by county) are simple GROUP BY queries on non-spatial columns. Geopandas loads the full geometry just to get these numbers.</p>
-<p><strong>Recommendation:</strong> - Export the non-geometry columns of <code>vt-zoning-update.fgb</code> to a companion parquet (e.g., <code>vt-zoning-tabular.parquet</code>). - Use DuckDB for aggregation queries; keep Geopandas only for the map rendering route.</p>
-<p><strong>Expected benefit:</strong> Skips the 17 MB FGB geometry load for tabular requests.</p>
-<hr>
-</section>
-<section id="not-recommended-soil-suitability-wastewater-flood-hazard" class="level3">
-<h3 class="anchored" data-anchor-id="not-recommended-soil-suitability-wastewater-flood-hazard">Not recommended: soil suitability, wastewater, flood hazard</h3>
-<p><strong>Soil suitability:</strong> The 7 regional FGBs are loaded on-demand by RPC and rendered as GeoJsonLayer tiles. The geometry is the whole point. DuckDB does not handle GeoDataFrames natively — consolidation would require WKB encoding round-trips for no meaningful benefit over the current cached Geopandas approach.</p>
-<p><strong>Wastewater:</strong> Two small GeoJSON files accessed infrequently, geometry-centric. Not worth the conversion overhead.</p>
-<p><strong>Flood hazard:</strong> A frontend static asset. No backend query at all.</p>
-<hr>
-</section>
-<section id="cleanup-remove-unused-csvs-and-build-artifacts" class="level3">
-<h3 class="anchored" data-anchor-id="cleanup-remove-unused-csvs-and-build-artifacts">Cleanup: remove unused CSVs and build artifacts</h3>
-<p>The four wide-format CSVs (<code>vt_acs5_{topic}_data.csv</code>, 8–15 MB each) and their tidy counterparts (<code>vt_acs5_{topic}_data_tidy.csv</code>, 100–200 MB each) are not used by any active API route. They appear to be intermediate build artifacts from the scraper pipeline.</p>
-<p><strong>Recommendation:</strong> Delete the four <code>_tidy.csv</code> files (~680 MB total on disk). Verify no route references <code>vt_acs5_combined.csv</code> or the wide CSVs before deleting them as well. The tidy parquets and FGBs fully cover their data for API purposes.</p>
-<hr>
-</section>
-</section>
-<section id="summary-table" class="level2">
-<h2 class="anchored" data-anchor-id="summary-table">Summary Table</h2>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Data stream</th>
-<th>Current approach</th>
-<th>Recommendation</th>
-<th>Priority</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>ACS5 tidy parquets (B-series + DP-series)</td>
-<td>✅ DuckDB</td>
-<td>Already optimal</td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td>QCEW employment parquet</td>
-<td>✅ DuckDB</td>
-<td>Already optimal</td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td>6× time-series CSVs + historic population CSV</td>
-<td>pandas (per-request CSV load)</td>
-<td>DuckDB views via <code>read_csv_auto()</code></td>
-<td><strong>High</strong></td>
-</tr>
-<tr class="even">
-<td>Snapshot FGBs (2023 + 2013, 4× topics)</td>
-<td>Geopandas (tabular queries)</td>
-<td>Migrate tabular metrics to DuckDB tidy parquets; FGBs for geometry only</td>
-<td><strong>Medium</strong></td>
-</tr>
-<tr class="odd">
-<td>Zoning FGB (tabular aggregation)</td>
-<td>Geopandas</td>
-<td>Export tabular parquet; DuckDB for GROUP BY</td>
-<td><strong>Low</strong></td>
-</tr>
-<tr class="even">
-<td>Soil suitability FGBs (7× RPC)</td>
-<td>Geopandas</td>
-<td>Keep as-is</td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td>Wastewater GeoJSONs</td>
-<td>Geopandas</td>
-<td>Keep as-is</td>
-<td>—</td>
-</tr>
-<tr class="even">
-<td>Flood hazard JSON</td>
-<td>Frontend static</td>
-<td>Keep as-is</td>
-<td>—</td>
-</tr>
-<tr class="odd">
-<td>4× wide CSVs + 4× tidy CSVs</td>
-<td>Not used</td>
-<td>Delete (verify first)</td>
-<td>Cleanup</td>
-</tr>
-</tbody>
-</table>
-<hr>
-</section>
-<section id="testing-strategy-preserving-functionality-during-migration" class="level2">
-<h2 class="anchored" data-anchor-id="testing-strategy-preserving-functionality-during-migration">Testing Strategy: Preserving Functionality During Migration</h2>
-<p>Any data migration that changes how a route loads or filters data carries a risk of silent behavioral regression — the endpoint still responds 200, but the numbers are wrong. The safeguards below apply to every Priority 1 and Priority 2 change before it is committed.</p>
-<section id="golden-output-tests-value-tests" class="level3">
-<h3 class="anchored" data-anchor-id="golden-output-tests-value-tests">1. Golden-output tests (value tests)</h3>
-<p>Before touching any route, capture the exact output for a representative set of requests and store it as expected output in the test suite. After migration, the same requests must produce byte-for-byte identical records (or numerically equivalent within float tolerance).</p>
-<p><strong>Implementation pattern:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># backend/tests/test_census_golden.py</span></span>
+  <body class="fullcontent quarto-light">
+    <div
+      id="quarto-content"
+      class="page-columns page-rows-contents page-layout-article"
+    >
+      <main class="content" id="quarto-document-content">
+        <section id="duckdb-consolidation-report" class="level1">
+          <h1>DuckDB Consolidation Report</h1>
+          <p>
+            <em>Which data streams make sense to consolidate to DuckDB.</em>
+          </p>
+          <hr />
+          <section id="current-state" class="level2">
+            <h2 class="anchored" data-anchor-id="current-state">
+              Current State
+            </h2>
+            <p>DuckDB is <strong>already used</strong> in two routes:</p>
+            <table class="caption-top table">
+              <colgroup>
+                <col style="width: 33%" />
+                <col style="width: 33%" />
+                <col style="width: 33%" />
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Route file</th>
+                  <th>Data</th>
+                  <th>DuckDB operations</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td><code>post_acs5_db.py</code></td>
+                  <td>9 tidy parquets (ACS5 B-series + DP-series)</td>
+                  <td>9 views, WHERE + ORDER, UNION ALL across DP tables</td>
+                </tr>
+                <tr class="even">
+                  <td><code>post_qcew.py</code></td>
+                  <td><code>vt_qcew_employment.parquet</code> (53 KB)</td>
+                  <td>WHERE county, PIVOT sectors, ORDER year/quarter</td>
+                </tr>
+              </tbody>
+            </table>
+            <p>
+              These are the right pattern. Everything else either uses the
+              <code>masterload()</code> Geopandas pipeline (FGB/GeoJSON) or
+              loads individual CSVs with pandas in <code>post_census.py</code>.
+            </p>
+            <hr />
+          </section>
+          <section id="data-inventory" class="level2">
+            <h2 class="anchored" data-anchor-id="data-inventory">
+              Data Inventory
+            </h2>
+            <section id="census-backenddatacensus" class="level3">
+              <h3 class="anchored" data-anchor-id="census-backenddatacensus">
+                Census (<code>backend/Data/Census/</code>)
+              </h3>
+              <table class="caption-top table">
+                <colgroup>
+                  <col style="width: 25%" />
+                  <col style="width: 25%" />
+                  <col style="width: 25%" />
+                  <col style="width: 25%" />
+                </colgroup>
+                <thead>
+                  <tr class="header">
+                    <th>File</th>
+                    <th>Format</th>
+                    <th>Size</th>
+                    <th>Currently used by</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="odd">
+                    <td><code>vt_acs5_combined.csv</code></td>
+                    <td>CSV</td>
+                    <td>101 MB</td>
+                    <td>Not used by any active route</td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>vt_acs5_combined.parquet</code></td>
+                    <td>Parquet</td>
+                    <td>15 MB</td>
+                    <td>Not used by any active route</td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>vt_acs5_combined_TIDY.parquet</code></td>
+                    <td>Parquet</td>
+                    <td>9.4 MB</td>
+                    <td>
+                      <code>post_acs5_db.py</code> (DuckDB view
+                      <code>profile_census</code>)
+                    </td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>vt_acs5_b_demographics_tidy.parquet</code></td>
+                    <td>Parquet</td>
+                    <td>274 KB</td>
+                    <td>
+                      <code>post_acs5_db.py</code> (DuckDB view
+                      <code>b10_census</code>)
+                    </td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>vt_acs5_b_education_tidy.parquet</code></td>
+                    <td>Parquet</td>
+                    <td>94 KB</td>
+                    <td>
+                      <code>post_acs5_db.py</code> (DuckDB view
+                      <code>b15003_education</code>)
+                    </td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>vt_acs5_b_housing_tidy.parquet</code></td>
+                    <td>Parquet</td>
+                    <td>105 KB</td>
+                    <td>
+                      <code>post_acs5_db.py</code> (DuckDB view
+                      <code>b_housing</code>)
+                    </td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>vt_acs5_b_economic_tidy.parquet</code></td>
+                    <td>Parquet</td>
+                    <td>102 KB</td>
+                    <td>
+                      <code>post_acs5_db.py</code> (DuckDB view
+                      <code>b_economic</code>)
+                    </td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>vt_acs5_{topic}_data_tidy.parquet</code> (×4)</td>
+                    <td>Parquet</td>
+                    <td>1–2.2 MB each</td>
+                    <td>
+                      <code>post_acs5_db.py</code> (DuckDB views
+                      <code>dp02</code>–<code>dp05</code>)
+                    </td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>vt_acs5_{topic}_data.csv</code> (×4)</td>
+                    <td>CSV</td>
+                    <td>8–15 MB each</td>
+                    <td>
+                      Not used by any active route (superseded by tidy parquets)
+                    </td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>vt_acs5_{topic}_data_tidy.csv</code> (×4)</td>
+                    <td>CSV</td>
+                    <td>100–200 MB each</td>
+                    <td>Not used by any active route</td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>VT_{topic}_ALL.fgb</code> (×4)</td>
+                    <td>FlatGeobuf</td>
+                    <td>600–900 KB each</td>
+                    <td>
+                      <code>post_census.py</code> via
+                      <code>masterload()</code> + Geopandas
+                    </td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>VT_HOUSING_ALL_2013.fgb</code></td>
+                    <td>FlatGeobuf</td>
+                    <td>852 KB</td>
+                    <td>
+                      <code>post_census.py</code> (2013 snapshot comparison)
+                    </td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>VT_Historic_Population.csv</code></td>
+                    <td>CSV</td>
+                    <td>425 KB</td>
+                    <td><code>post_census.py</code> via pandas</td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>unemployment_rate_by_year.csv</code></td>
+                    <td>CSV</td>
+                    <td>200 KB</td>
+                    <td><code>post_census.py</code> via pandas</td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>median_earnings_by_year.csv</code></td>
+                    <td>CSV</td>
+                    <td>717 KB</td>
+                    <td><code>post_census.py</code> via pandas</td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>med_home_value_by_year.csv</code></td>
+                    <td>CSV</td>
+                    <td>242 KB</td>
+                    <td><code>post_census.py</code> via pandas</td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>med_smoc_by_year.csv</code></td>
+                    <td>CSV</td>
+                    <td>593 KB</td>
+                    <td><code>post_census.py</code> via pandas</td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>commute_time_by_year.csv</code></td>
+                    <td>CSV</td>
+                    <td>203 KB</td>
+                    <td><code>post_census.py</code> via pandas</td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>commute_habits_by_year.csv</code></td>
+                    <td>CSV</td>
+                    <td>707 KB</td>
+                    <td><code>post_census.py</code> via pandas</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            <section id="non-census" class="level3">
+              <h3 class="anchored" data-anchor-id="non-census">Non-Census</h3>
+              <table class="caption-top table">
+                <colgroup>
+                  <col style="width: 25%" />
+                  <col style="width: 25%" />
+                  <col style="width: 25%" />
+                  <col style="width: 25%" />
+                </colgroup>
+                <thead>
+                  <tr class="header">
+                    <th>File</th>
+                    <th>Format</th>
+                    <th>Size</th>
+                    <th>Currently used by</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="odd">
+                    <td><code>vt_qcew_employment.parquet</code></td>
+                    <td>Parquet</td>
+                    <td>53 KB</td>
+                    <td>
+                      <code>post_qcew.py</code> (DuckDB) — already optimal
+                    </td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>vt-zoning-update.fgb</code></td>
+                    <td>FlatGeobuf</td>
+                    <td>17 MB</td>
+                    <td>
+                      <code>post_zoning.py</code> via
+                      <code>masterload()</code> + Geopandas
+                    </td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>*_Soil_Septic.fgb</code> (×7)</td>
+                    <td>FlatGeobuf</td>
+                    <td>8–24 MB each (114 MB total)</td>
+                    <td>
+                      <code>get_filters.py</code> via
+                      <code>masterload()</code> + Geopandas
+                    </td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>VermontServiceArea.geojson</code></td>
+                    <td>GeoJSON</td>
+                    <td>4.8 MB</td>
+                    <td><code>masterload()</code>, infrequently queried</td>
+                  </tr>
+                  <tr class="odd">
+                    <td><code>VermontWWTF.geojson</code></td>
+                    <td>GeoJSON</td>
+                    <td>604 KB</td>
+                    <td><code>masterload()</code>, infrequently queried</td>
+                  </tr>
+                  <tr class="even">
+                    <td><code>flood-legal.json</code></td>
+                    <td>JSON</td>
+                    <td>~100 MB (frontend)</td>
+                    <td>Frontend only — served as static asset</td>
+                  </tr>
+                </tbody>
+              </table>
+              <hr />
+            </section>
+          </section>
+          <section id="consolidation-recommendations" class="level2">
+            <h2 class="anchored" data-anchor-id="consolidation-recommendations">
+              Consolidation Recommendations
+            </h2>
+            <section
+              id="priority-1-high-value-low-risk-time-series-csvs-duckdb-views"
+              class="level3"
+            >
+              <h3
+                class="anchored"
+                data-anchor-id="priority-1-high-value-low-risk-time-series-csvs-duckdb-views"
+              >
+                Priority 1 — High value, low risk: time-series CSVs → DuckDB
+                views
+              </h3>
+              <p>
+                <strong>Files:</strong>
+                <code>unemployment_rate_by_year.csv</code>,
+                <code>median_earnings_by_year.csv</code>,
+                <code>med_home_value_by_year.csv</code>,
+                <code>med_smoc_by_year.csv</code>,
+                <code>commute_time_by_year.csv</code>,
+                <code>commute_habits_by_year.csv</code>,
+                <code>VT_Historic_Population.csv</code>
+              </p>
+              <p>
+                <strong>Why:</strong> These are the only active non-spatial data
+                still loaded by pandas in <code>post_census.py</code>. Each is
+                loaded separately on every request with no query pushdown — all
+                filtering happens in Python after loading the full file into
+                memory.
+              </p>
+              <p>
+                <strong>Recommendation:</strong> - Register each CSV as a DuckDB
+                view in <code>post_acs5_db.py</code> (alongside the existing
+                parquet views) using <code>read_csv_auto()</code>. No file
+                conversion needed — DuckDB reads CSVs natively and efficiently.
+                - Apply WHERE filters in SQL before returning to Python,
+                eliminating the full-file pandas load. - The
+                <code>split_name_col()</code> NAME-parsing step (Jurisdiction +
+                County extraction) is currently applied by
+                <code>load_census_data()</code>; because these CSVs use NAME as
+                the location key, filter them by NAME directly in DuckDB
+                (matching the <code>post_acs5_db.py</code> pattern) rather than
+                re-doing the regex split. - Update <code>post_census.py</code>
+                <code>/{category}/{subcategory}</code> endpoints for these
+                subcategories to call the DuckDB connection instead of
+                <code>load_census_data()</code>.
+              </p>
+              <p>
+                <strong>Expected benefit:</strong> Eliminates ~3 MB of CSV I/O
+                per request. Consolidates all tabular census data access into
+                one DB connection and makes future cross-series queries trivial
+                (e.g.&nbsp;unemployment vs.&nbsp;median earnings for the same
+                location in one query).
+              </p>
+              <hr />
+            </section>
+            <section
+              id="priority-2-medium-value-snapshot-fgbs-route-tabular-queries-to-tidy-parquets"
+              class="level3"
+            >
+              <h3
+                class="anchored"
+                data-anchor-id="priority-2-medium-value-snapshot-fgbs-route-tabular-queries-to-tidy-parquets"
+              >
+                Priority 2 — Medium value: snapshot FGBs → route tabular queries
+                to tidy parquets
+              </h3>
+              <p>
+                <strong>Files:</strong> <code>VT_HOUSING_ALL.fgb</code>,
+                <code>VT_ECONOMIC_ALL.fgb</code>,
+                <code>VT_DEMOGRAPHIC_ALL.fgb</code>,
+                <code>VT_SOCIAL_ALL.fgb</code>,
+                <code>VT_HOUSING_ALL_2013.fgb</code>
+              </p>
+              <p>
+                <strong>Why:</strong> These FGBs are loaded by Geopandas for
+                metric calculations (sums, means by Jurisdiction/County) in
+                <code>post_census.py</code>. Their geometry is not used by the
+                tabular routes — they were the original data source before the
+                tidy parquet pipeline was built. The tidy parquets
+                (<code>vt_acs5_b_*_tidy.parquet</code>) already cover the same
+                data in a better format.
+              </p>
+              <p>
+                <strong>Recommendation:</strong> - Audit which metrics in
+                <code>post_census.py</code> are already covered by the existing
+                DuckDB tidy parquets. Migrate those metric calculations to SQL
+                queries. - For the 2013 vs.&nbsp;2023 delta comparison: export
+                pre-computed delta values to a small parquet and query it with
+                DuckDB. The current approach loads two full ~850 KB FGBs just to
+                compute a handful of aggregate deltas. - Retain the FGBs only
+                for routes that actually need geometry (GeoJSON map layers).
+              </p>
+              <p>
+                <strong>Expected benefit:</strong> Removes Geopandas overhead
+                for purely tabular queries; unifies the data access model.
+              </p>
+              <hr />
+            </section>
+            <section
+              id="priority-3-low-value-for-now-zoning-tabular-aggregation"
+              class="level3"
+            >
+              <h3
+                class="anchored"
+                data-anchor-id="priority-3-low-value-for-now-zoning-tabular-aggregation"
+              >
+                Priority 3 — Low value for now: zoning tabular aggregation
+              </h3>
+              <p>
+                <strong>File:</strong> <code>vt-zoning-update.fgb</code> (17 MB)
+              </p>
+              <p>
+                <strong>Why:</strong> Zoning acreage aggregations (totals by
+                district type, by county) are simple GROUP BY queries on
+                non-spatial columns. Geopandas loads the full geometry just to
+                get these numbers.
+              </p>
+              <p>
+                <strong>Recommendation:</strong> - Export the non-geometry
+                columns of <code>vt-zoning-update.fgb</code> to a companion
+                parquet (e.g., <code>vt-zoning-tabular.parquet</code>). - Use
+                DuckDB for aggregation queries; keep Geopandas only for the map
+                rendering route.
+              </p>
+              <p>
+                <strong>Expected benefit:</strong> Skips the 17 MB FGB geometry
+                load for tabular requests.
+              </p>
+              <hr />
+            </section>
+            <section
+              id="not-recommended-soil-suitability-wastewater-flood-hazard"
+              class="level3"
+            >
+              <h3
+                class="anchored"
+                data-anchor-id="not-recommended-soil-suitability-wastewater-flood-hazard"
+              >
+                Not recommended: soil suitability, wastewater, flood hazard
+              </h3>
+              <p>
+                <strong>Soil suitability:</strong> The 7 regional FGBs are
+                loaded on-demand by RPC and rendered as GeoJsonLayer tiles. The
+                geometry is the whole point. DuckDB does not handle
+                GeoDataFrames natively — consolidation would require WKB
+                encoding round-trips for no meaningful benefit over the current
+                cached Geopandas approach.
+              </p>
+              <p>
+                <strong>Wastewater:</strong> Two small GeoJSON files accessed
+                infrequently, geometry-centric. Not worth the conversion
+                overhead.
+              </p>
+              <p>
+                <strong>Flood hazard:</strong> A frontend static asset. No
+                backend query at all.
+              </p>
+              <hr />
+            </section>
+            <section
+              id="cleanup-remove-unused-csvs-and-build-artifacts"
+              class="level3"
+            >
+              <h3
+                class="anchored"
+                data-anchor-id="cleanup-remove-unused-csvs-and-build-artifacts"
+              >
+                Cleanup: remove unused CSVs and build artifacts
+              </h3>
+              <p>
+                The four wide-format CSVs
+                (<code>vt_acs5_{topic}_data.csv</code>, 8–15 MB each) and their
+                tidy counterparts (<code>vt_acs5_{topic}_data_tidy.csv</code>,
+                100–200 MB each) are not used by any active API route. They
+                appear to be intermediate build artifacts from the scraper
+                pipeline.
+              </p>
+              <p>
+                <strong>Recommendation:</strong> Delete the four
+                <code>_tidy.csv</code> files (~680 MB total on disk). Verify no
+                route references <code>vt_acs5_combined.csv</code> or the wide
+                CSVs before deleting them as well. The tidy parquets and FGBs
+                fully cover their data for API purposes.
+              </p>
+              <hr />
+            </section>
+          </section>
+          <section id="summary-table" class="level2">
+            <h2 class="anchored" data-anchor-id="summary-table">
+              Summary Table
+            </h2>
+            <table class="caption-top table">
+              <colgroup>
+                <col style="width: 25%" />
+                <col style="width: 25%" />
+                <col style="width: 25%" />
+                <col style="width: 25%" />
+              </colgroup>
+              <thead>
+                <tr class="header">
+                  <th>Data stream</th>
+                  <th>Current approach</th>
+                  <th>Recommendation</th>
+                  <th>Priority</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="odd">
+                  <td>ACS5 tidy parquets (B-series + DP-series)</td>
+                  <td>✅ DuckDB</td>
+                  <td>Already optimal</td>
+                  <td>—</td>
+                </tr>
+                <tr class="even">
+                  <td>QCEW employment parquet</td>
+                  <td>✅ DuckDB</td>
+                  <td>Already optimal</td>
+                  <td>—</td>
+                </tr>
+                <tr class="odd">
+                  <td>6× time-series CSVs + historic population CSV</td>
+                  <td>pandas (per-request CSV load)</td>
+                  <td>DuckDB views via <code>read_csv_auto()</code></td>
+                  <td><strong>High</strong></td>
+                </tr>
+                <tr class="even">
+                  <td>Snapshot FGBs (2023 + 2013, 4× topics)</td>
+                  <td>Geopandas (tabular queries)</td>
+                  <td>
+                    Migrate tabular metrics to DuckDB tidy parquets; FGBs for
+                    geometry only
+                  </td>
+                  <td><strong>Medium</strong></td>
+                </tr>
+                <tr class="odd">
+                  <td>Zoning FGB (tabular aggregation)</td>
+                  <td>Geopandas</td>
+                  <td>Export tabular parquet; DuckDB for GROUP BY</td>
+                  <td><strong>Low</strong></td>
+                </tr>
+                <tr class="even">
+                  <td>Soil suitability FGBs (7× RPC)</td>
+                  <td>Geopandas</td>
+                  <td>Keep as-is</td>
+                  <td>—</td>
+                </tr>
+                <tr class="odd">
+                  <td>Wastewater GeoJSONs</td>
+                  <td>Geopandas</td>
+                  <td>Keep as-is</td>
+                  <td>—</td>
+                </tr>
+                <tr class="even">
+                  <td>Flood hazard JSON</td>
+                  <td>Frontend static</td>
+                  <td>Keep as-is</td>
+                  <td>—</td>
+                </tr>
+                <tr class="odd">
+                  <td>4× wide CSVs + 4× tidy CSVs</td>
+                  <td>Not used</td>
+                  <td>Delete (verify first)</td>
+                  <td>Cleanup</td>
+                </tr>
+              </tbody>
+            </table>
+            <hr />
+          </section>
+          <section
+            id="testing-strategy-preserving-functionality-during-migration"
+            class="level2"
+          >
+            <h2
+              class="anchored"
+              data-anchor-id="testing-strategy-preserving-functionality-during-migration"
+            >
+              Testing Strategy: Preserving Functionality During Migration
+            </h2>
+            <p>
+              Any data migration that changes how a route loads or filters data
+              carries a risk of silent behavioral regression — the endpoint
+              still responds 200, but the numbers are wrong. The safeguards
+              below apply to every Priority 1 and Priority 2 change before it is
+              committed.
+            </p>
+            <section id="golden-output-tests-value-tests" class="level3">
+              <h3
+                class="anchored"
+                data-anchor-id="golden-output-tests-value-tests"
+              >
+                1. Golden-output tests (value tests)
+              </h3>
+              <p>
+                Before touching any route, capture the exact output for a
+                representative set of requests and store it as expected output
+                in the test suite. After migration, the same requests must
+                produce byte-for-byte identical records (or numerically
+                equivalent within float tolerance).
+              </p>
+              <p><strong>Implementation pattern:</strong></p>
+              <div class="code-copy-outer-scaffold">
+                <div class="sourceCode" id="cb1">
+                  <pre
+                    class="sourceCode python code-with-copy"
+                  ><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># backend/tests/test_census_golden.py</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pytest</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi.testclient <span class="im">import</span> TestClient</span>
@@ -467,441 +775,542 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        expected.sort_values(expected.columns.tolist()).reset_index(drop<span class="op">=</span><span class="va">True</span>),</span>
 <span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        check_like<span class="op">=</span><span class="va">True</span>,</span>
 <span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        rtol<span class="op">=</span><span class="fl">1e-4</span>,</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Golden CSVs are generated <strong>once</strong> against the current (pre-migration) code and committed to <code>backend/tests/golden/</code>. They are the source of truth. A script in <code>backend/tests/generate_golden.py</code> should regenerate them when the upstream data files change.</p>
-</section>
-<section id="column-presence-tests" class="level3">
-<h3 class="anchored" data-anchor-id="column-presence-tests">2. Column-presence tests</h3>
-<p>Assert that the response contains the expected columns — especially <code>Jurisdiction</code> and <code>County</code>, which are produced by <code>split_name_col()</code> and must survive the migration.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_subcategory_has_required_columns(subcategory):</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre>
+                </div>
+                <button title="Copy to Clipboard" class="code-copy-button">
+                  <i class="bi"></i>
+                </button>
+              </div>
+              <p>
+                Golden CSVs are generated <strong>once</strong> against the
+                current (pre-migration) code and committed to
+                <code>backend/tests/golden/</code>. They are the source of
+                truth. A script in
+                <code>backend/tests/generate_golden.py</code> should regenerate
+                them when the upstream data files change.
+              </p>
+            </section>
+            <section id="column-presence-tests" class="level3">
+              <h3 class="anchored" data-anchor-id="column-presence-tests">
+                2. Column-presence tests
+              </h3>
+              <p>
+                Assert that the response contains the expected columns —
+                especially <code>Jurisdiction</code> and <code>County</code>,
+                which are produced by <code>split_name_col()</code> and must
+                survive the migration.
+              </p>
+              <div class="code-copy-outer-scaffold">
+                <div class="sourceCode" id="cb2">
+                  <pre
+                    class="sourceCode python code-with-copy"
+                  ><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_subcategory_has_required_columns(subcategory):</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    resp <span class="op">=</span> client.post(<span class="ss">f"/load/census/economic/</span><span class="sc">{</span>subcategory<span class="sc">}</span><span class="ss">"</span>, json<span class="op">=</span>{})</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    data <span class="op">=</span> resp.json()[<span class="st">"data"</span>]</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="bu">len</span>(data) <span class="op">&gt;</span> <span class="dv">0</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    row <span class="op">=</span> data[<span class="dv">0</span>]</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="st">"Jurisdiction"</span> <span class="kw">in</span> row</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="st">"County"</span> <span class="kw">in</span> row</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="filter-correctness-tests" class="level3">
-<h3 class="anchored" data-anchor-id="filter-correctness-tests">3. Filter-correctness tests</h3>
-<p>For each migrated endpoint, test that: - An empty filter returns all rows. - A specific Jurisdiction filter returns only rows for that jurisdiction. - A nonsense filter returns an empty result (not an error).</p>
-</section>
-<section id="run-order" class="level3">
-<h3 class="anchored" data-anchor-id="run-order">4. Run order</h3>
-<pre><code># Before making any code change:
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="st">"County"</span> <span class="kw">in</span> row</span></code></pre>
+                </div>
+                <button title="Copy to Clipboard" class="code-copy-button">
+                  <i class="bi"></i>
+                </button>
+              </div>
+            </section>
+            <section id="filter-correctness-tests" class="level3">
+              <h3 class="anchored" data-anchor-id="filter-correctness-tests">
+                3. Filter-correctness tests
+              </h3>
+              <p>
+                For each migrated endpoint, test that: - An empty filter returns
+                all rows. - A specific Jurisdiction filter returns only rows for
+                that jurisdiction. - A nonsense filter returns an empty result
+                (not an error).
+              </p>
+            </section>
+            <section id="run-order" class="level3">
+              <h3 class="anchored" data-anchor-id="run-order">4. Run order</h3>
+              <pre><code># Before making any code change:
 pytest backend/tests/test_census_golden.py  # must pass — establishes baseline
 
 # After migration:
 pytest backend/tests/                        # all existing tests + new golden tests</code></pre>
-<p>If golden tests fail after migration, the DuckDB query result diverges from the pandas result and the migration must be corrected before merging.</p>
-</section>
-</section>
-</section>
-
-</main>
-<!-- /main column -->
-<script id="quarto-html-after-body" type="application/javascript">
-  window.document.addEventListener("DOMContentLoaded", function (event) {
-    const icon = "";
-    const anchorJS = new window.AnchorJS();
-    anchorJS.options = {
-      placement: 'right',
-      icon: icon
-    };
-    anchorJS.add('.anchored');
-    const isCodeAnnotation = (el) => {
-      for (const clz of el.classList) {
-        if (clz.startsWith('code-annotation-')) {                     
-          return true;
-        }
-      }
-      return false;
-    }
-    const onCopySuccess = function(e) {
-      // button target
-      const button = e.trigger;
-      // don't keep focus
-      button.blur();
-      // flash "checked"
-      button.classList.add('code-copy-button-checked');
-      var currentTitle = button.getAttribute("title");
-      button.setAttribute("title", "Copied!");
-      let tooltip;
-      if (window.bootstrap) {
-        button.setAttribute("data-bs-toggle", "tooltip");
-        button.setAttribute("data-bs-placement", "left");
-        button.setAttribute("data-bs-title", "Copied!");
-        tooltip = new bootstrap.Tooltip(button, 
-          { trigger: "manual", 
-            customClass: "code-copy-button-tooltip",
-            offset: [0, -8]});
-        tooltip.show();    
-      }
-      setTimeout(function() {
-        if (tooltip) {
-          tooltip.hide();
-          button.removeAttribute("data-bs-title");
-          button.removeAttribute("data-bs-toggle");
-          button.removeAttribute("data-bs-placement");
-        }
-        button.setAttribute("title", currentTitle);
-        button.classList.remove('code-copy-button-checked');
-      }, 1000);
-      // clear code selection
-      e.clearSelection();
-    }
-    const getTextToCopy = function(trigger) {
-      const outerScaffold = trigger.parentElement.cloneNode(true);
-      const codeEl = outerScaffold.querySelector('code');
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-      text: getTextToCopy
-    });
-    clipboard.on('success', onCopySuccess);
-    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-        text: getTextToCopy,
-        container: window.document.getElementById('quarto-embedded-source-code-modal')
-      });
-      clipboardModal.on('success', onCopySuccess);
-    }
-      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-      var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
-      var isInternal = (href) => {
-          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-      }
-      // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-      for (var i=0; i<links.length; i++) {
-        const link = links[i];
-        if (!isInternal(link.href)) {
-          // undo the damage that might have been done by quarto-nav.js in the case of
-          // links that we want to consider external
-          if (link.dataset.originalHref !== undefined) {
-            link.href = link.dataset.originalHref;
+              <p>
+                If golden tests fail after migration, the DuckDB query result
+                diverges from the pandas result and the migration must be
+                corrected before merging.
+              </p>
+            </section>
+          </section>
+        </section>
+      </main>
+      <!-- /main column -->
+      <script id="quarto-html-after-body" type="application/javascript">
+        window.document.addEventListener("DOMContentLoaded", function (event) {
+          const icon = "";
+          const anchorJS = new window.AnchorJS();
+          anchorJS.options = {
+            placement: "right",
+            icon: icon,
+          };
+          anchorJS.add(".anchored");
+          const isCodeAnnotation = (el) => {
+            for (const clz of el.classList) {
+              if (clz.startsWith("code-annotation-")) {
+                return true;
+              }
+            }
+            return false;
+          };
+          const onCopySuccess = function (e) {
+            // button target
+            const button = e.trigger;
+            // don't keep focus
+            button.blur();
+            // flash "checked"
+            button.classList.add("code-copy-button-checked");
+            var currentTitle = button.getAttribute("title");
+            button.setAttribute("title", "Copied!");
+            let tooltip;
+            if (window.bootstrap) {
+              button.setAttribute("data-bs-toggle", "tooltip");
+              button.setAttribute("data-bs-placement", "left");
+              button.setAttribute("data-bs-title", "Copied!");
+              tooltip = new bootstrap.Tooltip(button, {
+                trigger: "manual",
+                customClass: "code-copy-button-tooltip",
+                offset: [0, -8],
+              });
+              tooltip.show();
+            }
+            setTimeout(function () {
+              if (tooltip) {
+                tooltip.hide();
+                button.removeAttribute("data-bs-title");
+                button.removeAttribute("data-bs-toggle");
+                button.removeAttribute("data-bs-placement");
+              }
+              button.setAttribute("title", currentTitle);
+              button.classList.remove("code-copy-button-checked");
+            }, 1000);
+            // clear code selection
+            e.clearSelection();
+          };
+          const getTextToCopy = function (trigger) {
+            const outerScaffold = trigger.parentElement.cloneNode(true);
+            const codeEl = outerScaffold.querySelector("code");
+            for (const childEl of codeEl.children) {
+              if (isCodeAnnotation(childEl)) {
+                childEl.remove();
+              }
+            }
+            return codeEl.innerText;
+          };
+          const clipboard = new window.ClipboardJS(
+            ".code-copy-button:not([data-in-quarto-modal])",
+            {
+              text: getTextToCopy,
+            },
+          );
+          clipboard.on("success", onCopySuccess);
+          if (
+            window.document.getElementById("quarto-embedded-source-code-modal")
+          ) {
+            const clipboardModal = new window.ClipboardJS(
+              ".code-copy-button[data-in-quarto-modal]",
+              {
+                text: getTextToCopy,
+                container: window.document.getElementById(
+                  "quarto-embedded-source-code-modal",
+                ),
+              },
+            );
+            clipboardModal.on("success", onCopySuccess);
           }
-        }
-      }
-    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-      const config = {
-        allowHTML: true,
-        maxWidth: 500,
-        delay: 100,
-        arrow: false,
-        appendTo: function(el) {
-            return el.parentElement;
-        },
-        interactive: true,
-        interactiveBorder: 10,
-        theme: 'quarto',
-        placement: 'bottom-start',
-      };
-      if (contentFn) {
-        config.content = contentFn;
-      }
-      if (onTriggerFn) {
-        config.onTrigger = onTriggerFn;
-      }
-      if (onUntriggerFn) {
-        config.onUntrigger = onUntriggerFn;
-      }
-      window.tippy(el, config); 
-    }
-    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
-    for (var i=0; i<noterefs.length; i++) {
-      const ref = noterefs[i];
-      tippyHover(ref, function() {
-        // use id or data attribute instead here
-        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
-        try { href = new URL(href).hash; } catch {}
-        const id = href.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note) {
-          return note.innerHTML;
-        } else {
-          return "";
-        }
-      });
-    }
-    const xrefs = window.document.querySelectorAll('a.quarto-xref');
-    const processXRef = (id, note) => {
-      // Strip column container classes
-      const stripColumnClz = (el) => {
-        el.classList.remove("page-full", "page-columns");
-        if (el.children) {
-          for (const child of el.children) {
-            stripColumnClz(child);
-          }
-        }
-      }
-      stripColumnClz(note)
-      if (id === null || id.startsWith('sec-')) {
-        // Special case sections, only their first couple elements
-        const container = document.createElement("div");
-        if (note.children && note.children.length > 2) {
-          container.appendChild(note.children[0].cloneNode(true));
-          for (let i = 1; i < note.children.length; i++) {
-            const child = note.children[i];
-            if (child.tagName === "P" && child.innerText === "") {
-              continue;
-            } else {
-              container.appendChild(child.cloneNode(true));
-              break;
+          var localhostRegex = new RegExp(
+            /^(?:http|https):\/\/localhost\:?[0-9]*\//,
+          );
+          var mailtoRegex = new RegExp(/^mailto:/);
+          var filterRegex = new RegExp("/" + window.location.host + "/");
+          var isInternal = (href) => {
+            return (
+              filterRegex.test(href) ||
+              localhostRegex.test(href) ||
+              mailtoRegex.test(href)
+            );
+          };
+          // Inspect non-navigation links and adorn them if external
+          var links = window.document.querySelectorAll(
+            "a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)",
+          );
+          for (var i = 0; i < links.length; i++) {
+            const link = links[i];
+            if (!isInternal(link.href)) {
+              // undo the damage that might have been done by quarto-nav.js in the case of
+              // links that we want to consider external
+              if (link.dataset.originalHref !== undefined) {
+                link.href = link.dataset.originalHref;
+              }
             }
           }
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(container);
-          }
-          return container.innerHTML
-        } else {
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(note);
-          }
-          return note.innerHTML;
-        }
-      } else {
-        // Remove any anchor links if they are present
-        const anchorLink = note.querySelector('a.anchorjs-link');
-        if (anchorLink) {
-          anchorLink.remove();
-        }
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(note);
-        }
-        if (note.classList.contains("callout")) {
-          return note.outerHTML;
-        } else {
-          return note.innerHTML;
-        }
-      }
-    }
-    for (var i=0; i<xrefs.length; i++) {
-      const xref = xrefs[i];
-      tippyHover(xref, undefined, function(instance) {
-        instance.disable();
-        let url = xref.getAttribute('href');
-        let hash = undefined; 
-        if (url.startsWith('#')) {
-          hash = url;
-        } else {
-          try { hash = new URL(url).hash; } catch {}
-        }
-        if (hash) {
-          const id = hash.replace(/^#\/?/, "");
-          const note = window.document.getElementById(id);
-          if (note !== null) {
-            try {
-              const html = processXRef(id, note.cloneNode(true));
-              instance.setContent(html);
-            } finally {
-              instance.enable();
-              instance.show();
+          function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+            const config = {
+              allowHTML: true,
+              maxWidth: 500,
+              delay: 100,
+              arrow: false,
+              appendTo: function (el) {
+                return el.parentElement;
+              },
+              interactive: true,
+              interactiveBorder: 10,
+              theme: "quarto",
+              placement: "bottom-start",
+            };
+            if (contentFn) {
+              config.content = contentFn;
             }
-          } else {
-            // See if we can fetch this
-            fetch(url.split('#')[0])
-            .then(res => res.text())
-            .then(html => {
-              const parser = new DOMParser();
-              const htmlDoc = parser.parseFromString(html, "text/html");
-              const note = htmlDoc.getElementById(id);
-              if (note !== null) {
-                const html = processXRef(id, note);
-                instance.setContent(html);
-              } 
-            }).finally(() => {
-              instance.enable();
-              instance.show();
+            if (onTriggerFn) {
+              config.onTrigger = onTriggerFn;
+            }
+            if (onUntriggerFn) {
+              config.onUntrigger = onUntriggerFn;
+            }
+            window.tippy(el, config);
+          }
+          const noterefs = window.document.querySelectorAll(
+            'a[role="doc-noteref"]',
+          );
+          for (var i = 0; i < noterefs.length; i++) {
+            const ref = noterefs[i];
+            tippyHover(ref, function () {
+              // use id or data attribute instead here
+              let href =
+                ref.getAttribute("data-footnote-href") ||
+                ref.getAttribute("href");
+              try {
+                href = new URL(href).hash;
+              } catch {}
+              const id = href.replace(/^#\/?/, "");
+              const note = window.document.getElementById(id);
+              if (note) {
+                return note.innerHTML;
+              } else {
+                return "";
+              }
             });
           }
-        } else {
-          // See if we can fetch a full url (with no hash to target)
-          // This is a special case and we should probably do some content thinning / targeting
-          fetch(url)
-          .then(res => res.text())
-          .then(html => {
-            const parser = new DOMParser();
-            const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.querySelector('main.content');
-            if (note !== null) {
-              // This should only happen for chapter cross references
-              // (since there is no id in the URL)
-              // remove the first header
-              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-                note.children[0].remove();
+          const xrefs = window.document.querySelectorAll("a.quarto-xref");
+          const processXRef = (id, note) => {
+            // Strip column container classes
+            const stripColumnClz = (el) => {
+              el.classList.remove("page-full", "page-columns");
+              if (el.children) {
+                for (const child of el.children) {
+                  stripColumnClz(child);
+                }
               }
-              const html = processXRef(null, note);
-              instance.setContent(html);
-            } 
-          }).finally(() => {
-            instance.enable();
-            instance.show();
-          });
-        }
-      }, function(instance) {
-      });
-    }
-        let selectedAnnoteEl;
-        const selectorForAnnotation = ( cell, annotation) => {
-          let cellAttr = 'data-code-cell="' + cell + '"';
-          let lineAttr = 'data-code-annotation="' +  annotation + '"';
-          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
-          return selector;
-        }
-        const selectCodeLines = (annoteEl) => {
-          const doc = window.document;
-          const targetCell = annoteEl.getAttribute("data-target-cell");
-          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
-          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
-          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
-          const lineIds = lines.map((line) => {
-            return targetCell + "-" + line;
-          })
-          let top = null;
-          let height = null;
-          let parent = null;
-          if (lineIds.length > 0) {
+            };
+            stripColumnClz(note);
+            if (id === null || id.startsWith("sec-")) {
+              // Special case sections, only their first couple elements
+              const container = document.createElement("div");
+              if (note.children && note.children.length > 2) {
+                container.appendChild(note.children[0].cloneNode(true));
+                for (let i = 1; i < note.children.length; i++) {
+                  const child = note.children[i];
+                  if (child.tagName === "P" && child.innerText === "") {
+                    continue;
+                  } else {
+                    container.appendChild(child.cloneNode(true));
+                    break;
+                  }
+                }
+                if (window.Quarto?.typesetMath) {
+                  window.Quarto.typesetMath(container);
+                }
+                return container.innerHTML;
+              } else {
+                if (window.Quarto?.typesetMath) {
+                  window.Quarto.typesetMath(note);
+                }
+                return note.innerHTML;
+              }
+            } else {
+              // Remove any anchor links if they are present
+              const anchorLink = note.querySelector("a.anchorjs-link");
+              if (anchorLink) {
+                anchorLink.remove();
+              }
+              if (window.Quarto?.typesetMath) {
+                window.Quarto.typesetMath(note);
+              }
+              if (note.classList.contains("callout")) {
+                return note.outerHTML;
+              } else {
+                return note.innerHTML;
+              }
+            }
+          };
+          for (var i = 0; i < xrefs.length; i++) {
+            const xref = xrefs[i];
+            tippyHover(
+              xref,
+              undefined,
+              function (instance) {
+                instance.disable();
+                let url = xref.getAttribute("href");
+                let hash = undefined;
+                if (url.startsWith("#")) {
+                  hash = url;
+                } else {
+                  try {
+                    hash = new URL(url).hash;
+                  } catch {}
+                }
+                if (hash) {
+                  const id = hash.replace(/^#\/?/, "");
+                  const note = window.document.getElementById(id);
+                  if (note !== null) {
+                    try {
+                      const html = processXRef(id, note.cloneNode(true));
+                      instance.setContent(html);
+                    } finally {
+                      instance.enable();
+                      instance.show();
+                    }
+                  } else {
+                    // See if we can fetch this
+                    fetch(url.split("#")[0])
+                      .then((res) => res.text())
+                      .then((html) => {
+                        const parser = new DOMParser();
+                        const htmlDoc = parser.parseFromString(
+                          html,
+                          "text/html",
+                        );
+                        const note = htmlDoc.getElementById(id);
+                        if (note !== null) {
+                          const html = processXRef(id, note);
+                          instance.setContent(html);
+                        }
+                      })
+                      .finally(() => {
+                        instance.enable();
+                        instance.show();
+                      });
+                  }
+                } else {
+                  // See if we can fetch a full url (with no hash to target)
+                  // This is a special case and we should probably do some content thinning / targeting
+                  fetch(url)
+                    .then((res) => res.text())
+                    .then((html) => {
+                      const parser = new DOMParser();
+                      const htmlDoc = parser.parseFromString(html, "text/html");
+                      const note = htmlDoc.querySelector("main.content");
+                      if (note !== null) {
+                        // This should only happen for chapter cross references
+                        // (since there is no id in the URL)
+                        // remove the first header
+                        if (
+                          note.children.length > 0 &&
+                          note.children[0].tagName === "HEADER"
+                        ) {
+                          note.children[0].remove();
+                        }
+                        const html = processXRef(null, note);
+                        instance.setContent(html);
+                      }
+                    })
+                    .finally(() => {
+                      instance.enable();
+                      instance.show();
+                    });
+                }
+              },
+              function (instance) {},
+            );
+          }
+          let selectedAnnoteEl;
+          const selectorForAnnotation = (cell, annotation) => {
+            let cellAttr = 'data-code-cell="' + cell + '"';
+            let lineAttr = 'data-code-annotation="' + annotation + '"';
+            const selector = "span[" + cellAttr + "][" + lineAttr + "]";
+            return selector;
+          };
+          const selectCodeLines = (annoteEl) => {
+            const doc = window.document;
+            const targetCell = annoteEl.getAttribute("data-target-cell");
+            const targetAnnotation = annoteEl.getAttribute(
+              "data-target-annotation",
+            );
+            const annoteSpan = window.document.querySelector(
+              selectorForAnnotation(targetCell, targetAnnotation),
+            );
+            const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+            const lineIds = lines.map((line) => {
+              return targetCell + "-" + line;
+            });
+            let top = null;
+            let height = null;
+            let parent = null;
+            if (lineIds.length > 0) {
               //compute the position of the single el (top and bottom and make a div)
               const el = window.document.getElementById(lineIds[0]);
               top = el.offsetTop;
               height = el.offsetHeight;
               parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
-            }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
+              if (lineIds.length > 1) {
+                const lastEl = window.document.getElementById(
+                  lineIds[lineIds.length - 1],
+                );
+                const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+                height = bottom - top;
               }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
+              if (top !== null && height !== null && parent !== null) {
+                // cook up a div (if necessary) and position it
+                let div = window.document.getElementById(
+                  "code-annotation-line-highlight",
+                );
+                if (div === null) {
+                  div = window.document.createElement("div");
+                  div.setAttribute("id", "code-annotation-line-highlight");
+                  div.style.position = "absolute";
+                  parent.appendChild(div);
+                }
+                div.style.top = top - 2 + "px";
+                div.style.height = height + 4 + "px";
+                div.style.left = 0;
+                let gutterDiv = window.document.getElementById(
+                  "code-annotation-line-highlight-gutter",
+                );
+                if (gutterDiv === null) {
+                  gutterDiv = window.document.createElement("div");
+                  gutterDiv.setAttribute(
+                    "id",
+                    "code-annotation-line-highlight-gutter",
+                  );
+                  gutterDiv.style.position = "absolute";
+                  const codeCell = window.document.getElementById(targetCell);
+                  const gutter = codeCell.querySelector(
+                    ".code-annotation-gutter",
+                  );
+                  gutter.appendChild(gutterDiv);
+                }
+                gutterDiv.style.top = top - 2 + "px";
+                gutterDiv.style.height = height + 4 + "px";
               }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+              selectedAnnoteEl = annoteEl;
             }
-            selectedAnnoteEl = annoteEl;
-          }
-        };
-        const unselectCodeLines = () => {
-          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
-          elementsIds.forEach((elId) => {
-            const div = window.document.getElementById(elId);
-            if (div) {
-              div.remove();
-            }
-          });
-          selectedAnnoteEl = undefined;
-        };
-          // Handle positioning of the toggle
-      window.addEventListener(
-        "resize",
-        throttle(() => {
-          elRect = undefined;
-          if (selectedAnnoteEl) {
-            selectCodeLines(selectedAnnoteEl);
-          }
-        }, 10)
-      );
-      function throttle(fn, ms) {
-      let throttle = false;
-      let timer;
-        return (...args) => {
-          if(!throttle) { // first call gets through
-              fn.apply(this, args);
-              throttle = true;
-          } else { // all the others get throttled
-              if(timer) clearTimeout(timer); // cancel #2
-              timer = setTimeout(() => {
-                fn.apply(this, args);
-                timer = throttle = false;
-              }, ms);
-          }
-        };
-      }
-        // Attach click handler to the DT
-        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
-        for (const annoteDlNode of annoteDls) {
-          annoteDlNode.addEventListener('click', (event) => {
-            const clickedEl = event.target;
-            if (clickedEl !== selectedAnnoteEl) {
-              unselectCodeLines();
-              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
-              if (activeEl) {
-                activeEl.classList.remove('code-annotation-active');
-              }
-              selectCodeLines(clickedEl);
-              clickedEl.classList.add('code-annotation-active');
-            } else {
-              // Unselect the line
-              unselectCodeLines();
-              clickedEl.classList.remove('code-annotation-active');
-            }
-          });
-        }
-    const findCites = (el) => {
-      const parentEl = el.parentElement;
-      if (parentEl) {
-        const cites = parentEl.dataset.cites;
-        if (cites) {
-          return {
-            el,
-            cites: cites.split(' ')
           };
-        } else {
-          return findCites(el.parentElement)
-        }
-      } else {
-        return undefined;
-      }
-    };
-    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-    for (var i=0; i<bibliorefs.length; i++) {
-      const ref = bibliorefs[i];
-      const citeInfo = findCites(ref);
-      if (citeInfo) {
-        tippyHover(citeInfo.el, function() {
-          var popup = window.document.createElement('div');
-          citeInfo.cites.forEach(function(cite) {
-            var citeDiv = window.document.createElement('div');
-            citeDiv.classList.add('hanging-indent');
-            citeDiv.classList.add('csl-entry');
-            var biblioDiv = window.document.getElementById('ref-' + cite);
-            if (biblioDiv) {
-              citeDiv.innerHTML = biblioDiv.innerHTML;
+          const unselectCodeLines = () => {
+            const elementsIds = [
+              "code-annotation-line-highlight",
+              "code-annotation-line-highlight-gutter",
+            ];
+            elementsIds.forEach((elId) => {
+              const div = window.document.getElementById(elId);
+              if (div) {
+                div.remove();
+              }
+            });
+            selectedAnnoteEl = undefined;
+          };
+          // Handle positioning of the toggle
+          window.addEventListener(
+            "resize",
+            throttle(() => {
+              elRect = undefined;
+              if (selectedAnnoteEl) {
+                selectCodeLines(selectedAnnoteEl);
+              }
+            }, 10),
+          );
+          function throttle(fn, ms) {
+            let throttle = false;
+            let timer;
+            return (...args) => {
+              if (!throttle) {
+                // first call gets through
+                fn.apply(this, args);
+                throttle = true;
+              } else {
+                // all the others get throttled
+                if (timer) clearTimeout(timer); // cancel #2
+                timer = setTimeout(() => {
+                  fn.apply(this, args);
+                  timer = throttle = false;
+                }, ms);
+              }
+            };
+          }
+          // Attach click handler to the DT
+          const annoteDls = window.document.querySelectorAll(
+            "dt[data-target-cell]",
+          );
+          for (const annoteDlNode of annoteDls) {
+            annoteDlNode.addEventListener("click", (event) => {
+              const clickedEl = event.target;
+              if (clickedEl !== selectedAnnoteEl) {
+                unselectCodeLines();
+                const activeEl = window.document.querySelector(
+                  "dt[data-target-cell].code-annotation-active",
+                );
+                if (activeEl) {
+                  activeEl.classList.remove("code-annotation-active");
+                }
+                selectCodeLines(clickedEl);
+                clickedEl.classList.add("code-annotation-active");
+              } else {
+                // Unselect the line
+                unselectCodeLines();
+                clickedEl.classList.remove("code-annotation-active");
+              }
+            });
+          }
+          const findCites = (el) => {
+            const parentEl = el.parentElement;
+            if (parentEl) {
+              const cites = parentEl.dataset.cites;
+              if (cites) {
+                return {
+                  el,
+                  cites: cites.split(" "),
+                };
+              } else {
+                return findCites(el.parentElement);
+              }
+            } else {
+              return undefined;
             }
-            popup.appendChild(citeDiv);
-          });
-          return popup.innerHTML;
+          };
+          var bibliorefs = window.document.querySelectorAll(
+            'a[role="doc-biblioref"]',
+          );
+          for (var i = 0; i < bibliorefs.length; i++) {
+            const ref = bibliorefs[i];
+            const citeInfo = findCites(ref);
+            if (citeInfo) {
+              tippyHover(citeInfo.el, function () {
+                var popup = window.document.createElement("div");
+                citeInfo.cites.forEach(function (cite) {
+                  var citeDiv = window.document.createElement("div");
+                  citeDiv.classList.add("hanging-indent");
+                  citeDiv.classList.add("csl-entry");
+                  var biblioDiv = window.document.getElementById("ref-" + cite);
+                  if (biblioDiv) {
+                    citeDiv.innerHTML = biblioDiv.innerHTML;
+                  }
+                  popup.appendChild(citeDiv);
+                });
+                return popup.innerHTML;
+              });
+            }
+          }
         });
-      }
-    }
-  });
-  </script>
-</div> <!-- /content -->
-
-
-
-
-</body></html>
+      </script>
+    </div>
+    <!-- /content -->
+  </body>
+</html>

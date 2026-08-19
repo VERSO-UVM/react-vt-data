@@ -1,6 +1,6 @@
 # DuckDB Consolidation Report
 
-*Which data streams make sense to consolidate to DuckDB.*
+_Which data streams make sense to consolidate to DuckDB._
 
 ---
 
@@ -8,10 +8,10 @@
 
 DuckDB is **already used** in two routes:
 
-| Route file | Data | DuckDB operations |
-|---|---|---|
+| Route file        | Data                                        | DuckDB operations                                  |
+| ----------------- | ------------------------------------------- | -------------------------------------------------- |
 | `post_acs5_db.py` | 9 tidy parquets (ACS5 B-series + DP-series) | 9 views, WHERE + ORDER, UNION ALL across DP tables |
-| `post_qcew.py` | `vt_qcew_employment.parquet` (53 KB) | WHERE county, PIVOT sectors, ORDER year/quarter |
+| `post_qcew.py`    | `vt_qcew_employment.parquet` (53 KB)        | WHERE county, PIVOT sectors, ORDER year/quarter    |
 
 These are the right pattern. Everything else either uses the `masterload()` Geopandas pipeline (FGB/GeoJSON) or loads individual CSVs with pandas in `post_census.py`.
 
@@ -21,38 +21,38 @@ These are the right pattern. Everything else either uses the `masterload()` Geop
 
 ### Census (`backend/Data/Census/`)
 
-| File | Format | Size | Currently used by |
-|---|---|---|---|
-| `vt_acs5_combined.csv` | CSV | 101 MB | Not used by any active route |
-| `vt_acs5_combined.parquet` | Parquet | 15 MB | Not used by any active route |
-| `vt_acs5_combined_TIDY.parquet` | Parquet | 9.4 MB | `post_acs5_db.py` (DuckDB view `profile_census`) |
-| `vt_acs5_b_demographics_tidy.parquet` | Parquet | 274 KB | `post_acs5_db.py` (DuckDB view `b10_census`) |
-| `vt_acs5_b_education_tidy.parquet` | Parquet | 94 KB | `post_acs5_db.py` (DuckDB view `b15003_education`) |
-| `vt_acs5_b_housing_tidy.parquet` | Parquet | 105 KB | `post_acs5_db.py` (DuckDB view `b_housing`) |
-| `vt_acs5_b_economic_tidy.parquet` | Parquet | 102 KB | `post_acs5_db.py` (DuckDB view `b_economic`) |
-| `vt_acs5_{topic}_data_tidy.parquet` (×4) | Parquet | 1–2.2 MB each | `post_acs5_db.py` (DuckDB views `dp02`–`dp05`) |
-| `vt_acs5_{topic}_data.csv` (×4) | CSV | 8–15 MB each | Not used by any active route (superseded by tidy parquets) |
-| `vt_acs5_{topic}_data_tidy.csv` (×4) | CSV | 100–200 MB each | Not used by any active route |
-| `VT_{topic}_ALL.fgb` (×4) | FlatGeobuf | 600–900 KB each | `post_census.py` via `masterload()` + Geopandas |
-| `VT_HOUSING_ALL_2013.fgb` | FlatGeobuf | 852 KB | `post_census.py` (2013 snapshot comparison) |
-| `VT_Historic_Population.csv` | CSV | 425 KB | `post_census.py` via pandas |
-| `unemployment_rate_by_year.csv` | CSV | 200 KB | `post_census.py` via pandas |
-| `median_earnings_by_year.csv` | CSV | 717 KB | `post_census.py` via pandas |
-| `med_home_value_by_year.csv` | CSV | 242 KB | `post_census.py` via pandas |
-| `med_smoc_by_year.csv` | CSV | 593 KB | `post_census.py` via pandas |
-| `commute_time_by_year.csv` | CSV | 203 KB | `post_census.py` via pandas |
-| `commute_habits_by_year.csv` | CSV | 707 KB | `post_census.py` via pandas |
+| File                                     | Format     | Size            | Currently used by                                          |
+| ---------------------------------------- | ---------- | --------------- | ---------------------------------------------------------- |
+| `vt_acs5_combined.csv`                   | CSV        | 101 MB          | Not used by any active route                               |
+| `vt_acs5_combined.parquet`               | Parquet    | 15 MB           | Not used by any active route                               |
+| `vt_acs5_combined_TIDY.parquet`          | Parquet    | 9.4 MB          | `post_acs5_db.py` (DuckDB view `profile_census`)           |
+| `vt_acs5_b_demographics_tidy.parquet`    | Parquet    | 274 KB          | `post_acs5_db.py` (DuckDB view `b10_census`)               |
+| `vt_acs5_b_education_tidy.parquet`       | Parquet    | 94 KB           | `post_acs5_db.py` (DuckDB view `b15003_education`)         |
+| `vt_acs5_b_housing_tidy.parquet`         | Parquet    | 105 KB          | `post_acs5_db.py` (DuckDB view `b_housing`)                |
+| `vt_acs5_b_economic_tidy.parquet`        | Parquet    | 102 KB          | `post_acs5_db.py` (DuckDB view `b_economic`)               |
+| `vt_acs5_{topic}_data_tidy.parquet` (×4) | Parquet    | 1–2.2 MB each   | `post_acs5_db.py` (DuckDB views `dp02`–`dp05`)             |
+| `vt_acs5_{topic}_data.csv` (×4)          | CSV        | 8–15 MB each    | Not used by any active route (superseded by tidy parquets) |
+| `vt_acs5_{topic}_data_tidy.csv` (×4)     | CSV        | 100–200 MB each | Not used by any active route                               |
+| `VT_{topic}_ALL.fgb` (×4)                | FlatGeobuf | 600–900 KB each | `post_census.py` via `masterload()` + Geopandas            |
+| `VT_HOUSING_ALL_2013.fgb`                | FlatGeobuf | 852 KB          | `post_census.py` (2013 snapshot comparison)                |
+| `VT_Historic_Population.csv`             | CSV        | 425 KB          | `post_census.py` via pandas                                |
+| `unemployment_rate_by_year.csv`          | CSV        | 200 KB          | `post_census.py` via pandas                                |
+| `median_earnings_by_year.csv`            | CSV        | 717 KB          | `post_census.py` via pandas                                |
+| `med_home_value_by_year.csv`             | CSV        | 242 KB          | `post_census.py` via pandas                                |
+| `med_smoc_by_year.csv`                   | CSV        | 593 KB          | `post_census.py` via pandas                                |
+| `commute_time_by_year.csv`               | CSV        | 203 KB          | `post_census.py` via pandas                                |
+| `commute_habits_by_year.csv`             | CSV        | 707 KB          | `post_census.py` via pandas                                |
 
 ### Non-Census
 
-| File | Format | Size | Currently used by |
-|---|---|---|---|
-| `vt_qcew_employment.parquet` | Parquet | 53 KB | `post_qcew.py` (DuckDB) — already optimal |
-| `vt-zoning-update.fgb` | FlatGeobuf | 17 MB | `post_zoning.py` via `masterload()` + Geopandas |
-| `*_Soil_Septic.fgb` (×7) | FlatGeobuf | 8–24 MB each (114 MB total) | `get_filters.py` via `masterload()` + Geopandas |
-| `VermontServiceArea.geojson` | GeoJSON | 4.8 MB | `masterload()`, infrequently queried |
-| `VermontWWTF.geojson` | GeoJSON | 604 KB | `masterload()`, infrequently queried |
-| `flood-legal.json` | JSON | ~100 MB (frontend) | Frontend only — served as static asset |
+| File                         | Format     | Size                        | Currently used by                               |
+| ---------------------------- | ---------- | --------------------------- | ----------------------------------------------- |
+| `vt_qcew_employment.parquet` | Parquet    | 53 KB                       | `post_qcew.py` (DuckDB) — already optimal       |
+| `vt-zoning-update.fgb`       | FlatGeobuf | 17 MB                       | `post_zoning.py` via `masterload()` + Geopandas |
+| `*_Soil_Septic.fgb` (×7)     | FlatGeobuf | 8–24 MB each (114 MB total) | `get_filters.py` via `masterload()` + Geopandas |
+| `VermontServiceArea.geojson` | GeoJSON    | 4.8 MB                      | `masterload()`, infrequently queried            |
+| `VermontWWTF.geojson`        | GeoJSON    | 604 KB                      | `masterload()`, infrequently queried            |
+| `flood-legal.json`           | JSON       | ~100 MB (frontend)          | Frontend only — served as static asset          |
 
 ---
 
@@ -69,6 +69,7 @@ Each is loaded separately on every request with no query pushdown — all filter
 Python after loading the full file into memory.
 
 **Recommendation:**
+
 - Register each CSV as a DuckDB view in `post_acs5_db.py` (alongside the existing parquet
   views) using `read_csv_auto()`. No file conversion needed — DuckDB reads CSVs natively and
   efficiently.
@@ -97,6 +98,7 @@ they were the original data source before the tidy parquet pipeline was built. T
 (`vt_acs5_b_*_tidy.parquet`) already cover the same data in a better format.
 
 **Recommendation:**
+
 - Audit which metrics in `post_census.py` are already covered by the existing DuckDB tidy
   parquets. Migrate those metric calculations to SQL queries.
 - For the 2013 vs. 2023 delta comparison: export pre-computed delta values to a small parquet
@@ -117,6 +119,7 @@ access model.
 queries on non-spatial columns. Geopandas loads the full geometry just to get these numbers.
 
 **Recommendation:**
+
 - Export the non-geometry columns of `vt-zoning-update.fgb` to a companion parquet (e.g.,
   `vt-zoning-tabular.parquet`).
 - Use DuckDB for aggregation queries; keep Geopandas only for the map rendering route.
@@ -153,17 +156,17 @@ parquets and FGBs fully cover their data for API purposes.
 
 ## Summary Table
 
-| Data stream | Current approach | Recommendation | Priority |
-|---|---|---|---|
-| ACS5 tidy parquets (B-series + DP-series) | ✅ DuckDB | Already optimal | — |
-| QCEW employment parquet | ✅ DuckDB | Already optimal | — |
-| 6× time-series CSVs + historic population CSV | pandas (per-request CSV load) | DuckDB views via `read_csv_auto()` | **High** |
-| Snapshot FGBs (2023 + 2013, 4× topics) | Geopandas (tabular queries) | Migrate tabular metrics to DuckDB tidy parquets; FGBs for geometry only | **Medium** |
-| Zoning FGB (tabular aggregation) | Geopandas | Export tabular parquet; DuckDB for GROUP BY | **Low** |
-| Soil suitability FGBs (7× RPC) | Geopandas | Keep as-is | — |
-| Wastewater GeoJSONs | Geopandas | Keep as-is | — |
-| Flood hazard JSON | Frontend static | Keep as-is | — |
-| 4× wide CSVs + 4× tidy CSVs | Not used | Delete (verify first) | Cleanup |
+| Data stream                                   | Current approach              | Recommendation                                                          | Priority   |
+| --------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------- | ---------- |
+| ACS5 tidy parquets (B-series + DP-series)     | ✅ DuckDB                     | Already optimal                                                         | —          |
+| QCEW employment parquet                       | ✅ DuckDB                     | Already optimal                                                         | —          |
+| 6× time-series CSVs + historic population CSV | pandas (per-request CSV load) | DuckDB views via `read_csv_auto()`                                      | **High**   |
+| Snapshot FGBs (2023 + 2013, 4× topics)        | Geopandas (tabular queries)   | Migrate tabular metrics to DuckDB tidy parquets; FGBs for geometry only | **Medium** |
+| Zoning FGB (tabular aggregation)              | Geopandas                     | Export tabular parquet; DuckDB for GROUP BY                             | **Low**    |
+| Soil suitability FGBs (7× RPC)                | Geopandas                     | Keep as-is                                                              | —          |
+| Wastewater GeoJSONs                           | Geopandas                     | Keep as-is                                                              | —          |
+| Flood hazard JSON                             | Frontend static               | Keep as-is                                                              | —          |
+| 4× wide CSVs + 4× tidy CSVs                   | Not used                      | Delete (verify first)                                                   | Cleanup    |
 
 ---
 
@@ -180,6 +183,7 @@ store it as expected output in the test suite. After migration, the same request
 byte-for-byte identical records (or numerically equivalent within float tolerance).
 
 **Implementation pattern:**
+
 ```python
 # backend/tests/test_census_golden.py
 import pandas as pd
@@ -235,6 +239,7 @@ def test_subcategory_has_required_columns(subcategory):
 ### 3. Filter-correctness tests
 
 For each migrated endpoint, test that:
+
 - An empty filter returns all rows.
 - A specific Jurisdiction filter returns only rows for that jurisdiction.
 - A nonsense filter returns an empty result (not an error).

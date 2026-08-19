@@ -37,28 +37,7 @@ import {
 
 import { useProfile } from '@/components/profile/profileStore';
 
-/* ---------------------------------------------------------------
-   Design tokens
-   Palette drawn from Vermont's own landscape rather than a generic
-   SaaS gradient: deep spruce, granite slate, birch cream, and a
-   maple-syrup amber for the single warm accent.
-----------------------------------------------------------------*/
-const COLOR = {
-  spruce: '#1B3A2F',
-  spruceDeep: '#122820',
-  slate: '#40525A',
-  birch: '#F6F5EF',
-  birchDim: '#EEEBE0',
-  ink: '#1B211D',
-  amber: '#dd9a2f',
-  amberSoft: '#E7B563',
-  amberYellow: '#FFD100',
-  line: 'rgba(27, 58, 47, 0.14)',
-};
-
-const FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', serif";
-const FONT_BODY = "'General Sans', 'Inter', sans-serif";
-const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
+import { COLORS, FONTS } from '@/app/theme';
 
 /* ---------------------------------------------------------------
    Hero title typewriter timing
@@ -122,7 +101,7 @@ function BlinkingCursor({ delay }: { delay: number }) {
         width: '0.07em',
         height: '0.85em',
         marginLeft: 6,
-        background: COLOR.amberSoft,
+        background: COLORS.amberSoft,
         verticalAlign: '-0.08em',
       }}
       initial={{ opacity: 0 }}
@@ -191,11 +170,11 @@ function StatNumber({
     <motion.span
       ref={ref}
       style={{
-        fontFamily: FONT_DISPLAY,
+        fontFamily: FONTS.display,
         fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
         fontWeight: 700,
         fontVariantNumeric: 'tabular-nums',
-        color: COLOR.spruce,
+        color: COLORS.spruce,
         display: 'inline-block',
       }}
     >
@@ -239,7 +218,7 @@ function ContourMark({
         <motion.path
           key={d}
           d={d}
-          stroke={i === 0 ? COLOR.amber : COLOR.spruce}
+          stroke={i === 0 ? COLORS.amber : COLORS.spruce}
           strokeOpacity={i === 0 ? 0.55 : 0.16}
           strokeWidth={1.4}
           initial={{ pathLength: 0, opacity: 0 }}
@@ -283,7 +262,7 @@ function HeroSection({
         width: '100vw',
         left: '50%',
         marginLeft: '-50vw',
-        background: `linear-gradient(160deg, ${COLOR.spruceDeep} 0%, ${COLOR.spruce} 100%)`,
+        background: `linear-gradient(160deg, ${COLORS.spruceDeep} 0%, ${COLORS.spruce} 100%)`,
         paddingTop: 96,
         paddingBottom: 88,
       }}
@@ -299,11 +278,11 @@ function HeroSection({
             >
               <Text
                 style={{
-                  fontFamily: FONT_MONO,
+                  fontFamily: FONTS.mono,
                   fontSize: 12,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  color: COLOR.amberSoft,
+                  color: COLORS.amberSoft,
                 }}
               >
                 A project of the Vermont Data Collaborative
@@ -313,22 +292,22 @@ function HeroSection({
             <Title
               order={1}
               style={{
-                fontFamily: FONT_DISPLAY,
+                fontFamily: FONTS.display,
                 fontWeight: 600,
                 fontSize: 'clamp(2.6rem, 5.4vw, 4.2rem)',
                 lineHeight: 1.04,
-                color: COLOR.birch,
+                color: COLORS.birch,
                 marginTop: 14,
                 maxWidth: 640,
               }}
             >
-              <motion.span style={{ display: 'block' }}>
+              <motion.span style={{ display: 'block', fontWeight: 700 }}>
                 <TypewriterLine
                   text={HERO_LINE_1}
                   startDelay={TYPE_LINE1_START}
                 />
               </motion.span>
-              <motion.span style={{ display: 'block' }}>
+              <motion.span style={{ display: 'block', fontWeight: 700 }}>
                 <TypewriterLine
                   text={HERO_LINE_2}
                   startDelay={TYPE_LINE2_START}
@@ -368,10 +347,10 @@ function HeroSection({
                   rightSection={<ArrowRightIcon size={18} />}
                   styles={{
                     root: {
-                      backgroundColor: COLOR.amber,
-                      color: COLOR.spruceDeep,
+                      backgroundColor: COLORS.amber,
+                      color: COLORS.spruceDeep,
                       fontWeight: 600,
-                      '&:hover': { backgroundColor: COLOR.amberSoft },
+                      '&:hover': { backgroundColor: COLORS.amberSoft },
                     },
                   }}
                 >
@@ -387,7 +366,7 @@ function HeroSection({
                   styles={{
                     root: {
                       borderColor: 'rgba(246,245,239,0.4)',
-                      color: COLOR.birch,
+                      color: COLORS.birch,
                       fontWeight: 500,
                     },
                   }}
@@ -422,11 +401,11 @@ function HeroSection({
                 <Group justify="space-between" align="center" mb={18}>
                   <Text
                     style={{
-                      fontFamily: FONT_MONO,
-                      fontSize: 11,
+                      color: COLORS.amberSoft,
+                      fontFamily: FONTS.mono,
+                      fontSize: 12,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
-                      color: 'rgba(246,245,239,0.5)',
                     }}
                   >
                     Your profile
@@ -436,7 +415,7 @@ function HeroSection({
                     variant="subtle"
                     onClick={openProfileModal}
                     rightSection={<PencilSimpleIcon size={14} />}
-                    styles={{ root: { color: COLOR.amberSoft } }}
+                    styles={{ root: { color: COLORS.amberSoft } }}
                   >
                     Edit
                   </Button>
@@ -449,7 +428,7 @@ function HeroSection({
                   <Box>
                     <FieldLabel>Interests</FieldLabel>
                     {interests.length > 0 ? (
-                      <Text style={{ color: COLOR.birch, fontWeight: 500 }}>
+                      <Text style={{ color: COLORS.birch, fontWeight: 500 }}>
                         {interests.join(' · ')}
                       </Text>
                     ) : (
@@ -472,7 +451,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <Text
       style={{
-        fontFamily: FONT_MONO,
+        fontFamily: FONTS.mono,
         fontSize: 11,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
@@ -489,7 +468,7 @@ function ProfileField({ label, value }: { label: string; value?: string }) {
   return (
     <Box>
       <FieldLabel>{label}</FieldLabel>
-      <Text style={{ color: COLOR.birch, fontWeight: 500 }}>
+      <Text style={{ color: COLORS.birch, fontWeight: 500 }}>
         {value || '—'}
       </Text>
     </Box>
@@ -514,9 +493,9 @@ function StatStrip() {
             <StatNumber value={s.value} suffix={s.suffix} />
             <Text
               style={{
-                fontFamily: FONT_BODY,
+                fontFamily: FONTS.body,
                 fontSize: 16,
-                color: COLOR.slate,
+                color: COLORS.slate,
                 textAlign: 'center',
                 maxWidth: 180,
               }}
@@ -571,10 +550,10 @@ function CapabilityFlow() {
           order={2}
           ta="center"
           style={{
-            fontFamily: FONT_BODY,
+            fontFamily: FONTS.body,
             fontWeight: 700,
             fontSize: 25,
-            color: COLOR.ink,
+            color: COLORS.ink,
             lineHeight: 1.5,
           }}
           mb={48}
@@ -591,7 +570,7 @@ function CapabilityFlow() {
             left: '12%',
             right: '12%',
             height: 1,
-            background: COLOR.line,
+            background: COLORS.line,
           }}
           visibleFrom="sm"
         />
@@ -618,7 +597,7 @@ function CapabilityFlow() {
                       width: 56,
                       height: 56,
                       borderRadius: '50%',
-                      background: COLOR.spruce,
+                      background: COLORS.spruce,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -627,11 +606,11 @@ function CapabilityFlow() {
                       zIndex: 1,
                     }}
                   >
-                    <Icon size={26} color={COLOR.birch} weight="light" />
+                    <Icon size={26} color={COLORS.birch} weight="light" />
                   </Box>
 
                   <Box>
-                    <Text fw={700} fz="lg" style={{ color: COLOR.ink }}>
+                    <Text fw={700} fz="lg" style={{ color: COLORS.ink }}>
                       {item.title}
                     </Text>
                     <Text size="sm" c="dimmed" mt={4}>
@@ -661,16 +640,16 @@ function FeaturedDatasets() {
   ];
 
   return (
-    <Box style={{ background: COLOR.birchDim, borderRadius: 28 }} py={56}>
+    <Box style={{ background: COLORS.birchDim, borderRadius: 28 }} py={56}>
       <Container size="lg">
         <Reveal>
           <Text
             style={{
-              fontFamily: FONT_MONO,
+              fontFamily: FONTS.mono,
               fontSize: 14,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
-              color: COLOR.amber,
+              color: COLORS.amber,
               textAlign: 'center',
             }}
             mb={20}
@@ -682,10 +661,10 @@ function FeaturedDatasets() {
           <Text
             ta="center"
             style={{
-              fontFamily: FONT_DISPLAY,
+              fontFamily: FONTS.display,
               fontSize: 'clamp(1.4rem, 2.6vw, 2rem)',
               lineHeight: 1.5,
-              color: COLOR.ink,
+              color: COLORS.ink,
               maxWidth: 1000,
               margin: '0 auto',
             }}
@@ -699,14 +678,14 @@ function FeaturedDatasets() {
                     color: 'inherit',
                     textDecoration: 'underline',
                     textDecorationStyle: 'dotted',
-                    textDecorationColor: COLOR.slate,
+                    textDecorationColor: COLORS.slate,
                     textUnderlineOffset: 4,
                   }}
                 >
                   {d}
                 </Link>
                 {i < datasets.length - 1 && (
-                  <span style={{ color: COLOR.amber, margin: '0 12px' }}>
+                  <span style={{ color: COLORS.amber, margin: '0 12px' }}>
                     ·
                   </span>
                 )}
@@ -725,10 +704,11 @@ function FeaturedDatasets() {
 function ValueAdds() {
   const rows = [
     { label: 'Free, no account required', us: true, others: false },
-    { label: 'Plain-language field names', us: true, others: false },
-    { label: 'Vermont-specific, town-level detail', us: true, others: false },
+    { label: 'Plain-language', us: true, others: false },
+    { label: 'Tailored to Vermont’s towns', us: true, others: false },
     { label: 'Maintained with community input', us: true, others: false },
-    { label: 'Updated on a public schedule', us: true, others: false },
+    { label: 'Customized reporting', us: true, others: false },
+    { label: 'Historical trends', us: true, others: false },
   ];
 
   return (
@@ -738,9 +718,9 @@ function ValueAdds() {
           order={2}
           ta="center"
           style={{
-            fontFamily: FONT_DISPLAY,
+            fontFamily: FONTS.display,
             fontWeight: 600,
-            color: COLOR.ink,
+            color: COLORS.ink,
           }}
           mb={8}
         >
@@ -755,7 +735,7 @@ function ValueAdds() {
         <Box>
           <Group grow mb={12} px="md">
             <Text />
-            <Text ta="center" fw={700} style={{ color: COLOR.spruce }}>
+            <Text ta="center" fw={700} style={{ color: COLORS.spruce }}>
               Our platform
             </Text>
             <Text ta="center" fw={600} c="dimmed">
@@ -768,7 +748,7 @@ function ValueAdds() {
               w={650}
               key={row.label}
               style={{
-                borderTop: i === 0 ? 'none' : `1px solid ${COLOR.line}`,
+                borderTop: i === 0 ? 'none' : `1px solid ${COLORS.line}`,
                 padding: '16px 8px',
               }}
             >
@@ -778,7 +758,7 @@ function ValueAdds() {
                   <CheckCircleIcon
                     size={20}
                     weight="fill"
-                    color={COLOR.spruce}
+                    color={COLORS.spruce}
                   />
                 </Group>
                 <Group justify="center">
@@ -800,7 +780,7 @@ function CommunitySection() {
   return (
     <Box
       style={{
-        background: `linear-gradient(135deg, ${COLOR.spruce} 0%, ${COLOR.spruceDeep} 100%)`,
+        background: `linear-gradient(135deg, ${COLORS.spruce} 0%, ${COLORS.spruceDeep} 100%)`,
         borderRadius: 28,
       }}
       py={64}
@@ -808,15 +788,15 @@ function CommunitySection() {
       <Container size="md">
         <Reveal>
           <Group justify="center" mb={20}>
-            <UsersThreeIcon size={32} color={COLOR.amberSoft} weight="light" />
+            <UsersThreeIcon size={32} color={COLORS.amberSoft} weight="light" />
           </Group>
           <Title
             order={2}
             ta="center"
             style={{
-              fontFamily: FONT_DISPLAY,
+              fontFamily: FONTS.display,
               fontWeight: 600,
-              color: COLOR.birch,
+              color: COLORS.birch,
             }}
             mb={12}
           >
@@ -845,7 +825,7 @@ function CommunitySection() {
               styles={{
                 root: {
                   borderColor: 'rgba(246,245,239,0.4)',
-                  color: COLOR.birch,
+                  color: COLORS.birch,
                 },
               }}
             >
@@ -853,7 +833,7 @@ function CommunitySection() {
             </Button>
             <Anchor
               href="/about"
-              style={{ color: COLOR.amberSoft, fontWeight: 500 }}
+              style={{ color: COLORS.amberSoft, fontWeight: 500 }}
             >
               How to contribute →
             </Anchor>

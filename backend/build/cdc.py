@@ -12,8 +12,8 @@ from pathlib import Path
 import pandas as pd
 from sklearn.decomposition import PCA
 
+from app_utils.sql_render import render_sql
 from build import BACKEND, CON, SQL_DIR, bin_measures, data_dir
-from sql_render import render_sql
 
 proc_dir = BACKEND / "Data" / "_Processed" / "cdc"
 TABLES = [
@@ -67,8 +67,9 @@ def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
 def build_places(name: str, path: Path, indicators: str) -> None:
     sql = render_sql(SQL_DIR / "cdc_places.sql", indicators=indicators, path=str(path))
     df = CON.execute(sql).df()
+    # Needed to get rid of df variable assignment to pass ruff linting check
     if name == "county":
-        pca_df = build_PCA_table(df)
+        build_PCA_table(df)
     pct_df = add_national_percentile(df)  # df here is still national
     df = df[df["StateAbbr"] == "VT"].copy()
     df, edge_df = bin_measures(df, variable_col="Measure", value_col="Data_Value")

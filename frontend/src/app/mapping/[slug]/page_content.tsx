@@ -19,45 +19,37 @@ import FilterContainer from '@/components/FilterUI/Filter_wrap';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 
-const SOIL_RPCS = [
-  { value: 'ACRPC', label: 'Addison County (ACRPC)' },
-  { value: 'BCRC', label: 'Bennington County (BCRC)' },
-  { value: 'CCRPC', label: 'Chittenden County (CCRPC)' },
-  { value: 'CVRPC', label: 'Central Vermont (CVRPC)' },
-  { value: 'LCPC', label: 'Lamoille County (LCPC)' },
-  { value: 'MARC', label: 'Mount Ascutney (MARC)' },
-  { value: 'NWRPC', label: 'Northwest (NWRPC)' },
-];
+import MapLegend, { type LegendRow } from '@/components/Legend';
 
+// NOTE: zoning is NOT here — it has its own route at /mapping/zoning, which
+// takes precedence over this dynamic segment.
 const MAP_CONFIG: Record<
   string,
-  { title: string; initialURL?: string; filterURL?: string; dataURL?: string }
+  {
+    title: string;
+    initialURL?: string;
+    filterURL?: string;
+    dataURL?: string;
+    legendURL?: string;
+  }
 > = {
-  zoning: {
-    title: 'Zoning',
-    initialURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=zoning_info`,
-    dataURL: `${BASE_API_URL}/load/mapping/zoning/standard`,
-  },
   'flood-legal': {
     title: 'Flood Insurance',
     initialURL: `${BASE_API_URL}/load/mapping/flood_legal`,
   },
   'soil-suitability': {
     title: 'Soil Suitability',
-    initialURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=soil_suitability_info_soil_suit`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
+    legendURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_legend`,
   },
   'treatment-facilities': {
     title: 'Wastewater Treatment Facilities',
-    initialURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=treatment_facilities_treatment_facility_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
   },
   'service-areas': {
     title: 'Wastewater Service Areas',
-    initialURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=service_areas_service_area_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
@@ -68,44 +60,47 @@ export default function MappingContent() {
   const slug = params?.slug as string | undefined;
 
   const [data, setData] = useState<FeatureCollection | null>(null);
-  const [rpc, setRpc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCountyLines, setShowCountyLines] = useState(true);
+
+  const [legendData, setLegendData] = useState<LegendRow[]>([]);
 
   const config = slug ? MAP_CONFIG[slug] : undefined;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset map state on navigation to another slug
     setData(null);
-    setRpc(null);
   }, [slug]);
 
   useEffect(() => {
-    if (!slug || !config?.initialURL) return;
+    if (!slug || (!config?.dataURL && !config?.initialURL)) return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
     setLoading(true);
 
-    axios
-      .get(config.initialURL)
+    // Filterable maps are POST-only and take a FilterRequest body, for now. TODO: At some point we'll go to FilterSource
+    const request = config.dataURL
+      ? axios.post(config.dataURL, { filters: {} })
+      : axios.get(config.initialURL!);
+
+    request
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [slug, config?.initialURL]);
+  }, [slug, config?.dataURL, config?.initialURL]);
 
   useEffect(() => {
-    if (!rpc) return;
+    if (!slug || !config?.legendURL) return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
     setLoading(true);
-    setData(null);
 
     axios
-      .get(`${BASE_API_URL}/load/mapping/wastewater/soil_septic/${rpc}`)
-      .then((res) => setData(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [rpc]);
+      .get(config.legendURL) //get the data
+      .then((res) => setLegendData(res.data)) //set the data
+      .catch(console.error) //catch any errors
+      .finally(() => setLoading(false)); //say that loading is done
+  }, [slug, config?.legendURL]); //do only once on initial render ideally
 
   return (
     <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>
@@ -125,7 +120,7 @@ export default function MappingContent() {
             <Box>
               <Title order={2}>{config?.title ?? slug}</Title>
               <Text size="sm" c="dimmed" mt={4}>
-                Explore Vermont zoning districts and planning information.
+                Explore Vermont planning and environmental data.
               </Text>
             </Box>
 
@@ -139,17 +134,6 @@ export default function MappingContent() {
                   }
                   label="Show Town Borders"
                 />
-
-                {slug === 'soil-suitability' && (
-                  <Select
-                    label="Regional Planning Commission"
-                    placeholder="Select RPC"
-                    data={SOIL_RPCS}
-                    value={rpc}
-                    onChange={setRpc}
-                    searchable
-                  />
-                )}
               </Stack>
             </Paper>
 
@@ -164,6 +148,9 @@ export default function MappingContent() {
               />
             )}
           </Stack>
+
+          {/* Legend */}
+          <MapLegend data={legendData}></MapLegend>
         </Paper>
 
         {/* Map */}
