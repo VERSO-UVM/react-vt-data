@@ -9,8 +9,8 @@
 
 import pandas as pd
 
+from app_utils.sql_render import render_sql
 from build import BACKEND, CON, data_dir
-from sql_render import render_sql
 
 proc_dir = BACKEND / "Data" / "_Processed"
 proc_zoning = proc_dir / "zoning"

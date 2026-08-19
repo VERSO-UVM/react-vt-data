@@ -34,16 +34,7 @@ import { useEffect, useState } from 'react';
 
 // within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
-import { ChartMetadata, DataRow } from '@/types/cachedCharts';
-
-// one chart's backend payload, keyed by chart def id in state below
-type ChartPayload = {
-  data: DataRow[];
-  metadata?: ChartMetadata;
-  tableData?: DataRow[];
-};
-import { FONT_MONO, COLOR, FONT_DISPLAY } from './theme';
-import { COLORS, FONTS } from '@/app/theme';
+import { COLORS, FONTS } from '../theme';
 import { FieldLabel } from './FieldLabel';
 import { MetricsPanel } from './MetricsPanels';
 
