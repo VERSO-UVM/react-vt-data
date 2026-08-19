@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 
 from api.models import FilterSource
-from sql_render import sql_filter_block
+from app_utils.sql_render import sql_filter_block
 from query.processed_db import DB
 
 logger = logging.getLogger(__name__)
