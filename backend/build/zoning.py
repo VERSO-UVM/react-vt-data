@@ -106,9 +106,7 @@ def build_empty_geom():
         FROM '{towns}'
     """)
 
-    CON.execute(
-        render_sql(SQL_DIR / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES)
-    )
+    CON.execute(render_sql(SQL_DIR / "zoning_empty_geom.sql", min_acres=MIN_GAP_ACRES))
 
 
 def get_rule_cols():
