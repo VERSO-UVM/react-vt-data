@@ -4,6 +4,7 @@ from api.core_functions import request_to_source, spec_to_source
 from api.models import FilterRequest, FilterSpec
 from query import (
     get_ambulance_geojson,
+    get_ambulance_legend,
 )
 
 router = APIRouter()
@@ -20,4 +21,10 @@ async def ambulance_info_geojson(request: FilterRequest):
 async def ambulance_info_geojson_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_ambulance_geojson(sources)
+    return Response(content=data, media_type="application/json")
+
+
+@router.get("/load/mapping/ambulance/ambulance_legend")
+async def ambulance_legend():
+    data = get_ambulance_legend()
     return Response(content=data, media_type="application/json")

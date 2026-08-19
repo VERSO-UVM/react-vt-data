@@ -55,9 +55,9 @@ const MAP_CONFIG: Record<
   },
   ambulance: {
     title: 'Ambulance Service Areas',
-    initialURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=ambulance_ambulance_info`,
     dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+    legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
   },
 };
 
@@ -68,6 +68,7 @@ export default function MappingContent() {
   const [data, setData] = useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCountyLines, setShowCountyLines] = useState(true);
+  const [largeBorder, setLargeBorder] = useState(false);
 
   const [legendData, setLegendData] = useState<LegendRow[]>([]);
 
@@ -108,6 +109,8 @@ export default function MappingContent() {
       .finally(() => setLoading(false)); //say that loading is done
   }, [slug, config?.legendURL]); //do only once on initial render ideally
 
+  const borderSwitchText = `Show ${config?.title ?? slug}`;
+
   return (
     <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>
       <Group h="100%" align="stretch" gap="md" wrap="nowrap">
@@ -140,6 +143,13 @@ export default function MappingContent() {
                   }
                   label="Show Town Borders"
                 />
+                <Switch
+                  checked={largeBorder}
+                  onChange={(event) =>
+                    setLargeBorder(event.currentTarget.checked)
+                  }
+                  label={borderSwitchText}
+                />
               </Stack>
             </Paper>
 
@@ -170,7 +180,11 @@ export default function MappingContent() {
           }}
         >
           <LoadingOverlay visible={loading} zIndex={1000} />
-          <VTMap geojson={data} showCountyLines={showCountyLines} />
+          <VTMap
+            geojson={data}
+            showCountyLines={showCountyLines}
+            largeBorders={largeBorder}
+          />
         </Box>
       </Group>
     </Box>

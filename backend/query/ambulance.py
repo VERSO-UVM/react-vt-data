@@ -25,3 +25,13 @@ def get_ambulance_geojson(sources: list[FilterSource]):
         logger.error("geo query returned no rows for filters: %s", sources)
         raise ValueError(f"no results for filters: {sources}")
     return result[0]
+
+
+def get_ambulance_legend():
+    result = DB.execute(
+        "SELECT json_group_array(to_json(ambulance_ambulance_colors)) FROM ambulance_ambulance_colors;"
+    ).fetchone()
+    if result is None:
+        logger.error("color query returned no rows for the colors dataset")
+        raise ValueError("no results for colors dataset")
+    return result[0]
