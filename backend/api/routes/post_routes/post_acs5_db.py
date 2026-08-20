@@ -4,7 +4,6 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import DPSeriesRequest, FilterRequest, make_response
-from query.processed_db import DB
 
 # TODO: Simplify / Refactor this script using the new query folder functions
 from query.acs5 import (
@@ -13,6 +12,7 @@ from query.acs5 import (
     get_snapshot,
     get_unemployment_rate_ts,
 )
+from query.processed_db import DB
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -70,14 +70,14 @@ async def tidy_unemployment_rate(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
 
 
-# Median Earnings
+# Median Earnings (FIXME)
 @router.post("/load/acs5-db/tidy/median-earnings")
 async def tidy_median_earnings(request: FilterRequest):
     rows = get_median_earnings(filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 
-# Geography Snapshot Variables
+# Geography Snapshot Variables (FIXME)
 @router.post("/load/acs5-db/tidy/snapshot")
 async def tidy_snapshot(request: FilterRequest):
     rows = get_snapshot(filters=request.filters)
