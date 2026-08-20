@@ -35,7 +35,7 @@
         "Value": "val"
       }
     },
-    "cdc_county_places": {
+    "cdc_places_county": {
       "join_key": "LocationID",
       "join_type": "inner",
       "value_col": "Data_Value",

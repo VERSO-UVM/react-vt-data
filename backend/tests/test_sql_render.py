@@ -12,7 +12,7 @@ import pytest
 from sqlfluff.core import FluffConfig, Linter
 
 from api.models import FilterSource, RangeFilter
-from sql_render import (
+from app_utils.sql_render import (
     compile_filters,
     compile_where,
     filter_clauses,
@@ -50,7 +50,7 @@ QUERY_TEMPLATE_SOURCES = {
     "query/sql/acs5/unemployment_rate.sql": [WHERE_SOURCE],
     "query/sql/cdc/county_places.sql": [
         FilterSource(
-            filter_table="cdc_county_places",
+            filter_table="cdc_places_county",
             filters={"Measure": ["Depression among adults"]},
         )
     ],

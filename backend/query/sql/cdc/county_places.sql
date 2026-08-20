@@ -7,6 +7,6 @@ SELECT
     c.CountyFIPS,
     c.CountyName,
     ST_ASGEOJSON(c.geom) AS geometry
-FROM cdc_county_places AS p
+FROM cdc_places_county AS p
 LEFT JOIN vermont_counties AS c ON p.LocationID = c.CountyFIPS
 {{ where_string }}

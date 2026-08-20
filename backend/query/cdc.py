@@ -81,7 +81,7 @@ def _measure_cutpoints(measures: list[str]) -> tuple[list[float], list[float]]:
     """Bin edges for each measure from the precomputed cdc_edges table."""
     params: list = []
     where_string = compile_where({"Measure": measures}, params)
-    sql = f"SELECT * FROM cdc_county_edges {where_string}"
+    sql = f"SELECT * FROM cdc_edges_county {where_string}"
     edges = DB.execute(sql, params).df()
     edges_x = (
         edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()
@@ -106,7 +106,7 @@ def dual_var_comparison(
 
     # Both measures ride in one merged FilterSource so the shared places.sql
     # template serves the single- and dual-variable cases alike.
-    table = "cdc_county_places" if geoLevel == "county_places" else "cdc_tract_places"
+    table = "cdc_places_county" if geoLevel == "county_places" else "cdc_places_tract"
     merged = FilterSource(filter_table=table, filters={"Measure": measures})
     sql_path = sql_dir / f"{geoLevel}.sql"
     sql, params = sql_filter_block(sql_path, [merged])
@@ -149,6 +149,7 @@ def dual_var_comparison(
     return geojson, legend
 
 
+# FIXME: Add PCA table in data_cleaning/clean_cdc.py script (broken for now)
 def get_cdc_county_pca():
     df = DB.execute("""--sql
                SELECT i.LocationID, ROUND(i.pca_score, 2) AS "Health Burden", c.CountyName
