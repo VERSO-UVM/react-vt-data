@@ -23,18 +23,22 @@ sql_path = Path(__file__).resolve().parent / "sql" / "acs5"
 # Per-dataset FIXED filters, expressed as {column: [values]} and folded into the
 # FilterSource (these replace the old raw-SQL base_conditions)
 QUERY_CONFIG = {
-    "demographics": {"table": "acs5_b10_census", "fixed_filters": {}},
-    "education": {"table": "acs5_b15003_education", "fixed_filters": {}},
-    "housing": {"table": "acs5_b_housing", "fixed_filters": {}},
+    "demographics": {"table": "acs5_demographics_tidy", "fixed_filters": {}},
+    "education": {"table": "acs5_education_tidy", "fixed_filters": {}},
+    "housing": {"table": "acs5_housing_tidy", "fixed_filters": {}},
     "labor_force": {
-        "table": "acs5_b_economic",
+        "table": "acs5_economics_tidy",
         "fixed_filters": {"Section": ["Labor Force"]},
     },
-    "income": {"table": "acs5_b_economic", "fixed_filters": {"Section": ["Income"]}},
+    "income": {
+        "table": "acs5_economics_tidy",
+        "fixed_filters": {"Section": ["Income"]},
+    },
     "median_age": {
-        "table": "acs5_b10_census",
+        "table": "acs5Demographics_medianAge_timeseries",
         "fixed_filters": {"Variable": ["Median Age"]},
     },
+    # TODO: Create a "snapshot" table to database
     "snapshot": {"table": "acs5_snapshot", "fixed_filters": {}},
 }
 
@@ -93,7 +97,9 @@ def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
 
 
 def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
-    source = _acs5_source(table="acs5_unemployment_rate", filters=filters)
+    source = _acs5_source(
+        table="acs5Economics_unemploymentRate_timeseries", filters=filters
+    )
 
     sql, params = sql_filter_block(sql_path / "unemployment_rate.sql", [source])
 
@@ -106,6 +112,7 @@ def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
     return result
 
 
+# FIXME: Link to new database table name (broken for now)
 def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="acs5_median_earnings", filters=filters)
 
@@ -120,6 +127,7 @@ def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
     return result
 
 
+# FIXME: Link to new database table name (broken for now)
 def get_snapshot(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="snapshot", filters=filters)
 
@@ -134,5 +142,6 @@ def get_snapshot(filters: dict | None = None) -> pd.DataFrame:
     return result
 
 
+# FIXME: Link to new database table name (broken for now)
 def get_acs5_filters():
     return filter_tree(ACS5_FILTER_COLS, ACS5_TREE_LABELS, "acs5_info")

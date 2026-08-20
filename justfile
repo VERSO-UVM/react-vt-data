@@ -1,6 +1,6 @@
 ## Set up environment ##
 
-export DATA_DIR := justfile_directory() / "Data"
+export DATA_DIR := justfile_directory() / "backend" / "Data"
 # Load environment variables
 set dotenv-filename := ".env"
 

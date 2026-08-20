@@ -16,7 +16,9 @@ import duckdb
 
 logger = logging.getLogger(__name__)
 proc_dir = Path(__file__).resolve().parent.parent / "Data" / "_Processed"
-DATA_DIR = Path(os.environ.get("DATA_DIR", proc_dir))
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = Path(os.environ.get("DATA_DIR", BACKEND_DIR / "Data"))
 
 
 def _load_spatial(con: duckdb.DuckDBPyConnection) -> None:
@@ -46,11 +48,18 @@ def _load_spatial(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def _build() -> duckdb.DuckDBPyConnection:
-    print(DATA_DIR)
     path = Path(proc_dir / "all_data.duckdb")
     con = duckdb.connect(path, read_only=True)
     _load_spatial(con)
     return con
 
 
-DB = _build()
+def _build_etl_db() -> duckdb.DuckDBPyConnection:
+    print(f"DATA DIRECTORY PATH: {DATA_DIR}")
+    path = Path(DATA_DIR / "warehouse.duckdb")
+    con = duckdb.connect(path, read_only=True)
+    _load_spatial(con)
+    return con
+
+
+DB = _build_etl_db()
