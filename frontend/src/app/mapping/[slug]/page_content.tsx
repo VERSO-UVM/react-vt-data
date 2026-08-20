@@ -37,7 +37,6 @@ const MAP_CONFIG: Record<
 > = {
   'flood-legal': {
     title: 'Flood Insurance',
-    initialURL: `${BASE_API_URL}/load/mapping/flood_legal`,
   },
   'soil-suitability': {
     title: 'Soil Suitability',

@@ -133,15 +133,6 @@ def load_service_areas():
     )
 
 
-# TODO: update with actual path. once in stored place.
-def load_flood_data():
-    return load_data(
-        path=Path(__file__).parent.parent.parent
-        / "frontend/public/data/flood-legal.json",
-        simplify_tolerance=0.0001,
-    )
-
-
 def load_census_data(path):
     return load_data(path=path, postprocess_fn=split_name_col)
 
@@ -239,7 +230,6 @@ LOADERS = {
     # Mapping
     "zoning": lambda: process_zoning_data(load_zoning_data()),
     "soil_septic": load_and_process_soil_septic,
-    "flood_legal": lambda: load_flood_data(),
     "WWTF": lambda: load_WWTF_data(),
     "service_areas": lambda: load_service_areas(),
     # Census
