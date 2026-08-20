@@ -6,7 +6,7 @@
 **Updated**:
     2026-08-20
 **Description**:
-    Functions for serving zoning_info data to the API from the parquet files.
+    Functions for serving VersoZoning_info data to the API from the database.
 """
 
 import logging

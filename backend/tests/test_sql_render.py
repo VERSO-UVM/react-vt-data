@@ -29,14 +29,14 @@ BUILD_SQL = BACKEND / "build" / "sql"
 # ---------------------------------------------------------------------------
 
 WHERE_SOURCE = FilterSource(
-    filter_table="acs5_b10_census",
+    filter_table="acs5_demographics_tidy",
     filters={
         "NAME": ["Vergennes", "Addison town"],
         "year": RangeFilter(min=2015, max=2020),
     },
 )
 CTE_SOURCE = FilterSource(
-    filter_table="zoning_info",
+    filter_table="VersoZoning_info",
     filters={"County": ["Addison"]},
     join_key="OBJECT_ID",
     join_type="inner",
