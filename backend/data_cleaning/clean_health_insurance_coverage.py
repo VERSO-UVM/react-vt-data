@@ -6,8 +6,8 @@
 **Description**:
     Data cleaning script for health insurance coverage.
     Derived from the `RAW.acs5_economic` DuckLake table
-    Run with:
-python -m ETL.data_cleaning.clean_health_insurance_coverage
+**Run with**:
+python -m data_cleaning.clean_health_insurance_coverage
 """
 
 import numpy as np
@@ -30,7 +30,8 @@ def read_raw_data() -> pd.DataFrame:
         )
         AND Measure = 'Estimate'
         ORDER BY year;
-        """).df()
+        """
+    ).df()
 
     return raw_df
 
@@ -64,7 +65,8 @@ def add_to_lake(clean_df: pd.DataFrame):
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.acs5Economics_healthInsurance_timeseries AS
         SELECT * FROM clean_df
-        """)
+        """
+    )
 
 
 def main():

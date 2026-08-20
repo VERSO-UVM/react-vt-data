@@ -11,9 +11,14 @@ venv/
 *_trash*
 *zoning.json*
 *tidy.csv*
+*.ipynb
 
 # Large geodata files — not for version control
 backend/Data/Parcels/
+
+#DuckLake files
+backend/Data/lake
+backend/Data/lake.files/
 
 # Local planning/notes files
 claude_todo.md

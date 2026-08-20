@@ -5,11 +5,10 @@
     2026-07-13
 **Description**:
     Fetches Vermont wastewater data files from the WIM GitHub repository
-    
+
     Learn more about the data here:
         https://verso-uvm.github.io/Wastewater-Infrastructure-Mapping/data.html
 """
-
 
 import pandas as pd
 from pyogrio import read_dataframe
@@ -19,7 +18,19 @@ SERVICE_AREA_URL = "https://raw.githubusercontent.com/VERSO-UVM/Wastewater-Infra
 SOIL_SUITABILITY_URL = "https://raw.githubusercontent.com/VERSO-UVM/Vermont-Livability-Map/main/data/{rpc}_Soil_Septic.fgb"
 WATER_FEATURES_URL = "https://raw.githubusercontent.com/VERSO-UVM/Wastewater-Infrastructure-Mapping/main/data/Vermont_Water_Features.geojson"
 
-RPCs = ["ACRPC", "BCRC", "CCRPC", "CVRPC", "LCPC", "MARC", "NVDA", "NWRPC", "RRPC", "TRORC", "WRC"]
+RPCs = [
+    "ACRPC",
+    "BCRC",
+    "CCRPC",
+    "CVRPC",
+    "LCPC",
+    "MARC",
+    "NVDA",
+    "NWRPC",
+    "RRPC",
+    "TRORC",
+    "WRC",
+]
 
 # ---------------------------------------------------------------------------
 # Wastewater API fetch
@@ -68,19 +79,19 @@ def load_soil_septic_multi() -> dict[str, pd.DataFrame]:
     return dfs
 
 
-
 # ---------------------------------------------------------------------------
 # Main scrape runner
 # ---------------------------------------------------------------------------
+
 
 def collect():
     return {
         "ww_treatment_facilities": fetch_treatment_facilities(),
         "ww_service_areas": fetch_service_areas(),
-        # NOTE: The combined RPC file is too large to upload at once -> 
+        # NOTE: The combined RPC file is too large to upload at once ->
         # Upload each RPC dataset to lake.RAW tables
         **load_soil_septic_multi(),
-        "ww_stormwater_management_areas": fetch_water_features()
+        "ww_stormwater_management_areas": fetch_water_features(),
     }
 
 

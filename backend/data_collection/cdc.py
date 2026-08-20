@@ -35,6 +35,7 @@ CDC_NOTES_URL = "https://media.githubusercontent.com/media/VERSO-UVM/react-vt-da
 # CDC API fetch
 # ---------------------------------------------------------------------------
 
+
 def fetch_cdc():
     """Fetch CDC PLACES datasets."""
 
@@ -58,13 +59,14 @@ def fetch_cdc():
     return {
         "cdc_places_county": places_county_df,
         "cdc_places_tract": places_tract_df,
-        "cdc_notes": notes_df
+        "cdc_notes": notes_df,
     }
 
 
 # ---------------------------------------------------------------------------
 # Main scrape runner
 # ---------------------------------------------------------------------------
+
 
 def collect():
     """

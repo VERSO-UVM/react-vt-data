@@ -10,5 +10,6 @@ ROOT = (
 BACKEND = ROOT.parent  # backend/
 data_dir = BACKEND / "Data"
 CON = duckdb.connect()
+CON.execute("INSTALL spatial")
 CON.execute("LOAD spatial")
 SQL_DIR = BACKEND / "build" / "sql"

@@ -4,9 +4,10 @@
 **Created**:
     2026-07-13
 **Description**:
-    Data cleaning script for the raw (curated variables) `education` table in the DuckLake
-    Run with:
-python -m ETL.data_cleaning.clean_education
+    Data cleaning script for the raw (curated variables) `education`
+    table in the DuckLake
+**Run with**:
+python -m data_cleaning.clean_education
 """
 
 import pandas as pd
@@ -19,7 +20,8 @@ def read_raw_data() -> pd.DataFrame:
         """--sql
         SELECT * 
         FROM lake.RAW.education
-        """).df()
+        """
+    ).df()
 
     return raw_df
 
@@ -39,7 +41,8 @@ def add_to_lake(clean_df: pd.DataFrame):
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.acs5_education_tidy AS
         SELECT * FROM clean_df
-        """)
+        """
+    )
 
 
 def main():

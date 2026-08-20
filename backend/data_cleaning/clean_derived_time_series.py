@@ -4,18 +4,22 @@
 **Created**:
     2026-07-16
 **Description**:
-    Consolidated data cleaning script for the single-variable
-    demographic/economic/housing tables (median age, median household
-    income, median home value, per capita income, total housing units,
-    vacancy rate, unemployment_rate). Each is a thin config entry over one shared pipeline:
-    read -> rename county_subdivision -> coerce numeric -> replace
-    Census's -666666666.0 "data not available" with NaN -> write.
+    Cleaning script for the single-variable timeseries tables
+    (median age, median household income, median home value,
+    per capita income, total housing units,vacancy rate, unemployment_rate).
 
-    Run all datasets:
-python -m ETL.data_cleaning.clean_derived_time_series
+    Pipeline steps:
+    1. Read raw data
+    2. Rename "county_subdivision" to "town"
+    3. Enforce numeric data type
+    4. Fix missing values
+    5. Write table to lake.CLEANED schema
 
-    Run a subset:
-python -m ETL.data_cleaning.clean_derived_time_series median_age vacancy_rate
+**Run ALL datasets**:
+python -m data_cleaning.clean_derived_time_series
+
+**Run only a SUBSET (example):
+python -m data_cleaning.clean_derived_time_series median_age vacancy_rate
 """
 
 import argparse
@@ -32,13 +36,19 @@ UNAVAILABLE_SENTINEL = -666666666.0
 
 @dataclass(frozen=True)
 class DatasetConfig:
-    source_table: str          # e.g. "demographics", "economic", "housing"
-    variables: list[str]       # values to filter Variable on (IN clause)
-    value_source_col: str      # column holding the numeric value in RAW ("Value" or "Percent")
-    output_value_col: str      # name of the value column in the cleaned output
-    output_table: str          # table name written under lake.CLEANED
-    keep_variable_col: bool = field(default=False) # keep Variable column (if  multi-variable dataset)
-    extra_where_statement: str | None = field(default=None) # additional AND-ed predicate, e.g. "Measure = 'Percent
+    source_table: str  # e.g. "demographics", "economic", "housing"
+    variables: list[str]  # values to filter Variable on (IN clause)
+    value_source_col: (
+        str  # column holding the numeric value in RAW ("Value" or "Percent")
+    )
+    output_value_col: str  # name of the value column in the cleaned output
+    output_table: str  # table name written under lake.CLEANED
+    keep_variable_col: bool = field(
+        default=False
+    )  # keep Variable column (if  multi-variable dataset)
+    extra_where_statement: str | None = field(
+        default=None
+    )  # additional AND-ed predicate, e.g. "Measure = 'Percent
 
 
 CONFIGS: dict[str, DatasetConfig] = {
@@ -106,37 +116,35 @@ def read_raw_data(cfg: DatasetConfig) -> pd.DataFrame:
     select_parts = ["year", "NAME"]
     if cfg.keep_variable_col:
         select_parts.append("Variable")
- 
+
     if cfg.output_value_col == cfg.value_source_col:
         select_parts.append(cfg.value_source_col)
     else:
         select_parts.append(f"{cfg.value_source_col} AS {cfg.output_value_col}")
- 
+
     select_parts.append("geo_type")
- 
+
     placeholders = ", ".join(["?"] * len(cfg.variables))
     where_clause = f"WHERE Variable IN ({placeholders})"
     if cfg.extra_where_statement:
         where_clause += f"\n        AND {cfg.extra_where_statement}"
-  
+
     query = f"""--sql
         SELECT {", ".join(select_parts)}
         FROM lake.RAW.{cfg.source_table}
         {where_clause};
         """
- 
+
     return con.execute(query, cfg.variables).df()
 
 
 def change_dtype(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
     df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
-
     return df
 
 
 def replace_unavailable_data(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
     df[value_col] = df[value_col].replace(UNAVAILABLE_SENTINEL, np.nan)
-
     return df
 
 
@@ -144,7 +152,6 @@ def clean(cfg: DatasetConfig) -> pd.DataFrame:
     df = read_raw_data(cfg)
     df = change_dtype(df, cfg.output_value_col)
     df = replace_unavailable_data(df, cfg.output_value_col)
-
     return df
 
 
@@ -157,7 +164,8 @@ def add_to_lake(clean_df: pd.DataFrame, output_table: str) -> None:
         CREATE OR REPLACE TABLE lake.CLEANED.{output_table} AS
         SELECT * 
         FROM clean_df
-        """)
+        """
+    )
 
 
 def run(name: str) -> None:
@@ -168,17 +176,21 @@ def run(name: str) -> None:
 
 def main(names: list[str] | None = None) -> None:
     targets = names or list(CONFIGS)
-
     unknown = [n for n in targets if n not in CONFIGS]
+
     if unknown:
-        sys.exit(f"Unknown dataset(s): {', '.join(unknown)}. Choices: {', '.join(CONFIGS)}")
+        sys.exit(
+            f"Unknown dataset(s): {', '.join(unknown)}. Choices: {', '.join(CONFIGS)}"
+        )
 
     for name in targets:
         run(name)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Clean one or more RAW DuckLake tables.")
+    parser = argparse.ArgumentParser(
+        description="Clean one or more RAW DuckLake tables."
+    )
     parser.add_argument(
         "datasets",
         nargs="*",

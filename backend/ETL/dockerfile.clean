@@ -14,12 +14,19 @@ RUN --mount=type=cache,target=/home/app/.cache/uv,uid=1000,gid=1000 \
 # Spatial extension installation
 RUN uv run python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')"
 
-# The source data cleaning (build) scripts (source --> destination)
+# The source data cleaning (data_cleaning) scripts (source --> destination)
+COPY --chown=app:app ./data_cleaning /code/data_cleaning
+COPY --chown=app:app ./run_data_cleaning.py /code/run_data_cleaning.py
 COPY --chown=app:app ./build /code/build
+COPY --chown=app:app ./api /code/api
+COPY --chown=app:app ./logger /code/logger
+# TODO: Remove the dependency on app_utils
+COPY --chown=app:app ./app_utils /code/app_utils
+COPY --chown=app:app ./datastore /code/datastore
 
 
 ENV DATA_DIR=/data
 ENV PYTHONPATH=/code
 
-# Command to run the data cleaning (build) scripts
-ENTRYPOINT ["uv", "run", "python", "-m", "build.main"]
+# Command to run the data cleaning master script
+ENTRYPOINT ["uv", "run", "python", "-u", "-m", "run_data_cleaning"]
