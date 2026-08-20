@@ -5,6 +5,6 @@ SELECT
     i.District_Type AS "District Type",
     ROUND(i.Acres, 2) AS Acres,
     c.hex_color
-FROM zoning_info AS i
-LEFT JOIN zoning_colors AS c ON i.District_Type = c.district_type
+FROM VersoZoning_info AS i
+LEFT JOIN VersoZoning_colors AS c ON i.District_Type = c.district_type
 {{ join_filter_block }}

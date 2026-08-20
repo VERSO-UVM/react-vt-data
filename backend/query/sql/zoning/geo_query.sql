@@ -9,9 +9,9 @@ filtered AS (
         i.District_Name,
         c.rgba,
         g.geom
-    FROM zoning_info AS i
-    INNER JOIN zoning_geom AS g USING (OBJECT_ID)
-    LEFT JOIN zoning_colors AS c ON i.District_Type = c.district_type
+    FROM VersoZoning_info AS i
+    INNER JOIN VersoZoning_geom AS g USING (OBJECT_ID)
+    LEFT JOIN VersoZoning_colors AS c ON i.District_Type = c.district_type
     {{ join_filter_block }}
 ),
 
@@ -49,8 +49,8 @@ county_area AS (
     SELECT
         i.County,
         ST_Area_Spheroid(ST_Union_Agg(g.geom)) / 4046.8564224 AS total_acres
-    FROM zoning_info AS i
-    INNER JOIN zoning_geom AS g USING (OBJECT_ID)
+    FROM VersoZoning_info AS i
+    INNER JOIN VersoZoning_geom AS g USING (OBJECT_ID)
     GROUP BY i.County
 ),
 

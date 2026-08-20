@@ -182,7 +182,9 @@ class TestCompileFilters:
 
     def test_spatial_join(self):
         src = FilterSource(
-            filter_table="zoning_geom", join_key="geom", join_type="spatial_intersect"
+            filter_table="VersoZoning_geom",
+            join_key="geom",
+            join_type="spatial_intersect",
         )
         _, join = compile_filters([src], [])
         assert join == "JOIN f0 ON ST_Intersects(g.geom, f0.geom)"

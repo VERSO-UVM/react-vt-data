@@ -201,9 +201,9 @@ def geojson(filters: dict | None = None) -> dict:
             c.hex_color     AS hex_color,
             c.rgba          AS rgba,
             ST_AsGeoJSON(ST_Simplify(g.geom, 0.0001)) AS geometry
-        FROM zoning_info i
-        JOIN zoning_geom g USING (OBJECT_ID)
-        LEFT JOIN zoning_colors c ON c.district_type = i.District_Type
+        FROM VersoZoning_info i
+        JOIN VersoZoning_geom g USING (OBJECT_ID)
+        LEFT JOIN VersoZoning_colors c ON c.district_type = i.District_Type
         {where}
         """,
         params,

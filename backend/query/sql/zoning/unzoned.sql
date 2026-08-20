@@ -22,5 +22,5 @@ FROM (
                 )
             )
         ) AS feature
-    FROM zoning_empty_geom
+    FROM VersoZoning_empty_geom
 ) AS features;
