@@ -14,10 +14,6 @@ def get_cleaners():
         if ispkg:
             continue
 
-        # Skip private/helper modules
-        if module_name.startswith("_"):
-            continue
-
         module = import_module(f"data_cleaning.{module_name}")
 
         # Only include modules that expose a main() function
@@ -25,6 +21,15 @@ def get_cleaners():
             cleaners.append(module)
 
     return cleaners
+
+
+def get_cleaner(module_name: str):
+    """
+    Return all cleaning scripts in the backend/data_cleaning folder
+    """
+
+    module = import_module(f"data_cleaning.{module_name}")
+    return module
 
 
 # def create_duckdb_version():
@@ -40,10 +45,11 @@ def get_cleaners():
 
 
 def run_master_clean():
-    for cleaner in get_cleaners():
-        print(f"Running {cleaner.__name__.split('.')[-1]}...")
-        cleaner.main()
-        print(f"Completed {cleaner.__name__.split('.')[-1]}")
+    # for cleaner in get_cleaners():
+    cleaner = get_cleaner("clean_wastewater")
+    print(f"Running {cleaner.__name__.split('.')[-1]}...")
+    cleaner.main()
+    print(f"Completed {cleaner.__name__.split('.')[-1]}")
 
 
 def main():

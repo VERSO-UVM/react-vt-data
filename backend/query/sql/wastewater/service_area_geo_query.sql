@@ -21,6 +21,6 @@ FROM (
             )
         ) AS feature
     FROM VersoWastewater_serviceAreas_info AS i
-    INNER JOIN VersoWastewater_serviceAreas_geom AS g USING (ID)
+    INNER JOIN VersoWastewater_serviceAreas_geom AS g USING (Area_ID)
     {{ join_filter_block }}
 ) AS features

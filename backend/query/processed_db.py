@@ -55,7 +55,6 @@ def _build() -> duckdb.DuckDBPyConnection:
 
 
 def _build_etl_db() -> duckdb.DuckDBPyConnection:
-    print(f"DATA DIRECTORY PATH: {DATA_DIR}")
     path = Path(DATA_DIR / "warehouse.duckdb")
     con = duckdb.connect(path, read_only=True)
     _load_spatial(con)

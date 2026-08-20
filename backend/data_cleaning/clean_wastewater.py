@@ -23,10 +23,10 @@ def _load_spatial() -> None:
     Load the spatial extension, installing it first if necessary.
     """
     try:
-        con.execute("""--sql LOAD spatial""")
+        con.execute("""LOAD spatial""")
     except Exception:
-        con.execute("""--sql INSTALL spatial""")
-        con.execute("""--sql LOAD spatial""")
+        con.execute("""INSTALL spatial""")
+        con.execute("""LOAD spatial""")
 
 
 ## ADD UNIQUE ID COLUMNS --------------------
@@ -241,6 +241,25 @@ def build_suitability_geom() -> None:
     )
 
 
+def build_suitability_colors() -> None:
+    con.execute(
+        """--sql
+        CREATE OR REPLACE TABLE soilSuitability_colors (
+            soil_suitability   TEXT PRIMARY KEY,
+            hex_color       TEXT NOT NULL,
+            rgba            TEXT NOT NULL
+        );
+
+        INSERT INTO soilSuitability_colors VALUES
+            ('Well Suited',         '#2ca02c', '[44, 160, 44, 180]'),
+            ('Moderately Suited',   '#ffcc00', '[255, 204, 0, 180]'),
+            ('Marginally Suited',   '#fd7e14', '[253, 126, 20, 180]'),
+            ('Not Suited',          '#dc3545', '[220, 53, 69, 180]'),
+            ('Not Rated',           '#6c757d', '[108, 117, 125, 180]');
+        """
+    )
+
+
 ## STORMWATER MANAGEMENT TABLES --------------------
 def build_stormwater_info() -> None:
     # "Type" labels derived from VERSO WIM GitHub pages
@@ -314,6 +333,7 @@ def clean():
     # Soil suitability Tables
     build_suitability_info()
     build_suitability_geom()
+    build_suitability_colors()
 
     # Stormwater Management Tables
     build_stormwater_info()
@@ -332,6 +352,7 @@ def add_to_lake():
         "soilSuitability_info",
         # NOTE: The `soilSuitabilitygeom` dataset below is too large for git storage. Add to .gitignore
         "soilSuitability_geom",
+        "soilSuitability_colors",
         "stormwaterManagement_info",
         "stormwaterManagement_geom",
     ]

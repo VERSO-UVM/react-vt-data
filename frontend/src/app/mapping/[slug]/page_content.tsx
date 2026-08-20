@@ -33,28 +33,38 @@ const SOIL_RPCS = [
 // takes precedence over this dynamic segment.
 const MAP_CONFIG: Record<
   string,
-  { title: string; initialURL?: string; filterURL?: string; dataURL?: string }
+  {
+    title: string;
+    initialURL?: string;
+    filterURL?: string;
+    dataURL?: string;
+    initialMethod?: 'GET' | 'POST';
+  }
 > = {
   'flood-legal': {
     title: 'Flood Insurance',
     initialURL: `${BASE_API_URL}/load/mapping/flood_legal`,
+    initialMethod: 'GET',
   },
   'soil-suitability': {
     title: 'Soil Suitability',
     initialURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=soil_suitability_info_soil_suit`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_soilSuitability_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
   },
   'treatment-facilities': {
     title: 'Wastewater Treatment Facilities',
     initialURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=treatment_facilities_treatment_facility_info`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_treatmentFacilities_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
   },
   'service-areas': {
     title: 'Wastewater Service Areas',
     initialURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=service_areas_service_area_info`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_serviceAreas_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
 };
@@ -83,7 +93,11 @@ export default function MappingContent() {
     setLoading(true);
 
     axios
-      .get(config.initialURL)
+      .request({
+        url: config.initialURL,
+        method: config.initialMethod ?? 'GET',
+        data: {},
+      })
       .then((res) => setData(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -102,6 +116,8 @@ export default function MappingContent() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [rpc]);
+
+  console.log('MAP DATA:', data);
 
   return (
     <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>

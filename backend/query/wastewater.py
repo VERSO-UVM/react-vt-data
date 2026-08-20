@@ -32,6 +32,7 @@ def get_waste_service_areas_geojson(sources: list[FilterSource]):
 def get_waste_treatment_facility_geojson(sources: list[FilterSource]):
     sql, params = sql_filter_block(sql_dir / "waste_treatment_geo_query.sql", sources)
     result = DB.execute(sql, params).fetchone()
+    print(f"TREATMENT FACILITY GEOM RESULT: {result}")
     if result is None:
         logger.error("geo query returned no rows for filters: %s", sources)
         raise ValueError(f"no results for filters: {sources}")
@@ -46,7 +47,11 @@ def get_waste_treatment_facility_permits(sources: list[FilterSource]) -> pd.Data
 
 
 def get_soil_suit_geojson(sources: list[FilterSource]):
-    sql, params = sql_filter_block(sql_dir / "soil_suitability_geo_query.sql", sources)
+    sql, params = sql_filter_block(
+        sql_dir / "soil_suitability_geo_query.sql",
+        sources,
+    )
+
     result = DB.execute(sql, params).fetchone()
     if result is None:
         logger.error("geo query returned no rows for filters: %s", sources)

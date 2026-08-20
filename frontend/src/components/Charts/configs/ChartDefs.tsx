@@ -71,18 +71,6 @@ export const chartDefs: ChartDef[] = [
       { key: 'Acres', label: 'Total Acres' },
     ],
   },
-  // tenure bar chart removed — not adding enough information (4.3)
-  // {
-  //   id: 'tenure',
-  //   title: 'Housing Tenure',
-  //   categories: ['Housing'],
-  //   xField: 'Occupied Tenure',
-  //   yField: 'Value',
-  //   subtype: 'CompareDiffPerXBarChart',
-  //   chartParams: { colorScheme: 'schemeAccent', legendLabels: ['Main', 'Compare'] },
-  //   dataKey: 'plot_data.tenure_df',
-  //   url: `${BASE_API_URL}/load/census/housing/snapshot`,
-  // },
   {
     id: 'demographics',
     title: 'Changes in Age Composition',
@@ -127,7 +115,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'demographics_population',
     title: 'Historic Population Estimates',
-    url: `${BASE_API_URL}/load/census/demographic/historic_population`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/historic-population`,
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates', // signals to the renderer to use TableStack not ChartStack
@@ -154,7 +142,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'median_age',
     title: 'Median Age',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/demographics/median-age`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/median-age`,
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',
@@ -278,7 +266,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'unemployment_rate',
     title: 'Unemployment Rate',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/unemployment-rate`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/unemployment-rate`,
     xField: '',
     yField: '',
     subtype: 'renderTable',
@@ -321,7 +309,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'median_hh_income',
     title: 'Median Household Income',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/median-hh-income`,
     xField: '',
     yField: '',
     categories: ['Labor & Economy'],
@@ -337,7 +325,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'per_capita_income',
     title: 'Per Capita Income',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/per-capita-income`,
     xField: '',
     yField: '',
     categories: ['Labor & Economy'],

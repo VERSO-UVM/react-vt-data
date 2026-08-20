@@ -48,7 +48,7 @@
       }
     },
     "VersoWastewater_soilSuitability_info": {
-      "join_key": "ID",
+      "join_key": "OGC_FID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",
@@ -57,7 +57,7 @@
       }
     },
     "VersoWastewater_treatmentFacilities_info": {
-      "join_key": "ID",
+      "join_key": "Facility_ID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",
@@ -67,7 +67,7 @@
       }
     },
     "VersoWastewater_treatmentFacilitiesPermits_info": {
-      "join_key": "ID",
+      "join_key": "Facility_ID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",
@@ -77,7 +77,7 @@
       }
     },
     "VersoWastewater_serviceAreas_info": {
-      "join_key": "ID",
+      "join_key": "Area_ID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",

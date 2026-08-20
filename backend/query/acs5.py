@@ -23,23 +23,64 @@ sql_path = Path(__file__).resolve().parent / "sql" / "acs5"
 # Per-dataset FIXED filters, expressed as {column: [values]} and folded into the
 # FilterSource (these replace the old raw-SQL base_conditions)
 QUERY_CONFIG = {
-    "demographics": {"table": "acs5_demographics_tidy", "fixed_filters": {}},
-    "education": {"table": "acs5_education_tidy", "fixed_filters": {}},
-    "housing": {"table": "acs5_housing_tidy", "fixed_filters": {}},
-    "labor_force": {
+    "demographics": {
+        "table": "acs5_demographics_tidy",
+        "fixed_filters": {},
+        "timeseries": {
+            "age_dependency_ratio": {
+                "table": "acs5Demographics_ageDependencyRatio_timeseries",
+                "fixed_filters": {},
+            },
+            "median_age": {
+                "table": "acs5Demographics_medianAge_timeseries",
+                "fixed_filters": {},
+            },
+            "historic_population": {
+                "table": "VCGI_historicPopulation_timeseries",
+                "fixed_filters": {},
+            },
+        },
+    },
+    "economics": {
         "table": "acs5_economics_tidy",
-        "fixed_filters": {"Section": ["Labor Force"]},
+        "fixed_filters": {},
+        "timeseries": {
+            "health_insurance": {
+                "table": "acs5Economics_healthInsurance_timeseries",
+                "fixed_filters": {},
+            },
+            "household_income": {
+                "table": "acs5Economics_medianHouseholdIncome_timeseries",
+                "fixed_filters": {},
+            },
+            "per_capita_income": {
+                "table": "acs5Economics_perCapitaIncome_timeseries",
+                "fixed_filters": {},
+            },
+            "unemployment_rate": {
+                "table": "acs5Economics_unemploymentRate_timeseries",
+                "fixed_filters": {},
+            },
+        },
     },
-    "income": {
-        "table": "acs5_economics_tidy",
-        "fixed_filters": {"Section": ["Income"]},
+    "housing": {
+        "table": "acs5_housing_tidy",
+        "fixed_filters": {},
+        "timeseries": {
+            "housing_units": {
+                "table": "acs5Housing_housingUnits_timeseries",
+                "fixed_filters": {},
+            },
+            "median_home_value": {
+                "table": "acs5Housing_medianHomeValue_timeseries",
+                "fixed_filters": {},
+            },
+            "vacancy_rates": {
+                "table": "acs5Housing_vacancyRates_timeseries",
+                "fixed_filters": {},
+            },
+        },
     },
-    "median_age": {
-        "table": "acs5Demographics_medianAge_timeseries",
-        "fixed_filters": {"Variable": ["Median Age"]},
-    },
-    # TODO: Create a "snapshot" table to database
-    "snapshot": {"table": "acs5_snapshot", "fixed_filters": {}},
 }
 
 # frontend filter label -> database column. Location and the year range both
@@ -85,13 +126,46 @@ def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
 
     result = DB.execute(sql, params).df()
 
-    if result is None:
+    if result.empty:
         logger.error(
             "ACS5 tidy query returned no rows for dataset: %s, filters: %s",
             dataset,
             filters,
         )
         raise ValueError(f"no results for dataset: {dataset}, filters: {filters}")
+
+    return result
+
+
+def get_acs5_timeseries(
+    category: str,
+    dataset: str,
+    filters: dict | None = None,
+) -> pd.DataFrame:
+    category_config = QUERY_CONFIG[category]
+    config = category_config["timeseries"][dataset]
+
+    source = _acs5_source(
+        table=config["table"],
+        filters=filters,
+        fixed_filters=config.get("fixed_filters", {}),
+    )
+
+    sql, params = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
+
+    result = DB.execute(sql, params).df()
+
+    if result is None:
+        logger.error(
+            "ACS5 timeseries query returned no rows for category=%s, "
+            "dataset=%s, filters=%s",
+            category,
+            dataset,
+            filters,
+        )
+        raise ValueError(
+            f" No results for timeseries: {category}/{dataset}, filters: {filters}"
+        )
 
     return result
 
@@ -113,7 +187,7 @@ def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
 
 
 # FIXME: Link to new database table name (broken for now)
-def get_median_earnings(filters: dict | None = None) -> pd.DataFrame:
+def get_median_earnings_ts(filters: dict | None = None) -> pd.DataFrame:
     source = _acs5_source(table="acs5_median_earnings", filters=filters)
 
     sql, params = sql_filter_block(sql_path / "median_earnings.sql", [source])

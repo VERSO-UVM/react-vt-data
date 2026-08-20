@@ -13,7 +13,12 @@ FROM (
     SELECT
         JSON_OBJECT(
             'type', 'Feature',
-            'geometry', ST_ASGEOJSON(ST_SIMPLIFY(geom, 0.0001))::JSON,
+            'geometry', ST_ASGEOJSON(
+                ST_SIMPLIFY(
+                    ST_GEOMFROMWKB(geom),
+                    0.0001::DOUBLE
+                )
+            )::JSON,
             'properties', JSON_OBJECT(
                 'rgba_color', JSON_ARRAY(170, 170, 170, 160),
                 'tooltip', JSON_OBJECT(

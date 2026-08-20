@@ -207,7 +207,7 @@ class TestRendering:
         sql, params = sql_filter_block(
             BACKEND / "query/sql/acs5/acs5_tidy.sql", [WHERE_SOURCE]
         )
-        assert "FROM acs5_b10_census" in sql
+        assert "FROM acs5_demographics_tidy" in sql
         assert 'WHERE "NAME" IN ($1, $2)' in sql
         assert params == ["Vergennes", "Addison town", 2015.0, 2020.0]
         assert "{{" not in sql and "{%" not in sql

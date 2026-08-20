@@ -25,7 +25,7 @@ exclude_rules = CP02, CP03, RF04, RF05, ST06, ST07
 case_sensitive = True
 
 [sqlfluff:templater:jinja:context]
-table = acs5_b10_census
+table = acs5_demographics_tidy
 where_string = WHERE "Measure" IN ($1)
 cte_filter_block = WITH f0 AS (SELECT DISTINCT OBJECT_ID FROM VersoZoning_info WHERE "County" IN ($1))
 join_filter_block = JOIN f0 USING (OBJECT_ID)
