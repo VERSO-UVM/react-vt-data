@@ -4,7 +4,7 @@
 **Created**:
     2026-07-06
 **Description**:
-    Functions for serving wastewater data to the API from the parquet files.
+    Functions for serving wastewater data to the API from the database tables.
 """
 
 import logging

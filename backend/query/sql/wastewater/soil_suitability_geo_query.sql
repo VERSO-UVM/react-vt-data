@@ -21,9 +21,9 @@ FROM (
                 )
             )
         ) AS feature
-    FROM soil_suitability_info_soil_suit AS i
-    INNER JOIN soil_suitability_geom_soil_suit AS g USING (ID)
-    LEFT JOIN soil_suitability_soil_suitability_colors AS c
+    FROM VersoWastewater_soilSuitability_info AS i
+    INNER JOIN VersoWastewater_soilSuitability_geom AS g USING (ID)
+    LEFT JOIN VersoWastewater_soilSuitability_colors AS c
         ON i.Suitability = c.soil_suitability
     {{ join_filter_block }}
 ) AS features
