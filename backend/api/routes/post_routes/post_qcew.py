@@ -36,7 +36,7 @@ async def employment_by_sector(request: FilterRequest):
     if not county and is_statewide:
         query = """
             SELECT year, quarter, quarter_label, sector, employment_4qma
-            FROM qcew_employment
+            FROM qcew_sectorEmployment_timeseries
             WHERE sector != 'Total'
             ORDER BY year, quarter, sector
         """
@@ -44,7 +44,7 @@ async def employment_by_sector(request: FilterRequest):
     elif county:
         query = """
             SELECT year, quarter, quarter_label, sector, employment_4qma
-            FROM qcew_employment
+            FROM qcew_sectorEmployment_timeseries
             WHERE sector != 'Total'
             AND County = ?
             ORDER BY year, quarter, sector

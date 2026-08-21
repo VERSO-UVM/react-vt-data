@@ -6,7 +6,7 @@
 **Description**:
     Data cleaning script for the raw `flood` table in the DuckLake
     Run with:
-python -m ETL.data_cleaning.clean_flood
+python -m data_cleaning.clean_flood
 """
 
 from lake_build import con

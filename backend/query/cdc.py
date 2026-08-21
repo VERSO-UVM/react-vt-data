@@ -46,7 +46,7 @@ def single_var_geojson(sources: list[FilterSource]):
                 "geometry": json.loads(r.geometry),
                 "properties": {
                     "rgba_color": RAMP[int(r.bin)],
-                    "tooltip": {"__title__": r.Measure, "value": r.Data_Value},
+                    "tooltip": {"__title__": r.measure, "value": r.data_value},
                 },
             }
         )
@@ -54,10 +54,10 @@ def single_var_geojson(sources: list[FilterSource]):
 
 
 def widen_dual_var(df, measures):
-    cols = ["LocationID", "geometry", "Data_Value", "bin", "natl_pct", "CountyName"]
-    m1 = df[df.Measure == measures[0]][[c for c in cols if c in df.columns]]
-    m2 = df[df.Measure == measures[1]][["LocationID", "Data_Value", "bin"]]
-    wide = m1.merge(m2, on="LocationID", suffixes=("_1", "_2"))
+    cols = ["locationid", "geometry", "data_value", "bin", "natl_pct", "CountyName"]
+    m1 = df[df.measure == measures[0]][[c for c in cols if c in df.columns]]
+    m2 = df[df.measure == measures[1]][["locationid", "data_value", "bin"]]
+    wide = m1.merge(m2, on="locationid", suffixes=("_1", "_2"))
     return wide
 
 
@@ -84,10 +84,10 @@ def _measure_cutpoints(measures: list[str]) -> tuple[list[float], list[float]]:
     sql = f"SELECT * FROM cdc_edges_county {where_string}"
     edges = DB.execute(sql, params).df()
     edges_x = (
-        edges[edges["Measure"] == measures[0]].drop(columns="Measure").iloc[0].tolist()
+        edges[edges["measure"] == measures[0]].drop(columns="measure").iloc[0].tolist()
     )
     edges_y = (
-        edges[edges["Measure"] == measures[1]].drop(columns="Measure").iloc[0].tolist()
+        edges[edges["measure"] == measures[1]].drop(columns="measure").iloc[0].tolist()
     )
     return edges_x, edges_y
 
@@ -109,9 +109,9 @@ def dual_var_comparison(
     table = "cdc_places_county" if geoLevel == "county_places" else "cdc_places_tract"
     merged = FilterSource(filter_table=table, filters={"Measure": measures})
     sql_path = sql_dir / f"{geoLevel}.sql"
+
     sql, params = sql_filter_block(sql_path, [merged])
     df = DB.execute(sql, params).df()
-    print(df.head())
 
     df = widen_dual_var(df, measures)
 
@@ -122,8 +122,8 @@ def dual_var_comparison(
         tooltip = {
             "__title__": "Variable Comparison",
             # "County": r.CountyName,
-            f"{measures[0]}": r.Data_Value_1,
-            f"{measures[1]}": r.Data_Value_2,
+            f"{measures[0]}": r.data_value_1,
+            f"{measures[1]}": r.data_value_2,
             "National Percentage": r.natl_pct,
         }
         ## add in County Name if we're in county space.
@@ -149,14 +149,20 @@ def dual_var_comparison(
     return geojson, legend
 
 
-# FIXME: Add PCA table in data_cleaning/clean_cdc.py script (broken for now)
 def get_cdc_county_pca():
-    df = DB.execute("""--sql
-               SELECT i.LocationID, ROUND(i.pca_score, 2) AS "Health Burden", c.CountyName
-                FROM cdc_countyPcaData AS i
-                LEFT JOIN vermont_counties AS c ON i.LocationID = c.CountyFIPS
-               """).df()
+    df = DB.execute(
+        """--sql
+        SELECT
+            i.LocationID,
+            ROUND(i.pca_score, 2) AS "Health Burden",
+            c.CountyName
+        FROM cdc_pca_county AS i
+        LEFT JOIN vt_county_lines_geom AS c
+            ON i.LocationID = c.CountyFIPS
+        """
+    ).df()
+
     df["CountyName"] = df["CountyName"].str.title()
     df = df.sort_values(by="CountyName")
-    ret = df[["CountyName", "Health Burden"]].to_dict(orient="records")
-    return ret
+
+    return df[["CountyName", "Health Burden"]].to_dict(orient="records")

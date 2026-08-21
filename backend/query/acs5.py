@@ -63,6 +63,16 @@ QUERY_CONFIG = {
             },
         },
     },
+    "labor_force": {
+        "table": "acs5_economics_tidy",
+        "fixed_filters": {"Section": ["Labor Force"]},
+        "timeseries": {},
+    },
+    "income": {
+        "table": "acs5_economics_tidy",
+        "fixed_filters": {"Section": ["Income"]},
+        "timeseries": {},
+    },
     "housing": {
         "table": "acs5_housing_tidy",
         "fixed_filters": {},
@@ -80,6 +90,16 @@ QUERY_CONFIG = {
                 "fixed_filters": {},
             },
         },
+    },
+    "education": {
+        "table": "acs5_education_tidy",
+        "fixed_filters": {},
+        "timeseries": {},
+    },
+    "snapshot": {
+        "table": "acs5_snapshot_indicators_tidy",
+        "fixed_filters": {},
+        "timeseries": {},
     },
 }
 
@@ -142,20 +162,25 @@ def get_acs5_timeseries(
     dataset: str,
     filters: dict | None = None,
 ) -> pd.DataFrame:
-    category_config = QUERY_CONFIG[category]
-    config = category_config["timeseries"][dataset]
+    try:
+        config = QUERY_CONFIG[category]["timeseries"][dataset]
+    except KeyError as e:
+        raise ValueError(f"Unknown ACS5 timeseries: {category}/{dataset}") from e
 
     source = _acs5_source(
         table=config["table"],
         filters=filters,
-        fixed_filters=config.get("fixed_filters", {}),
+        fixed_filters=config.get("fixed_filters"),
     )
 
-    sql, params = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
+    sql, params = sql_filter_block(
+        sql_path / "acs5_timeseries.sql",
+        [source],
+    )
 
     result = DB.execute(sql, params).df()
 
-    if result is None:
+    if result.empty:
         logger.error(
             "ACS5 timeseries query returned no rows for category=%s, "
             "dataset=%s, filters=%s",
@@ -164,24 +189,8 @@ def get_acs5_timeseries(
             filters,
         )
         raise ValueError(
-            f" No results for timeseries: {category}/{dataset}, filters: {filters}"
+            f"No results for timeseries: {category}/{dataset}, filters: {filters}"
         )
-
-    return result
-
-
-def get_unemployment_rate_ts(filters: dict | None = None) -> pd.DataFrame:
-    source = _acs5_source(
-        table="acs5Economics_unemploymentRate_timeseries", filters=filters
-    )
-
-    sql, params = sql_filter_block(sql_path / "unemployment_rate.sql", [source])
-
-    result = DB.execute(sql, params).df()
-
-    if result is None or result.empty:
-        logger.error("Unemployment rate query returned no rows for filters=%s", filters)
-        raise ValueError("no results for unemployment_rate query")
 
     return result
 
@@ -197,21 +206,6 @@ def get_median_earnings_ts(filters: dict | None = None) -> pd.DataFrame:
     if result is None or result.empty:
         logger.error("Median earnings query returned no rows for filters=%s", filters)
         raise ValueError("no results for median_earnings query")
-
-    return result
-
-
-# FIXME: Link to new database table name (broken for now)
-def get_snapshot(filters: dict | None = None) -> pd.DataFrame:
-    source = _acs5_source(table="snapshot", filters=filters)
-
-    sql, params = sql_filter_block(sql_path / "snapshot.sql", [source])
-
-    result = DB.execute(sql, params).df()
-
-    if result is None or result.empty:
-        logger.error("Snapshot query returned no rows for filters=%s", filters)
-        raise ValueError("no results for snapshot query")
 
     return result
 

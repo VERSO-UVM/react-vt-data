@@ -418,7 +418,7 @@ export const MedianAgeTrendChart = <TData,>({
 }) =>
   single(
     chart,
-    { seriesKey: 'Median Age', valueField: 'Value', format: 'years' },
+    { seriesKey: null, valueField: 'Median_Age', format: 'years' },
     view,
   );
 
@@ -510,7 +510,7 @@ export const UnemploymentTrendChart = <TData,>({
     chart,
     {
       seriesKey: null,
-      valueField: 'Value',
+      valueField: 'Unemployment_Rate',
       format: 'percent',
       decimals: 1,
     },
@@ -527,8 +527,8 @@ export const HouseholdIncomeTrendChart = <TData,>({
   single(
     chart,
     {
-      seriesKey: 'Median Household Income',
-      valueField: 'Value',
+      seriesKey: null,
+      valueField: 'Median_Household_Income',
       format: 'currency',
       showHelperText: false,
     },
@@ -545,8 +545,8 @@ export const PerCapitaIncomeTrendChart = <TData,>({
   single(
     chart,
     {
-      seriesKey: 'Per Capita Income',
-      valueField: 'Value',
+      seriesKey: null,
+      valueField: 'Per_Capita_Income',
       format: 'currency',
       showHelperText: false,
     },

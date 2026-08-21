@@ -10,7 +10,6 @@ from query.acs5 import (
     get_acs5_tidy,
     get_acs5_timeseries,
     get_median_earnings_ts,
-    get_snapshot,
 )
 from query.processed_db import DB
 
@@ -47,14 +46,14 @@ async def tidy_housing(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("housing"))
 
 
-# Labor Force
+# Labor Force (FIXME: broken)
 @router.post("/load/acs5-db/tidy/labor-force")
 async def tidy_labor_force(request: FilterRequest):
     rows = get_acs5_tidy(dataset="labor_force", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("labor_force"))
 
 
-# Income
+# Income (FIXME: broken)
 @router.post("/load/acs5-db/tidy/income")
 async def tidy_income(request: FilterRequest):
     rows = get_acs5_tidy(dataset="income", filters=request.filters)
@@ -88,9 +87,14 @@ async def get_median_age(request: FilterRequest):
 # Historic Population
 @router.post("/load/acs5-db/timeseries/demographics/historic-population")
 async def get_historic_population(request: FilterRequest):
+    filters = {key: value for key, value in request.filters.items() if key != "year"}
+
     rows = get_acs5_timeseries(
-        category="demographics", dataset="historic_population", filters=request.filters
+        category="demographics",
+        dataset="historic_population",
+        filters=filters,
     )
+
     return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
@@ -166,11 +170,11 @@ async def get_median_earnings(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 
-# Geography Snapshot Variables (FIXME)
+# Geography Snapshot Variables
 @router.post("/load/acs5-db/tidy/snapshot")
 async def tidy_snapshot(request: FilterRequest):
-    rows = get_snapshot(filters=request.filters)
-    return make_response(data=rows, metadata=get_metadata("snapshot"))
+    rows = get_acs5_tidy(dataset="snapshot", filters=request.filters)
+    return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
 # ---------------------------------------------------------------------------

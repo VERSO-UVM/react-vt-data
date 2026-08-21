@@ -45,32 +45,73 @@ def get_sme_indicators() -> str:
 
 def build_PCA_table(us_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Builds a 2-Principal Component DataFrame
-    for county-level CDC indicators
+    Builds a 2-component PCA score for Vermont counties.
+
+    PCA is fit using the full national county dataset. Vermont county
+    observations are then standardized using the national means and
+    standard deviations before being projected into the fitted PCA space.
+
+    Returns:
+        DataFrame containing LocationID and the first PCA component score.
     """
-    ## select only shared columns
-    vt_df = us_df[us_df["stateabbr"] == "VT"].copy()
-    pv = us_df.pivot(columns="measure", values="data_value", index="locationid").dropna(
-        axis=0, how="any"
+    # Build a wide national dataset:
+    #   rows    = counties
+    #   columns = CDC measures
+    pv = us_df.pivot_table(
+        index="locationid",
+        columns="measure",
+        values="data_value",
+        aggfunc="first",
+    ).dropna(axis=0, how="any")
+
+    # Build Vermont-wide dataset using the same measures
+    vt_df = us_df[us_df["stateabbr"].eq("VT")].copy()
+
+    pv_vt = vt_df.pivot_table(
+        index="locationid",
+        columns="measure",
+        values="data_value",
+        aggfunc="first",
     )
-    pv_vt = vt_df.pivot(columns="measure", values="data_value", index="locationid")
-    shared = pv.columns.intersection(pv_vt.dropna(axis=1, how="all").columns)
-    pv = pv[shared]
-    pv_vt = pv_vt[shared]
 
-    ## standardize US to build column
-    mean, std = pv.mean(), pv.std()
-    pv = (pv - mean) / std
+    # Keep only measures that exist in both datasets and have
+    # complete national data.
+    shared = pv.columns.intersection(pv_vt.columns)
+
+    pv = pv[shared].dropna(axis=1, how="all")
+    pv_vt = pv_vt[pv.columns]
+
+    # Only retain Vermont counties with complete data for all
+    # measures used in the PCA.
+    pv_vt = pv_vt.dropna(axis=0, how="any")
+
+    # Standardize using NATIONAL parameters.
+    mean = pv.mean()
+    std = pv.std()
+
+    # Avoid division by zero for constant measures.
+    valid = std > 0
+    pv = pv.loc[:, valid]
+    pv_vt = pv_vt.loc[:, valid]
+    mean = mean[valid]
+    std = std[valid]
+
+    pv_standardized = (pv - mean) / std
+    vt_standardized = (pv_vt - mean) / std
+
+    # Fit PCA using national observations.
     pca = PCA(n_components=2)
-    pca.fit(pv)
+    pca.fit(pv_standardized)
 
-    # standardize the  VT, transform, add back in, and return
-    pv_vt = (pv_vt - mean) / std
-    assert list(pv_vt.columns) == list(pv.columns), "measure columns misaligned"
-    scores = pca.transform(pv_vt)
-    pv_vt["pca_score"] = scores[:, 0]
-    pv_vt = pv_vt.reset_index()
-    return pv_vt
+    # Project Vermont observations into national PCA space.
+    scores = pca.transform(vt_standardized)
+
+    return pd.DataFrame(
+        {
+            "LocationID": pv_vt.index,
+            "pca_score": scores[:, 0],
+        }
+    )
 
 
 def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
@@ -154,7 +195,7 @@ def clean() -> dict[str, pd.DataFrame]:
     )
 
     # PCA is fit on the national county data and applied to Vermont
-    # pca_county = build_PCA_table(county_us)
+    pca_county = build_PCA_table(county_us)
 
     # Tract: national data is needed for the national percentile
     _, tract_places, tract_edges = build_places_table(
@@ -168,7 +209,7 @@ def clean() -> dict[str, pd.DataFrame]:
         "cdc_edges_county": county_edges,
         "cdc_places_tract": tract_places,
         "cdc_edges_tract": tract_edges,
-        # "cdc_pca_county": pca_county,
+        "cdc_pca_county": pca_county,
     }
 
 

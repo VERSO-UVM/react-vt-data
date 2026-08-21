@@ -137,18 +137,13 @@ export default function VTMap({
       new GeoJsonLayer({
         id: 'geojson',
         data: geojson,
-
-        // Points
         pointType: 'circle',
-        getPointRadius: 7,
         pointRadiusUnits: 'pixels',
-        pointRadiusMinPixels: 8,
+        pointRadiusMinPixels: 12,
         pointRadiusMaxPixels: 12,
-
-        getFillColor: [30, 100, 220, 255],
+        getFillColor,
         getLineColor: [20, 70, 160, 255],
-        lineWidthMinPixels: 1,
-
+        lineWidthMinPixels: 2,
         pickable: true,
         autoHighlight: true,
         highlightColor: [255, 255, 255, 255],

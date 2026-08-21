@@ -49,10 +49,10 @@ def long_format(df: pd.DataFrame):
         df,
         id_vars=["geoid", "town", "county", "geo_type"],
         value_vars=year_cols,
-        var_name="Year",
+        var_name="year",
         value_name="Population",
     )
-    df_long["Year"] = df_long["Year"].astype(int)
+    df_long["year"] = df_long["year"].astype(int)
 
     return df_long
 
@@ -82,7 +82,7 @@ def add_population_aggregations(df: pd.DataFrame):
     """
     df["county_geoid"] = df["geoid"].astype(str).str[:5]
     # County-level aggregation
-    county_df = df.groupby(["county_geoid", "county", "Year"], as_index=False)[
+    county_df = df.groupby(["county_geoid", "county", "year"], as_index=False)[
         "Population"
     ].sum()
     county_df["NAME"] = county_df["county"] + " County, Vermont"
@@ -90,13 +90,13 @@ def add_population_aggregations(df: pd.DataFrame):
     county_df = county_df.rename(columns={"county_geoid": "geoid"})
 
     # State-level aggregation
-    state_df = df.groupby("Year", as_index=False)["Population"].sum()
+    state_df = df.groupby("year", as_index=False)["Population"].sum()
     state_df["NAME"] = "Vermont"
     state_df["geoid"] = "50"  # Vermont's state FIPS code
     state_df["geo_type"] = "state"
 
     # Align columns before concatenating
-    cols = ["geoid", "NAME", "Year", "Population", "geo_type"]
+    cols = ["geoid", "NAME", "year", "Population", "geo_type"]
 
     town_df = df[cols]
     county_df = county_df[cols]
@@ -112,12 +112,12 @@ def clean():
     raw_df = read_raw_data()
     # Clean column names
     clean_column_names(raw_df)
-    # Melt DataFrame into long format (Cols: "geoid", "NAME", "Year", "Population", "geo_type")
+    # Melt DataFrame into long format (Cols: "geoid", "NAME", "year", "Population", "geo_type")
     df_long = long_format(raw_df)
     # Add a census-style "NAME" column for easier filtering
     df_long_clean = add_NAME_column(df_long)
     # Reorder columns
-    column_order = ["geoid", "NAME", "county", "town", "Year", "Population", "geo_type"]
+    column_order = ["geoid", "NAME", "county", "town", "year", "Population", "geo_type"]
     df = df_long_clean[column_order]
     # Append county + state aggregations (total sum)
     df = add_population_aggregations(df)

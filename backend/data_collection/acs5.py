@@ -82,89 +82,82 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
 
     for year in years:
         print(f"\n=== {year} ===")
+
         for geo_label, for_clause, in_clause in geos:
             for table in TABLES:
                 print(f"  {table} / {geo_label}...")
-                df = fetch_table(year, table, for_clause, in_clause)
+
+                df = fetch_table(
+                    year,
+                    table,
+                    for_clause,
+                    in_clause,
+                )
+
                 if df is not None:
                     df["geo_type"] = geo_label
                     all_frames[table].append(df)
+
                 time.sleep(0.1)
 
-        # Save wide + tidy per table
     results = {}
+
+    # Process each ACS profile table independently
     for table, frames in all_frames.items():
         if not frames:
             print(f"  No frames for {table}, skipping.")
             continue
 
         label = TABLES[table]
-        title = f"vt_acs5_{label}_data"
-        combined = pd.concat(frames, ignore_index=True, sort=False)
+
+        combined = pd.concat(
+            frames,
+            ignore_index=True,
+            sort=False,
+        )
 
         # Key columns to front
         front = [c for c in ID_VARS if c in combined.columns]
         rest = [c for c in combined.columns if c not in front]
+
         combined = combined[front + rest]
-        combined.sort_values(["year", "geo_type", "NAME"], inplace=True)
+
+        combined.sort_values(
+            ["year", "geo_type", "NAME"],
+            inplace=True,
+        )
+
         combined.reset_index(drop=True, inplace=True)
 
-        wide_parquet_path = f"{STORAGE_LOCATION}/{title}.parquet"
-        # wide_csv_path = f"{STORAGE_LOCATION}/{title}.csv"
+        # Tidy: run per-year so column labels are year-accurate
+        tidy_frames = []
 
-        if append:
-            new_names = set(combined["year", "geo_type", "NAME"].unique())
-            # --- Wide ---
+        for year in sorted(combined["year"].unique()):
+            year_df = combined[combined["year"] == year]
+
+            if year_df.empty:
+                continue
+
             try:
-                existing_wide = pd.read_parquet(wide_parquet_path)
-                existing_wide = existing_wide[~existing_wide["NAME"].isin(new_names)]
-                combined = pd.concat([existing_wide, combined], ignore_index=True)
-                combined.sort_values(["year", "geo_type", "NAME"], inplace=True)
-                combined.reset_index(drop=True, inplace=True)
-                print(f"  Wide append: kept {len(existing_wide):,} existing rows.")
-            except FileNotFoundError:
-                pass
+                tidy_year = tidy_census(
+                    year_df,
+                    year=year,
+                    id_vars=ID_VARS,
+                )
 
-        # combined.to_csv(wide_csv_path, index=False)
-        # combined.to_parquet(wide_parquet_path, index=False)
-        # print(f"Saved wide: {title} ({len(combined):,} rows)")
+                tidy_year["table"] = table
+                tidy_frames.append(tidy_year)
 
-        # Tidy: run per-year so column labels are year-accurate
-        # Tidy: run per-year so column labels are year-accurate
-    tidy_frames = []
+            except Exception as e:
+                print(f"  SKIP tidy {year} / {table}: {e}")
 
-    for year in sorted(combined["year"].unique()):
-        year_df = combined[combined["year"] == year]
-
-        if year_df.empty:
-            continue
-
-        try:
-            tidy_year = tidy_census(
-                year_df,
-                year=year,
-                id_vars=ID_VARS,
+        if tidy_frames:
+            tidy = pd.concat(
+                tidy_frames,
+                ignore_index=True,
             )
-            tidy_year["table"] = table
-            tidy_frames.append(tidy_year)
 
-        except Exception as e:
-            print(f"  SKIP tidy {year} / {table}: {e}")
-
-    if tidy_frames:
-        tidy = pd.concat(tidy_frames, ignore_index=True)
-
-        label = TABLES[table]
-        results[f"acs5_{label.lower()}"] = tidy
-        # tidy_parquet_path = f"{STORAGE_LOCATION}/{title}_tidy.parquet"
-        # tidy_csv_path = f"{STORAGE_LOCATION}/{title}_tidy.csv"
-
-        # No separate append needed for tidy: it's derived from the
-        # already-merged wide frame, so it naturally contains all geos.
-
-        # tidy.to_csv(tidy_csv_path, index=False)
-        # tidy.to_parquet(tidy_parquet_path, index=False)
-        # print(f"Saved tidy: {title}_tidy ({len(tidy):,} rows)")
+            results[f"acs5_{label.lower()}"] = tidy
 
     return results
 
