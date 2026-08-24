@@ -307,11 +307,57 @@ now that we have the parcels and parcels' percentages based on county and town, 
 ```{python}
 import geopandas as gpd
 
-TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"  
-towns_gdf = gpd.read_file(TOWN_URL)
-print(towns_gdf.shape)
-print(towns_gdf.columns.tolist())
-print(towns_gdf.crs)
+# TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"  
+# towns_gdf = gpd.read_file(TOWN_URL)
+# print(towns_gdf.shape)
+# print(towns_gdf.columns.tolist())
+# print(towns_gdf.crs)
+
+import geopandas as gpd
+import requests
+
+TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+
+
+base_url = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query"
+
+offset = 0
+chunk_size = 50 
+all_features = []
+
+# Fetch data in chunks of 50 to avoid server timeouts
+while True:
+    params = {
+        "where": "1=1",
+        "outFields": "*",
+        "f": "geojson",
+        "resultOffset": offset,
+        "resultRecordCount": chunk_size
+    }
+    response = requests.get(base_url, params=params)
+    data = response.json()
+    
+    features = data.get("features", [])
+    if not features:
+        break
+        
+    all_features.extend(features)
+    
+    # If a chunk returns less than 50, we've reached the end
+    if len(features) < chunk_size:
+        break
+        
+    offset += chunk_size
+
+# Rebuild the full GeoJSON and load it into GeoPandas
+full_geojson = {"type": "FeatureCollection", "features": all_features}
+towns_gdf = gpd.GeoDataFrame.from_features(full_geojson, crs="EPSG:4326")
+
+towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
+#print(towns_gdf.shape)
+
+print(towns_gdf.columns)
+
 
 #just certifying that the town namese are both uppercase and devoic of whitespace
 towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
@@ -646,17 +692,26 @@ catch_all_mask = (
     ~backfill["STGL"].isin(states)
 )
 backfill.loc[catch_all_mask, "STGL"] = "UNNAMED AMERICA"
-backfill["OOSOWNER"] = backfill["STGL"] != "VT"
+backfill["OOSOWNER"] = backfill["STGL"].fillna("VT") != "VT"
 
 backfill["ADDRESS"] = backfill["E911ADDR"] 
+
+#adding an area in acres to geometry column, a
+if "AREAACRESGEOM" not in backfill:
+    backfill["AREAACRESGEOM"] = backfill.to_crs(32145).geometry.area / 4046.8564224
+backfill["ACREVALUE"] = np.where(
+    (backfill.REAL_FLV > 0) & (backfill.AREAACRESGEOM > 0),
+    backfill.REAL_FLV / backfill.AREAACRESGEOM, np.nan)
 ```
 RUN THIS CELL TO CHECK THE NULL COUNTS/percentage OF EACH column adn choosing to drop them.
 ```{python}
 #inspeacting the data
 
-#backfill = backfill.drop(columns = ["LOCAPROP", "ADDRGL2", "ENDDATE", "OWNER1", "OWNER2", "EDITNOTE", "MAPID", "YEAR", "GLYEAR", "SOURCETYPE", "SOURCEDATE", "EDITMETHOD", "OBJECTID", "SHAPE_STAr", "SHAPE_STLe", "GLIST_SPAN", "PARCID", "CRHOUSPCT", "MUNGL1PCT", "AOEGL_HS", "AOEGL_NR", "HSITEVAL", "E911ADDR", "ADDRGL1", "ZIPGL"])
+# backfill = backfill.drop(columns = ["LOCAPROP", "ADDRGL2", "ENDDATE", "OWNER1", "OWNER2", "EDITNOTE", "MAPID", "YEAR", "GLYEAR", "SOURCETYPE", "SOURCEDATE", "EDITMETHOD", "OBJECTID", "SHAPE_STAr", "SHAPE_STLe", "GLIST_SPAN", "PARCID", "CRHOUSPCT", "MUNGL1PCT", "AOEGL_HS", "AOEGL_NR", "HSITEVAL", "E911ADDR", "ADDRGL1", "ZIPGL"])
 
-print(backfill["geometry"])
+print(backfill["OOSOWNER"].value_counts())
+
+# print(backfill[backfill["TOWN"] == "BUELS GORE"]["STGL"].value_counts())
 
 # prof = pd.DataFrame({
 #     "dtype": backfill.dtypes.astype(str),
@@ -755,6 +810,7 @@ from shapely.geometry import MultiPolygon
 out_path = Path("Data/parcels/all_parcels_vermont.fgb")
 out_path.parent.mkdir(parents=True, exist_ok=True)
 
+bad_geom = backfill.geometry.isna() | backfill.geometry.is_empty
 gdf = backfill.loc[~bad_geom].copy()
 
 assert gdf.geom_type.isin(["Polygon", "MultiPolygon"]).all(), gdf.geom_type.value_counts()
@@ -772,10 +828,13 @@ print(parcels.shape, "|", parcels.crs)
 print(parcels.geom_type.value_counts())
 
 # quick round-trip check — did the derived cols survive with sane values?
-print(parcels[["OOSOWNER", "INVESTMENTPROP", "EXEMPT", "VACANTLAND"]].apply(lambda s: s.value_counts()).T)
-parcels.head()
+# print(parcels[["OOSOWNER", "INVESTMENTPROP", "EXEMPT", "VACANTLAND"]].apply(lambda s: s.value_counts()).T)
+# parcels.head()
 ```
+```{python}
+print(gdf.columns)
 
+```
 
 
 

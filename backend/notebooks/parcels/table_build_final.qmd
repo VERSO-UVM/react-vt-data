@@ -18,127 +18,227 @@ execute:
 editor:
     render-on-save: true
 ---
+#HELPING FIND THE DATA AFTER KERNEL RESTART
+```{python}
+import os
+from pathlib import Path
+
+print("cwd (where the fresh kernel started):", Path.cwd())
+
+# climb until we hit the folder containing api/ — identical anchor to your other notebooks
+root = Path.cwd()
+while root != root.parent and not (root / "api").exists():
+    root = root.parent
+assert (root / "api").exists(), f"never found an api/ folder climbing up from {Path.cwd()}"
+os.chdir(root)
+print("anchored to:", Path.cwd())
+
+FGB = "Data/parcels/all_parcels_vermont.fgb"
+print("exists now?:", os.path.exists(FGB)) 
+```
 ```{python}
 import geopandas as gpd, pandas as pd, numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm      
 from pathlib import Path
 
+#getting the FBG from file storage, making the parcels geo df, and then printing the shape and CRS, which should be EPSG 4326, then pirnting the type of all geom entries - hopefully it is multi polygon
 FGB = "Data/parcels/all_parcels_vermont.fgb"
-parcels = gpd.read_file(FGB)
-print("shape:", parcels.shape, "| CRS:", parcels.crs)
-print(parcels.geom_type.value_counts())
 
-# --- join key integrity (self-healing) ---
+parcels = gpd.read_file(FGB)              
+print("shape:", parcels.shape, "| CRS:", parcels.crs)   
+print(parcels.geom_type.value_counts())  
+
+
+#makinga failsafe self healing join key in the case object id is missing - just so objectid is always present as a thing to join on
 if "OBJECTID" not in parcels.columns:
-    print("!! OBJECTID not in file (dropped before save). Minting a fresh stable id.")
-    parcels = parcels.reset_index(drop=True)
-    parcels["OBJECTID"] = 1_000_000 + parcels.index
-assert parcels["OBJECTID"].is_unique, "OBJECTID not unique — unusable as join key"
+    print("!! OBJECTID not in file — minting a fresh stable id.")
+    parcels = parcels.reset_index(drop=True)          
+    parcels["OBJECTID"] = 1_000_000 + parcels.index   
+assert parcels["OBJECTID"].is_unique, "OBJECTID not unique — unusable as a join key"
 assert parcels["OBJECTID"].notna().all(), "OBJECTID has nulls"
+#objects count should be 343875
 print("OBJECTID ok | n =", parcels["OBJECTID"].nunique())
 
-# --- the columns that kept silently breaking on you ---
-for c in ["OOSOWNER", "INVESTMENTPROP", "EXEMPT", "VACANTLAND"]:
-    if c in parcels:
-        print(f"{c:16s} →", dict(parcels[c].value_counts(dropna=False)))
+# #checking if the columns that I created are present, and then printing the column and then checking both the true and false values of each item
+# for c in ["OOSOWNER", "INVESTMENTPROP", "EXEMPT", "VACANTLAND"]:
+#     if c in parcels:
+#         print(f"{c:16s} →", dict(parcels[c].value_counts(dropna=False)))
 
-# quick null scan on the fields the analysis leans on
-key = ["TOWN","COUNTY","REAL_FLV","LAND_LV","IMPRV_LV","ACRESGL","CAT","PURPOSE"]
-print((parcels[[c for c in key if c in parcels]].isna().mean()*100).round(1))
-
+#getting the null rates of each important column in the dataset for informative purposes
+# key = ["TOWN","COUNTY","REAL_FLV","LAND_LV","IMPRV_LV","ACRESGL","CAT","PURPOSE"]
+# print((parcels[[c for c in key if c in parcels]].isna().mean() * 100).round(1))
 ```
 making a reusable chloropleth filter
 ```{python}
+
+#getting the town boudnaries using rest api. well need this for hte chloropleths, and making the towns gdf from the town_url
 TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
-towns_gdf = gpd.read_file(TOWN_URL)
+
+# 1. Download the data robustly using requests
+print("Downloading town boundaries...")
+r = requests.get(TOWN_URL)
+r.raise_for_status()  # This will yell if the URL is broken or blocked
+
+# 2. Parse the JSON using Python's built-in dictionary parser
+data = r.json()
+
+# 3. Read the features into a GeoDataFrame
+towns_gdf = gpd.GeoDataFrame.from_features(data["features"])
+
+# ArcGIS GeoJSON defaults to EPSG 4326 (WGS84 Lat/Lon). We must set it explicitly 
+# before you project it to 32145 later!
+towns_gdf.set_crs(epsg=4326, inplace=True) 
+
+print(towns_gdf.columns)
+
 towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
 towns_gdf = towns_gdf[["TOWN", "geometry"]].copy()
 
+print(f"Successfully loaded {len(towns_gdf)} towns!")
+
+
+#defining the functino for a chloropleth map. 
+"""values: a Series whose INDEX is TOWN and whose values are the metric to color by.""" # - so we can 
+#see by map
+# Series → 2-col DataFrame so it can be merged onto the polygons by TOWN
+
+
 def town_choropleth(values: pd.Series, title, log=False, cmap="viridis"):
-    """values: a Series indexed by TOWN."""
+
+    #.values.rename takes the numbers column of the seies and names it "val". the columns are now names TOWN and val
+    #We now commit a left merge by town
     v = values.rename("val").reset_index(); v.columns = ["TOWN", "val"]
-    m = towns_gdf.merge(v, on="TOWN", how="left")
+    m = towns_gdf.merge(v, on="TOWN", how="left") 
+    #this code is for if we pass in log as a true value      
     if log:
+        #we cannot take 0 or negative numbers in our logarithmic
         m.loc[m["val"] <= 0, "val"] = np.nan          
-    fig, ax = plt.subplots(figsize=(8, 11))
+    fig, ax = plt.subplots(figsize=(8, 12))  
+    
+    #assigning data values - the keywords dictionary 
     kw = dict(column="val", cmap=cmap, legend=True, ax=ax,
               edgecolor="gray", linewidth=0.3,
-              missing_kwds={"color": "lightgray", "label": "no data"})
+              missing_kwds={"color": "lightgray", "label": "no data"}) 
+    #if logarithmic - 
     if log:
-        pos = m["val"].dropna()
+        #getting the true range after dropping nans
+        pos = m["val"].dropna()  
+        #this line says that the colors should be added in a gradient based on the progression from lowest to highest value. we add a new keyword key of norm for that value                    
         kw["norm"] = LogNorm(vmin=pos.min(), vmax=pos.max())
+
+    #plotting m, towns_gdf, and allthe KW dictionary, which contain the instructions for logarithmic plotting if we send them in. we also output the towns with no values for the inputted considered column. 
     m.plot(**kw); ax.set_title(title); ax.axis("off"); plt.show()
-    print("unmatched towns:", m["val"].isna().sum())
+    print("unmatched towns:", m["val"].isna().sum())    
     return m
 ```
 before vs after backfill
 ```{python}
 import duckdb
-con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+#connect access old table created before I updated the parcel collection method
+con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)  # the OLD layer lives here
 
-# AFTER — the rebuilt layer
+#parcels represents the updated dataset, so new_n, new_valued, and new_sum represent the updated parcels' length, parcel valuue, and sum of value
 new_n      = len(parcels)
-new_valued = int((parcels["REAL_FLV"] > 0).sum())
-new_sum    = float(parcels.loc[parcels["REAL_FLV"] > 0, "REAL_FLV"].sum())
+new_valued = int((parcels["REAL_FLV"] > 0).sum())                        
+new_sum    = float(parcels.loc[parcels["REAL_FLV"] > 0, "REAL_FLV"].sum())  
 
-# BEFORE — the original statewide layer
+#getting the old count, value per parcel, adn sum of total parcels from antiuated dataset
 old = con.execute("""
     SELECT TOWN, COUNT(*) n,
-           SUM((REAL_FLV > 0)::INT) valued,
+           SUM((REAL_FLV > 0)::INT) valued,                              -- ::INT casts bool→0/1 to sum
            SUM(CASE WHEN REAL_FLV > 0 THEN REAL_FLV ELSE 0 END) val_sum
     FROM parcels_info GROUP BY TOWN
 """).df()
+#getting the same old calculations
 old_n, old_valued, old_sum = int(old.n.sum()), int(old.valued.sum()), float(old.val_sum.sum())
 
+#printing the founds stats of the old and new datasets, with a change in row represented
 print(f"BEFORE: {old_n:>8,} parcels | {old_valued:>8,} valued ({100*old_valued/old_n:4.1f}%) | ${old_sum:,.0f}")
 print(f"AFTER : {new_n:>8,} parcels | {new_valued:>8,} valued ({100*new_valued/new_n:4.1f}%) | ${new_sum:,.0f}")
 print(f"Δ     : {new_n-old_n:>+8,} parcels | {new_valued-old_valued:>+8,} valued | ${new_sum-old_sum:+,.0f}")
 
-# --- tag each rebuilt parcel by how the OLD layer treated its town ---
-old_all    = set(old.TOWN)
-old_broken = set(old.loc[old.valued == 0, "TOWN"])
-def origin(t):
-    if t not in old_all:  return "absent_from_statewide"
-    if t in old_broken:   return "restored_by_rebuild"
-    return "covered_in_statewide"
-parcels["data_origin"] = parcels["TOWN"].map(origin)
+# --- tag each rebuilt parcel by how the OLD layer treated its town ----------
+# Every row here came from a town download, so "origin" really means: was this town
+# already covered in the statewide layer, broken there, or absent entirely?
 
+#unique problem - we have the old and new datasets, but both also have broken parcels without valuation, like public property and stuff like that
+old_all    = set(old.TOWN)                           
+old_broken = set(old.loc[old.valued == 0, "TOWN"])  
+#quick wading function for all items inputted, if not in old dataset, the data must have been absent, if it was in the old broken set it was broken, and we return a list of what is covered in out statewide data analysis, as "covered in statewide"
+def origin(t):
+    if t not in old_all:  return "not_in_old_statewide"
+    if t in old_broken:   return "found_in_rebuild"
+    return "covered_in_statewide"
+
+#making a new column for the provenance of parcels, either restored or absent, by running our function on town
+parcels["data_origin"] = parcels["TOWN"].map(origin) 
+
+#grouping the parcels by data_origin, and also objectid - size is row count per group - grouped by data_origin
+#we also sum the real_flv for all with values over 0, meaning informed parcels
 by_origin = (parcels.assign(valued=parcels["REAL_FLV"] > 0)
              .groupby("data_origin")
-             .agg(parcels=("OBJECTID", "size"),
+             .agg(parcels=("OBJECTID", "size"),        
                   valued=("valued", "sum"),
-                  grand_list=("REAL_FLV", lambda s: s[s > 0].sum())))
+                  grand_list=("REAL_FLV", lambda s: s[s > 0].sum()))) 
 print("\n", by_origin, sep="")
 
-restored = parcels[parcels.data_origin == "restored_by_rebuild"]
-print(f"\nRestored {len(restored):,} parcels worth "
-      f"${restored.loc[restored.REAL_FLV>0,'REAL_FLV'].sum():,.0f}")
-print(restored.groupby("TOWN")
-      .agg(n=("OBJECTID","size"), value=("REAL_FLV", lambda s: s[s>0].sum()))
-      .sort_values("n", ascending=False).head(10))
-
-# spelling-drift guard between the two TOWN keys
+#getting the first 15 of the towns that weren't included in the old parcels dataset
 print("\nin rebuilt, no old-layer match:", sorted(set(parcels.TOWN) - old_all)[:15])
+
+#making a plot for the provenance of each particular town's parcels
+#merging the towns based on data_origin. im generalizing with a few select towns by dropping all duplicated (namely burlington), but I think its worth it
+prov = towns_gdf.merge(
+    parcels[["TOWN","data_origin"]].drop_duplicates("TOWN"),  
+    on="TOWN", how="left")
+#being safe
+prov["data_origin"] = prov["data_origin"].fillna("no parcels")
+
+#making the plot
+fig, ax = plt.subplots(figsize=(8, 12))
+
+prov.plot(column="data_origin", categorical=True, legend=True, 
+          ax=ax, edgecolor="black", linewidth=0.3)
+ax.set_title("Parcel Origin vs. the old statewide layer"); ax.axis("off"); plt.show()
+
+#outputting towns with no parcels - three are included
+print("TOWNS WITH NO PARCELS:") 
+print(prov[prov["data_origin"] == "no parcels"]["TOWN"].value_counts().rename_axis(None).to_string())
 ```
 
 MEDIAN PARCEL VALUE
+
+#something to consider from these outcomes is that burlington has the most parcels, which inevitably will have some non-expensive ones, where avery's gore has 3. However, most of vermont's wealth/value can be assumed to reside there
 ```{python}
+
+#getting the median values of only the parcels where the median is positive AND PRESENT
 med_val = parcels.loc[parcels["REAL_FLV"] > 0].groupby("TOWN")["REAL_FLV"].median()
+
+#running the choropleth function with the aggregated medians list, and passing it as a logarithmic scale
 town_choropleth(med_val, "Median parcel value (REAL_FLV) — log scale", log=True, cmap="viridis")
-print("highest:\n", med_val.sort_values(ascending=False).head(8))
-print("lowest:\n",  med_val.sort_values().head(8))
+print("highest:\n", med_val.sort_values(ascending=False).head(5))
+print("lowest:\n",  med_val.sort_values().head(5))
+print(f"AVERYS GORE parcel count  {len(parcels[parcels["TOWN"]=="AVERYS GORE"])}")
 ```
 
 ```{python}
-# EPSG:32145 = VT State Plane (meters); 1 acre = 4046.8564224 m²
-parcels["AREA_ACRES_GEOM"] = parcels.to_crs(32145).geometry.area / 4046.8564224
+# Deeded acreage (ACRESGL) is a legal figure; polygon area is what the shape actually covers.
+# EPSG:32145 = VT State Plane in METERS — area is only meaningful in a projected CRS, never in 4326.
 
+#AGRESGL, the grand list acreage of a parcel is for taxation purposes, not actual size. we need to convert it to meters^2 per acre, and need to put it in crs(32145) to project it in meters
+parcels["AREA_ACRES_GEOM"] = parcels.to_crs(32145).geometry.area / 4046.8564224  
+
+#making the size aggregation - groupoig by town, and aggreagating by median, in this case size.  dropping the nulls.  
 size = (parcels.groupby("TOWN")
-        .agg(deeded=("ACRESGL", "median"), geom=("AREA_ACRES_GEOM", "median"))
+        .agg(deeded=("ACRESGL", "median"),
+             geom=("AREA_ACRES_GEOM", "median"))
         .dropna())
-print("largest lots:\n", size.sort_values("geom", ascending=False).head(8))
-print("smallest lots:\n", size.sort_values("geom").head(8))
+
+#printing the largest and smallest lots of meters squared in vermont, median
+print("largest lots:\n", size.sort_values("geom", ascending=False).head(5))
+print("smallest lots:\n", size.sort_values("geom").head(5))
+
+#using the correaltion function to see the divergence or deeded acreage and true polygon plot size
 print("corr deeded vs geom:",
       parcels[["ACRESGL","AREA_ACRES_GEOM"]].dropna().corr().iloc[0,1].round(3))
 
@@ -148,44 +248,65 @@ town_choropleth(size["geom"], "Median parcel size (geometry acres) — log scale
 LAND VS IMPROVEMENT VALUE
 ```{python}
 val = parcels["REAL_FLV"]
+#using np.where to avoid division by zero - this is the ratio of improvment to total 
 parcels["IMPR_SHARE"] = np.where(val > 0, parcels["IMPRV_LV"].fillna(0) / val, np.nan)
 
-# alt denominator (assessed components) — often cleaner than REAL_FLV
+# Alternative denominator: assessed components (LAND+IMPRV). Often cleaner than REAL_FLV,
+# which is sometimes listed independently and can disagree with LAND+IMPRV.
+
+#making a denominator value for land value + improvement value, with both nulls filled to 0. making a new improvement share column
 den = parcels["LAND_LV"].fillna(0) + parcels["IMPRV_LV"].fillna(0)
 parcels["IMPR_SHARE_ALT"] = np.where(den > 0, parcels["IMPRV_LV"].fillna(0) / den, np.nan)
 
+#investigating the shape of the improvment share column
 print(parcels["IMPR_SHARE"].describe())
-print("share > 1 (quirks where IMPRV_LV exceeds REAL_FLV):", int((parcels["IMPR_SHARE"] > 1).sum()))
+#share > 1 shouldn't happen if REAL = LAND + IMPRV — a nonzero count flags that assumption breaking
+print("share > 1 (divergences where IMPRV_LV exceeds REAL_FLV):", int((parcels["IMPR_SHARE"] > 1).sum()))
 
+#mad share with a min/max range for the sake of the map
 med_share = parcels.groupby("TOWN")["IMPR_SHARE"].median().clip(0, 1)
+
+
 town_choropleth(med_share, "Median improvement share (building ÷ total value)", cmap="RdYlBu_r")
-print("most built-up:\n", med_share.sort_values(ascending=False).head(8))
-print("most land-heavy:\n", med_share.sort_values().head(8))
+
+#"most built up" would represent the towns with highest improvement valuesm and the flip is the most land valued towns 
+print("most built-up:\n", med_share.sort_values(ascending=False).head(5))
+print("most land-heavy:\n", med_share.sort_values().head(5))
 ```
 
 
 ```{python}
-# PURPOSE already collapses CAT into the urban-rural-relevant buckets you engineered
+#using crosstab with normalize = index to make all towns have same 100% sum no matter their total purposes
 mix = pd.crosstab(parcels["TOWN"], parcels["PURPOSE"], normalize="index").mul(100).round(1)
 print(mix.head())
 
-res   = mix.get("PRIMARY RESIDENCE", pd.Series(0.0, index=mix.index))
+#using .get to have returned to us a default value
+res   = mix.get("COMMERCIAL APARTMENTS", pd.Series(0.0, index=mix.index))
+
+
+#reindex forces these columns to exist (0 if missing), then sum across them per town
 rural = mix.reindex(columns=["FARM","WOODLAND","SEASONAL PROPERTY"], fill_value=0).sum(axis=1)
-print("\nmost residential:\n", res.sort_values(ascending=False).head(10))
+print("\nmost city-like:\n", res.sort_values(ascending=False).head(10))
 print("\nmost farm/woodland/seasonal:\n", rural.sort_values(ascending=False).head(10))
 
+#stacking horizontal bars for the top 12 towns with the most parcels
 top = parcels["TOWN"].value_counts().head(12).index
 mix.loc[top].plot(kind="barh", stacked=True, figsize=(9, 7))
-plt.xlabel("% of parcels"); plt.title("PURPOSE mix — 12 largest towns")
+plt.xlabel("% of parcels"); plt.title("PURPOSE mix of 12 largest towns")
 plt.legend(bbox_to_anchor=(1.02, 1)); plt.tight_layout(); plt.show()
 
 ```
 
-
+SAVING THE TABLES
 ```{python}
-out = Path("Data/parcels/tables"); out.mkdir(parents=True, exist_ok=True)
-def present(cols): return [c for c in cols if c in parcels.columns]   # tolerate dropped cols
 
+#getting the path out for the tables
+out = Path("Data/parcels/tables"); out.mkdir(parents=True, exist_ok=True)
+#just making sure
+def present(cols): 
+    return [c for c in cols if c in parcels.columns]  
+
+#just need to ensure that objectid is in all three tables that make up parcels - the objectid is the join code
 geom_cols = present(["OBJECTID", "TOWN", "COUNTY", "geometry"])
 info_cols = present(["OBJECTID","TOWN","COUNTY","SPAN","PROPTYPE","CAT","CATEGORY","PURPOSE",
                      "DESCPROP","RESCODE","ACRESGL","AREA_ACRES_GEOM","CITYGL","STGL","ADDRESS",
@@ -196,21 +317,395 @@ tax_cols  = present(["OBJECTID","TOWN","REAL_FLV","HSTED_FLV","NRES_FLV","LAND_L
                      "STATUTE","EXEMPT","EXAMT_HS","EXAMT_NR","UVREDUC_HS","UVREDUC_NR",
                      "GLVAL_HS","GLVAL_NR"])
 
-geom = parcels[geom_cols].copy()                 # GeoDataFrame → GeoParquet
-info = pd.DataFrame(parcels[info_cols])          # plain (no geometry)
-tax  = pd.DataFrame(parcels[tax_cols])
+#making a variable for the three tables that we will ship out later. we need to copy the geomcols to preserve active geometry
+geom = parcels[geom_cols].copy()          
+info = parcels[info_cols].copy()       
+tax  = parcels[tax_cols].copy()  
 
+# geometry side → GeoParquet via geopandas (this write already worked for you; it's the
+# pandas .to_parquet calls that collided, so only those move to DuckDB below)
 geom.to_parquet(out / "parcels_geom.parquet")
-info.to_parquet(out / "parcels_info.parquet", index=False)
-tax.to_parquet(out / "parcels_tax.parquet",  index=False)
+info.to_parquet(out / "parcels_info.parquet")
+tax.to_parquet(out / "parcels_tax.parquet")
+
+# info + tax → Parquet via DuckDB. DuckDB has its own pandas→arrow bridge and never triggers
+# the "pandas.period already defined" extension registration that pandas.to_parquet hit.
+# w = duckdb.connect()                        # scratch in-memory connection just for writing
+# w.register("info_v", info)                  # expose the frames to SQL by name
+# w.register("tax_v",  tax)
+# info_path, tax_path = str(out / "parcels_info.parquet"), str(out / "parcels_tax.parquet")
+# w.execute(f"COPY (SELECT * FROM info_v) TO '{info_path}' (FORMAT PARQUET)")
+# w.execute(f"COPY (SELECT * FROM tax_v)  TO '{tax_path}'  (FORMAT PARQUET)")
 print("geom:", geom.shape, "| info:", info.shape, "| tax:", tax.shape)
 
-# --- prove the three still join cleanly on OBJECTID ---
-g = gpd.read_parquet(out / "parcels_geom.parquet")
+#must change info and tax tables to be read by pd, so that the system doesn't look for metadata that isn't there. 
+g = gpd.read_parquet(out / "parcels_geom.parquet")             
 i = pd.read_parquet(out / "parcels_info.parquet")
-t = pd.read_parquet(out / "parcels_tax.parquet")
+t = pd.read_parquet(out / "parcels_tax.parquet")  
 assert g.OBJECTID.is_unique and i.OBJECTID.is_unique and t.OBJECTID.is_unique
 assert set(g.OBJECTID) == set(i.OBJECTID) == set(t.OBJECTID), "OBJECTID sets differ!"
 three = g.merge(i, on="OBJECTID").merge(t, on="OBJECTID", suffixes=("_info","_tax"))
 print("3-way join rows:", len(three), "== parcel count?", len(three) == len(parcels))
+```
+
+
+#NOW SEEKING TO ADD COMPLEXITY TO PLOTS, STARTING WITH CHECKING IF BURLINGTON IS THERE
+```{python}
+import seaborn as sns
+#making sure that they is a column for acresage in meters squared
+#also, making a column for the value per acre of each parcel
+if "AREAACRESGEOM" not in parcels:
+    parcels["AREAACRESGEOM"] = parcels.to_crs(32145).geometry.area / 4046.8564224
+parcels["ACREVALUE"] = np.where(
+    (parcels.REAL_FLV > 0) & (parcels.AREAACRESGEOM > 0),
+    parcels.REAL_FLV / parcels.AREAACRESGEOM, np.nan)
+
+#here are the jurisdictions in chittenden county
+CHITTENDEN = ["BOLTON", "CHARLOTTE", "COLCHESTER", "ESSEX", "ESSEX JUNCTION", "HINESBURG", "HUNTINGTON", "JERICHO", "MILTON", "RICHMOND", "SAINT GEORGE", "SHELBURNE", "UNDERHILL", "WESTFORD", "WILLISTON", "BURLINGTON", "WINOOSKI", "BUELS GORE", "SOUTH BURLINGTON"]
+cc = parcels[parcels.TOWN.isin(CHITTENDEN)].copy()
+
+#making sure that we can reliably get the towns in chittenden county reliably -
+#saving chittenden county and it's df as cc
+check = cc.groupby("TOWN").agg(
+    n=("OBJECTID","size"),
+    valued=("REAL_FLV", lambda s: int((s>0).sum())),
+    pct_valued=("REAL_FLV", lambda s: round(100*(s>0).mean(),1)),
+    med_val=("REAL_FLV", lambda s: s[s>0].median()),
+).sort_values("n", ascending=False)
+print(check)
+```
+
+"Marquee 1 — distributions per town (the single biggest depth upgrade). Ordered by median so the urban-rural gradient reads top-to-bottom, and you'll see which towns are bimodal:"
+```{python}
+#checking for the logarithmic progression of all property value, and making sure that the towns are in order of lowest to highest median parcel size
+cc["logv"] = np.log10(cc.REAL_FLV.where(cc.REAL_FLV > 0))
+order = cc.groupby("TOWN").logv.median().sort_values().index
+
+#making the violin plot
+plt.figure(figsize=(9, 10))
+
+#checking towns vs logarithmic scaling of median parcel value per town
+sns.violinplot(data=cc, y="TOWN", x="logv", order=order,
+               density_norm="width", cut=0) 
+plt.xlabel("log10 parcel value"); plt.title("Value distribution by Chittenden town")
+plt.tight_layout(); plt.show()
+
+#DOING THE EXACT SAME THING WITH PARCEL ACRE SIZE
+cc["logv_acres"] = np.log10(cc.AREAACRESGEOM.where(cc.AREAACRESGEOM > 0))
+order = cc.groupby("TOWN").logv_acres.median().sort_values().index
+plt.figure(figsize=(9, 10))
+sns.violinplot(data=cc, y="TOWN", x="logv_acres", order=order,
+               density_norm="width", cut=0, color = "orange") 
+plt.xlabel("log10 parcel value"); plt.title("PARCELS ACRE distribution by Chittenden town")
+plt.tight_layout(); plt.show()
+```
+
+"Marquee 2 — parcel-level $/acre gradient (breaks out of town aggregation entirely). This is the "more than aggregated views" you asked for — Burlington→suburb→rural fringe shows as a continuous surface:"
+```{python}
+#DROPPING NULLS
+cc_proj = cc.dropna(subset=["ACREVALUE"]).to_crs(32145)
+
+#getting rid of absurd outliers - first and 99th percentiles
+lo, hi = cc_proj.ACREVALUE.quantile([0.01, 0.99])
+
+#clipping, and making figure logarithmicly scaled
+cc_proj["vpa_clip"] = cc_proj.ACREVALUE.clip(lo, hi)
+fig, ax = plt.subplots(figsize=(11, 11))
+cc_proj.plot(column="vpa_clip", cmap="magma", legend=True, ax=ax,
+             linewidth=0, norm=LogNorm(vmin=lo, vmax=hi))
+ax.set_title("Chittenden parcels — value per acre (log)"); ax.axis("off"); plt.show()
+```
+
+ideas for the following cell 
+
+Absentee & seasonal geography: cc.groupby("TOWN").agg(pct_oos=("OOSOWNER","mean"), pct_seasonal=("PURPOSE", lambda s:(s=="SEASONAL PROPERTY").mean())) — Charlotte/Shelburne lakefront vs. the urban core is the contrast.
+Development pressure: low IMPR_SHARE and high land value = underbuilt/speculative. Flag parcels where LAND_LV > IMPRV_LV in the core towns.
+Urban/suburb/fringe tiers: hand-group the towns (core: Burlington/Winooski/S.Burlington; suburb: Williston/Essex/Colchester; fringe: Charlotte/Huntington/Bolton/Buels Gore) and compare distributions across tiers — a cleaner story than 19 separate towns.
+```{python}
+#cc_proj = cc.dropna(subset=["ACREVALUE"]).to_crs(32145)
+
+#printing the groupyby of out of state owners and purpose
+check = cc.groupby("TOWN").agg(
+    parcel_count =("OBJECTID","size"),
+    pct_oos=("OOSOWNER","mean"),
+    pct_seasonal=("PURPOSE", lambda s:(s=="SEASONAL PROPERTY").mean()),
+).sort_values("pct_seasonal", ascending=False)
+#print(check)
+
+#checking where the sum of parcels wehre land_lv > improvement_value 
+land_based = cc[cc["IMPR_SHARE"]<0.50]
+#print(cc["TOWN"].value_counts())
+#print(land_based["TOWN"].value_counts())
+
+
+#print(cc[["IMPR_SHARE", "TOWN"]].value_counts())
+
+URBANCC = ["BURLINGTON", "WINOOSKI", "SOUTH BURLINGTON"]
+SUBURBANCC = ["COLCHESTER", "WILLISTON", "ESSEX JUNCTION", "ESSEX"]
+LAKEFRONT = ["CHARLOTTE", "SHELBURNE", "COLCHESTER"]  
+RURALCC = []
+for item in cc["TOWN"].unique():
+    if item not in (URBANCC) and item not in (SUBURBANCC):
+       RURALCC.append(item)
+print(RURALCC)
+
+#print(land_based.columns)
+# a = len(land_based)
+
+# urb = land_based["TOWN"].isin(URBANCC).sum()
+# sub = land_based["TOWN"].isin(SUBURBANCC).sum()
+# rur = land_based["TOWN"].isin(RURALCC).sum()
+
+# print(f"{urb/a:.2f} {sub/a:.2f} {rur/a:.2f}")
+
+# print(land_based["TOWN"].isin(URBANCC).sum() / cc["TOWN"].isin(URBANCC).sum())
+
+
+# print(cc[cc["PURPOSE"]=="COMMERCIAL APARTMENTS"]["TOWN"].value_counts())
+# print(cc[cc["SOUTH BURLINGTON"] == "BUELS GORE"]["OOSOWNER"].value_counts())
+
+
+# fig, ax = plt.subplots(figsize=(11, 11))
+# cc_proj.plot(column="vpa_clip", cmap="magma", legend=True, ax=ax,
+#              linewidth=0)
+# ax.set_title("Chittenden parcels — seasonal vs not"); ax.axis("off"); plt.show()
+
+#makinga new dictionary for each town in urban, suburban, and rural, and adding those as keys to the towns int he dictionary
+tier_map = {t: "urban" for t in URBANCC}
+tier_map.update({t: "suburban" for t in SUBURBANCC})
+tier_map.update({t: "lakefront" for t in LAKEFRONT if t not in tier_map})
+#making rural the default of the dictionary
+for t in cc["TOWN"].unique():
+    tier_map.setdefault(t, "rural")
+
+#making a town groupby with size, the out of state owner percentage, on average, the seasonal property percentage, also on average, adn the percent underbuilt, where the ratio of improvement value to land value is less than 50%. Also adding the median value or tbe parcel at hand 
+town = cc.groupby("TOWN").agg(
+    n=("OBJECTID", "size"),
+    pct_oos=("OOSOWNER", "mean"),
+    pct_seasonal=("PURPOSE", lambda s: (s == "SEASONAL PROPERTY").mean()),
+    pct_underbuilt=("IMPR_SHARE", lambda s: (s < 0.50).mean()),  
+    med_val=("REAL_FLV", lambda s: s[s > 0].median()),
+)
+#tier is urban, suburban, lakefront, and rural
+town["tier"] = town.index.map(tier_map)
+
+#making the an aggregated groupby by tier, the newly created measuring system by town type, with the number of entries, the parcel count, the average of each out of state ownership, the average seasonal percentage, the average underbuilt (land is more valuable than improvement), and the mdian value of the parcel
+tier_summary = (town.groupby("tier")
+                .apply(lambda g: pd.Series({
+                    "towns": len(g),
+                    "parcels": int(g.n.sum()),
+                    "pct_oos": np.average(g.pct_oos, weights=g.n),       
+                    "pct_seasonal": np.average(g.pct_seasonal, weights=g.n),
+                    "pct_underbuilt": np.average(g.pct_underbuilt, weights=g.n),
+                    "med_val": g.med_val.median(),
+                }))
+                .reindex(["urban", "suburban", "lakefront", "rural"]))
+#getting a summary
+print(tier_summary.round(3))
+
+#making the figure
+import matplotlib.pyplot as plt
+colors = {"urban": "#d62728", "suburban": "#ff7f0e", "lakefront": "#1f77b4", "rural": "#2ca02c"}
+fig, ax = plt.subplots(figsize=(8, 4))
+
+#for item tier in ("urban", "suburban", etc) and g for twown, make the scatterplot and finding percentage 
+for tier, g in town.groupby("tier"):
+    ax.scatter(g.pct_underbuilt * 100, g.pct_oos * 100,
+               s=g.n / 8, alpha=0.7, color=colors[tier], label=tier, edgecolor="white", linewidth=0.5)
+
+#labelling every town
+for name, r in town.iterrows():
+    ax.annotate(name.title(), (r.pct_underbuilt * 100, r.pct_oos * 100),
+                fontsize=7, alpha=0.6, xytext=(3, 3), textcoords="offset points")
+
+
+#getting the chittenden county average, to place with accuracy every town against the average
+ax.axhline(town.pct_oos.mean() * 100, ls="--", color="gray", lw=0.8)
+ax.axvline(town.pct_underbuilt.mean() * 100, ls="--", color="gray", lw=0.8)
+ax.set_xlabel("% of parcels underbuilt (improvement < 50% of value)")
+ax.set_ylabel("% out-of-state owned")
+ax.set_title("Chittenden: absentee ownership vs. development pressure\n(dot size = parcel count)")
+ax.legend(title="tier"); plt.tight_layout(); plt.show()
+
+```
+
+```{python}
+#making a gini function. 
+def gini(x):
+    #sorting the inputted array into order - getting rid of nan and negarive numbers
+    x = np.sort(np.asarray(x, float)); x = x[~np.isnan(x)]; x = x[x >= 0]
+    #making sure of the ability to handle an empty array or the sum of the array equalling 0
+    if x.size == 0 or x.sum() == 0: return np.nan
+    #n is the size, and the index adds the correct index of the sorted list
+    n = x.size; idx = np.arange(1, n+1)
+    #returning the value of the gini coefficient
+    return (2*np.sum(idx*x)/(n*x.sum())) - (n+1)/n
+
+
+#making a function that gets the county metrics, with a dataframe as an input
+#first we get hte real value of the parcels that are over 0, then return a bunch of pertinent measuremtns of the dataframe
+def county_metrics(df):
+    v = df.REAL_FLV[df.REAL_FLV > 0]
+    return pd.Series({
+        "median_value":        v.median(),
+        "median_lot_acres":    df.AREAACRESGEOM.median(),
+        "median_val_per_acre": df.ACREVALUE.median(),
+        "impr_share":          df.IMPR_SHARE.median(),
+        "pct_residential":     (df.PURPOSE == "PRIMARY RESIDENCE").mean()*100,
+        "pct_farm_wood":       df.PURPOSE.isin(["FARM","WOODLAND"]).mean()*100,
+        "pct_seasonal":        (df.PURPOSE == "SEASONAL PROPERTY").mean()*100,
+        "pct_oos_owner":       df.OOSOWNER.mean()*100,
+        "value_gini":          gini(v),
+    })
+#applying the county metrics to the parcels dataset as it is grouped by county
+cm = parcels.groupby("COUNTY").apply(county_metrics)
+#standarsizing (z score) metrics so that they can be compared across counties
+z  = (cm - cm.mean()) / cm.std()    
+#order the z scores by median value per acre, which is a good metric of urban-level                  
+z  = z.loc[cm.median_val_per_acre.sort_values(ascending=False).index]  
+#plotting the figure, and heatmap to show standarsization 
+plt.figure(figsize=(10, 7))
+sns.heatmap(z, cmap="RdBu_r", center=0, cbar_kws={"label": "z-score"})
+plt.title("County profiles (standardized)"); plt.tight_layout(); plt.show()
+#printing the values 
+print(cm.round(1))                                     
+```
+
+
+```{python}
+#getting the parcels where the value is over 0, and scaling it logarithmically
+d = parcels.loc[parcels.REAL_FLV > 0, ["COUNTY","REAL_FLV"]].copy()
+d["logv"] = np.log10(d.REAL_FLV)
+#getting the average, and grouping by county
+grand = d.logv.mean()
+grp = d.groupby("COUNTY").logv
+
+#ss is sum of swaures. we are calculating the variance between the parcels within, with respect to property value. with this in mind, 93.2 percent of value is attributable to county, with 6.2 not due to county 
+ss_between = (grp.count() * (grp.mean() - grand)**2).sum()
+ss_within  = ((d.logv - grp.transform("mean"))**2).sum()
+ss_total   = ((d.logv - grand)**2).sum()
+print(f"between-county: {ss_between/ss_total:.1%} | within-county: {ss_within/ss_total:.1%}")
+```
+
+conclusive urban rural divide
+```{python}
+#printing the towns by town acreage by -- look at what are light yellow 
+vpa = parcels.groupby("TOWN").ACREVALUE.median()
+town_choropleth(vpa, "Median value per acre ($/acre) — log", log=True, cmap="inferno")
+print(vpa.sort_values(ascending = False))
+print(vpa["CHARLOTTE"])
+```
+
+
+
+performing machine learning on the data
+```{python}
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+
+#getting the town areas in kilometers squared 
+ta = towns_gdf.to_crs(32145); ta["area_km2"] = ta.geometry.area / 1e6
+town_area = ta.set_index("TOWN")["area_km2"]
+
+#making a group by for the median value, the median acreage lot size, the value per acre, the improvement share, the percent residence, and the number of parcels 
+feat = parcels.groupby("TOWN").agg(
+    med_val=("REAL_FLV", lambda s: s[s>0].median()),
+    med_lot=("AREAACRESGEOM", "median"),
+    val_per_acre=("ACREVALUE", "median"),
+    impr_share=("IMPR_SHARE", "median"),
+    pct_res=("PURPOSE", lambda s: (s=="PRIMARY RESIDENCE").mean()),
+    n_parcels=("OBJECTID", "size"),
+)
+#making a custom density column, made from the number of parcels over the area
+feat["parcel_density"] = feat.n_parcels / town_area.reindex(feat.index)
+
+
+feat_cols = ["med_val","med_lot","val_per_acre","impr_share","pct_res","parcel_density"]
+#
+F = feat[feat_cols].copy()
+for c in ["med_val","med_lot","val_per_acre","parcel_density"]:   
+    #applying a logarithnic value to the skewed values
+    F[c] = np.log10(F[c].replace(0, np.nan))
+#dropping null values
+F = F.dropna()
+#standardizing all values for future disvovery
+X = StandardScaler().fit_transform(F)
+
+#running pca algorithm to try and discover what drives "urbanity"
+pca = PCA(n_components=2).fit(X)
+#getting the strongest indicator and saving it as "urban_rural"
+F["urban_rural"] = pca.transform(X)[:, 0]
+#for better understanding, making the urban share more positive; creating that correaltino
+if np.corrcoef(F["urban_rural"], F["impr_share"])[0,1] < 0:        
+    F["urban_rural"] *= -1
+
+#printing findings
+print("PC1 explains", f"{pca.explained_variance_ratio_[0]:.1%}", "of variance [in urbanity]")
+print(pd.Series(pca.components_[0], index=feat_cols).sort_values())  # loadings = what "urban" means
+
+F["cluster"] = KMeans(n_clusters=5, n_init=10, random_state=0).fit_predict(X)
+print(feat.loc[F.index].assign(cluster=F.cluster).groupby("cluster").median())  # read the typology
+
+town_choropleth(F["urban_rural"], "Urban–rural index (PC1)", cmap="Spectral_r")
+```
+
+
+```{python}
+#loading in the population dataset
+pop = pd.read_csv("/Users/isaacwedaman/local_computer_science/react-vt-data/backend/notebooks/parcels/local_data/population_2020.csv")
+pop["TOWN"] = pop["Town"].str.upper()
+pop = pop.set_index("TOWN")["year2020"]
+
+#seeing what towns are missing - discrepancy between our parcels dataset and population dataset
+missing = [t for t in F.index if t not in pop.index]
+print(f"towns in F with no population match ({len(missing)}):", missing[:15])
+
+#using reindex to keep whatever towns are overlapping (hopefully a lot) in the same order
+popdens = np.log10((pop.reindex(F.index) / town_area.reindex(F.index)).replace(0, np.nan))
+
+pop_sort = popdens.sort_values(ascending=False)
+
+# align both series and drop any NaN pairs so the r is computed on the same towns you plot
+#making a variable for the valid towns. then, getting the correlation of the urban area towns and then checking the index  vs population density, and getting the r value
+valid = pd.DataFrame({"urban_rural": F["urban_rural"], "log_popdens": popdens}).dropna()
+r = valid["urban_rural"].corr(valid["log_popdens"])
+print(f"index vs. log population density  r = {r:.3f}  (n = {len(valid)} towns)")
+
+#creating the scatterplot
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(8, 7))
+#plotting the log population density vs the urban_rural found PCA
+ax.scatter(valid["log_popdens"], valid["urban_rural"], alpha=0.6, edgecolor="white", linewidth=0.5)
+
+#finding the towns to label by finding hte ones that dont seem to conformwith the lien of best fit
+resid = valid["urban_rural"] - np.poly1d(np.polyfit(valid["log_popdens"], valid["urban_rural"], 1))(valid["log_popdens"])
+to_label = valid.loc[resid.abs().sort_values(ascending=False).head(8).index]
+
+#adding the annotation to each item in the to_label
+for name, row in to_label.iterrows():
+    ax.annotate(name.title(), (row["log_popdens"], row["urban_rural"]),
+                fontsize=8, alpha=0.7, xytext=(3, 3), textcoords="offset points")
+for name, density_val in pop_sort.head(3).items():
+    if name not in to_label.index:
+        urban_score = F.loc[name, "urban_rural"]
+        ax.annotate(name.title(), (density_val, urban_score),
+                fontsize=8, alpha=0.7, xytext=(3, 3), textcoords="offset points")
+for name, density_val in pop_sort.tail().items():
+    if name not in to_label.index:
+        urban_score = F.loc[name, "urban_rural"]
+        ax.annotate(name.title(), (density_val, urban_score),
+                fontsize=8, alpha=0.7, xytext=(3, 3), textcoords="offset points")
+
+m, b = np.polyfit(valid["log_popdens"], valid["urban_rural"], 1)
+xs = np.linspace(valid["log_popdens"].min(), valid["log_popdens"].max(), 50)
+ax.plot(xs, m*xs + b, "--", color="gray", lw=1)
+ax.set_xlabel("log₁₀ population density (people / km²)")
+ax.set_ylabel("urban–rural index (PC1)")
+ax.set_title(f"Parcel-derived urban index vs. census density (r = {r:.2f})")
+plt.tight_layout(); plt.show()
+```
+
+IDEA FOR FUTURE Next-level (the portfolio standout you probably haven't done): spatial autocorrelation. libpysal + esda give you Moran's I (is value spatially clustered at all?) and LISA (statistically significant hot/cold spots that ignore town boundaries). uv pip install libpysal esda, build a spatial weights matrix on town or parcel centroids, and you can map "significant high-value clusters" as a defensible statistical object rather than an eyeballed choropleth.
+```{python}
 ```
