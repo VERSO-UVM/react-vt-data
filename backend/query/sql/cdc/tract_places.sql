@@ -4,7 +4,7 @@ SELECT
     p.Data_Value,
     p.bin,
     ROUND(p.natl_pct * 100, 2) AS natl_pct,
-    ST_AsGeoJSON(c.geometry) AS geometry,
+    ST_ASGEOJSON(ST_GeomFromWKB(c.geometry)) AS geometry,
     c.name
 FROM cdc_places_tract AS p
 LEFT JOIN vt_tract_lines_geom AS c
