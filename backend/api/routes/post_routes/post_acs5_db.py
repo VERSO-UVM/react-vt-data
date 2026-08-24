@@ -46,6 +46,13 @@ async def tidy_housing(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("housing"))
 
 
+# Economics
+@router.post("/load/acs5-db/tidy/economics")
+async def tidy_economics(request: FilterRequest):
+    rows = get_acs5_tidy(dataset="economics", filters=request.filters)
+    return make_response(data=rows, metadata=get_metadata("labor_force"))
+
+
 # Labor Force (FIXME: broken)
 @router.post("/load/acs5-db/tidy/labor-force")
 async def tidy_labor_force(request: FilterRequest):
@@ -127,12 +134,12 @@ async def get_per_capita_income(request: FilterRequest):
 
 
 # Unemployment Rate
-@router.post("/load/acs5-db/timeseries/economics/unemployment-rate")
-async def get_unemployment_rate(request: FilterRequest):
-    rows = get_acs5_timeseries(
-        category="economics", dataset="unemployment_rate", filters=request.filters
-    )
-    return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
+# @router.post("/load/acs5-db/timeseries/economics/unemployment-rate")
+# async def get_unemployment_rate(request: FilterRequest):
+#     rows = get_acs5_timeseries(
+#         category="economics", dataset="unemployment_rate", filters=request.filters
+#     )
+#     return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
 
 
 ##### HOUSING #####
@@ -205,7 +212,7 @@ async def dp_combined_tree():
     rows = DB.execute(
         """--sql
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
-        FROM acs5_dp_combined
+        FROM acs5_dp_combined_tidy
         ORDER BY "table", Category, Subcategory, Variable, Measure
         """
     ).df()
@@ -221,7 +228,7 @@ async def dp_combined_series(request: DPSeriesRequest):
         """--sql
         SELECT CAST(year AS INTEGER) AS year,
                CAST(Value AS DOUBLE) AS Value
-        FROM acs5_dp_combined
+        FROM acs5_dp_combined_tidy
         WHERE NAME = ?
           AND "table" = ?
           AND Category = ?

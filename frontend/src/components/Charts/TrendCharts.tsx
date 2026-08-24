@@ -509,8 +509,8 @@ export const UnemploymentTrendChart = <TData,>({
   single(
     chart,
     {
-      seriesKey: null,
-      valueField: 'Unemployment_Rate',
+      seriesKey: 'Unemployment Rate (16+)',
+      valueField: 'Value',
       format: 'percent',
       decimals: 1,
     },

@@ -57,10 +57,6 @@ QUERY_CONFIG = {
                 "table": "acs5Economics_perCapitaIncome_timeseries",
                 "fixed_filters": {},
             },
-            "unemployment_rate": {
-                "table": "acs5Economics_unemploymentRate_timeseries",
-                "fixed_filters": {},
-            },
         },
     },
     "labor_force": {

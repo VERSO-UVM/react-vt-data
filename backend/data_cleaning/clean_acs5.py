@@ -15,7 +15,7 @@
     DP05 – Demographic
 
 **Run with**:
-    python -m data_cleaning.acs5
+python -m data_cleaning.clean_acs5
 """
 
 import pandas as pd
@@ -54,14 +54,9 @@ def read_raw_data() -> dict[str, pd.DataFrame]:
     Read the raw ACS-5 DP tables from DuckLake.
     """
     tables = {}
-
-    for dp, (raw_table, _) in DP_TABLES.items():
-        tables[dp] = con.execute(
-            f"""--sql
-            SELECT *
-            FROM lake.RAW.{raw_table}
-            """
-        ).df()
+    for dp, (raw_table_name, dp_table_name) in DP_TABLES.items():
+        query = f"SELECT * FROM lake.RAW.{raw_table_name}"
+        tables[dp] = con.execute(query).df()
 
     return tables
 
@@ -96,31 +91,57 @@ def build_county_geoids():
 def add_dp_tables(cleaned: dict[str, pd.DataFrame]):
     """
     Write each DP table to the CLEANED DuckLake schema.
+
+    Adds a `table` column containing the DP table identifier
+    (e.g. DP02, DP03, DP04, DP05).
     """
     for dp, df in cleaned.items():
-        table = DP_TABLES[dp][1]
-        con.execute(
-            f"""--sql
-            CREATE OR REPLACE TABLE lake.CLEANED.{table} AS
-            SELECT *
-            FROM df
-            """
-        )
+        table_name = DP_TABLES[dp][1]
+
+        df = df.copy()
+        df["table"] = dp
+
+        con.register("tmp_df", df)
+
+        try:
+            con.execute(
+                f"""
+                CREATE OR REPLACE TABLE lake.CLEANED.{table_name} AS
+                SELECT
+                    *
+                FROM tmp_df
+                """
+            )
+        finally:
+            con.unregister("tmp_df")
 
 
 def build_dp_combined():
     """
-    Combine the four DP tables into one table.
+    Combine the four cleaned DP tables into one tidy table.
     """
+
     tables = [table_name for _, table_name in DP_TABLES.values()]
 
     union = "\nUNION ALL\n".join(
-        f"SELECT * FROM lake.CLEANED.{table}" for table in tables
+        f"""
+        SELECT
+            NAME,
+            "table",
+            Category,
+            Subcategory,
+            Variable,
+            Measure,
+            year,
+            Value
+        FROM lake.CLEANED.{table_name}
+        """
+        for table_name in tables
     )
 
     con.execute(
-        f"""--sql
-        CREATE OR REPLACE TABLE lake.CLEANED.dp_combined AS
+        f"""
+        CREATE OR REPLACE TABLE lake.CLEANED.acs5_dp_combined_tidy AS
         {union}
         """
     )

@@ -266,7 +266,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'unemployment_rate',
     title: 'Unemployment Rate',
-    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/unemployment-rate`,
+    url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
     xField: '',
     yField: '',
     subtype: 'renderTable',
