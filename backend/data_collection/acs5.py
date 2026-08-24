@@ -175,7 +175,6 @@ def merge_tidy_tables():
     if tidy_frames:
         combined = pd.concat(tidy_frames, ignore_index=True)
         # combined.to_parquet(f"{STORAGE_LOCATION}/vt_acs5_combined_TIDY.parquet", index=False)
-        # print(f"Combined tidy saved: {len(combined):,} rows")
         return combined
 
     return
