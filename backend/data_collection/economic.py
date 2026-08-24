@@ -1,6 +1,6 @@
 """
 Fetch ACS 5-Year economic data for Vermont:
-  B23025 – Employment Status (labor force participation, 16+)
+  B23025 – Employment Status (labor force participation, 16+ and unemployment)
   B23001 – Sex by Age by Employment Status (prime-age 25-54 LFP)
   B19013 – Median Household Income
   B19301 – Per Capita Income
@@ -37,6 +37,7 @@ _PRIME_IN_LF = [
     "B23001_125E",
     "B23001_132E",  # female 25-54
 ]
+
 _PRIME_TOTAL = [
     "B23001_024E",
     "B23001_031E",
@@ -56,6 +57,12 @@ var_groups = [
         ["B23025_001E"],
     ),
     VarGroup(
+        "Unemployment Rate (16+)",
+        SL,
+        ["B23025_003E"],
+        ["B23025_002E"],
+    ),
+    VarGroup(
         "Prime-Age Labor Force Participation Rate (25-54)",
         SL,
         _PRIME_IN_LF,
@@ -66,7 +73,11 @@ var_groups = [
 ]
 
 fetch_specs = {
-    "B23025": ["B23025_001E", "B23025_002E"],
+    "B23025": [
+        "B23025_001E",
+        "B23025_002E",
+        "B23025_003E",
+    ],
     "B23001": _PRIME_TOTAL + _PRIME_IN_LF,
     "B19013": ["B19013_001E"],
     "B19301": ["B19301_001E"],

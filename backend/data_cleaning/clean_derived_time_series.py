@@ -101,14 +101,6 @@ CONFIGS: dict[str, DatasetConfig] = {
         output_table="acs5Housing_vacancyRates_timeseries",
         keep_variable_col=True,
     ),
-    "unemployment_rate": DatasetConfig(
-        source_table="acs5_economic",
-        variables=["Unemployment Rate"],
-        value_source_col="Value",
-        output_value_col="Unemployment_Rate",
-        output_table="acs5Economics_unemploymentRate_timeseries",
-        extra_where_statement="Measure = 'Percent'",
-    ),
 }
 
 
