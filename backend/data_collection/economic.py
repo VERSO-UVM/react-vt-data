@@ -57,10 +57,10 @@ var_groups = [
         ["B23025_001E"],
     ),
     VarGroup(
-        "Unemployment Rate (16+)",
+        "Unemployment Rate",
         SL,
+        ["B23025_005E"],
         ["B23025_003E"],
-        ["B23025_002E"],
     ),
     VarGroup(
         "Prime-Age Labor Force Participation Rate (25-54)",
@@ -77,6 +77,7 @@ fetch_specs = {
         "B23025_001E",
         "B23025_002E",
         "B23025_003E",
+        "B23025_005E",
     ],
     "B23001": _PRIME_TOTAL + _PRIME_IN_LF,
     "B19013": ["B19013_001E"],
