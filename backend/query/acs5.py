@@ -57,6 +57,10 @@ QUERY_CONFIG = {
                 "table": "acs5Economics_perCapitaIncome_timeseries",
                 "fixed_filters": {},
             },
+            "median_earnings": {
+                "table": "acs5Economics_medianEarnings_timeseries",
+                "fixed_filters": {},
+            },
         },
     },
     "labor_force": {

@@ -624,15 +624,21 @@ export const EarningsTrendChart = <TData,>({
       series: [
         {
           key: 'Male Full-Time Workers',
-          matchVariable: 'DP03_0093',
+          matchVariable:
+            'Median earnings for male full-time, year-round workers (dollars)',
           color: '#161E54',
         },
         {
           key: 'Female Full-Time Workers',
-          matchVariable: 'DP03_0094',
+          matchVariable:
+            'Median earnings for female full-time, year-round workers (dollars)',
           color: '#F16D34',
         },
-        { key: 'All Workers', matchVariable: 'DP03_0092', color: '#9BB0C1' },
+        {
+          key: 'All Workers',
+          matchVariable: 'Median earnings for workers (dollars)',
+          color: '#9BB0C1',
+        },
       ],
     },
     view,

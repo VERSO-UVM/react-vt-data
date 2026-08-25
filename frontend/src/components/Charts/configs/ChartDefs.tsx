@@ -282,7 +282,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'earnings',
     title: 'Median Earnings - Value',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/median-earnings`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/median-earnings`,
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',

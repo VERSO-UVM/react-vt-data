@@ -9,7 +9,6 @@ from api.models import DPSeriesRequest, FilterRequest, make_response
 from query.acs5 import (
     get_acs5_tidy,
     get_acs5_timeseries,
-    get_median_earnings_ts,
 )
 from query.processed_db import DB
 
@@ -133,13 +132,13 @@ async def get_per_capita_income(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("income"))
 
 
-# Unemployment Rate
-# @router.post("/load/acs5-db/timeseries/economics/unemployment-rate")
-# async def get_unemployment_rate(request: FilterRequest):
-#     rows = get_acs5_timeseries(
-#         category="economics", dataset="unemployment_rate", filters=request.filters
-#     )
-#     return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
+# Median Earnings (FIXME: broken)
+@router.post("/load/acs5-db/timeseries/economics/median-earnings")
+async def get_median_earnings(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="economics", dataset="median_earnings", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("income"))
 
 
 ##### HOUSING #####
@@ -168,13 +167,6 @@ async def get_vacancy_rates(request: FilterRequest):
         category="housing", dataset="vacancy_rates", filters=request.filters
     )
     return make_response(data=rows, metadata=get_metadata("housing"))
-
-
-# Median Earnings (FIXME: broken)
-@router.post("/load/acs5-db/timeseries/median-earnings")
-async def get_median_earnings(request: FilterRequest):
-    rows = get_median_earnings_ts(filters=request.filters)
-    return make_response(data=rows, metadata=get_metadata("median_earnings"))
 
 
 # Geography Snapshot Variables
