@@ -1,6 +1,6 @@
 # PDF Generation Review
 
-*Assessment of the current system and whether a separate renderer is needed.*
+_Assessment of the current system and whether a separate renderer is needed._
 
 ---
 
@@ -27,10 +27,10 @@ A single "Download PDF" button calls:
 html2pdf()
   .set({
     margin: 10,
-    filename: 'working-report.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
+    filename: "working-report.pdf",
+    image: { type: "jpeg", quality: 0.98 },
     html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
   })
   .from(componentRef.current)
   .save();
@@ -46,14 +46,14 @@ images embedded in a PDF shell.
 
 `ChartStack` dispatches on `chart.subtype`. The rendering technology matters for PDF quality:
 
-| Component | Library | Render target | PDF quality |
-|---|---|---|---|
-| `DualLine`, `DemographicsTrendChart`, `EducationTrendChart`, `HousingTrendChart`, `DPTrendChart` | Recharts | SVG | Good — SVG rasterized at 2× scale |
-| `SamePerXBarChart` | Recharts | SVG | Good |
-| `DiffPerXBarChart`, `CompareDiffPerXBarChart`, `CompareHBarChart` | Chart.js | `<canvas>` | Acceptable — canvas captured as bitmap |
-| `EmploymentAreaChart` | Recharts (chart views) + Mantine Table (table view) | SVG / HTML | Good for chart view; table view may clip |
-| `DemographicsTable`, `renderTableEstimates`, `renderTableMixed` | Mantine `<Table>` inside `<ScrollArea>` | HTML | **High risk** — see below |
-| `noteCard` | Plain text | HTML | Fine |
+| Component                                                                                        | Library                                             | Render target | PDF quality                              |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------- | ------------- | ---------------------------------------- |
+| `DualLine`, `DemographicsTrendChart`, `EducationTrendChart`, `HousingTrendChart`, `DPTrendChart` | Recharts                                            | SVG           | Good — SVG rasterized at 2× scale        |
+| `SamePerXBarChart`                                                                               | Recharts                                            | SVG           | Good                                     |
+| `DiffPerXBarChart`, `CompareDiffPerXBarChart`, `CompareHBarChart`                                | Chart.js                                            | `<canvas>`    | Acceptable — canvas captured as bitmap   |
+| `EmploymentAreaChart`                                                                            | Recharts (chart views) + Mantine Table (table view) | SVG / HTML    | Good for chart view; table view may clip |
+| `DemographicsTable`, `renderTableEstimates`, `renderTableMixed`                                  | Mantine `<Table>` inside `<ScrollArea>`             | HTML          | **High risk** — see below                |
+| `noteCard`                                                                                       | Plain text                                          | HTML          | Fine                                     |
 
 ---
 
@@ -108,6 +108,7 @@ works and requires no changes.
 
 **For the stated goal of replicating the Addison County Annual Report:** No. The Annual Report
 has:
+
 - Section headers, numbered pages, headers/footers
 - Charts sized and placed deliberately within page columns
 - Tables that fit within a page (not truncated by scroll containers)

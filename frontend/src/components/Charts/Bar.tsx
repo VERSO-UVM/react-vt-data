@@ -385,7 +385,7 @@ const VAL_ORDER = ['Allowed', 'May be Allowed', 'Prohibited', 'Not Mentioned'];
 
 const cleanUseType = (useType: string) => useType.replace(/_/g, ' ');
 
-const ZoningAllowanceStackedBarChart = <TData,>({
+const ZoningAllowanceStackedBarChart = ({
   chart,
   onPlotData,
 }: {

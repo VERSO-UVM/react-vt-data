@@ -3,7 +3,7 @@ SELECT
     p.Measure,
     p.Data_Value,
     p.bin,
-    ROUND(p.natl_pct * 100, 2)  AS natl_pct,
+    ROUND(p.natl_pct * 100, 2) AS natl_pct,
     ST_ASGEOJSON(c.geometry) AS geometry,
     c.name
 FROM cdc_tract_places AS p

@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Response
 
-from api.core_functions import request_to_source, spec_to_source
+from api.core_functions import request_to_source
 from api.metadata_registry import get_metadata
-from api.models import FilterRequest, make_response, FilterSpec
+from api.models import FilterRequest, make_response
 from query import (
+    get_soil_suit_geojson,
+    get_soil_suit_legend,
     get_waste_service_areas_geojson,
     get_waste_treatment_facility_geojson,
     get_waste_treatment_facility_permits,
-    get_soil_suit_geojson,
 )
 
 router = APIRouter()
@@ -43,4 +44,10 @@ async def wastewater_facility_permits(request: FilterRequest):
 async def wastewater_soil_suit_geojson(request: FilterRequest):
     source = request_to_source(request, "soil_suitability_info_soil_suit", "default")
     data = get_soil_suit_geojson([source])
+    return Response(content=data, media_type="application/json")
+
+
+@router.post("/load/mapping/wastewater/septic_soil_legend")
+async def wastewater_soil_suit_legend():
+    data = get_soil_suit_legend()
     return Response(content=data, media_type="application/json")

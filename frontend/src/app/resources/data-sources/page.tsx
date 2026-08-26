@@ -9,6 +9,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { Category, Dataset, Variable } from './source_description';
 
 import {
   Button,
@@ -39,9 +40,7 @@ const COLOR = {
   line: 'rgba(27, 58, 47, 0.14)',
 };
 
-const FONT_DISPLAY = "'Fraunces', 'Iowan Old Style', serif";
-const FONT_BODY = "'General Sans', 'Inter', sans-serif";
-const FONT_MONO = "'IBM Plex Mono', ui-monospace, monospace";
+import { COLORS, FONTS } from '@/app/theme';
 
 // -----------------------------------------------------------------------------
 // Components
@@ -51,17 +50,17 @@ function DataSourcesHero() {
   return (
     <Box
       style={{
-        background: `linear-gradient(160deg, ${COLOR.spruceDeep}, ${COLOR.spruce})`,
+        background: `linear-gradient(160deg, ${COLORS.spruceDeep}, ${COLORS.spruce})`,
         padding: '70px 0 50px',
       }}
     >
       <Container size="xl">
         <Text
           style={{
-            fontFamily: FONT_MONO,
+            fontFamily: FONTS.mono,
             fontSize: 12,
             letterSpacing: '0.14em',
-            color: COLOR.amberSoft,
+            color: COLORS.amberSoft,
           }}
         >
           RESOURCES
@@ -71,8 +70,8 @@ function DataSourcesHero() {
           order={1}
           mt="md"
           style={{
-            fontFamily: FONT_DISPLAY,
-            color: COLOR.birch,
+            fontFamily: FONTS.display,
+            color: COLORS.birch,
             fontSize: 'clamp(2.3rem,5vw,3.7rem)',
           }}
         >
@@ -85,7 +84,7 @@ function DataSourcesHero() {
           size="lg"
           style={{
             color: 'rgba(246,245,239,.7)',
-            fontFamily: FONT_BODY,
+            fontFamily: FONTS.body,
           }}
         >
           Explore the datasets powering Vermont community insights.
@@ -113,7 +112,7 @@ function SearchDatasets({
       styles={{
         input: {
           backgroundColor: 'rgba(255,255,255,0.95)',
-          borderColor: COLOR.line,
+          borderColor: COLORS.line,
           backdropFilter: 'blur(8px)',
         },
       }}
@@ -160,12 +159,12 @@ function CategoryCard({
         }}
       >
         <Stack align="center">
-          <Icon size={75} weight="fill" style={{ color: COLOR.spruce }} />
+          <Icon size={75} weight="fill" style={{ color: COLORS.spruce }} />
           <Title
             order={3}
             ta="center"
             style={{
-              fontFamily: FONT_DISPLAY,
+              fontFamily: FONTS.display,
             }}
           >
             {category.name}
@@ -196,7 +195,7 @@ function DatasetCard({
       p="lg"
       style={{
         cursor: 'pointer',
-        borderColor: COLOR.spruce,
+        borderColor: COLORS.spruce,
         borderWidth: 0.75,
       }}
       onClick={onClick}
@@ -204,7 +203,7 @@ function DatasetCard({
       <Title
         order={3}
         style={{
-          fontFamily: FONT_DISPLAY,
+          fontFamily: FONTS.display,
         }}
       >
         {dataset.name}
@@ -269,6 +268,7 @@ function DatasetDrawer({
             leftSection={<ArrowLeftIcon size={20} />}
             style={{
               width: 250,
+              color: COLORS.spruceDeep,
             }}
             size="sm"
             onClick={onBack}
@@ -280,8 +280,8 @@ function DatasetDrawer({
             <Title
               order={2}
               style={{
-                fontFamily: FONT_DISPLAY,
-                color: COLOR.spruceDeep,
+                fontFamily: FONTS.display,
+                color: COLORS.spruceDeep,
               }}
             >
               {dataset.name}
@@ -301,8 +301,8 @@ function DatasetDrawer({
           <Title
             order={2}
             style={{
-              color: COLOR.spruceDeep,
-              fontFamily: FONT_BODY,
+              color: COLORS.spruceDeep,
+              fontFamily: FONTS.body,
             }}
           >
             {category?.name} Datasets

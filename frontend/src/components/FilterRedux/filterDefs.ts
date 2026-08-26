@@ -17,6 +17,6 @@ export const zoning_filtering: filterDef[] = [
   {
     filter_table: 'zoning_wide',
     filter_style: 'Checkbox',
-    label: 'Zoning',
+    label: '',
   },
 ];

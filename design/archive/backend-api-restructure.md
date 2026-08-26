@@ -30,30 +30,30 @@ inventory and per-source migration priority.
 One Pydantic model carries fields for both map filtering and ACS lookups.
 Field-by-field actual usage:
 
-| Field | Used where | Verdict |
-|---|---|---|
-| `filters` | zoning, qcew, census (3 endpoints) via `filter_from_request` / `mass_filter_from_requests` | Keep — the only broadly-used field |
-| `format` | only [post_zoning.py:19](../backend/api/routes/post_routes/post_zoning.py#L19) | Keep, scoped to map model |
-| `include` | only [post_census.py:78-86](../backend/api/routes/post_routes/post_census.py#L78-L86) (housing snapshot) | Keep, scoped to snapshot model |
-| `name` | all 5 `tidy_*` endpoints in `post_acs5_db.py` | Keep, scoped to ACS model |
-| `year_min`/`year_max` | same — all 5 `tidy_*` endpoints | Keep, scoped to ACS model |
-| `categories` | nowhere | **Delete** |
-| `table` | nowhere on `FilterRequest` (`DPSeriesRequest` has its own) | **Delete** |
-| `measure` | nowhere on `FilterRequest` (`DPSeriesRequest` has its own) | **Delete** |
+| Field                 | Used where                                                                                               | Verdict                            |
+| --------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `filters`             | zoning, qcew, census (3 endpoints) via `filter_from_request` / `mass_filter_from_requests`               | Keep — the only broadly-used field |
+| `format`              | only [post_zoning.py:19](../backend/api/routes/post_routes/post_zoning.py#L19)                           | Keep, scoped to map model          |
+| `include`             | only [post_census.py:78-86](../backend/api/routes/post_routes/post_census.py#L78-L86) (housing snapshot) | Keep, scoped to snapshot model     |
+| `name`                | all 5 `tidy_*` endpoints in `post_acs5_db.py`                                                            | Keep, scoped to ACS model          |
+| `year_min`/`year_max` | same — all 5 `tidy_*` endpoints                                                                          | Keep, scoped to ACS model          |
+| `categories`          | nowhere                                                                                                  | **Delete**                         |
+| `table`               | nowhere on `FilterRequest` (`DPSeriesRequest` has its own)                                               | **Delete**                         |
+| `measure`             | nowhere on `FilterRequest` (`DPSeriesRequest` has its own)                                               | **Delete**                         |
 
 ### `masterload` audit (per registered loader)
 
-| Loader | What it does | Migration verdict |
-|---|---|---|
-| `flood_legal` | Read GeoJSON, simplify | ETL → table; bake `add_flood_color` in as generated column or view |
-| `WWTF` | Read GeoJSON | ETL → table (trivial) |
-| `service_areas` | Read GeoJSON | ETL → table (trivial) |
-| `zoning` | FGB + `process_zoning_data` cleanup | ETL → table (cleanup runs once at build time) |
-| `soil_septic` | Per-RPC FGB + `process_soil_data` | ETL → one unioned table with an `rpc` column; query `WHERE rpc = ?` |
-| `census_housing`/`economics`/`demographics`/`social` | Dict-of-frames (raw + derived) via `load_census_data_dict` | ETL → one table per dict key; callers query the table they want |
-| `census_combined` | UNION across cached dicts with a `Source` label | ETL → UNION ALL view/table with literal `Source` column |
-| `flooding_with_zoning` | Spatial biggest-intersection join | **Precompute at ETL time** — too expensive per request |
-| `soil_septic_with_zoning` | Same, per RPC | Precompute at ETL time |
+| Loader                                               | What it does                                               | Migration verdict                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| `flood_legal`                                        | Read GeoJSON, simplify                                     | ETL → table; bake `add_flood_color` in as generated column or view  |
+| `WWTF`                                               | Read GeoJSON                                               | ETL → table (trivial)                                               |
+| `service_areas`                                      | Read GeoJSON                                               | ETL → table (trivial)                                               |
+| `zoning`                                             | FGB + `process_zoning_data` cleanup                        | ETL → table (cleanup runs once at build time)                       |
+| `soil_septic`                                        | Per-RPC FGB + `process_soil_data`                          | ETL → one unioned table with an `rpc` column; query `WHERE rpc = ?` |
+| `census_housing`/`economics`/`demographics`/`social` | Dict-of-frames (raw + derived) via `load_census_data_dict` | ETL → one table per dict key; callers query the table they want     |
+| `census_combined`                                    | UNION across cached dicts with a `Source` label            | ETL → UNION ALL view/table with literal `Source` column             |
+| `flooding_with_zoning`                               | Spatial biggest-intersection join                          | **Precompute at ETL time** — too expensive per request              |
+| `soil_septic_with_zoning`                            | Same, per RPC                                              | Precompute at ETL time                                              |
 
 ### Has to survive as thin Python (not in masterload, not in ETL)
 
@@ -221,7 +221,7 @@ ETL cleanly.
   query DuckDB:
   - `format == "aggregated_acres"` becomes a `GROUP BY District Type` query.
   - Default branch becomes `SELECT ..., ST_AsGeoJSON(geometry) FROM zoning WHERE ...`
-    + Python assembly into a FeatureCollection.
+    - Python assembly into a FeatureCollection.
 - Port [get_filters.py](../backend/api/routes/get_routes/get_filters.py) to
   `SELECT DISTINCT` + Python tree fold.
 - Port the zoning GET in [get_wholedata.py](../backend/api/routes/get_routes/get_wholedata.py).

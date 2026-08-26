@@ -36,7 +36,7 @@ import { useEffect, useState } from 'react';
 
 // within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
-import { FONT_MONO, COLOR, FONT_DISPLAY } from './theme';
+import { COLORS, FONTS } from '../theme';
 import { FieldLabel } from './FieldLabel';
 import { MetricsPanel } from './MetricsPanels';
 
@@ -148,7 +148,7 @@ function HeroSection({
         width: '100vw',
         left: '50%',
         marginLeft: '-50vw',
-        background: `linear-gradient(160deg, ${COLOR.spruceDeep} 0%, ${COLOR.spruce} 100%)`,
+        background: `linear-gradient(160deg, ${COLORS.spruceDeep} 0%, ${COLORS.spruce} 100%)`,
         paddingTop: 70,
         paddingBottom: 40,
       }}
@@ -163,11 +163,11 @@ function HeroSection({
             >
               <Text
                 style={{
-                  fontFamily: FONT_MONO,
+                  fontFamily: FONTS.mono,
                   fontSize: 12,
                   letterSpacing: '0.14em',
                   textTransform: 'uppercase',
-                  color: COLOR.amberSoft,
+                  color: COLORS.amberSoft,
                 }}
               >
                 Data Viewer
@@ -176,11 +176,11 @@ function HeroSection({
             <Title
               order={1}
               style={{
-                fontFamily: FONT_DISPLAY,
+                fontFamily: FONTS.display,
                 fontWeight: 600,
                 fontSize: 'clamp(2.3rem, 5.4vw, 3.7rem)',
                 lineHeight: 1.04,
-                color: COLOR.birch,
+                color: COLORS.birch,
                 marginTop: 14,
                 maxWidth: 640,
               }}
@@ -190,7 +190,7 @@ function HeroSection({
                 <Text
                   span
                   style={{
-                    fontFamily: FONT_DISPLAY,
+                    fontFamily: FONTS.display,
                     fontWeight: 400,
                     fontSize: '0.4em',
                     color: 'rgba(246,245,239,0.45)',
@@ -228,8 +228,8 @@ function HeroSection({
                 <Group justify="space-between" align="center" mb={10}>
                   <Text
                     style={{
-                      fontFamily: FONT_MONO,
-                      color: COLOR.amberSoft,
+                      fontFamily: FONTS.mono,
+                      color: COLORS.amberSoft,
                       fontSize: 12,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
@@ -242,7 +242,7 @@ function HeroSection({
                     variant="subtle"
                     rightSection={<PencilSimpleIcon size={16} weight="bold" />}
                     onClick={openProfileModal}
-                    styles={{ root: { color: COLOR.amberSoft } }}
+                    styles={{ root: { color: COLORS.amberSoft } }}
                   >
                     Edit
                   </Button>
@@ -268,7 +268,7 @@ function HeroSection({
                     {interests.length > 0 ? (
                       <Text
                         size="sm"
-                        style={{ color: COLOR.birch, fontWeight: 500 }}
+                        style={{ color: COLORS.birch, fontWeight: 500 }}
                       >
                         {interests.join(' · ')}
                       </Text>
@@ -326,7 +326,7 @@ function ProfileField({
       <FieldLabel small={small}>{label}</FieldLabel>
       <Text
         size={small ? 'sm' : 'md'}
-        style={{ color: COLOR.birch, fontWeight: 500 }}
+        style={{ color: COLORS.birch, fontWeight: 500 }}
       >
         {value || '—'}
       </Text>
@@ -386,15 +386,15 @@ export default function DataViewerPage() {
       const filters = buildFilters(myLocation, {
         col: 'year',
         selected: [
-          chart.chartParams?.fixedYear ?? yearMin,
-          chart.chartParams?.fixedYear ?? yearMax,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
         ],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
         selected: [
-          chart.chartParams?.fixedYear ?? yearMin,
-          chart.chartParams?.fixedYear ?? yearMax,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
         ],
       });
 
