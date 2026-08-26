@@ -8,18 +8,18 @@ set dotenv-filename := ".env"
 # CLI Development  #
 ################
 
-# turns on non-containerized backend. note: turns off containers
+# turns on non-containerized backend. note: no longer turns off containers
 [working-directory("backend")]
-local-api: down
+local-api:
     ALLOW_DEV_CORS=1 uv run uvicorn api.main:app --reload --port 6767
 
-# turns on non-container frontend. note: turns off containers
+# turns on non-container frontend. note: no longer turns off containers
 [working-directory("frontend")]
-local-frontend: down
+local-frontend:
     NEXT_PUBLIC_API_URL=http://localhost:6767/api npm run dev -- --port 3000
 
-# turns on non-container full apps, interleaved in terminal (from Procfile). Note: turns off containers
-local-dev: down
+# turns on non-container full apps, interleaved in terminal (from Procfile). Note: no longer turns off containers
+local-dev:
     uvx honcho start
 
 ########################################################
@@ -96,8 +96,8 @@ dev-frontend: build-pod build-frontend run-frontend
 check-frontend:
     npx tsc --noEmit    
 
-
-## ETL (Pipeline) Container
+################
+# ETL (Pipeline) Container
 ################
 
 # --------- Pre-step: Lake Builder ---------------------
@@ -131,7 +131,6 @@ transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
     podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
 
-
 # --------- 3. Data Loading (L) ---------------------
 # Load the lake.CLEANED tables into a DuckDB database
 [working-directory("backend")]
@@ -150,7 +149,6 @@ run-etl start_year end_year:
     # Load CLEANED tables into DuckDB instance
     just load-data 
 
-
 #####################
 # Abstracted podman util #
 #####################
@@ -165,4 +163,3 @@ down:
 # see what containers are running
 see-running:
     podman ps
-

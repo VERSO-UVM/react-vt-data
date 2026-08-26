@@ -5,6 +5,7 @@ from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
 from query import (
     get_soil_suit_geojson,
+    get_soil_suit_legend,
     get_waste_service_areas_geojson,
     get_waste_treatment_facility_geojson,
     get_waste_treatment_facility_permits,
@@ -45,4 +46,10 @@ async def wastewater_soil_suit_geojson(request: FilterRequest):
         request, "VersoWastewater_soilSuitability_info", "default"
     )
     data = get_soil_suit_geojson([source])
+    return Response(content=data, media_type="application/json")
+
+
+@router.post("/load/mapping/wastewater/septic_soil_legend")
+async def wastewater_soil_suit_legend():
+    data = get_soil_suit_legend()
     return Response(content=data, media_type="application/json")

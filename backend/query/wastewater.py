@@ -40,8 +40,10 @@ def get_waste_treatment_facility_geojson(sources: list[FilterSource]):
 
 
 def get_waste_treatment_facility_permits(sources: list[FilterSource]) -> pd.DataFrame:
-    table_sql = sql_filter_block(sql_dir / "waste_treatment_permit_table.sql", sources)
-    table_data = DB.execute(table_sql).df()
+    sql, params = sql_filter_block(
+        sql_dir / "waste_treatment_permit_table.sql", sources
+    )
+    table_data = DB.execute(sql, params).df()
 
     return table_data
 
@@ -56,4 +58,14 @@ def get_soil_suit_geojson(sources: list[FilterSource]):
     if result is None:
         logger.error("geo query returned no rows for filters: %s", sources)
         raise ValueError(f"no results for filters: {sources}")
+    return result[0]
+
+
+def get_soil_suit_legend():
+    result = DB.execute(
+        "SELECT json_group_array(to_json(soil_suitability_soil_suitability_colors)) FROM soil_suitability_soil_suitability_colors;"
+    ).fetchone()
+    if result is None:
+        logger.error("color query returned no rows for the colors dataset")
+        raise ValueError("no results for colors dataset")
     return result[0]
