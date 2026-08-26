@@ -1,7 +1,7 @@
 """
 Fetch ACS 5-Year Data Profile tables (DP02-DP05) for Vermont
 Geographies: counties + county subdivisions + Vermont statewide + United States
-Years: 2009-2024
+Years: 2009 - Latest published data
 Output: one wide CSV + parquet per table, plus tidy parquet per table
 Credit: Written largely by Claude, with some fine-tuning and troubleshooting by Fitz Koch
 
@@ -13,6 +13,7 @@ Use --append to merge new rows into existing files instead of overwriting.
 
 import os
 import time
+from datetime import datetime
 
 import pandas as pd
 import requests
@@ -35,7 +36,9 @@ TABLES = {
 STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
 
-YEARS = range(2009, 2025)
+MAX_YEAR = datetime.now().year - 1
+
+YEARS = range(2009, MAX_YEAR)
 
 # Default geos list in (label, for_clause, in_clause) format
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]

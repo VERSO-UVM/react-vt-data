@@ -20,6 +20,8 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
 Output: vt_acs5_b_economic_tidy.parquet
 """
 
+from datetime import datetime
+
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
@@ -84,7 +86,9 @@ fetch_specs = {
     "B19301": ["B19301_001E"],
 }
 
-YEARS = range(2009, 2025)
+MAX_YEAR = datetime.now().year - 1
+
+YEARS = range(2009, MAX_YEAR)
 
 
 def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
@@ -112,7 +116,7 @@ if __name__ == "__main__":
 
     p = argparse.ArgumentParser(description="Scrape ACS B-table economic data.")
     p.add_argument("--start-year", type=int, default=2009)
-    p.add_argument("--end-year", type=int, default=2024)
+    p.add_argument("--end-year", type=int, default=MAX_YEAR - 1)
     p.add_argument(
         "--geos",
         nargs="+",

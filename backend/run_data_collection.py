@@ -12,6 +12,7 @@
 """
 
 import argparse
+from datetime import datetime
 
 from data_collection import (
     acs5,
@@ -41,8 +42,10 @@ STATIC_SCRAPERS = [
     wastewater,
     zoning,
 ]
+MAX_YEAR = datetime.now().year - 1
 
-YEARS = range(2009, 2025)
+
+YEARS = range(2009, MAX_YEAR)
 
 
 def run_scraper(scraper, yearly: bool = False, years: range = YEARS):
@@ -76,7 +79,7 @@ def run_scraper(scraper, yearly: bool = False, years: range = YEARS):
         raise
 
 
-def run_master_scrape(start_year: int = 2009, end_year: int = 2024):
+def run_master_scrape(start_year: int = 2009, end_year: int = MAX_YEAR - 1):
     for scraper in YEARLY_SCRAPERS:
         run_scraper(scraper, yearly=True, years=range(start_year, end_year + 1))
 

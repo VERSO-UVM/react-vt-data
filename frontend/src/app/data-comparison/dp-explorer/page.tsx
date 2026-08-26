@@ -308,6 +308,8 @@ export default function DPExplorerPage() {
   // Available years derived from fetched data
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 
+  const YEAR_MAX_OVERALL = new Date().getFullYear() - 2;
+
   useEffect(() => {
     if (!isComplete) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- clear stale results when the selection becomes incomplete
@@ -329,7 +331,7 @@ export default function DPExplorerPage() {
           variable,
           measure,
           year_min: 2009,
-          year_max: 2024,
+          year_max: YEAR_MAX_OVERALL,
         })
         .then((r) => r.data);
 

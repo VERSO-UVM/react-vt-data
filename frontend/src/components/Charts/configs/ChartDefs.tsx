@@ -2,6 +2,8 @@
 import { BASE_API_URL } from '@/config';
 import { ChartParams, TableColumnConfig } from '@/types/cachedCharts';
 
+const YEAR_MAX_OVERALL = new Date().getFullYear() - 2;
+
 export interface TableRowDef {
   label: string;
   variable: string;
@@ -96,7 +98,7 @@ export const chartDefs: ChartDef[] = [
     subtype: 'CompareDiffPerXBarChart',
     chartParams: {
       legendLabels: ['Main', 'Compare'],
-      fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
+      fixedYear: YEAR_MAX_OVERALL,
       percentFormat: true,
       includeCategories: [
         'Under 18',
@@ -179,7 +181,7 @@ export const chartDefs: ChartDef[] = [
     subtype: 'CompareDiffPerXBarChart',
     chartParams: {
       legendLabels: ['Main', 'Compare'],
-      fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
+      fixedYear: YEAR_MAX_OVERALL,
       percentFormat: true,
     },
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,

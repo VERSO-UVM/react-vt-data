@@ -24,6 +24,7 @@ replaces rather than duplicates those rows), then writes the merged result.
 import os
 import time
 from dataclasses import dataclass
+from datetime import datetime
 
 import pandas as pd
 import requests
@@ -50,6 +51,8 @@ ALL_GEOS: dict[str, tuple[str, str]] = {
 # Default: all geographies (preserves original scrape order)
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
 
+
+MAX_YEAR = datetime.now().year - 2
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -151,7 +154,7 @@ def run_acs_b_scrape(
     fetch_specs: dict[str, list[str]],
     var_groups: list[VarGroup],
     output_filename: str,
-    year: int = 2024,
+    year: int = MAX_YEAR,
     geos: list = GEOS,
     append: bool = False,
 ) -> None:
