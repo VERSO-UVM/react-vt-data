@@ -3,9 +3,12 @@
     Fitz Koch
 **Created**:
     2026-06-01
+**Updated**:
+    2026-08-26
 **Description**:
-    Pull in all the parquet files into active api.
-    Uses pre-run ETL from consolidate.py in the build section.
+    Establishes the DB connection to the finalized
+    database, `warehouse.duckdb`, which is derived
+    from the CLEANED DuckLake tables.
 """
 
 import logging
@@ -28,30 +31,6 @@ def _load_spatial(con: duckdb.DuckDBPyConnection) -> None:
     except Exception:
         con.execute("INSTALL spatial")
         con.execute("LOAD spatial")
-
-
-# def _build() -> duckdb.DuckDBPyConnection:
-#     con = duckdb.connect(":memory:")
-#     _load_spatial(con)
-
-#     parquets = sorted(proc_dir.rglob("*.parquet"))
-#     if not parquets:
-#         logger.warning("No parquet files found under %s", proc_dir)
-
-#     for path in parquets:
-#         name = f"{path.parent.name}_{path.stem}"
-#         con.execute(f"""--sql
-#             CREATE TABLE "{name}" AS SELECT * FROM read_parquet('{path}')
-#         """)
-#         logger.info("Loaded table %s from %s", name, path)
-#     return con
-
-
-def _build() -> duckdb.DuckDBPyConnection:
-    path = Path(proc_dir / "all_data.duckdb")
-    con = duckdb.connect(path, read_only=True)
-    _load_spatial(con)
-    return con
 
 
 def _build_etl_db() -> duckdb.DuckDBPyConnection:

@@ -10,7 +10,7 @@ from query.acs5 import (
     get_acs5_tidy,
     get_acs5_timeseries,
 )
-from query.processed_db import DB
+from query.production_db import DB
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

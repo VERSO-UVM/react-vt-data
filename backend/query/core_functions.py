@@ -13,7 +13,7 @@
 import logging
 
 from api.models import FilterResponse, RangeDescriptor
-from query.processed_db import DB
+from query.production_db import DB
 
 logger = logging.getLogger(__name__)
 
