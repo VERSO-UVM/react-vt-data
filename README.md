@@ -135,6 +135,13 @@ This project is open-source under the **MIT License**.
 
 ---
 
+# VM Deployment
+
+
+
+1. sudo su - appuser0
+
+
 ## Credits
 
 - Developed by Ian Sargent and Fitzwilliam Keenan-Koch
