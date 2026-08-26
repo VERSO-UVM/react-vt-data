@@ -29,7 +29,6 @@ import {
 } from '@/components/FilterUI/useApplyFilters';
 import { DataRow, ChartPayload, ChartMetadata } from '@/types/cachedCharts';
 
-
 import { motion } from 'motion/react';
 import classes from './Tabs.module.css';
 import { useEffect, useState } from 'react';
@@ -585,11 +584,9 @@ export default function DataViewerPage() {
             charts={visibleItems}
             action="add"
             userInterests={interests}
-            defIds={visibleItems.map(
-              (c) => c.chartParams?.defId)
-              .filter((id): id is string => 
-                id !== undefined
-            )}
+            defIds={visibleItems
+              .map((c) => c.chartParams?.defId)
+              .filter((id): id is string => id !== undefined)}
             view="gallery"
           />
         </Box>

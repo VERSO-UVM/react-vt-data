@@ -1,6 +1,15 @@
 // TableView.tsx
 import { useState, useMemo } from 'react';
-import { Box, Button, Group, ScrollArea, Table, Text, Title, SegmentedControl } from '@mantine/core';
+import {
+  Box,
+  Button,
+  Group,
+  ScrollArea,
+  Table,
+  Text,
+  Title,
+  SegmentedControl,
+} from '@mantine/core';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 
 interface TableViewProps<TData> {
@@ -31,8 +40,7 @@ export const TableView = <TData extends DataRow>({
   if (!rows || rows.length === 0) return null;
 
   const labels = chart.chartParams?.legendLabels as
-    | [string, string]
-    | undefined;
+    [string, string] | undefined;
   const homeLabel = labels?.[0] ?? 'Primary';
   const compareLabel = labels?.[1] ?? 'Comparison';
 
@@ -40,11 +48,10 @@ export const TableView = <TData extends DataRow>({
   const allKeys = rows[0] ? Object.keys(rows[0]) : [];
   const cmpKeys = allKeys.filter((k) => k.endsWith(CMP_SUFFIX));
   const hasCompare =
-    cmpKeys.length > 0 &&
-    rows.some((r) => cmpKeys.some((k) => r[k] != null));
+    cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
 
   // Render the comparison toggle header control
-  const ComparisonToggleHeader = () => (
+  const ComparisonToggleHeader = () =>
     hasCompare ? (
       <Group mb="xs" gap="sm" align="center">
         <Button
@@ -83,8 +90,7 @@ export const TableView = <TData extends DataRow>({
           </Group>
         )}
       </Group>
-    ) : null
-  );
+    ) : null;
 
   // --- MODE A: PIVOTED TABLE (FOR TREND CHARTS) ---
   if (usePivot) {
@@ -181,13 +187,10 @@ export const TableView = <TData extends DataRow>({
             <Table.Tr>
               {baseColumns.map((column) => {
                 const hasColCompare =
-                  hasCompare && rows.some((r) => r[`${column}${CMP_SUFFIX}`] != null);
+                  hasCompare &&
+                  rows.some((r) => r[`${column}${CMP_SUFFIX}`] != null);
 
-                return (
-                  <Table.Th key={column}>
-                    {column}
-                  </Table.Th>
-                );
+                return <Table.Th key={column}>{column}</Table.Th>;
               })}
             </Table.Tr>
           </Table.Thead>
@@ -232,9 +235,7 @@ export const TableView = <TData extends DataRow>({
                   }
 
                   return (
-                    <Table.Td key={column}>
-                      {formatCell(mainVal)}
-                    </Table.Td>
+                    <Table.Td key={column}>{formatCell(mainVal)}</Table.Td>
                   );
                 })}
               </Table.Tr>

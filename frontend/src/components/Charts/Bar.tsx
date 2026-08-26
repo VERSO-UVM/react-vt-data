@@ -240,7 +240,7 @@ const CompareDiffPerXBarChart = ({
       ? chart.compareData.filter((entry: any) =>
           includeCategories.includes(entry[chart.xField]),
         )
-      : chart.compareData ?? [];
+      : (chart.compareData ?? []);
   }, [chart.compareData, includeCategories, chart.xField]);
 
   // Derive exact plottable rows and report back to ChartCard for TableView
@@ -396,13 +396,19 @@ const ZoningAllowanceStackedBarChart = ({
   // if (isPdfMode) return <ZoningAllowanceStackedBarChartSVG chart={chart} />;
 
   const mainRows = useMemo(
-    () => ((chart.data || []) as AllowanceRow[]).filter((r) => INCLUDED_USE_TYPES.has(r.use_type)),
-    [chart.data]
+    () =>
+      ((chart.data || []) as AllowanceRow[]).filter((r) =>
+        INCLUDED_USE_TYPES.has(r.use_type),
+      ),
+    [chart.data],
   );
 
   const compareRows = useMemo(
-    () => ((chart.compareData || []) as AllowanceRow[]).filter((r) => INCLUDED_USE_TYPES.has(r.use_type)),
-    [chart.compareData]
+    () =>
+      ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
+        INCLUDED_USE_TYPES.has(r.use_type),
+      ),
+    [chart.compareData],
   );
 
   type PivotRow = { use_type: string } & Record<string, number | string>;
@@ -412,7 +418,8 @@ const ZoningAllowanceStackedBarChart = ({
       const useType = cleanUseType(r.use_type);
       const group = groupVal(r.val);
       if (!map[useType]) map[useType] = { use_type: useType };
-      map[useType][group] = ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
+      map[useType][group] =
+        ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
     }
     return map;
   };
@@ -493,75 +500,75 @@ const ZoningAllowanceStackedBarChart = ({
   );
 
   const options = useMemo(
-  () => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {duration: 250},
-    transitions: {
-      active: {
-        animation: {
-          duration: 0, // Disables jerky animation when hovering over bars
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 250 },
+      transitions: {
+        active: {
+          animation: {
+            duration: 0, // Disables jerky animation when hovering over bars
+          },
         },
       },
-    },
-    plugins: {
-      legend: {
-        display: true,
-        labels: {
-          generateLabels: (chart: any) =>
-            stackKeys.map((key) => {
-              const mainIndex = chart.data.datasets.findIndex(
-                (ds: any) => ds.label === `${key}`,
-              );
-              const compareIndex = chart.data.datasets.findIndex(
-                (ds: any) => ds.label === `${key}`,
-              );
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            generateLabels: (chart: any) =>
+              stackKeys.map((key) => {
+                const mainIndex = chart.data.datasets.findIndex(
+                  (ds: any) => ds.label === `${key}`,
+                );
+                const compareIndex = chart.data.datasets.findIndex(
+                  (ds: any) => ds.label === `${key}`,
+                );
 
-              const mainMeta = chart.getDatasetMeta(mainIndex);
-              const compareMeta = chart.getDatasetMeta(compareIndex);
+                const mainMeta = chart.getDatasetMeta(mainIndex);
+                const compareMeta = chart.getDatasetMeta(compareIndex);
 
-              const hidden =
-                (mainMeta.hidden ?? chart.data.datasets[mainIndex].hidden) &&
-                (compareMeta.hidden ??
-                  chart.data.datasets[compareIndex].hidden);
+                const hidden =
+                  (mainMeta.hidden ?? chart.data.datasets[mainIndex].hidden) &&
+                  (compareMeta.hidden ??
+                    chart.data.datasets[compareIndex].hidden);
 
-              return {
-                text: key,
-                fillStyle: colorForGroup(key),
-                strokeStyle: colorForGroup(key),
-                lineWidth: 1,
-                hidden,
-                datasetIndex: mainIndex,
-              };
-            }),
+                return {
+                  text: key,
+                  fillStyle: colorForGroup(key),
+                  strokeStyle: colorForGroup(key),
+                  lineWidth: 1,
+                  hidden,
+                  datasetIndex: mainIndex,
+                };
+              }),
+          },
+          onClick: (_e: any, legendItem: any, legend: any) => {
+            const chart = legend.chart;
+            const key = legendItem.text;
+
+            chart.data.datasets.forEach((ds: any, idx: number) => {
+              if (ds.label?.startsWith(key)) {
+                const meta = chart.getDatasetMeta(idx);
+                meta.hidden = !(meta.hidden ?? false);
+              }
+            });
+
+            chart.update();
+          },
         },
-        onClick: (_e: any, legendItem: any, legend: any) => {
-          const chart = legend.chart;
-          const key = legendItem.text;
-
-          chart.data.datasets.forEach((ds: any, idx: number) => {
-            if (ds.label?.startsWith(key)) {
-              const meta = chart.getDatasetMeta(idx);
-              meta.hidden = !(meta.hidden ?? false);
-            }
-          });
-
-          chart.update();
+        tooltip: {
+          callbacks: {
+            label: (ctx: any) =>
+              `${ctx.dataset.label}: ${ctx.raw?.toLocaleString?.() ?? ctx.raw}`,
+          },
         },
       },
-      tooltip: {
-        callbacks: {
-          label: (ctx: any) =>
-            `${ctx.dataset.label}: ${ctx.raw?.toLocaleString?.() ?? ctx.raw}`,
-        },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true },
       },
-    },
-    scales: {
-      x: { stacked: true },
-      y: { stacked: true },
-    },
-  }),
-  [stackKeys],
+    }),
+    [stackKeys],
   );
 
   return <BarJS data={data} options={options} />;

@@ -60,15 +60,15 @@ export function AddChart({ chart, defId }: AddChartProps) {
   const inReport = items.some((item) => item.id === stableId);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-  // Prevent parent elements (like ChartCard or Modal triggers) from catching the click
-  e.stopPropagation();
+    // Prevent parent elements (like ChartCard or Modal triggers) from catching the click
+    e.stopPropagation();
 
-  if (inReport) {
-    removeItem(stableId);
-  } else {
-    addItem({ ...chart, id: stableId });
-  }
-};
+    if (inReport) {
+      removeItem(stableId);
+    } else {
+      addItem({ ...chart, id: stableId });
+    }
+  };
 
   // Optional: If you want to dim or hide the button when interests don't match
   if (!matchesInterests && !inReport) {

@@ -55,8 +55,8 @@ import { usePdfMode } from '@/contexts/PdfModeContext';
 // ChartCard
 interface ChartCardProps<TData extends DataRow> {
   chart: ChartItem<TData>;
-  ChartComponent: React.FC<{ 
-    chart: ChartItem<TData>; 
+  ChartComponent: React.FC<{
+    chart: ChartItem<TData>;
     view?: 'gallery' | 'report';
     onPlotData?: (rows: DataRow[]) => void;
   }>;
@@ -93,7 +93,6 @@ export const ChartCard = <TData extends DataRow>({
   const isTablePrimary = chart.subtype.startsWith('renderTable');
   const [localView, setLocalView] = useState<'chart' | 'table'>('chart');
 
-
   const selfManagesViews = !!chart.chartParams?.noViewSwitch;
 
   const showViewSwitch =
@@ -107,11 +106,7 @@ export const ChartCard = <TData extends DataRow>({
     <ChartComponent chart={chart} view={view} />
   ) : isTablePrimary ? (
     localView === 'chart' && TrendComponent ? (
-      <TrendComponent
-        chart={chart}
-        view={view}
-        onPlotData={setTrendPlotData}
-      />
+      <TrendComponent chart={chart} view={view} onPlotData={setTrendPlotData} />
     ) : TrendComponent ? (
       <TableView chart={chart} rows={trendPlotData} />
     ) : (
@@ -244,7 +239,7 @@ export const ChartCard = <TData extends DataRow>({
             )}
           </Group>
         </Box>
-        
+
         <Box w="100%">
           <Box
             data-chart-box

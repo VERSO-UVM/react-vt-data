@@ -26,7 +26,12 @@ import {
   XIcon,
 } from '@phosphor-icons/react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
-import { ChartItem, ChartMetadata, DataRow, ChartPayload } from '@/types/cachedCharts';
+import {
+  ChartItem,
+  ChartMetadata,
+  DataRow,
+  ChartPayload,
+} from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
 
 import { createChartItem, createTableItem } from '@/utils/itemFactory';

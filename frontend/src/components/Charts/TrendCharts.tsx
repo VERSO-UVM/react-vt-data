@@ -1,7 +1,7 @@
 // TrendCharts.tsx
 'use client';
 
-import { useState, useEffect, useMemo} from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   CartesianGrid,
   Legend,
@@ -124,9 +124,14 @@ export const SingleSeriesTrendChart = <TData,>({
 }) => {
   const isGallery = view === 'gallery';
   const {
-    seriesKey, valueField, format, decimals,
-    color = '#154734', compareColor = '#1c7ed6',
-    lineWidth = 3, showHelperText = true,
+    seriesKey,
+    valueField,
+    format,
+    decimals,
+    color = '#154734',
+    compareColor = '#1c7ed6',
+    lineWidth = 3,
+    showHelperText = true,
   } = config;
 
   const { hidden, toggleSeries, legendFormatter } = useToggle();
@@ -135,7 +140,8 @@ export const SingleSeriesTrendChart = <TData,>({
   const compareData = chart.compareData as any[];
 
   const seriesName = seriesKey ?? valueField;
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    [string, string] | undefined;
 
   const findValue = (rows: any[], year: number) => {
     const row = seriesKey
@@ -273,27 +279,38 @@ export const MultiSeriesTrendChart = <TData,>({
 }) => {
   const isGallery = view === 'gallery';
   const {
-    series, valueField, format,
-    showHelperText = true, showCompareNote = true,
-    legendPosition = 'bottom-right', nameSuffix = true,
+    series,
+    valueField,
+    format,
+    showHelperText = true,
+    showCompareNote = true,
+    legendPosition = 'bottom-right',
+    nameSuffix = true,
   } = config;
 
   const { hidden, toggleSeries, legendFormatter } = useToggle();
 
   const data = chart.data as any[];
   const compareData = chart.compareData as any[];
-  const labels = chart.chartParams?.legendLabels as [string, string] | undefined;
+  const labels = chart.chartParams?.legendLabels as
+    [string, string] | undefined;
 
   const getValue = (rows: any[], year: number, s: SeriesDef) => {
     if (s.aggregateFrom) {
       const sum = s.aggregateFrom.reduce((acc, label) => {
-        const v = rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ?? 0;
+        const v =
+          rows.find((r) => r.year === year && r.Variable === label)?.[
+            valueField
+          ] ?? 0;
         return acc + v;
       }, 0);
       return sum > 0 ? Math.round(sum * 10) / 10 : null;
     }
     const label = s.matchVariable ?? s.key;
-    return rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ?? null;
+    return (
+      rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ??
+      null
+    );
   };
 
   const years = useMemo(
@@ -319,7 +336,7 @@ export const MultiSeriesTrendChart = <TData,>({
   }, [plotData, onPlotData]);
 
   if (!data || data.length === 0) return null;
-  
+
   const fmt = FORMATTERS[format];
 
   return (
@@ -631,7 +648,11 @@ export const DemographicsTrendChart = <TData,>({
       format: 'percent',
       series: [
         { key: 'Under 18', color: '#154734' },
-        { key: '65+', aggregateFrom: ['65 to 74', '75 Plus'], color: '#1c7ed6' },
+        {
+          key: '65+',
+          aggregateFrom: ['65 to 74', '75 Plus'],
+          color: '#1c7ed6',
+        },
       ],
     },
     view,
@@ -681,8 +702,16 @@ export const EarningsTrendChart = <TData,>({
       valueField: 'Value',
       format: 'currency',
       series: [
-        { key: 'Male Full-Time Workers', matchVariable: 'DP03_0093', color: '#161E54' },
-        { key: 'Female Full-Time Workers', matchVariable: 'DP03_0094', color: '#F16D34' },
+        {
+          key: 'Male Full-Time Workers',
+          matchVariable: 'DP03_0093',
+          color: '#161E54',
+        },
+        {
+          key: 'Female Full-Time Workers',
+          matchVariable: 'DP03_0094',
+          color: '#F16D34',
+        },
         { key: 'All Workers', matchVariable: 'DP03_0092', color: '#9BB0C1' },
       ],
     },

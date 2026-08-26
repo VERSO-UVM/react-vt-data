@@ -12,7 +12,7 @@ import pytest
 from sqlfluff.core import FluffConfig, Linter
 
 from api.models import FilterSource, RangeFilter
-from sql_render import (
+from app_utils.sql_render import (
     compile_filters,
     compile_where,
     filter_clauses,

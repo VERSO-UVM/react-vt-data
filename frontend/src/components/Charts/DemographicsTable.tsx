@@ -150,7 +150,11 @@ export const renderTable = ({ chart }: { chart: ChartItem<AcsRow> }) => (
   />
 );
 
-export const renderTableEstimates = ({ chart }: { chart: ChartItem<AcsRow> }) => (
+export const renderTableEstimates = ({
+  chart,
+}: {
+  chart: ChartItem<AcsRow>;
+}) => (
   <DemographicsTableBase
     chart={chart}
     renderCell={(row) =>
