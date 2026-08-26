@@ -63,6 +63,12 @@ const TEAM: TeamMember[] = [
     image: '/images/our-team/Braden_Lynn_headshot.jpg',
   },
   {
+    name: 'Serena Buono',
+    role: 'Research & Policy Intern',
+    bio: "Serena Buono graduated from the University of Vermont in the spring of 2026, with a B.S. in Sustainability, Ecology, & Policy. As one of the founders of UVM's Vermont Policy Institute, she collaborated with the Leahy Institute for Rural Partnerships on many projects that address Vermont's challenges such as conservation, governance, and access to data. She continues to work on these issues as the Leahy Institute's Research and Policy Assistant. When not working, Serena loves to explore Vermont’s swimming holes and travel to new places.",
+    image: '/images/our-team/Serena_Buono_headshot.jpg',
+  },
+  {
     name: 'Isabelle Serrano',
     role: 'Communication Lead, Vermont Data Collaborative',
     bio: 'Isabelle is a data communication enthusiast interested in the intersection of public policy and community action. She is a senior undergraduate at UVM studying Website and Information Resources Design. She serves as Communication Lead for the Vermont Data Collaborative, as well as Manuscript Design Assistant under Professor Asim Zia, a Project Intern at the Center for Rural Studies, and Fundraising Officer for the UVM Nordic Ski Club.',
