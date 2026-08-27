@@ -1,9 +1,4 @@
-WITH filtered_rules AS (
-    SELECT DISTINCT OBJECT_ID
-    FROM zoning_rules
-    {{ where_string }}
-)
-
+{{ cte_filter_block }}
 SELECT
     JSON_OBJECT(
         'type', 'FeatureCollection',
@@ -28,6 +23,6 @@ FROM (
         ) AS feature
     FROM zoning_info AS i
     INNER JOIN zoning_geom AS g USING (OBJECT_ID)
-    INNER JOIN filtered_rules USING (OBJECT_ID)
     LEFT JOIN zoning_colors AS c ON i.District_Type = c.district_type
+    {{ join_filter_block }}
 ) AS features

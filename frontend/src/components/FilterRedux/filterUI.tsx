@@ -5,16 +5,15 @@
  * @description
  *   Short description
  */
-import { CascadeFilter } from "./CascadeUI";
-import { CheckboxFilter } from "./CheckboxUI";
-import { FilterUIProps} from "./filterTypes";
+import { CascadeFilter } from './CascadeUI';
+import { CheckboxFilter } from './CheckboxUI';
+import { FilterUIProps } from './filterTypes';
 
-
-
-export function FilterUI({ style, params} : FilterUIProps) {
-
+export function FilterUI({ style, params }: FilterUIProps) {
   switch (style) {
-    case 'Cascade':  return <CascadeFilter {...params}/>;
-    case 'Checkbox': return <CheckboxFilter {...params} />;
+    case 'Cascade':
+      return <CascadeFilter {...params} />;
+    case 'Checkbox':
+      return <CheckboxFilter {...params} />;
   }
 }

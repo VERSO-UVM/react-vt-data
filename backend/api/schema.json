@@ -35,13 +35,13 @@
         "Value": "val"
       }
     },
-    "cdc_places": {
+    "cdc_county_places": {
       "join_key": "LocationID",
       "join_type": "inner",
       "value_col": "Data_Value",
       "var_col": "Measure",
       "columns": {
-        "Key Indicator": "SME_Highlight",
+        "Population Health Indicator": "SME_Highlight",
         "Category": "Category",
         "Measure": "Measure",
         "Prevalence Measure": "Data_Value_Type"
@@ -53,8 +53,45 @@
       "columns": {
         "Town": "TOWN",
         "Category": "CAT",
-        "Property Type": "PROPTYPE"
+        "Property Type": "PROPTYPE",
+    "soil_suitability_info_soil_suit": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+        "Regional Planning Commission": "RPC",
+        "Jurisdiction": "Jurisdiction",
+        "Soil Suitability Level": "Suitability"
+      }
+    },
+    "treatment_facilities_treatment_facility_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+        "Regional Planning Commission": "RPC",
+        "County": "County",
+        "Jurisdiction": "Municipal_Name",
+        "Town": "TownName"
+      }
+    },
+    "treatment_facilities_treatment_facility_permit_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+        "Regional Planning Commission": "RPC",
+        "County": "County",
+        "Jurisdiction": "Municipal_Name",
+        "Town": "TownName"
+      }
+    },
+    "service_areas_service_area_info": {
+      "join_key": "ID",
+      "join_type": "inner",
+      "columns": {
+        "Regional Planning Commission": "RPC",
+        "County": "County",
+        "Jurisdiction": "Municipal_Name",
+        "Town": "TownName"
       }
     }
   }
-}
+}}}

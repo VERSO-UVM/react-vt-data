@@ -2,7 +2,7 @@
 
 // react
 import { useState, useCallback, useEffect } from 'react';
-import { Map, ViewStateChangeEvent } from 'react-map-gl/maplibre';
+import { Map } from 'react-map-gl/maplibre';
 
 // deck, geojson, and maplibre styling
 import { GeoJsonLayer } from '@deck.gl/layers';
@@ -16,6 +16,14 @@ import { Paper, Divider } from '@mantine/core';
 interface MyMapProps {
   geojson: FeatureCollection | null;
   showCountyLines: boolean;
+  controllerOn?: boolean;
+  initialZoom?: number;
+  /**
+   * Optional context layer drawn *underneath* `geojson` — e.g. the grey
+   * "no zoning information here" areas on the zoning map. Features carry their
+   * own `rgba_color` and `tooltip` properties, exactly like the main layer.
+   */
+  baseGeojson?: FeatureCollection | null;
 }
 
 const BASE_STYLES = {
@@ -41,13 +49,22 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
-  const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+export default function VTMap({
+  geojson,
+  showCountyLines,
+  controllerOn = true,
+  initialZoom = 7,
+  baseGeojson = null,
+}: MyMapProps) {
+  const [viewState, setViewState] = useState({
+    ...INITIAL_VIEW_STATE,
+    zoom: initialZoom,
+  });
   const [baseStyle] = useState(BASE_STYLES.OSM);
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
-    content: any;
+    content: Record<string, unknown>;
   } | null>(null);
   const [countylines, setCountylines] = useState<FeatureCollection | null>(
     null,
@@ -62,8 +79,8 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
       .catch(() => {});
   }, []);
 
-  const onViewStateChange = useCallback((params: any) => {
-    const vs = params.viewState;
+  const onViewStateChange = useCallback((params: { viewState: unknown }) => {
+    const vs = params.viewState as typeof INITIAL_VIEW_STATE;
     setViewState({
       ...vs,
       zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
@@ -80,29 +97,54 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
     });
   }, []);
 
+  const onHover = (info: {
+    x: number;
+    y: number;
+    object?: { properties: { tooltip: Record<string, unknown> } };
+  }) => {
+    if (info.object) {
+      setTooltip({
+        x: info.x,
+        y: info.y,
+        content: info.object.properties.tooltip,
+      });
+    } else {
+      setTooltip(null);
+    }
+  };
+
+  const getFillColor = (d: {
+    properties?: { rgba_color?: [number, number, number, number] };
+  }) => d.properties?.rgba_color ?? [0, 0, 0, 0];
+
+  // order matters: deck.gl draws in array order, so the base layer is listed
+  // first and ends up underneath the main data layer
   const layers = [
+    baseGeojson &&
+      new GeoJsonLayer({
+        id: 'geojson-base',
+        data: baseGeojson,
+        filled: true,
+        getFillColor,
+        getLineColor: [120, 120, 120, 90],
+        lineWidthMinPixels: 0.5,
+        pickable: true,
+        autoHighlight: true,
+        highlightColor: [222, 102, 0, 120],
+        onHover,
+      }),
     geojson &&
       new GeoJsonLayer({
         id: 'geojson',
         data: geojson,
         filled: true,
-        getFillColor: (d: any) => d.properties?.rgba_color ?? [0, 0, 0, 0],
+        getFillColor,
         getLineColor: [80, 80, 80, 80],
         lineWidthMinPixels: 0.5,
         pickable: true,
         autoHighlight: true,
         highlightColor: [222, 102, 0, 200],
-        onHover: (info: any) => {
-          if (info.object) {
-            setTooltip({
-              x: info.x,
-              y: info.y,
-              content: info.object.properties.tooltip,
-            });
-          } else {
-            setTooltip(null);
-          }
-        },
+        onHover,
       }),
     showCountyLines &&
       countylines &&
@@ -138,7 +180,7 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
         <DeckGL
           viewState={viewState}
           onViewStateChange={onViewStateChange}
-          controller
+          controller={controllerOn}
           layers={layers}
           style={{ width: '100%', height: '100%' }}
         >
@@ -158,7 +200,7 @@ export default function VTMap({ geojson, showCountyLines }: MyMapProps) {
               maxWidth: 280,
             }}
           >
-            <strong>{tooltip.content.__title__}</strong>
+            <strong>{String(tooltip.content.__title__)}</strong>
             <Divider my={4} />
             {Object.entries(tooltip.content).map(
               ([k, v]) =>

@@ -23,53 +23,73 @@ import {
   BarElement,
   Tooltip as TooltipJS,
   Legend as LegendJS,
+  TooltipItem,
 } from 'chart.js';
 ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
+import {
+  Title,
+  Box,
+  Group,
+  Text,
+  ActionIcon,
+  Tooltip as MantineTooltip,
+} from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
 
-const SamePerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart
-        width={500}
-        height={300}
-        data={chart.data}
-        margin={{
-          top: 5,
-          right: 30,
-          left: 20,
-          bottom: 5,
-        }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey={chart.xField} />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        {chart.chartParams?.datakeys.map(
-          ([datakey, color]: [string, string]) => (
+// d3 color schemes looked up by name (e.g. 'schemeCategory10')
+const d3Schemes = d3 as unknown as Record<string, readonly string[]>;
+
+const SamePerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => (
+  <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Group gap={4}>
+      <Text size="sm" fw={600}>
+        {chart.title}
+      </Text>
+      {chart.description && (
+        <MantineTooltip label={chart.description} multiline w={240}>
+          <ActionIcon variant="subtle" size="sm">
+            <IconInfoCircle size={14} />
+          </ActionIcon>
+        </MantineTooltip>
+      )}
+    </Group>
+    <Box style={{ flex: 1, minHeight: 0 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={chart.data}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey={chart.xField}
+            interval={chart.chartParams?.xInterval ?? 0}
+            angle={chart.chartParams?.xAngle ?? -45}
+            textAnchor={chart.chartParams?.xAngle ? 'end' : 'middle'}
+            height={chart.chartParams?.xHeight ?? 70}
+          />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          {chart.chartParams?.datakeys?.map(([datakey, color]) => (
             <Bar key={datakey} dataKey={datakey} fill={color} />
-          ),
-        )}
-      </BarChart>
-    </ResponsiveContainer>
-  );
-};
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </Box>
+  </Box>
+);
 
 // ---------------------------------------------------------------------------
 // DiffPerXBarChart — single dataset, per-bar colors from data
 // ---------------------------------------------------------------------------
 
 /** SVG (Recharts) version used when rendering to PDF. */
-const DiffPerXBarChartSVG = <TData,>({
-  chart,
-}: {
-  chart: ChartItem<TData>;
-}) => {
+const DiffPerXBarChartSVG = ({ chart }: { chart: ChartItem<DataRow> }) => {
   const colors = chart.data.map(
-    (entry: any) => entry[chart.chartParams!.color],
+    (entry) => entry[chart.chartParams!.color!] as string,
   );
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -82,7 +102,7 @@ const DiffPerXBarChartSVG = <TData,>({
         <YAxis />
         <Tooltip />
         <Bar dataKey={chart.yField}>
-          {chart.data.map((_: any, index: number) => (
+          {chart.data.map((_, index) => (
             <Cell key={index} fill={colors[index]} />
           ))}
         </Bar>
@@ -91,13 +111,13 @@ const DiffPerXBarChartSVG = <TData,>({
   );
 };
 
-const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
+const DiffPerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => {
   const isPdfMode = usePdfMode();
   if (isPdfMode) return <DiffPerXBarChartSVG chart={chart} />;
 
-  const labels = chart.data.map((entry: any) => entry[chart.xField]);
+  const labels = chart.data.map((entry) => entry[chart.xField]);
   const colors = chart.data.map(
-    (entry: any) => entry[chart.chartParams!.color],
+    (entry) => entry[chart.chartParams!.color!] as string,
   );
 
   const data = {
@@ -105,7 +125,7 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
     datasets: [
       {
         label: chart.yField,
-        data: chart.data.map((entry: any) => entry[chart.yField]),
+        data: chart.data.map((entry) => entry[chart.yField] as number),
         backgroundColor: colors,
       },
     ],
@@ -127,8 +147,8 @@ const DiffPerXBarChart = <TData,>({ chart }: { chart: ChartItem<TData> }) => {
 // CompareDiffPerXBarChart — two datasets, primary with per-bar colors
 // ---------------------------------------------------------------------------
 
-interface CompareDiffChartItem<TData> extends ChartItem<TData> {
-  compareData: TData[];
+interface CompareDiffChartItem extends ChartItem<DataRow> {
+  compareData: DataRow[];
   chartParams: {
     color?: string;
     legendLabels?: [string, string];
@@ -136,14 +156,15 @@ interface CompareDiffChartItem<TData> extends ChartItem<TData> {
     fixedYear?: number;
     percentFormat?: boolean;
     includeCategories?: string[];
+    unit?: string;
   };
 }
 
 /** SVG (Recharts) version used when rendering to PDF. */
-const CompareDiffPerXBarChartSVG = <TData,>({
+const CompareDiffPerXBarChartSVG = ({
   chart,
 }: {
-  chart: CompareDiffChartItem<TData>;
+  chart: CompareDiffChartItem;
 }) => {
   const legendLabels = chart.chartParams.legendLabels ?? [
     chart.yField,
@@ -152,22 +173,21 @@ const CompareDiffPerXBarChartSVG = <TData,>({
 
   // Determine per-bar primary colors (same logic as Chart.js version)
   let colors: string[];
-  if (
-    chart.chartParams?.color &&
-    (chart.data[0] as any)?.[chart.chartParams.color]
-  ) {
-    colors = chart.data.map((entry: any) => entry[chart.chartParams.color!]);
+  if (chart.chartParams?.color && chart.data[0]?.[chart.chartParams.color]) {
+    colors = chart.data.map(
+      (entry) => entry[chart.chartParams.color!] as string,
+    );
   } else {
     const schemeName = chart.chartParams?.colorScheme ?? 'schemeCategory10';
-    const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
-    colors = chart.data.map((_: any, i: number) => colorScale(i.toString()));
+    const colorScale = d3.scaleOrdinal<string, string>(d3Schemes[schemeName]);
+    colors = chart.data.map((_, i) => colorScale(i.toString()));
   }
 
   // Merge primary + compare into one array for grouped bars
-  const merged = chart.data.map((entry: any, i: number) => ({
+  const merged = chart.data.map((entry, i) => ({
     [chart.xField]: entry[chart.xField],
     primary: entry[chart.yField],
-    compare: (chart.compareData?.[i] as any)?.[chart.yField] ?? null,
+    compare: chart.compareData?.[i]?.[chart.yField] ?? null,
   }));
 
   return (
@@ -182,7 +202,7 @@ const CompareDiffPerXBarChartSVG = <TData,>({
         <Tooltip />
         <Legend />
         <Bar dataKey="primary" name={legendLabels[0]}>
-          {merged.map((_: any, i: number) => (
+          {merged.map((_, i) => (
             <Cell key={i} fill={colors[i]} />
           ))}
         </Bar>
@@ -192,10 +212,10 @@ const CompareDiffPerXBarChartSVG = <TData,>({
   );
 };
 
-const CompareDiffPerXBarChart = <TData,>({
+const CompareDiffPerXBarChart = ({
   chart,
 }: {
-  chart: CompareDiffChartItem<TData>;
+  chart: CompareDiffChartItem;
 }) => {
   const isPdfMode = usePdfMode();
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
@@ -203,16 +223,16 @@ const CompareDiffPerXBarChart = <TData,>({
   const includeCategories = chart.chartParams?.includeCategories;
   const filteredData = includeCategories
     ? chart.data.filter((entry: any) =>
-        includeCategories.includes(entry[chart.xField])
+        includeCategories.includes(entry[chart.xField]),
       )
     : chart.data;
 
   const filteredCompareData = includeCategories
     ? chart.compareData.filter((entry: any) =>
-        includeCategories.includes(entry[chart.xField])
+        includeCategories.includes(entry[chart.xField]),
       )
     : chart.compareData;
-  
+
   const labels = filteredData.map((entry: any) => entry[chart.xField]);
 
   let colors: string[];
@@ -220,13 +240,13 @@ const CompareDiffPerXBarChart = <TData,>({
     chart.chartParams?.color &&
     (chart.data[0] as any)?.[chart.chartParams.color]
   ) {
-      colors = filteredData.map((entry: any) => entry[chart.chartParams.color!]);
+    colors = filteredData.map((entry: any) => entry[chart.chartParams.color!]);
   } else {
     const schemeName = chart.chartParams?.colorScheme || 'schemeTableau10';
     const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
     colors = filteredData.map((_, index) => colorScale(index.toString()));
   }
-  const compareColors = filteredCompareData.map(() => '#D3D3D3'); 
+  const compareColors = filteredCompareData.map(() => '#D3D3D3');
 
   const legendLabels = chart.chartParams.legendLabels || [
     chart.yField,
@@ -249,32 +269,35 @@ const CompareDiffPerXBarChart = <TData,>({
   };
 
   const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: true },
-    tooltip: {
-      callbacks: {
-        label: (context: any) => {
-          const value = context.parsed.y;
-          return chart.chartParams?.percentFormat ?? false ? `${value}%` : value.toLocaleString();
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const value = context.parsed.y;
+            return (chart.chartParams?.percentFormat ?? false)
+              ? `${value}%`
+              : value.toLocaleString();
+          },
         },
       },
     },
-  },
-  scales: {
-    y: {
-      ticks: {
-        callback: (value: any) =>
-          chart.chartParams?.percentFormat ?? false ? `${value}%` : value.toLocaleString(),
+    scales: {
+      y: {
+        ticks: {
+          callback: (value: any) =>
+            (chart.chartParams?.percentFormat ?? false)
+              ? `${value}%`
+              : value.toLocaleString(),
+        },
       },
     },
-  },
-};
+  };
 
   return <BarJS data={data} options={options} />;
 };
-
 
 type AllowanceRow = {
   use_type: string;
@@ -283,68 +306,68 @@ type AllowanceRow = {
 };
 
 const VAL_GROUPS: Record<string, string> = {
-  True: "Allowed",
-  False: "Prohibited",
-  "Public Hearing": "May be Allowed",
-  "Allowed/Conditional": "May be Allowed",
-  Overlay: "May be Allowed",
-  "Not Mentioned": "Not Mentioned",
+  True: 'Allowed',
+  False: 'Prohibited',
+  'Public Hearing': 'May be Allowed',
+  'Allowed/Conditional': 'May be Allowed',
+  Overlay: 'May be Allowed',
+  'Not Mentioned': 'Not Mentioned',
 };
 
 const VAL_GROUP_COLORS: Record<string, string> = {
-  Allowed: "#274c77",
-  "May be Allowed": "#6096ba",
-  Prohibited: "#e07a5f",
-  "Not Mentioned": "#c8d3d5",
+  Allowed: '#274c77',
+  'May be Allowed': '#6096ba',
+  Prohibited: '#e07a5f',
+  'Not Mentioned': '#c8d3d5',
 };
 
 const USE_TYPE_ORDER = [
-    "1 Family",
-    "2 Family",
-    "3 Family",
-    "4 Family",
-    // "Acessory Dwelling Unit", // NOTE: matches the typo in the source data ("Acessory")
-    // "Planned Unit Development",
-    // "Planned Residential Development",
-  ];
+  '1 Family',
+  '2 Family',
+  '3 Family',
+  '4 Family',
+  // "Acessory Dwelling Unit", // NOTE: matches the typo in the source data ("Acessory")
+  // "Planned Unit Development",
+  // "Planned Residential Development",
+];
 
-  const INCLUDED_USE_TYPES = new Set([
-    "1_Family",
-    "2_Family",
-    "3_Family",
-    "4_Family",
-  ]);
+const INCLUDED_USE_TYPES = new Set([
+  '1_Family',
+  '2_Family',
+  '3_Family',
+  '4_Family',
+]);
 
-  const sortUseTypes = (types: string[]) => {
-    return [...types].sort((a, b) => {
-      const ai = USE_TYPE_ORDER.indexOf(a);
-      const bi = USE_TYPE_ORDER.indexOf(b);
-      if (ai === -1 && bi === -1) return a.localeCompare(b);
-      if (ai === -1) return 1;
-      if (bi === -1) return -1;
-      return ai - bi;
-    });
-  };
+const sortUseTypes = (types: string[]) => {
+  return [...types].sort((a, b) => {
+    const ai = USE_TYPE_ORDER.indexOf(a);
+    const bi = USE_TYPE_ORDER.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+};
 
 const groupVal = (val: string) => VAL_GROUPS[val] ?? val;
-const VAL_ORDER = ["Allowed", "May be Allowed", "Prohibited", "Not Mentioned"];
+const VAL_ORDER = ['Allowed', 'May be Allowed', 'Prohibited', 'Not Mentioned'];
 
-const cleanUseType = (useType: string) => useType.replace(/_/g, " ");
+const cleanUseType = (useType: string) => useType.replace(/_/g, ' ');
 
-const ZoningAllowanceStackedBarChart = <TData,>({
+const ZoningAllowanceStackedBarChart = ({
   chart,
 }: {
-  chart: CompareDiffChartItem<TData>;
+  chart: CompareDiffChartItem;
 }) => {
   // const isPdfMode = usePdfMode();
   // if (isPdfMode) return <ZoningAllowanceStackedBarChartSVG chart={chart} />;
 
   const mainRows = ((chart.data || []) as AllowanceRow[]).filter((r) =>
-    INCLUDED_USE_TYPES.has(r.use_type)
+    INCLUDED_USE_TYPES.has(r.use_type),
   );
 
-const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
-    INCLUDED_USE_TYPES.has(r.use_type)
+  const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter(
+    (r) => INCLUDED_USE_TYPES.has(r.use_type),
   );
 
   type PivotRow = { use_type: string } & Record<string, number | string>;
@@ -358,7 +381,8 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
       if (!map[useType]) {
         map[useType] = { use_type: useType };
       }
-      map[useType][group] = ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
+      map[useType][group] =
+        ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
     }
 
     return map;
@@ -368,41 +392,41 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
   const compare = useMemo(() => pivot(compareRows), [compareRows]);
 
   const labels = useMemo(
-    () => sortUseTypes(Array.from(new Set([...Object.keys(main), ...Object.keys(compare)]))),
-    [main, compare]
+    () =>
+      sortUseTypes(
+        Array.from(new Set([...Object.keys(main), ...Object.keys(compare)])),
+      ),
+    [main, compare],
   );
 
   const stackKeys = VAL_ORDER;
 
-
-  const colorForGroup = (group: string) =>
-    VAL_GROUP_COLORS[group] ?? "#999999";
+  const colorForGroup = (group: string) => VAL_GROUP_COLORS[group] ?? '#999999';
 
   const mutedColor = (hex: string) => {
     const { r, g, b } = d3.rgb(hex);
     return `rgba(${r}, ${g}, ${b}, 0.45)`;
   };
-  
-  
+
   const datasets = useMemo(
     () => [
       ...stackKeys.map((key) => ({
         label: `${key}`,
         data: labels.map((l) => main[l]?.[key] || 0),
-        stack: "main",
+        stack: 'main',
         backgroundColor: colorForGroup(key),
       })),
 
       ...stackKeys.map((key) => ({
         label: `${key}`,
         data: labels.map((l) => compare[l]?.[key] || 0),
-        stack: "compare",
+        stack: 'compare',
         backgroundColor: mutedColor(colorForGroup(key)),
         borderColor: colorForGroup(key),
         borderWidth: 1,
       })),
     ],
-    [stackKeys, labels, main, compare, colorForGroup]
+    [stackKeys, labels, main, compare, colorForGroup],
   );
 
   const data = { labels, datasets };
@@ -417,10 +441,10 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
           generateLabels: (chart: any) =>
             stackKeys.map((key) => {
               const mainIndex = chart.data.datasets.findIndex(
-                (ds: any) => ds.label === `${key}`
+                (ds: any) => ds.label === `${key}`,
               );
               const compareIndex = chart.data.datasets.findIndex(
-                (ds: any) => ds.label === `${key}`
+                (ds: any) => ds.label === `${key}`,
               );
 
               const mainMeta = chart.getDatasetMeta(mainIndex);
@@ -428,7 +452,8 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
 
               const hidden =
                 (mainMeta.hidden ?? chart.data.datasets[mainIndex].hidden) &&
-                (compareMeta.hidden ?? chart.data.datasets[compareIndex].hidden);
+                (compareMeta.hidden ??
+                  chart.data.datasets[compareIndex].hidden);
 
               return {
                 text: key,
@@ -462,7 +487,7 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
       },
     },
     scales: {
-      x: { stacked: true},
+      x: { stacked: true },
       y: { stacked: true },
     },
   };
@@ -484,21 +509,17 @@ const compareRows = ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
  */
 
 /** SVG (Recharts) version used when rendering to PDF. */
-const CompareHBarChartSVG = <TData,>({
-  chart,
-}: {
-  chart: CompareDiffChartItem<TData>;
-}) => {
+const CompareHBarChartSVG = ({ chart }: { chart: CompareDiffChartItem }) => {
   const legendLabels = chart.chartParams?.legendLabels ?? [
     'Primary',
     'Comparison',
   ];
-  const unit = (chart.chartParams as any)?.unit ?? '';
+  const unit = chart.chartParams?.unit ?? '';
 
-  const merged = chart.data.map((entry: any, i: number) => ({
+  const merged = chart.data.map((entry, i) => ({
     name: entry[chart.xField],
     [legendLabels[0]]: entry[chart.yField],
-    [legendLabels[1]]: (chart.compareData?.[i] as any)?.[chart.yField] ?? null,
+    [legendLabels[1]]: chart.compareData?.[i]?.[chart.yField] ?? null,
   }));
 
   return (
@@ -509,14 +530,14 @@ const CompareHBarChartSVG = <TData,>({
         margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis type="number" tickFormatter={(v: any) => `${v}${unit}`} />
+        <XAxis type="number" tickFormatter={(v) => `${v}${unit}`} />
         <YAxis
           type="category"
           dataKey="name"
           width={120}
           tick={{ fontSize: 11 }}
         />
-        <Tooltip formatter={(v: any) => `${v}${unit}`} />
+        <Tooltip formatter={(v) => `${v}${unit}`} />
         <Legend />
         <Bar dataKey={legendLabels[0]} fill="#154734" />
         <Bar dataKey={legendLabels[1]} fill="#8899aa" />
@@ -525,33 +546,29 @@ const CompareHBarChartSVG = <TData,>({
   );
 };
 
-const CompareHBarChart = <TData,>({
-  chart,
-}: {
-  chart: CompareDiffChartItem<TData>;
-}) => {
+const CompareHBarChart = ({ chart }: { chart: CompareDiffChartItem }) => {
   const isPdfMode = usePdfMode();
   if (isPdfMode) return <CompareHBarChartSVG chart={chart} />;
 
-  const labels = chart.data.map((entry: any) => entry[chart.xField]);
+  const labels = chart.data.map((entry) => entry[chart.xField]);
   const legendLabels = chart.chartParams?.legendLabels || [
     'Primary',
     'Comparison',
   ];
-  const unit = (chart.chartParams as any)?.unit ?? '';
+  const unit = chart.chartParams?.unit ?? '';
 
   const data = {
     labels,
     datasets: [
       {
         label: legendLabels[0],
-        data: chart.data.map((entry: any) => entry[chart.yField]),
+        data: chart.data.map((entry) => entry[chart.yField] as number),
         backgroundColor: '#154734',
       },
       {
         label: legendLabels[1] ?? 'Comparison',
         data: (chart.compareData ?? []).map(
-          (entry: any) => entry[chart.yField],
+          (entry) => entry[chart.yField] as number,
         ),
         backgroundColor: '#8899aa',
       },
@@ -566,14 +583,15 @@ const CompareHBarChart = <TData,>({
       legend: { display: true },
       tooltip: {
         callbacks: {
-          label: (ctx: any) => `${ctx.dataset.label}: ${ctx.raw}${unit}`,
+          label: (ctx: TooltipItem<'bar'>) =>
+            `${ctx.dataset.label}: ${ctx.raw}${unit}`,
         },
       },
     },
     scales: {
       x: {
         ticks: {
-          callback: (value: any) => `${value}${unit}`,
+          callback: (value: number | string) => `${value}${unit}`,
         },
       },
     },
@@ -587,5 +605,5 @@ export {
   DiffPerXBarChart,
   CompareDiffPerXBarChart,
   CompareHBarChart,
-  ZoningAllowanceStackedBarChart
+  ZoningAllowanceStackedBarChart,
 };

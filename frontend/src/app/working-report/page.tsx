@@ -7,14 +7,11 @@ import {
   Text,
   Title,
   Button,
-  Center,
   Stack,
   Group,
   Divider,
   Box,
-  Paper,
   Grid,
-  Badge,
 } from '@mantine/core';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -22,10 +19,294 @@ import {
   useApplyFilters,
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
+import { motion } from 'motion/react';
+import {
+  PencilSimpleIcon,
+  DownloadSimpleIcon,
+  XIcon,
+} from '@phosphor-icons/react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { ChartItem, ChartMetadata, DataRow } from '@/types/cachedCharts';
+import { COLORS, FONTS } from '@/app/theme';
+
+// one chart's backend payload, keyed by chart def id in state below
+type ChartPayload = {
+  data: DataRow[];
+  metadata?: ChartMetadata;
+  tableData?: DataRow[];
+};
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';
 import { PdfModeContext } from '@/contexts/PdfModeContext';
+
+function HeroSection({
+  myLocation,
+  comparison,
+  interests,
+  yearMin,
+  yearMax,
+  openProfileModal,
+  isGenerating,
+  handleDownloadPdf,
+  handleClearReport,
+}: {
+  myLocation: any;
+  comparison: any;
+  interests: string[];
+  yearMin: number;
+  yearMax: number;
+  openProfileModal: () => void;
+  isGenerating: boolean;
+  handleDownloadPdf: () => void;
+  handleClearReport: () => void;
+}) {
+  return (
+    // Full-bleed: breaks out of the page's centered Container so the hero
+    // touches both edges of the viewport instead of floating as a card.
+    <Box
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        width: '100vw',
+        left: '50%',
+        marginLeft: '-50vw',
+        background: `linear-gradient(160deg, ${COLORS.spruceDeep} 0%, ${COLORS.spruce} 100%)`,
+        paddingTop: 70,
+        paddingBottom: 40,
+      }}
+    >
+      <Container size="xl">
+        <Grid gap="md" align="center">
+          <Grid.Col span={{ base: 12, md: 8 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Text
+                style={{
+                  fontFamily: FONTS.mono,
+                  fontSize: 12,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: COLORS.amberSoft,
+                }}
+              >
+                Working Report
+              </Text>
+            </motion.div>
+            <Title
+              order={1}
+              style={{
+                fontFamily: FONTS.display,
+                fontWeight: 600,
+                fontSize: 'clamp(2.3rem, 5.4vw, 3.7rem)',
+                lineHeight: 1.04,
+                color: COLORS.birch,
+                marginTop: 14,
+                maxWidth: 640,
+              }}
+            >
+              {myLocation?.name || 'No Location Selected'}
+              {comparison?.name && (
+                <Text
+                  span
+                  style={{
+                    fontFamily: FONTS.display,
+                    fontWeight: 400,
+                    fontSize: '0.4em',
+                    color: 'rgba(246, 245, 239, 0.58)',
+                    display: 'block',
+                    marginTop: 8,
+                  }}
+                >
+                  compared to {comparison.name}
+                </Text>
+              )}
+            </Title>
+            <ReportActions
+              isGenerating={isGenerating}
+              onDownload={handleDownloadPdf}
+              onClear={handleClearReport}
+            />
+          </Grid.Col>
+          {/* Profile panel — sits beside the title, always on the dark
+             background so the light text stays legible. Kept compact so
+             it doesn't compete with the location title. */}
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.7,
+                delay: 0.4,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Box
+                style={{
+                  background: 'rgba(246,245,239,0.07)',
+                  border: '1px solid rgba(246,245,239,0.18)',
+                  borderRadius: 14,
+                  padding: '16px 18px',
+                  backdropFilter: 'blur(6px)',
+                }}
+              >
+                <Group justify="space-between" align="center" mb={10}>
+                  <Text
+                    style={{
+                      fontFamily: FONTS.mono,
+                      color: COLORS.amberSoft,
+                      fontSize: 12,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Report Summary
+                  </Text>
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    rightSection={<PencilSimpleIcon size={16} weight="bold" />}
+                    onClick={openProfileModal}
+                    styles={{ root: { color: COLORS.amberSoft } }}
+                  >
+                    Edit
+                  </Button>
+                </Group>
+                <Stack gap={10}>
+                  <ProfileField
+                    label="Location"
+                    value={myLocation?.name}
+                    small
+                  />
+                  <ProfileField
+                    label="Comparing to"
+                    value={comparison?.name}
+                    small
+                  />
+                  <ProfileField
+                    label="Years"
+                    value={`${yearMin}–${yearMax}`}
+                    small
+                  />
+                  <Box>
+                    <FieldLabel small>Interests</FieldLabel>
+                    {interests.length > 0 ? (
+                      <Text
+                        size="sm"
+                        style={{ color: COLORS.birch, fontWeight: 500 }}
+                      >
+                        {interests.join(' · ')}
+                      </Text>
+                    ) : (
+                      <Text
+                        size="sm"
+                        style={{ color: 'rgba(246,245,239,0.55)' }}
+                      >
+                        None selected
+                      </Text>
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+            </motion.div>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </Box>
+  );
+}
+
+function FieldLabel({
+  children,
+  small,
+}: {
+  children: React.ReactNode;
+  small?: boolean;
+}) {
+  return (
+    <Text
+      style={{
+        fontFamily: FONTS.mono,
+        fontSize: small ? 10 : 11,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: 'rgba(246,245,239,0.5)',
+        marginBottom: 4,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function ProfileField({
+  label,
+  value,
+  small,
+}: {
+  label: string;
+  value?: string;
+  small?: boolean;
+}) {
+  return (
+    <Box>
+      <FieldLabel small={small}>{label}</FieldLabel>
+      <Text
+        size={small ? 'sm' : 'md'}
+        style={{ color: COLORS.birch, fontWeight: 500 }}
+      >
+        {value || '—'}
+      </Text>
+    </Box>
+  );
+}
+
+type ReportActionsProps = {
+  isGenerating: boolean;
+  onDownload: () => void;
+  onClear: () => void;
+};
+
+function ReportActions({
+  isGenerating,
+  onDownload,
+  onClear,
+}: ReportActionsProps) {
+  return (
+    <Group mt={20}>
+      <Button
+        size="sm"
+        loading={isGenerating}
+        onClick={onDownload}
+        leftSection={<DownloadSimpleIcon size={16} weight="bold" />}
+        style={{
+          backgroundColor: COLORS.birchDim,
+          color: COLORS.spruceDeep,
+          border: 'none',
+          fontFamily: FONTS.body,
+        }}
+      >
+        Download PDF
+      </Button>
+
+      <Button
+        size="sm"
+        variant="light"
+        color="red"
+        onClick={onClear}
+        leftSection={<XIcon size={16} weight="bold" />}
+        style={{
+          border: 'none',
+          fontFamily: FONTS.body,
+        }}
+      >
+        Clear report
+      </Button>
+    </Group>
+  );
+}
 
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
@@ -64,9 +345,9 @@ export default function WorkingReport() {
       if (!matches) excludeById(def.id);
     });
     savedItems.forEach((item) => {
-      const matches = (item as any).categories?.some((cat: string) =>
-        currentInterests.includes(cat),
-      );
+      const matches = (
+        'categories' in item ? item.categories : undefined
+      )?.some((cat: string) => currentInterests.includes(cat));
       if (!matches) excludeById(item.id);
     });
   };
@@ -90,14 +371,12 @@ export default function WorkingReport() {
   }, [interests, pendingReset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------- data fetching (mirrors data-viewer) ----------
-  const [chartData, setChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
-  >({});
+  const [chartData, setChartData] = useState<Record<string, ChartPayload>>({});
   const [compareChartData, setCompareChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
+    Record<string, ChartPayload>
   >({});
   const [compareTableData, setCompareTableData] = useState<
-    Record<string, any[]>
+    Record<string, DataRow[]>
   >({});
 
   const applyFilters = useApplyFilters();
@@ -113,13 +392,17 @@ export default function WorkingReport() {
       const url = chart.url;
       const filters = buildFilters(myLocation, {
         col: 'year',
-        selected: [chart.chartParams?.fixedYear ?? yearMin,
-                  chart.chartParams?.fixedYear ?? yearMax],
+        selected: [
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
+        ],
       });
       const compFilters = buildFilters(comparison, {
         col: 'year',
-        selected: [chart.chartParams?.fixedYear ?? yearMin,
-                  chart.chartParams?.fixedYear ?? yearMax],
+        selected: [
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
+          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
+        ],
       });
 
       applyFilters({
@@ -128,7 +411,11 @@ export default function WorkingReport() {
         onData: (data, metadata, tableData) =>
           setChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
 
@@ -138,7 +425,11 @@ export default function WorkingReport() {
         onData: (data, metadata, tableData) =>
           setCompareChartData((prev) => ({
             ...prev,
-            [chart.id]: { data, metadata, tableData },
+            [chart.id]: {
+              data: data as DataRow[],
+              metadata: metadata as ChartMetadata,
+              tableData: tableData as DataRow[] | undefined,
+            },
           })),
       });
     });
@@ -175,7 +466,10 @@ export default function WorkingReport() {
         }),
         onData: (data) =>
           siblings.forEach((d) =>
-            setChartData((prev) => ({ ...prev, [d.id]: { data } })),
+            setChartData((prev) => ({
+              ...prev,
+              [d.id]: { data: data as DataRow[] },
+            })),
           ),
       });
       if (comparison.name) {
@@ -187,7 +481,10 @@ export default function WorkingReport() {
           }),
           onData: (data) =>
             siblings.forEach((d) =>
-              setCompareTableData((prev) => ({ ...prev, [d.id]: data })),
+              setCompareTableData((prev) => ({
+                ...prev,
+                [d.id]: data as DataRow[],
+              })),
             ),
         });
       }
@@ -217,7 +514,7 @@ export default function WorkingReport() {
       data: chartData[chart.id]?.data || [],
       tableData: chartData[chart.id]?.tableData || [],
       showCols: chart.showCols,
-      metadata: chartData[chart.id]?.metadata || [],
+      metadata: chartData[chart.id]?.metadata,
       compareData: compareChartData[chart.id]?.data || [],
       compareTableData: compareChartData[chart.id]?.tableData || [],
       subtype: chart.subtype,
@@ -236,7 +533,7 @@ export default function WorkingReport() {
       title: myLocation.name,
       description: def.title,
       data: chartData[def.id]?.data || [],
-      metadata: chartData[def.id]?.metadata || [],
+      metadata: chartData[def.id]?.metadata,
       compareData: compareTableData[def.id] || [],
       chartParams: { legendLabels: [myLocation.name, comparison.name] },
       notes: def.notes,
@@ -264,11 +561,13 @@ export default function WorkingReport() {
 
   // Pair each item with its stable ID (chartDef ID for auto-populated;
   // item.id for manually saved charts from other pages), then sort by category
-  const savedCharts = savedItems.filter((i) => i.type === 'chart') as any[];
+  const savedCharts = savedItems.filter(
+    (i) => i.type === 'chart',
+  ) as ChartItem<DataRow>[];
   const allPairs = [
     ...nonTableDefs.map((def, i) => ({ defId: def.id, item: charts[i] })),
     ...tableDefs.map((def, i) => ({ defId: def.id, item: tableItems[i] })),
-    ...savedCharts.map((item: any) => ({ defId: item.id, item })),
+    ...savedCharts.map((item) => ({ defId: item.id, item })),
   ].sort(
     (a, b) => categoryRank(a.item.categories) - categoryRank(b.item.categories),
   );
@@ -299,124 +598,27 @@ export default function WorkingReport() {
     }
   };
 
-  function reportSummary() {
-    return (
-      <Grid.Col span={{ base: 12, md: 5 }}>
-        <Paper
-          radius="xl"
-          p="xl"
-          withBorder
-          shadow="sm"
-          // Move position to the right
-          style={{
-            position: 'relative',
-            overflow: 'hidden',
-            background: 'white',
-            height: '100%',
-          }}
-        >
-          <Title order={3} ta="right" mb="xl">
-            Report Summary
-          </Title>
-          <Box>
-            <Text size="xs" c="dimmed" ta="right">
-              LOCATION
-            </Text>
-            <Text fw={600} ta="right" size="xl">
-              {myLocation.name}
-            </Text>
-          </Box>
-          <Box>
-            <Text size="xs" c="dimmed" ta="right">
-              COMPARED WITH
-            </Text>
-
-            <Text fw={600} ta="right" size="xl">
-              {comparison.name}
-            </Text>
-          </Box>
-
-          <Box>
-            <Text size="xs" c="dimmed" ta="right">
-              REPORT PERIOD
-            </Text>
-
-            <Text fw={600} ta="right" size="xl">
-              {yearMin}–{yearMax}
-            </Text>
-          </Box>
-        </Paper>
-      </Grid.Col>
-    );
-  }
-
-  function reportActionButtons() {
-    return (
-      <Group>
-        <Button size="md" onClick={handleDownloadPdf} loading={isGenerating}>
-          Download PDF
-        </Button>
-        <Button
-          size="md"
-          variant="light"
-          color="red"
-          onClick={() => {
-            clearItems();
-            clearExclusions();
-            setPendingReset(true);
-            openProfileModal();
-          }}
-        >
-          Clear report
-        </Button>
-      </Group>
-    );
-  }
-
-  function reportHeaderCard() {
-    return (
-      <Paper
-        radius="xl"
-        p={20}
-        style={{
-          background:
-            'linear-gradient(135deg, #f8fafc 0%, #eef4ff 50%, #e7f5ff 100%)',
-          border: '1px solid #dee2e6',
-        }}
-      >
-        <Grid align="center">
-          <Grid.Col span={{ base: 12, md: 7 }}>
-            <Stack gap="md">
-              <Title
-                order={1}
-                style={{
-                  fontSize: 'clamp(2rem, 4vw, 4rem)',
-                  lineHeight: 1.1,
-                }}
-              >
-                Working Report
-              </Title>
-
-              <Text size="lg" c="dimmed" maw={700}>
-                Tailor your personalized report to your specific interests and
-                needs.
-              </Text>
-              {reportActionButtons()}
-              <Badge size="sm" color="white" c="dimmed">
-                {`${includedPairs.length} of ${allPairs.length} charts included in report`}
-              </Badge>
-            </Stack>
-          </Grid.Col>
-          {reportSummary()}
-        </Grid>
-      </Paper>
-    );
-  }
+  const handleClearReport = () => {
+    clearItems();
+    clearExclusions();
+    setPendingReset(true);
+    openProfileModal();
+  };
 
   return (
     <Container size="xl" py="xl">
       <Stack gap="xl">
-        {reportHeaderCard()}
+        <HeroSection
+          myLocation={myLocation}
+          comparison={comparison}
+          interests={interests}
+          yearMin={yearMin}
+          yearMax={yearMax}
+          openProfileModal={openProfileModal}
+          isGenerating={isGenerating}
+          handleDownloadPdf={handleDownloadPdf}
+          handleClearReport={handleClearReport}
+        />
         <PdfModeContext.Provider value={isPdfMode}>
           <div ref={chartsRef}>
             <ChartStack

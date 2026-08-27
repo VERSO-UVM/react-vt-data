@@ -72,8 +72,9 @@ ACS_HOUSING_METRICS = {
     # Rent burden
     "units_paying_rent": lambda df: df["DP04_0126E"].sum(),
     "rent_burden35": lambda df: df["DP04_0142E"].sum(),
-    "pct_rent_burden35": lambda df: (df["DP04_0142E"].sum() / df["DP04_0126E"].sum())
-    * 100,
+    "pct_rent_burden35": lambda df: (
+        (df["DP04_0142E"].sum() / df["DP04_0126E"].sum()) * 100
+    ),
     # Units by structure type
     "one_unit_detached": lambda df: df["DP04_0007E"].sum(),
     "one_unit_attached": lambda df: df["DP04_0008E"].sum(),
@@ -130,28 +131,30 @@ ACS_DEMOGRAPHIC_METRICS = {
     "pct_pop_65_and_over": lambda df: df["DP05_0024PE"].mean(),
     "median_age": lambda df: df["DP05_0018E"].mean(),
     "dependency_ratio": lambda df: (
-        # Dependents
         (
-            df["DP05_0005E"].sum()  # Under 5 years
-            + df["DP05_0006E"].sum()  # 5 to 9 years
-            + df["DP05_0007E"].sum()  # 10 to 14 years
-            + df["DP05_0015E"].sum()  # 65 to 74 years
-            + df["DP05_0016E"].sum()  # 75 to 84 years
-            + df["DP05_0017E"].sum()  # 85+ years
+            # Dependents
+            (
+                df["DP05_0005E"].sum()  # Under 5 years
+                + df["DP05_0006E"].sum()  # 5 to 9 years
+                + df["DP05_0007E"].sum()  # 10 to 14 years
+                + df["DP05_0015E"].sum()  # 65 to 74 years
+                + df["DP05_0016E"].sum()  # 75 to 84 years
+                + df["DP05_0017E"].sum()  # 85+ years
+            )
+            /
+            # Working Age
+            (
+                df["DP05_0008E"].sum()  # 15 to 19 years
+                + df["DP05_0009E"].sum()  # 20 to 24 years
+                + df["DP05_0010E"].sum()  # 25 to 34 years
+                + df["DP05_0011E"].sum()  # 35 to 44 years
+                + df["DP05_0012E"].sum()  # 45 to 54 years
+                + df["DP05_0013E"].sum()  # 55 to 59 years
+                + df["DP05_0014E"].sum()  # 60 to 64 years
+            )
         )
-        /
-        # Working Age
-        (
-            df["DP05_0008E"].sum()  # 15 to 19 years
-            + df["DP05_0009E"].sum()  # 20 to 24 years
-            + df["DP05_0010E"].sum()  # 25 to 34 years
-            + df["DP05_0011E"].sum()  # 35 to 44 years
-            + df["DP05_0012E"].sum()  # 45 to 54 years
-            + df["DP05_0013E"].sum()  # 55 to 59 years
-            + df["DP05_0014E"].sum()  # 60 to 64 years
-        )
-    )
-    * 100,
+        * 100
+    ),
     # Voting-age citizens
     "pop_voting_age_citizen": lambda df: df["DP05_0087E"].sum(),
     "citizen_voting_age_pct_male": lambda df: df["DP05_0088PE"].mean(),
