@@ -71,7 +71,7 @@ print("OBJECTID ok | n =", parcels["OBJECTID"].nunique())
 ```
 making a reusable chloropleth filter
 ```{python}
-
+import requests
 #getting the town boudnaries using rest api. well need this for hte chloropleths, and making the towns gdf from the town_url
 TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
 
@@ -402,18 +402,48 @@ plt.tight_layout(); plt.show()
 
 "Marquee 2 — parcel-level $/acre gradient (breaks out of town aggregation entirely). This is the "more than aggregated views" you asked for — Burlington→suburb→rural fringe shows as a continuous surface:"
 ```{python}
+FGB = "/Users/isaacwedaman/local_computer_science/react-vt-data/backend/Data/parcels/all_parcels_vermont.fgb"
+parcels = gpd.read_file(FGB)
+print(parcels.columns)
+
+if "AREAACRESGEOM" not in parcels:
+    parcels["AREAACRESGEOM"] = parcels.to_crs(32145).geometry.area / 4046.8564224
+parcels["ACREVALUE"] = np.where(
+    (parcels.REAL_FLV > 0) & (parcels.AREAACRESGEOM > 0),
+    parcels.REAL_FLV / parcels.AREAACRESGEOM, np.nan)
+```
+
+```{python}
 #DROPPING NULLS
+#ALSO DOING THIS FOR WHOLE STATE
+
+whole_summary = parcels.groupby("TOWN").agg(
+    n=("OBJECTID","size"),
+    valued=("REAL_FLV", lambda s: int((s>0).sum())),
+    pct_valued=("REAL_FLV", lambda s: round(100*(s>0).mean(),1)),
+    med_val=("REAL_FLV", lambda s: s[s>0].median()),
+).sort_values("n", ascending=False)
+
 cc_proj = cc.dropna(subset=["ACREVALUE"]).to_crs(32145)
+whole_proj = parcels.dropna(subset=["ACREVALUE"]).to_crs(32145)
 
 #getting rid of absurd outliers - first and 99th percentiles
 lo, hi = cc_proj.ACREVALUE.quantile([0.01, 0.99])
 
+lo, hi = whole_proj.ACREVALUE.quantile([0.05, 0.99])
+
 #clipping, and making figure logarithmicly scaled
-cc_proj["vpa_clip"] = cc_proj.ACREVALUE.clip(lo, hi)
-fig, ax = plt.subplots(figsize=(11, 11))
-cc_proj.plot(column="vpa_clip", cmap="magma", legend=True, ax=ax,
+# cc_proj["vpa_clip"] = cc_proj.ACREVALUE.clip(lo, hi)
+# fig, ax = plt.subplots(figsize=(11, 11))
+# cc_proj.plot(column="vpa_clip", cmap="magma", legend=True, ax=ax,
+#              linewidth=0, norm=LogNorm(vmin=lo, vmax=hi))
+# ax.set_title("Chittenden parcels — value per acre (log)"); ax.axis("off"); plt.show()
+
+whole_proj["vpa_clip"] = whole_proj.ACREVALUE.clip(lo, hi)
+fig, ax = plt.subplots(figsize=(12, 18))
+whole_proj.plot(column="vpa_clip", cmap="inferno", legend=True, ax=ax,
              linewidth=0, norm=LogNorm(vmin=lo, vmax=hi))
-ax.set_title("Chittenden parcels — value per acre (log)"); ax.axis("off"); plt.show()
+ax.set_title("Whole state of vermont — value per acre (log)"); ax.axis("off"); plt.show()
 ```
 
 ideas for the following cell 
@@ -705,7 +735,42 @@ ax.set_ylabel("urban–rural index (PC1)")
 ax.set_title(f"Parcel-derived urban index vs. census density (r = {r:.2f})")
 plt.tight_layout(); plt.show()
 ```
+#an r value of 0.911 is very conclusively strong for being able to predict the urbanity level of a town based on everything but population
 
 IDEA FOR FUTURE Next-level (the portfolio standout you probably haven't done): spatial autocorrelation. libpysal + esda give you Moran's I (is value spatially clustered at all?) and LISA (statistically significant hot/cold spots that ignore town boundaries). uv pip install libpysal esda, build a spatial weights matrix on town or parcel centroids, and you can map "significant high-value clusters" as a defensible statistical object rather than an eyeballed choropleth.
 ```{python}
+import numpy as np, matplotlib.pyplot as plt
+from libpysal.weights import Queen, KNN
+from esda.moran import Moran, Moran_Local
+
+# 1. attach the metric to town polygons — log because value is heavy-tailed and
+#    raw skew lets a few outliers dominate a correlation statistic like Moran's I
+tv = parcels.loc[parcels.REAL_FLV > 0].groupby("TOWN")["REAL_FLV"].median()
+tw = towns_gdf.merge(tv.rename("med_val").reset_index(), on="TOWN", how="left")
+tw["log_val"] = np.log10(tw["med_val"])
+
+# 2. Moran can't take NaN, and DROPPING a town changes who-borders-whom — so this
+#    must happen BEFORE weights are built, not after
+tw = tw.dropna(subset=["log_val"]).reset_index(drop=True)
+
+# 3. Queen contiguity: two towns are neighbors if they share ANY boundary point
+#    (Queen includes corner-touches; Rook would require a shared edge)
+w = Queen.from_dataframe(tw, use_index=True)
+print("island towns (no land neighbor):", [tw.TOWN.iloc[i] for i in w.islands])
+
+# 4. handle islands — drop them (looping, since dropping one can orphan another).
+#    This is the Champlain-islands fix.
+while w.islands:
+    tw = tw.drop(index=w.islands).reset_index(drop=True)
+    w = Queen.from_dataframe(tw, use_index=True)
+
+# 5. row-standardize: each town's neighbors' weights sum to 1, so the "spatial lag"
+#    is a neighbor AVERAGE, not a neighbor SUM (fair across towns with 3 vs 8 neighbors)
+w.transform = "r"
+y = tw["log_val"].values
+
+# 6. global Moran's I with a 999-permutation pseudo p-value
+mi = Moran(y, w, permutations=999)
+print(f"Moran's I = {mi.I:.3f}  |  E[I] under randomness = {mi.EI:.3f}"
+      f"  |  p = {mi.p_sim:.3f}  |  z = {mi.z_sim:.2f}")
 ```
