@@ -1,0 +1,270 @@
+---
+title: "Vermont Parcels: build.py [QMD]"
+author: Isaac Wedaman
+date: today
+description:  The second version of the vermotn parcels the exploratory motion
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+---
+#root finder 
+```{python}
+import os
+from pathlib import Path
+import pandas as pd
+import duckdb
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+
+import logging
+
+from api.models import FilterSource
+from query.processed_db import DB
+```
+
+```{python}
+"""
+Vermont Parcels — Spatial Statistics
+Step 1 of the modeling pipeline: measure spatial autocorrelation to (a) establish
+that value clustering is statistically real, (b) justify spatial cross-validation
+downstream, and (c) build the weights matrix reused for spatial features.
+"""
+import numpy as np, pandas as pd, geopandas as gpd
+import matplotlib.pyplot as plt
+from libpysal.weights import Queen, KNN
+from esda.moran import Moran, Moran_Local
+import requests
+
+# ---------------------------------------------------------------------------
+# TOWN LEVEL — coarse, fast, interpretable. Start here.
+# ---------------------------------------------------------------------------
+
+FGB = "Data/parcels/all_parcels_vermont.fgb"
+
+parcels = gpd.read_file(FGB)  
+#adding IMPR_SHARE  
+parcels["IMPR_SHARE"] = np.where(parcels["REAL_FLV"] > 0, parcels["IMPRV_LV"].fillna(0) / parcels["REAL_FLV"], np.nan)
+TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+
+print("Downloading town boundaries...")
+r = requests.get(TOWN_URL)
+r.raise_for_status() 
+data = r.json()
+
+towns_gdf = gpd.GeoDataFrame.from_features(data["features"])
+
+towns_gdf.set_crs(epsg=4326, inplace=True) 
+
+print(towns_gdf.columns)
+
+towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
+towns_gdf = towns_gdf[["TOWN", "geometry"]].copy()
+
+# The metric: median parcel value per town. Log because Moran's I is a correlation
+# statistic and raw value is heavy-tailed enough that a few towns would dominate it.
+tv = parcels.loc[parcels.REAL_FLV > 0].groupby("TOWN")["REAL_FLV"].median()
+tw = towns_gdf.merge(tv.rename("med_val").reset_index(), on="TOWN", how="left")
+tw["log_val"] = np.log10(tw["med_val"])
+
+# CRITICAL ORDERING: drop NaN BEFORE building weights. Weights encode who-borders-whom;
+# dropping a town afterward would leave the matrix describing a map that no longer exists,
+# and W's row order must align exactly with the value vector.
+tw = tw.dropna(subset=["log_val"]).reset_index(drop=True)
+
+# Queen contiguity: neighbors share ANY boundary point (corners included).
+w = Queen.from_dataframe(tw, use_index=True)
+
+# VERMONT-SPECIFIC TRAP: Lake Champlain islands (Grand Isle, Isle La Motte, North/South
+# Hero, Alburgh) share no LAND border, so they get zero neighbors. Moran's I can't handle
+# island rows. Drop them in a loop — removing one town can orphan another.
+print("island towns:", [tw.TOWN.iloc[i] for i in w.islands])
+while w.islands:
+    tw = tw.drop(index=w.islands).reset_index(drop=True)
+    w = Queen.from_dataframe(tw, use_index=True)
+
+# Row-standardize: each row sums to 1, so the spatial lag is a neighbor AVERAGE.
+# Without this, towns with more neighbors get mechanically more influence.
+w.transform = "r"
+y = tw["log_val"].values
+
+# GLOBAL MORAN'S I — one number, one p-value, for all of Vermont.
+# 999 permutations: shuffle values across the map 999x, compare to the real I.
+mi = Moran(y, w, permutations=999)
+print(f"Moran's I = {mi.I:.3f} | E[I] = {mi.EI:.3f} | p = {mi.p_sim:.3f} | z = {mi.z_sim:.2f}")
+#and now making the scatterplot
+z = (y - y.mean()) / y.std()          # standardize the values
+lag_z = w.sparse @ z                   # spatial lag: neighbors' average, standardized
+fig, ax = plt.subplots(figsize=(7, 7))
+ax.scatter(z, lag_z, alpha=0.6, edgecolor="white", linewidth=0.5)
+slope = np.polyfit(z, lag_z, 1)[0]     # this slope IS Moran's I
+xs = np.array([z.min(), z.max()])
+ax.plot(xs, slope * xs, "r", lw=2, label=f"slope = I = {slope:.2f}")
+ax.axvline(0, color="gray", ls="--", lw=0.8); ax.axhline(0, color="gray", ls="--", lw=0.8)
+ax.set_xlabel("town value (standardized)"); ax.set_ylabel("neighbors' avg value (spatial lag)")
+ax.set_title("Moran scatterplot"); ax.legend(); plt.show()
+# quadrants preview LISA: upper-right=HH, lower-left=LL, upper-left=LH, lower-right=HL
+
+
+```
+
+```{python}
+from esda.moran import Moran_Local
+#getting the lisa cluster
+lisa = Moran_Local(y, w, permutations=999, seed=42)  
+sig = lisa.p_sim < 0.05
+labels = {1: "High-High", 2: "Low-High", 3: "Low-Low", 4: "High-Low"}   # verified encoding
+tw["lisa"] = ["Not significant" if not s else labels[q] for q, s in zip(lisa.q, sig)]
+print(tw["lisa"].value_counts())
+
+cmap = {"High-High": "#d7191c", "Low-Low": "#2c7bb6", "Low-High": "#abd9e9",
+        "High-Low": "#fdae61", "Not significant": "#e8e8e8"}
+fig, ax = plt.subplots(figsize=(8, 11))
+for cls, color in cmap.items():
+    sub = tw[tw.lisa == cls]
+    if len(sub):
+        sub.plot(ax=ax, color=color, edgecolor="white", linewidth=0.3, label=f"{cls} ({len(sub)})")
+ax.legend(loc="upper left", fontsize=9); ax.axis("off")
+ax.set_title("LISA clusters — median parcel value (p < 0.05)"); plt.show()
+
+#high high means high value parcels in a hgih value area, low-low is low cost parcels surrounded by lower cost parcels, high low is high cost parcels surrounded by poorer areas, and low high is vice versa
+for cls in ["High-High", "Low-Low", "High-Low", "Low-High"]:
+    towns_in = tw.loc[tw.lisa == cls, "TOWN"].tolist()
+    print(f"\n{cls} ({len(towns_in)}):", sorted(towns_in))
+print("\nHH spans counties:", sorted(tw.loc[tw.lisa=="High-High"].merge(
+    parcels[["TOWN","COUNTY"]].drop_duplicates(), on="TOWN")["COUNTY"].unique()))
+
+
+CHITTENDEN = ["BOLTON", "CHARLOTTE", "COLCHESTER", "ESSEX", "ESSEX JUNCTION", "HINESBURG", "HUNTINGTON", "JERICHO", "MILTON", "RICHMOND", "SAINT GEORGE", "SHELBURNE", "UNDERHILL", "WESTFORD", "WILLISTON", "BURLINGTON", "WINOOSKI", "BUELS GORE", "SOUTH BURLINGTON"]
+cc = parcels[parcels.TOWN.isin(CHITTENDEN)].copy()
+
+cc_v = cc.loc[cc.REAL_FLV > 0].to_crs(32145).copy()   # PROJECTED CRS: distances must be metric
+cc_v["logv"] = np.log10(cc_v["REAL_FLV"])
+cc_pts = cc_v.copy(); cc_pts["geometry"] = cc_v.geometry.centroid  # KNN needs points
+
+# KNN, not contiguity: parcels are effectively points, and we WANT neighbor relationships
+# that cross municipal boundaries — that's the whole finding.
+# 1. Symmetrize: if A is B's neighbor, make B A's neighbor. Reduces fragmentation.
+from libpysal.weights import KNN, W
+wk = KNN.from_dataframe(cc_pts, k=8)
+wk = W(wk.symmetrize().neighbors)     # union of the directed edges
+wk.transform = "r"
+
+# 2. Or use distance bands instead — every parcel within X meters is a neighbor.
+from libpysal.weights import DistanceBand
+wd = DistanceBand.from_dataframe(cc_pts, threshold=1000, binary=True)  # 1km
+wd.transform = "r"
+
+for k in [2, 5, 8, 12, 20]:
+    w_k = KNN.from_dataframe(cc_pts, k=k); w_k.transform = "r"
+    m = Moran(yk, w_k, permutations=99)
+    print(f"k={k:3d} → I = {m.I:.3f}, p = {m.p_sim:.3f}")
+
+# Fewer permutations at parcel scale — 99 shows the structure; this is the slow step.
+mi_p = Moran(yk, wk, permutations=99)
+print(f"parcel-level Moran's I = {mi_p.I:.3f} | p = {mi_p.p_sim:.3f}")
+
+lisa_p = Moran_Local(yk, wk, permutations=99, seed=42)
+sigp = lisa_p.p_sim < 0.05
+cc_v["lisa"] = ["ns" if not s else labels[q] for q, s in zip(lisa_p.q, sigp)]
+```
+
+```{python}
+fig, ax = plt.subplots(figsize=(11, 11))
+cc_v[cc_v.lisa == "ns"].plot(ax=ax, color="#ededed", linewidth=0)   # gray base first
+for cls, color in [("High-High","#d7191c"), ("Low-Low","#2c7bb6"),
+                   ("Low-High","#abd9e9"), ("High-Low","#fdae61")]:
+    s = cc_v[cc_v.lisa == cls]
+    if len(s):
+        s.plot(ax=ax, color=color, linewidth=0, label=f"{cls} ({len(s)})")  # linewidth=0: edges kill perf
+ax.legend(loc="upper left"); ax.axis("off")
+ax.set_title("Chittenden parcels — LISA hot/cold spots (KNN, k=8)"); plt.show()
+```
+
+#running some machine learning tweaks
+```{python}
+print(parcels.columns)
+```
+#performing sklearn
+#problem - it is super easy to predict population from parcel count, so first well run with only categorical value like median value and size values, and then we'll throw in the parcel count correlation that is destined to improve accuracy 
+
+whats more, this is a small data problem (343,000 rows) predicting 255 towns
+```{python}
+import numpy as np, pandas as pd
+from sklearn.linear_model import LassoCV, Lasso
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import KFold, cross_val_score
+#here we group all the valid variables 
+feat = parcels.groupby("TOWN").agg(
+    #median parcel value
+    med_val=("REAL_FLV", lambda s: s[s > 0].median()),
+    #25, 50, 75th percentile
+    p25_val=("REAL_FLV", lambda s: s[s > 0].quantile(.25)),   
+    p75_val=("REAL_FLV", lambda s: s[s > 0].quantile(.75)),
+    #median size
+    med_lot=("AREAACRESGEOM", "median"),
+    p25_lot=("AREAACRESGEOM", lambda s: s.quantile(.25)),
+    med_vpa=("ACREVALUE", "median"),
+    impr_share=("IMPR_SHARE", "median"),
+    pct_res=("PURPOSE", lambda s: (s == "PRIMARY RESIDENCE").mean()),
+    pct_seasonal=("PURPOSE", lambda s: (s == "SEASONAL PROPERTY").mean()),
+    pct_farmwood=("PURPOSE", lambda s: s.isin(["FARM","WOODLAND"]).mean()),
+    pct_commercial=("PURPOSE", lambda s: (s == "COMMERCIAL/INDUSTRIAL/UTILITY").mean()),
+    pct_apartments=("PURPOSE", lambda s: (s == "COMMERCIAL APARTMENTS").mean()),
+    pct_oos=("OOSOWNER", "mean"),
+    pct_investment=("INVESTMENTPROP", "mean"),
+    pct_vacant=("VACANTLAND", "mean"),
+    pct_exempt=("EXEMPT", lambda s: (s == "YES").mean()),
+    #THIS IS FOR SECOND PLOT ONLY
+    n_parcels=("OBJECTID", "size"),
+)
+#getting the town land area
+ta = towns_gdf.to_crs(32145); ta["area_km2"] = ta.geometry.area / 1e6
+feat["area_km2"] = ta.set_index("TOWN")["area_km2"].reindex(feat.index)
+#getting the density - this is for tier two only
+feat["parcel_density"] = feat.n_parcels / feat.area_km2 
+
+# rel = "backend/notebooks/parcels/parcels_ml.qmd"
+# abs = "/Users/isaacwedaman/local_computer_science/react-vt-data/backend/notebooks/parcels/local_data/population_2020.csv"
+pop = pd.read_csv("/Users/isaacwedaman/local_computer_science/react-vt-data/backend/notebooks/parcels/local_data/population_2020.csv")
+pop = pop[["Town", "year2020"]]
+pop["Town"] = pop["Town"].str.upper().str.strip()
+replacements = {
+    "ST. ALBANS CITY": "SAINT ALBANS CITY",
+    "ST. JOHNSBURY": "SAINT JOHNSBURY",
+    "ST. ALBANS TOWN": "SAINT ALBANS TOWN",
+    "ST. GEORGE": "SAINT GEORGE",
+    "WARNER'S GRANT" :  "WARNERS GRANT",
+    "AVERY'S GORE": "AVERYS GORE",
+    "WARREN'S GORE" : "WARREN GORE",
+}
+pop["Town"] = pop["Town"].replace(replacements)
+pop.loc[len(pop)] = {"Town": "ESSEX JUNCTION", "year2020": 10942}
+pop.loc[pop["Town"] == "ESSEX", "year2020"] = (22094 - 10942)
+stragglers = set(parcels["TOWN"]) - set(pop["Town"])
+
+#making pop a series
+pop_series = pop.set_index("Town")["year2020"].rename("pop")
+df = feat.join(pop_series, how="inner")
+
+print(f"n towns matched: {len(df)} (of {len(feat)} parcel towns, {len(pop_series)} pop towns)")
+
+
+
+```
+

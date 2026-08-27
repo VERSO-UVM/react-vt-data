@@ -47,6 +47,13 @@
         "Prevalence Measure": "Data_Value_Type"
       }
     },
+        "parcels_info": {
+      "join_key": "OBJECTID",
+      "join_type": "inner",
+      "columns": {
+        "Town": "TOWN",
+        "Category": "CAT",
+        "Property Type": "PROPTYPE",
     "soil_suitability_info_soil_suit": {
       "join_key": "ID",
       "join_type": "inner",
@@ -87,4 +94,4 @@
       }
     }
   }
-}
+}}}

@@ -7,7 +7,7 @@
     Runs all the build scripts one after the other.
 """
 
-from build import FIPS_data, acs5, cdc, wastewater, zoning
+from build import FIPS_data, acs5, cdc, parcels, wastewater, zoning
 
 
 def main():
@@ -17,6 +17,7 @@ def main():
     # information here" layer subtracts the districts from -- so it runs first.
     FIPS_data.main()
     zoning.main()
+    parcels.main()
     wastewater.main()
 
 

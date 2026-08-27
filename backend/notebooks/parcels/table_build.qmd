@@ -1,0 +1,366 @@
+---
+title: "Vermont Parcels: SQL Table Build"
+author: Isaac Wedaman
+date: today
+description:  Exploratory build of SQL tables from the VT Statewide Standardized Parcel Data.
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+---
+## SETUP
+importing required libraries and setting the project root in the working directory
+```{python}
+import os
+from pathlib import Path
+import pandas as pd
+import duckdb
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+
+## Data Collection
+here, we read in the parcels from the dataset, which is kept locally. we create both a parquet and an FGB rendering of the original geojson dataset. Then, we load the spatial extension for duckdb, and create a view structure of the data, for more extensive data analysis donw the line. 
+```{python}
+data_directory = Path("Data")
+parcel_path = data_directory / "parcels" / "parcels_vermont.geojson" 
+
+parcels_parquet = Path("Data/parcels/parcels_p.parquet")
+parcels_fgb = Path("Data/parcels/parcels_f.fgb")
+
+
+con = duckdb.connect()
+con.execute("INSTALL spatial; LOAD spatial;")
+
+if not parcels_fgb.exists():
+    con.execute(f"""
+        COPY (
+            SELECT * FROM ST_Read('{parcel_path}')
+            WHERE geom IS NOT NULL
+        )
+        TO '{parcels_fgb}' (FORMAT GDAL, DRIVER 'FlatGeobuf')
+    """)
+
+if not parcels_parquet.exists():
+    con.execute(f"""
+        COPY (
+            SELECT * FROM ST_Read('{parcel_path}')
+            WHERE geom IS NOT NULL
+        )
+        TO '{parcels_parquet}' (FORMAT PARQUET)
+    """)
+
+```
+
+```{python}
+#creating the parcels_raw view on which to query things to learn
+con.execute("CREATE OR REPLACE VIEW parcels_raw AS SELECT * FROM ST_Read('Data/Parcels/parcels_f.fgb')")
+
+col_list = con.execute("SELECT * FROM parcels_raw LIMIT 0").df().columns.to_list()
+print(col_list)
+```
+
+Here, we print all the columns in the parcels_raw view, of which there are many. commented out is the code to yield the total row count, with is 191156. Now looking at the column types and their respective names (what they represent in real life), and making a reproducible code chunk to investigate what each means and what it looks like
+
+HERE ARE THE COLUMNS
+OGC_FID: feature id         
+OBJECTID    YEAR    GLYEAR: specific tax year       REALFLV: total assessed value of real estate    HSTED_VAL:homestead value   NRES_FLV: non residentialhomestead value LAND_LV:land value, IMPROVE_LV: improvement land value, EQUIPVAL_ equipment value, INVENVAL:inventory value, HSITEVAL: home value and two surrounding acres    EXAMPT_HS: exemption amount homestead. EXAMPT_NR: exemption amount non-resdiential. UVREDUC_HS: use value reduction homestead. UVREDUC_NR: use value reduction non-residential
+
+SPAN: school property access number - property identifier. GLIST_SPAN: grand list property span number. MAPID: municipality tax identifier. PARCID: parcel identifier. PROPTYPE: what is on the parcel itself. TOWN: town name in code. TNAME: fully written out town name. SOURCENAME: name of infor source. SOURCETYPE: original data type. SOURCEDATE: date of original map publishing. EDITMETHOD: method to draw map. EDITOR initials. EDITDATE. MATCHSTAT: how well the parcel map shape attached to grand tax record. EDITNOTE. OWNER1. OWNER2. ADDRGL1. ADDRGL2. CITYGL. STATEGL. ZIPGL. DESCPROP: description of property. LOCAPROP. CAT: category of parcel use. RESCODE: where doesthe resident live - out of state?. EQUIPCODE: taxable equipcode. HSDECL: homestead declaration. ENDDATE: end of parcel data. STATUTE - reference ot vermont law if applicable to parcel. E911 ADRR: 911 address 
+
+ACRESGL: taxable acreage. GLVAL_HS: 1% of homestead value. GLVAL_NR: non residential - 1 percent of non residential tax. CRHOUSPCT: percentage of property subject to housing statutes. MUNGL1PCT: total value on which to calculate 1% of value per municipality. AOEGL_HS: homestead value for calculating education taxation. AOEGL_NR: non residential taxation value calculated for education property. 
+
+geom: The actual spatial map data (the points, lines, and polygons) that draws the shape and physical boundaries of the parcel. EPSG:4326 signifies that the coordinates are mapped using standard Latitude and Longitude (WGS 84), exactly like a GPS uses.
+```{python}
+described_parcels_raw = con.execute("DESCRIBE parcels_raw").df()
+
+column_types = described_parcels_raw["column_type"].unique().tolist()
+columns_by_type = {}
+
+for thing, item in described_parcels_raw.iterrows():
+    for index, row in enumerate(column_types):
+        if item["column_type"] == row:
+            if row not in columns_by_type:
+                columns_by_type[row] = []
+            
+            columns_by_type[row].append(item["column_name"])
+print(columns_by_type)
+
+# for key, value in columns_by_type.items():
+#     print(f"{key}: {value}")
+
+```
+
+```{python}
+#now, making the reproducible code to get the values of each column
+name = "ACRESGL"
+col = con.execute(f"""SELECT {name} FROM parcels_raw ORDER BY {name} ASC""").df()
+print(col.describe())
+print(col.value_counts())
+
+```
+
+## DATA ANALYSIS - FINDING WHAT IS IMPORTANT
+#methods to a) count get the unique values listed, and b) get the unique values counted. my thought was to create a reproducible code chunk to investigate the unique values of each column, per the column variable
+```{python}
+
+con.execute("SELECT YEAR FROM parcels_raw ORDER BY YEAR ASC").df()
+
+column = "SOURCENAME"
+
+con.execute(f"""
+SELECT 
+    {column},
+    COUNT({column}) AS instances,
+    SUM(COUNT({column})) OVER () AS total_number
+FROM parcels_raw
+GROUP BY {column}
+ORDER BY instances DESC;
+""").df()
+```
+the following code chunk is a method to get the unique values of a column, after having gotten their column names in a list. from there, we loop through the list of column names and count the nulls, then pring out the nulls per column, outputted as a dataframe
+```{python}
+#summing the nulls per column
+parcel_columns = described_parcels_raw["column_name"].tolist()
+nulls = []
+
+for col in parcel_columns:
+    result = con.execute(f"""
+        SELECT SUM(CASE WHEN "{col}" IS NULL THEN 1 ELSE 0 END) 
+        FROM parcels_raw;
+    """)
+    values = result.fetchone()[0]
+    count = values if values is not None else 0
+    nulls.append(count)
+
+nulls_columns = pd.DataFrame({'Column': parcel_columns, 'Nulls': nulls})
+
+```
+Something of note for posterity is that there were a few rows that contained 9577 null values. i sook to find out whether those absences were correalted, or random, and what that might mean with respect to the story of the data. 
+```{python}
+#print(nulls_columns)
+#found that 9577 nulls occurs the most frequently
+#these are them
+columns_to_read = nulls_columns[nulls_columns["Nulls"] == 9577]["Column"]
+columns_to_read = columns_to_read.tolist()
+print(columns_to_read)
+#columns where null is 0
+no_nulls = nulls_columns[nulls_columns["Nulls"] == 0]["Column"]
+no_nulls = no_nulls.tolist()
+print(no_nulls)
+uniques = []
+for col in no_nulls:
+    result = con.execute(f"""
+        SELECT COUNT(*), COUNT(DISTINCT {col}) 
+        FROM parcels_raw;
+    """)
+    values = result.fetchone()[1]
+    count = values if values is not None else -25
+    uniques.append(count)
+print(uniques)
+```
+This method gets a few values important for the measuring of data, similar to r's "summarize" function, which helps in a completely developed understanding of the data
+```{python}
+#describing the acresgl
+stats = con.execute("""SELECT 
+    COUNT(ACRESGL) AS total_count,
+    COUNT(*) - COUNT(ACRESGL) AS missing_values,
+    MIN(ACRESGL) AS min_value,
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY ACRESGL) AS first_quartile,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY ACRESGL) AS median,
+    AVG(ACRESGL) AS mean,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY ACRESGL) AS third_quartile,
+    MAX(ACRESGL) AS max_value
+FROM parcels_raw;
+""").df()
+print(stats.head())
+span = con.execute("""SELECT SPAN AS span, GLIST_SPAN AS glistspan, PARCID AS parcid FROM parcels_raw""").df()
+print(span)
+
+#something of note
+
+
+acres_gl = con.execute(f"""SELECT ACRESGL AS acresgl, COUNT(*) AS n FROM parcels_raw GROUP BY ACRESGL ORDER BY n DESC""").df()
+print(acres_gl.head(10))
+# fitz_form = (ST_Area(ST_Transform(geom, 'EPSG:4326', 'EPSG:32145', always_xy := TRUE)) / 4046.86).df()
+# print(fitz_form.head(10))
+```
+#trying to find the 
+```{python}
+print(columns_to_read)
+span_vs_null = con.execute("""SELECT SPAN AS span, GLIST_SPAN AS glistspan, PARCID AS parcid, TNAME, ACRESGL, REAL_FLV, HSTED_FLV, IMPRV_LV FROM parcels_raw""").df()
+#span_vs_null.head(10)
+span_vs_null[span_vs_null["TNAME"]== "Putney"].head()
+```
+there are 9577 in a few rows, as we saw above. here, Im looking to discover if those few rows are all a few correlated nulls, or random.
+```{python}
+#im picking to compare parcel id (PARCID) and acresgl
+con.execute("""
+SELECT
+  SUM((PARCID IS NULL AND ACRESGL IS NULL)::INT) AS both_null,
+  SUM((PARCID IS NULL AND ACRESGL IS NOT NULL)::INT) AS only_a
+FROM parcels_raw
+""").df()
+#it looks like there are both correlated!!!
+#now seeing what non-null they have in common
+con.execute("""
+SELECT TNAME, COUNT(*) AS n
+FROM parcels_raw
+WHERE PARCID IS NULL
+GROUP BY TNAME
+ORDER BY n DESC
+""").df()
+#this is an interesting story: it looks like, reading from the output of 9577 entrances that also have town == null, tat the map needs to be completed with parcels, but those parcels arent valuable, important, or pertinent enough to warrant having their information filled out
+
+```
+
+## making sure that the geometry of the data is valid
+Here, I am checking that the parcel type is indeed polygon/multigon
+```{python}
+#all polygon/multigon
+con.execute("""SELECT ST_GeometryType(geom) AS gtype, COUNT(*) FROM parcels_raw GROUP BY gtype""").df()
+
+#checking the CRS (coordinate reference system)
+#output 0	{'min_x': -73.4374417425543, 'min_y': 42.73912...
+con.execute("SELECT ST_Extent(ST_Union_Agg(geom)) FROM parcels_raw").df()
+
+
+```
+
+
+
+## REASONING/CONNECTING TO REAL LIFE DATA
+While searching for the correlation or backstory on what might make an entrance with TNAME == null, I found that, when also keeping in mind their property type (var name PROPTYPE), that the majority are unlisted parcels (5948), and the remaining are untaxable service parcels, in the order of row roads, water, row rail, row trail, and railroad parcels, that, I guess, are not important enough to be designated a town name
+```{python}
+null_tname = con.execute("""SELECT * FROM parcels_raw WHERE TNAME IS NULL""").df()
+
+null_tname["PROPTYPE"].value_counts()
+
+#checking if town name and TNAME are the same, or correlated
+tnames = con.execute("""SELECT TNAME AS tname, TOWN AS town FROM parcels_raw""").df()
+print(tnames["tname"].value_counts(), tnames["town"].value_counts())
+
+#TOWN HAS NO NULLS
+con.execute("""SELECT SUM((TOWN IS NULL)::INT), SUM((TNAME IS NULL)::INT) FROM parcels_raw""").df()
+```
+
+```{python}
+con.execute("""
+SELECT SOURCENAME, YEAR, COUNT(*) AS n
+FROM parcels_raw
+WHERE TNAME IS NULL
+GROUP BY SOURCENAME, YEAR
+ORDER BY n DESC
+""").df()
+con.execute("""
+SELECT
+  TNAME IS NULL AS no_town,
+  COUNT(*) AS n,
+  AVG(ST_Area(geom)) AS avg_area,
+  MEDIAN(ST_Area(geom)) AS med_area
+FROM parcels_raw
+GROUP BY no_town
+""").df()
+
+con.execute("""SELECT COUNT(*), COUNT(DISTINCT SPAN), SUM((SPAN IS NULL)::INT) FROM parcels_raw""").df()
+```
+
+## JOIN KEY CREATION
+While SPAN (school property access number) would be the best join key, since it represents the government itself's storage manner for parcels, it isnt fully non null, and there are about 18000 rows that are non-uniue in this dataset, where the row "OBJECTID" is fully present, representing a purely trustworthy join key. 
+```{python}
+#just checking if the row count and object id are the same length
+print(con.execute("SELECT COUNT(*) FROM parcels_raw").df())
+print(con.execute("SELECT COUNT(DISTINCT OBJECTID) FROM parcels_raw").df())
+#they are, so we can use objectid as the join key, and keep span around for more techincal tasks.
+
+
+#continuing, we are summing where both tname (9577 nulls) and span (7862 null) are both null. 
+print(con.execute("""SELECT
+  SUM((SPAN IS NULL AND TNAME IS NULL)::INT) AS both_null,
+  SUM((SPAN IS NULL AND TNAME IS NOT NULL)::INT) AS span_only,
+  SUM((SPAN IS NOT NULL AND TNAME IS NULL)::INT) AS tname_only
+FROM parcels_raw""").df())
+#something of note: there are no span-null only rows, 7862 where both are nulls, and 1715 tname only nulls, meaninng that the span nulls are a subset of the tname nulls. 
+```
+```{python}
+#before we create the tables, I thought it ould be nice to enrich the info one:
+con.execute("""SELECT CAT, RESCODE, CITYGL, STGL, ZIPGL, E911ADDR, DESCPROP, LOCAPROP FROM parcels_raw""").df()
+```
+
+## CREATING THE INFAMOUS TABLES
+```{python}
+#just before I forget, I think it is good practice to have both the TOWN and TNAME columns as uppercase, so that there aren't any mixups, or Colchester != COLCHESTER, ETC.
+#this is the final view from which ot ship off other changes and add them to this final iteration, is my thought.
+con.execute("""
+    CREATE OR REPLACE VIEW final_view AS
+    SELECT 
+        * EXCLUDE (TOWN, TNAME),
+        UPPER(TOWN) AS TOWN,
+        UPPER(TNAME) AS TNAME
+    FROM parcels_raw;
+""")
+```
+### Finally sending off the tables created
+Fully creating three tables, parcels_geom, which has the objectid and geom, the parcels_info table, which ahs information like the access nuber, town, source, and year, and the parcels_value table, which has the acres, and all sorts of value metrics. - got rid of value the table
+```{python}
+#changing the name to {thing}.parcel
+print(con.execute("DESCRIBE final_view").df()["column_name"].tolist())
+
+con.execute("""
+CREATE OR REPLACE VIEW geom AS
+SELECT OBJECTID, geom FROM final_view
+""")
+
+con.execute("""CREATE OR REPLACE VIEW info AS
+SELECT OBJECTID, SPAN, CAT, RESCODE, PARCID, CITYGL, TOWN, ZIPGL, PROPTYPE, DESCPROP, SOURCENAME, YEAR,
+       ACRESGL, REAL_FLV, HSTED_FLV, IMPRV_LV, SOURCENAME
+FROM final_view""")
+
+#wont ship tax table just yet! - commented out for now
+#con.execute("""CREATE OR REPLACE VIEW tax AS SELECT OBJECTID, ZIPGL, DESCPROP, REAL_FLV, EQUIPVAL, AOEGL_NR FROM final_view""")
+
+con.execute("""SELECT CAT FROM info""").df()
+```
+
+somethind of note to consider. the build.py agglomerates parquets, not FGBS, so im 
+```{python}
+path = Path("Data/_Processed/parcels")
+path.mkdir(parents=True, exist_ok=True)
+
+#changing the name to be more terse adn to the point, in the hopes that the glob agglomerator will add the "parcels/" prefix
+#Not doing tax just yet 
+for item in ["info", "geom"]:#tax commented out
+    con.execute(f"COPY (SELECT * FROM {item}) TO '{path / f'{item}.parquet'}' (FORMAT PARQUET)")
+```
+
+#checking that it worked - (especially the uppercasing of the town name and columns)
+```{python}
+con.execute(f"SELECT DISTINCT ZIPGL FROM '{path / 'info.parquet'}'  LIMIT 15").df()
+```
+
+```{python}
+import duckdb
+db = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+print(db.execute("SHOW TABLES").df())
+print(db.execute("SELECT COUNT(*) FROM parcels_info").df())
+print(db.execute("SELECT COUNT(*) FROM parcels_geom").df())
+```
+
+```{python}
+con.execute("SELECT DISTINCT RESCODE FROM parcels_raw").df()
+```

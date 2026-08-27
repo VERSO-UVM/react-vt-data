@@ -1,0 +1,937 @@
+---
+title: "Vermont Parcels: the testing run notebook [QMD]"
+author: Isaac Wedaman
+date: today
+description:  The second version of the vermotn parcels the exploratory motion
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+---
+#ill get to this later
+```{python}
+from pathlib import Path 
+import os
+import sys
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+sys.path.insert(0, str(_project_root))
+print(os.getcwd())
+
+from api.models import FilterSource
+from sql_render import sql_filter_block
+
+
+
+sql_dir = Path("query/sql/parcels")
+src = FilterSource(filter_table="parcels_info", filters={"TOWN": ["PUTNEY"]},
+                   join_key="OBJECTID", join_type="inner")
+sql, params = sql_filter_block(sql_dir / "geo_query_parcels.sql", [src])
+print(sql)          # ← actually read the rendered SQL; watch the CTE appear
+```
+
+```{python}
+#testing tnat the rendering worked correctly 
+#correctly outputted PUTNEY town property, land with building, with 120.9 acres 
+import json
+from query.processed_db import DB
+res = DB.execute(sql, params).fetchone()[0]
+fc = json.loads(res)
+print(fc["features"][0])
+```
+
+```{python}
+from query.parcels import get_parcels_geojson, get_parcels_table, get_parcels_filters
+from api.models import FilterSource
+
+src = FilterSource(
+    filter_table="parcels_info",
+    filters={"TOWN": ["PUTNEY"]},
+    join_key="OBJECTID",
+    join_type="inner",
+)
+
+# geojson
+fc = json.loads(get_parcels_geojson([src]))
+print("features:", len(fc["features"]))
+print("one feature:", fc["features"][0])
+
+# info table
+df = get_parcels_table([src])
+print("table rows:", len(df))
+df.head()
+
+tree = get_parcels_filters()
+print(sorted(tree.tree.keys(), key=len, reverse=True)[:10])  # first few towns
+
+```
+#here, I am starting to look at the towns and area of chittenden county, to figure out what this dataset ould be used for, with all sql queries
+
+```{python}
+import duckdb
+con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+con.execute("LOAD spatial")
+con.execute("SHOW TABLES").df() 
+```
+all the towns in chittenden county, and all the ciolumns.
+```{python}
+chittenden = ('BURLINGTON','SOUTH BURLINGTON','ESSEX','COLCHESTER','WILLISTON',
+              'SHELBURNE','WINOOSKI','MILTON','JERICHO','RICHMOND','HINESBURG',
+              'CHARLOTTE','WESTFORD','UNDERHILL','ST. GEORGE','BOLTON','HUNTINGTON','BUELS GORE')
+
+con.execute("""DESCRIBE parcels_info""").df()
+```
+First starting off with all the parcel_counts and median value for each chittenden county town, and median acres
+```{python}
+#median value + parcel count per town
+parcels_medians = con.execute(f"""
+    SELECT TOWN,
+           COUNT(*) AS parcels,
+           ROUND(MEDIAN(REAL_FLV)) AS median_value,
+           ROUND(MEDIAN(ACRESGL), 2) AS median_acres
+    FROM parcels_info
+    WHERE TOWN IN {chittenden}
+    GROUP BY TOWN
+    ORDER BY parcels DESC
+""").df()
+
+print(parcels_medians)
+
+#now trying again - seeing why these three are nan
+#nulls are in burlington, charlotte, bolton - now checking their actual values in the table - no way they are all null
+milton = con.execute("SELECT * FROM parcels_info WHERE TOWN='MILTON'").df()
+burlington = con.execute("SELECT * FROM parcels_info WHERE TOWN='BURLINGTON'").df()
+charlotte = con.execute("SELECT * FROM parcels_info WHERE TOWN='CHARLOTTE'").df()
+bolton = con.execute("SELECT * FROM parcels_info WHERE TOWN='BOLTON'").df()
+
+for item in [milton, burlington, charlotte, bolton]:
+    print(item[["TOWN", "REAL_FLV", "ACRESGL", "TOWN", "OBJECTID", "SPAN", "CITYGL"]].head(5))
+```
+#okay, we have a problem - there are some NAN values in towns, where there are no values for a row here and there (WHILE ALWAYS HAVING AN OBJECT ID AND TOWN NAME, BUT NOT ANY VALID IDENTIFYING INFO). however, for the towns of Burlington, Charlotte, and BOLTON, it seems there are no values for any of the identifying info - basically the surrounding info is blank, or nan, but the name of the town and the object id is present. I looked it up online and this may result for from these three municipalities doing things their own way, and from prematurely updating the way they handle thigns without having coordinated with the state of vermont. Ill check how it fares for counties foreign
+
+```{python}
+#now checking with different counties - startin with rutland
+rutland = ["BENSON", "BRANDON", "CASTLETON", "CHITTENDEN", "CLARENDON", "DANBY", "FAIR HAVEN", "HUBBARDTON", "IRA", "KILLINGTON", "MENDON", "MIDDLETOWN SPRINGS", "MOUNT HOLLY", "MOUNT TABOR", "PAWLET", "PITTSFIELD", "PITTSFORD", "POULTNEY", "PROCTOR", "RUTLAND TOWN", "SHREWSBURY", "SUDBURY", "TINMOUTH", "WALLINGFORD", "WELLS", "WEST HAVEN", "WEST RUTLAND"]
+parcels_medians_rutland = con.execute(f"""
+    SELECT TOWN,
+           COUNT(*) AS parcels,
+           ROUND(MEDIAN(REAL_FLV)) AS median_value,
+           ROUND(MEDIAN(ACRESGL), 2) AS median_acres
+    FROM parcels_info
+    WHERE TOWN IN {rutland}
+    GROUP BY TOWN
+    ORDER BY parcels DESC
+""").df()
+
+print(parcels_medians_rutland[["TOWN", "parcels", "median_value", "median_acres"]])
+
+
+#looks like the last four are misiing - Castleton, chittenden, brandon, benson
+
+#ill do this one more time for washington county
+washington_county_towns = ["BARRE TOWN", "BERLIN", "CABOT", "CALAIS", "DUXBURY", "EAST MONTPELIER", "FAYSTON", "MARSHFIELD", "MIDDLESEX", "MORETOWN", "NORTHFIELD", "PLAINFIELD", "ROXBURY", "WAITSFIELD", "WARREN", "WATERBURY", "WOODBURY", "WORCESTER"]
+
+parcels_medians_washington = con.execute(f"""
+    SELECT TOWN,
+           COUNT(*) AS parcels,
+           ROUND(MEDIAN(REAL_FLV)) AS median_value,
+           ROUND(MEDIAN(ACRESGL), 2) AS median_acres
+    FROM parcels_info
+    WHERE TOWN IN {washington_county_towns}
+    GROUP BY TOWN
+    ORDER BY parcels DESC
+""").df()
+
+print(parcels_medians_washington[["TOWN", "parcels", "median_value", "median_acres"]])
+
+
+
+```
+
+```{python}
+con.execute("""
+    SELECT COUNT(*) AS n,
+           SUM((REAL_FLV IS NULL)::INT) AS null_val,
+           SUM((SPAN IS NULL)::INT) AS null_span,
+           SUM((ACRESGL IS NULL)::INT) AS null_acres
+    FROM parcels_info
+    WHERE TOWN = 'BURLINGTON'
+""").df()
+```
+
+```{python}
+con.execute("SELECT DISTINCT PROPTYPE, COUNT(*) FROM parcels_info WHERE TOWN='BURLINGTON' GROUP BY PROPTYPE").df()
+```
+MAJOR FINDING ALERT! Burlington, and some of the other largest cities (like Barre) in the state of vermont just didn't send in their data - Burlington's parcels, of which it has 187 (Milton, with all informatino valid, has 4.3 thousand), all but 77 arent even parcels of property, but are instead row_road, water, and row_rail prop type. this proves my theory that the problem of missing data is due to some municipalities just not sending in their data, or collaborating with VCGI like smaller towns might have, thus leaving the leftover data to represent parcels that are borders and non-private property
+
+#now, we must find the percentage of extant data for each town, to see which ones are a worthy candidate for valid analysis - ill also filter by county for more in-depth analysis. 
+```{python}
+
+#incipient converage table
+coverage = con.execute("""
+    SELECT
+        TOWN,
+        COUNT(*) AS total_features,
+        SUM((PROPTYPE = 'PARCEL')::INT) AS parcels,
+        SUM((REAL_FLV IS NOT NULL)::INT) AS has_value,
+        ROUND(100.0 * SUM((REAL_FLV IS NOT NULL)::INT) / COUNT(*), 1) AS pct_valued
+    FROM parcels_info
+    GROUP BY TOWN
+    ORDER BY pct_valued DESC
+""").df()
+
+
+#print(coverage["pct_valued"].value_counts())
+#there are 31 towns with no parcel data, and 140 that do
+print(sum(coverage["pct_valued"] == 0.0))
+coverage_valid = coverage[coverage["pct_valued"] == 0.0].sort_values(by = "parcels", ascending = False)
+print(coverage_valid)
+
+```
+#here, we investigate colcheseter, which has all parcels present, and burlington and charlotte, which have comparatively less parcels, and no accompanying information on those parcels (median values, etc). we find that 7087 of the 7277 parcels in colcehster are "valued" whereas non for the other towns are - and that the "source" is not distinct for colchester, where it is for burlington & charlotte, leading me to believe the a source of null is VGIS data, and that self provided data tends to be less informative
+```{python}
+con.execute("""
+    SELECT TOWN,
+           COUNT(*) AS n,
+           SUM((REAL_FLV IS NOT NULL)::INT) AS valued,
+           COUNT(DISTINCT SOURCENAME) AS sources
+    FROM parcels_info
+    WHERE TOWN IN ('BURLINGTON','COLCHESTER','CHARLOTTE')
+    GROUP BY TOWN
+""").df()
+
+```
+Echeking the previous hypothesis. source == NAN is VGIS data
+```{python}
+con.execute("""
+    SELECT TOWN, SOURCENAME, COUNT(*) AS n,
+           SUM((REAL_FLV IS NOT NULL)::INT) AS valued
+    FROM parcels_info
+    WHERE TOWN IN ('BURLINGTON','CHARLOTTE','COLCHESTER')
+    GROUP BY TOWN, SOURCENAME
+    ORDER BY TOWN, n DESC
+""").df()
+```
+#really seeing if burlington only has 187 parcels, and that they are all null. in a perfect world, I got the column name wrong, but this isn't the case, and the data is missing. 
+```{python}
+con.execute("SELECT DISTINCT TOWN FROM parcels_info WHERE TOWN ILIKE '%burl%'").df()
+```
+#here, we investigate the feature source, where if the SOURCENAME is null, where it happens to be for the towns with a loarge amount of parcels (and extant data), it is likely that the data was provided and submitted by VGIS, where if it is not null, it was self submitted, which leads to strange occurrences where the City of Burlington has 187 parcels, provided by themselves, but no data to go along with it
+```{python}
+con.execute("""
+    SELECT
+        CASE WHEN SOURCENAME IS NULL THEN 'VGIS standard' ELSE 'self-submitted' END AS pipeline,
+        COUNT(*) AS features,
+        SUM((REAL_FLV IS NOT NULL)::INT) AS valued,
+        COUNT(DISTINCT TOWN) AS towns
+    FROM parcels_info
+    GROUP BY 1
+""").df()
+
+```
+
+#work for now : adding a column to parcels_info for county. first we must joing sourcename to parcels info and get 
+#TODO: add sourcename to parcels_info then run build.py
+(quick check for sql database integrity)
+```{python}
+# import duckdb
+# con = duckdb.connect("Data/_Processed/all_data.duckdb", read_only=True)
+# con.execute("LOAD spatial")
+# print(con.execute("SHOW TABLES").df())
+```
+```{python}
+towns = con.execute("SELECT DISTINCT TOWN FROM parcels_info").df()
+counties = []
+not_stateless = []
+#all counties 
+ADDISON = ["ADDISON", "BRIDPORT", "BRISTOL", "CORNWALL", "FERRISBURGH", "GOSHEN", "GRANVILLE", "HANCOCK", "LEICESTER", "LINCOLN", "MIDDLEBURY", "MONKTON", "NEW HAVEN", "ORWELL", "PANTON", "RIPTON", "SALISBURY", "SHOREHAM", "STARKSBORO", "WALTHAM", "WEYBRIDGE", "WHITING", "VERGENNES"]
+BENNINGTON = ["ARLINGTON", "BENNINGTON", "DORSET", "GLASTENBURY", "LANDGROVE", "MANCHESTER", "PERU", "POWNAL", "READSBORO", "RUPERT", "SANDGATE", "SEARSBURG", "SHAFTSBURY", "STAMFORD", "SUNDERLAND", "WINHALL", "WOODFORD"]
+CALEDONIA = ["BARNET", "BURKE", "DANVILLE", "GROTON", "HARDWICK", "KIRBY", "LYNDON", "NEWARK", "PEACHAM", "RYEGATE", "SAINT JOHNSBURY", "SHEFFIELD", "STANNARD", "SUTTON", "WALDEN", "WATERFORD", "WHEELOCK"]
+CHITTENDEN = ["BOLTON", "CHARLOTTE", "COLCHESTER", "ESSEX", "ESSEX JUNCTION", "HINESBURG", "HUNTINGTON", "JERICHO", "MILTON", "RICHMOND", "SAINT GEORGE", "SHELBURNE", "UNDERHILL", "WESTFORD", "WILLISTON", "BURLINGTON", "WINOOSKI", "BUELS GORE", "SOUTH BURLINGTON"]
+ESSEX = ["AVERILL", "BLOOMFIELD", "BRIGHTON", "BRUNSWICK", "CANAAN", "CONCORD", "EAST HAVEN", "FERDINAND", "GRANBY", "GUILDHALL", "LEMINGTON", "LEWIS", "LUNENBURG", "MAIDSTONE", "NORTON", "VICTORY", "AVERYS GORE", "WARNERS GRANT", "WARREN GORE"]
+FRANKLIN = ["BAKERSFIELD", "BERKSHIRE", "ENOSBURGH", "FAIRFAX", "FAIRFIELD", "FLETCHER", "FRANKLIN", "GEORGIA", "HIGHGATE", "MONTGOMERY", "RICHFORD", "SAINT ALBANS CITY", "SAINT ALBANS TOWN", "SHELDON", "SWANTON"]
+GRAND_ISLE = ["ALBURGH", "GRAND ISLE", "ISLE LA MOTTE", "NORTH HERO", "SOUTH HERO"]
+LAMOILLE = ["BELVIDERE", "CAMBRIDGE", "EDEN", "ELMORE", "HYDE PARK", "JOHNSON", "MORRISTOWN", "STOWE", "WATERVILLE", "WOLCOTT"]
+ORANGE = ["BRADFORD", "BRAINTREE", "BROOKFIELD", "CHELSEA", "CORINTH", "FAIRLEE", "NEWBURY", "ORANGE", "RANDOLPH", "STRAFFORD", "THETFORD", "TOPSHAM", "TUNBRIDGE", "VERSHIRE", "WASHINGTON", "WEST FAIRLEE", "WILLIAMSTOWN"]
+ORLEANS = ["ALBANY", "BARTON", "BROWNINGTON", "CHARLESTON", "COVENTRY", "CRAFTSBURY", "DERBY", "GLOVER", "GREENSBORO", "HOLLAND", "IRASBURG", "JAY", "LOWELL", "MORGAN", "NEWPORT CITY", "NEWPORT TOWN", "TROY", "WESTFIELD", "WESTMORE"]
+RUTLAND = ["BENSON", "BRANDON", "CASTLETON", "CHITTENDEN", "CLARENDON", "DANBY", "FAIR HAVEN", "HUBBARDTON", "IRA", "KILLINGTON", "MENDON", "MIDDLETOWN SPRINGS", "MOUNT HOLLY", "MOUNT TABOR", "PAWLET", "PITTSFIELD", "PITTSFORD", "POULTNEY", "PROCTOR", "RUTLAND TOWN", "RUTLAND CITY", "SHREWSBURY", "SUDBURY", "TINMOUTH", "WALLINGFORD", "WELLS", "WEST HAVEN", "WEST RUTLAND"]
+WASHINGTON = ["BARRE TOWN", "BERLIN", "CABOT", "CALAIS", "DUXBURY", "EAST MONTPELIER", "FAYSTON", "MARSHFIELD", "MIDDLESEX", "MORETOWN", "NORTHFIELD", "PLAINFIELD", "ROXBURY", "WAITSFIELD", "WARREN", "WATERBURY", "WOODBURY", "WORCESTER", "BARRE CITY", "MONTPELIER"]
+WINDHAM = ["ATHENS", "BRATTLEBORO", "BROOKLINE", "DOVER", "DUMMERSTON", "GRAFTON", "GUILFORD", "HALIFAX", "JAMAICA", "LONDONDERRY", "MARLBORO", "NEWFANE", "PUTNEY", "ROCKINGHAM", "SOMERSET", "STRATTON", "TOWNSHEND", "VERNON", "WARDSBORO", "WESTMINSTER", "WHITINGHAM", "WILMINGTON", "WINDHAM"]
+WINDSOR = ["ANDOVER", "BALTIMORE", "BARNARD", "BETHEL", "BRIDGEWATER", "CAVENDISH", "CHESTER", "HARTFORD", "HARTLAND", "LUDLOW", "NORWICH", "PLYMOUTH", 'POMFRET', 'READING', 'ROCHESTER', 'ROYALTON', 'SHARON', 'SPRINGFIELD', 'STOCKBRIDGE', 'WEATHERSFIELD', 'WEST WINDSOR', 'WESTON', 'WINDSOR', 'WOODSTOCK']
+counties_key = [ADDISON, BENNINGTON, CALEDONIA, CHITTENDEN, ESSEX, FRANKLIN, GRAND_ISLE, LAMOILLE, ORANGE, ORLEANS, RUTLAND, WASHINGTON, WINDHAM, WINDSOR]
+names_key = ["ADDISON", "BENNINGTON", "CALEDONIA", "CHITTENDEN", "ESSEX", "FRANKLIN", "GRAND_ISLE", "LAMOILLE", "ORANGE", "ORLEANS", "RUTLAND", "WASHINGTON", "WINDHAM", "WINDSOR"]
+
+#perfected the 7 without a county
+for i in range(len(towns)):
+  for item in counties_key:
+    if towns["TOWN"].iloc[i] in item:
+            counties.append(names_key[(counties_key.index(item))])
+            not_stateless.append(towns["TOWN"].iloc[i])
+#adding counties to towns
+towns["COUNTY"] = counties
+```
+now creating the by county and town availiability map 
+```{python}
+#town level group by
+con.execute("""
+SELECT c.COUNTY, i.TOWN,
+       COUNT(*) AS parcels,
+       SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) AS valued,
+       ROUND(100.0 * SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) / COUNT(*), 1) AS pct_valued
+FROM parcels_info i
+LEFT JOIN towns c USING (TOWN)
+GROUP BY c.COUNTY, i.TOWN""").df()
+
+#county_level
+con.execute("""SELECT c.COUNTY,
+       COUNT(*) AS parcels,
+       SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) AS valued,
+       ROUND(100.0 * SUM((i.REAL_FLV IS NOT NULL AND i.REAL_FLV > 0)::INT) / COUNT(*), 1) AS pct_valued
+FROM parcels_info i
+LEFT JOIN towns c USING (TOWN)
+GROUP BY c.COUNTY ORDER BY pct_valued DESC""").df()
+```
+now that we have the parcels and parcels' percentages based on county and town, we must read in the vermont VCGI boundary dataset using the api option, and build the chloropleth from there
+```{python}
+import geopandas as gpd
+
+# TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"  
+# towns_gdf = gpd.read_file(TOWN_URL)
+# print(towns_gdf.shape)
+# print(towns_gdf.columns.tolist())
+# print(towns_gdf.crs)
+
+import geopandas as gpd
+import requests
+
+TOWN_URL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+
+
+base_url = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Boundary_BNDHASH_poly_towns_SP_v1/FeatureServer/0/query"
+
+offset = 0
+chunk_size = 50 
+all_features = []
+
+# Fetch data in chunks of 50 to avoid server timeouts
+while True:
+    params = {
+        "where": "1=1",
+        "outFields": "*",
+        "f": "geojson",
+        "resultOffset": offset,
+        "resultRecordCount": chunk_size
+    }
+    response = requests.get(base_url, params=params)
+    data = response.json()
+    
+    features = data.get("features", [])
+    if not features:
+        break
+        
+    all_features.extend(features)
+    
+    # If a chunk returns less than 50, we've reached the end
+    if len(features) < chunk_size:
+        break
+        
+    offset += chunk_size
+
+# Rebuild the full GeoJSON and load it into GeoPandas
+full_geojson = {"type": "FeatureCollection", "features": all_features}
+towns_gdf = gpd.GeoDataFrame.from_features(full_geojson, crs="EPSG:4326")
+
+towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
+#print(towns_gdf.shape)
+
+print(towns_gdf.columns)
+
+
+#just certifying that the town namese are both uppercase and devoic of whitespace
+towns_gdf["TOWN"] = towns_gdf["TOWNNAME"].str.upper().str.strip()
+```
+```{python}
+#now, merging the town level merge i made earlier with the town_gdf geojson file - changing to have null == 0
+town_coverage = con.execute("""
+    SELECT c.COUNTY, i.TOWN,
+           COUNT(*) AS parcels,
+           SUM((i.REAL_FLV > 0)::INT) AS valued,
+           ROUND(100.0 * SUM(CASE WHEN i.REAL_FLV > 0 THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_valued
+    FROM parcels_info i
+    LEFT JOIN towns c USING (TOWN)
+    GROUP BY c.COUNTY, i.TOWN
+""").df()
+
+print(town_coverage.head(5))
+
+towns_map = towns_gdf.merge(town_coverage, on="TOWN", how="left")
+
+#making sure that all towns are matched
+print("unmatched towns:", towns_map["pct_valued"].isna().sum())
+print(towns_map[towns_map["pct_valued"].isna()]["TOWN"].tolist())
+```
+84 towns end up not represented in our coverage map, but that is alright! they don't have parcel rows sent into vgis - this just means that we will have to point that out in the chloropleth
+```{python}
+#diagnosing the problem at hadn
+parcels_towns = set(town_coverage["TOWN"])
+boundary_towns = set(towns_gdf["TOWN"])
+print("in boundary, not parcels:", sorted(boundary_towns - parcels_towns))
+print("in parcels, not boundary:", sorted(parcels_towns - boundary_towns))
+```
+making the cholorpleths - town level
+```{python}
+#making a valid towns list to dissolve for the county line
+towns_valid = towns_map.copy()
+towns_valid["geometry"] = towns_valid["geometry"].make_valid()
+counties_outline = towns_valid.dissolve(by="COUNTY")
+
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(8, 11))
+towns_map.plot(column="pct_valued", cmap="RdYlGn", legend=True,
+               edgecolor="gray", linewidth=0.3, ax=ax,
+               missing_kwds={"color": "lightgray", "label": "No data"})
+#counties_outline.boundary.plot(ax=ax, color="black", linewidth=2)
+ax.set_title("Parcel Availability Percentage by Town")
+ax.axis("off")
+plt.show()
+```
+
+```{python}
+county_coverage = town_coverage.groupby("COUNTY").apply(
+    lambda g: 100.0 * g["valued"].sum() / g["parcels"].sum()
+).reset_index(name="pct_valued")
+
+towns_map_clean = towns_map.dropna(subset=["COUNTY"]).copy()
+towns_map_clean["geometry"] = towns_map_clean["geometry"].make_valid()
+counties_map = towns_map_clean.dissolve(by="COUNTY").merge(
+    county_coverage, on="COUNTY", how="left", suffixes=("_town", ""))
+counties_map.plot(column="pct_valued", cmap="RdYlGn", legend=True, edgecolor="black")
+```
+```{python}
+#step one: making a list of the parcels to investigate
+import pandas as pd
+import geopandas as gpd
+population_csv_path = "backend/notebooks/parcels/local_data/population_2020.csv"
+
+import os
+
+print(os.getcwd())
+
+# rel_path = "local_data/population_2020.csv"
+abs_path = "/Users/isaacwedaman/local_computer_science/react-vt-data/backend/notebooks/parcels/local_data/population_2020.csv"
+
+
+print("abosulte path exists?", os.path.exists(abs_path))
+
+pop = pd.read_csv(abs_path)
+pop = pop.loc[:, ["_geoid", "Town", "County", "year2020"]]
+pop = pop.rename(columns={'Town': 'TOWN', 'County': 'COUNTY', "year2020": "2020_POP", })
+pop["TOWN"] = pop["TOWN"].str.upper()
+pop = pop.sort_values(by = "2020_POP", ascending=False)
+
+#print(pop)
+
+#adding names to list
+all_pop = []
+
+print("getting all towns by population:\n")
+for i in range(len(pop)):
+  town = pop.iloc[i]["TOWN"]
+  popu = pop.iloc[i]["2020_POP"]
+  #print(str(town) + " " + str(popu))
+  all_pop.append(town)
+
+all_pop = set(all_pop)
+
+
+#print(pop.iloc[23:])
+
+
+```
+comparing parcel counts between large pop centers
+```{python}
+info = con.execute("""SELECT TOWN, CITYGL, PROPTYPE, DESCPROP, CAT, RESCODE FROM parcels_info""").df()
+
+towns = info["TOWN"].unique()
+towns = set(towns)
+
+excluded = (all_pop - towns)
+print(excluded)
+
+
+
+# excluded_df = pop[pop["TOWN"].isin(excluded)].sort_values(by="2020_POP", ascending=False)
+# for _, row in excluded_df.iterrows():
+#     print(row["TOWN"], row["2020_POP"])
+
+
+
+# current = []
+# for item in vermont_towns_from_parcels:
+#     item = item.upper()
+#     current.append(item)
+
+# set_of_pop_parcels = set(current) - set(pop["TOWN"])
+# print(set_of_pop_parcels)
+
+# for item in pop["TOWN"]:
+#     if item.startswith("WARNER"):
+#         print(item)
+
+# what I found - no essex junction in population csv
+# however, all saints are there
+# in population csv, saint is ST.
+# warren's gore is warren gore
+# avery's gore is averys gore
+# warner's grant is warners grant
+```
+#ingesting all cities - 
+```{python}
+import requests, zipfile, io
+import geopandas as gpd
+
+vermont_towns_from_parcels = [
+    "Addison", "Albany", "Alburgh", "Andover", "Arlington", "Athens", 
+    "Averill", "Averys Gore", "Bakersfield", "Baltimore", "Barnard", 
+    "Barnet", "Barre City", "Barre Town", "Barton", "Belvidere", 
+    "Bennington", "Benson", "Berkshire", "Berlin", "Bethel", 
+    "Bloomfield", "Bolton", "Bradford", "Braintree", "Brandon", 
+    "Brattleboro", "Bridgewater", "Bridport", "Brighton", "Bristol", 
+    "Brookfield", "Brookline", "Brownington", "Brunswick", "Buels Gore", 
+    "Burke", "Burlington", "Cabot", "Calais", "Cambridge", "Canaan", 
+    "Castleton", "Cavendish", "Charleston", "Charlotte", "Chelsea", 
+    "Chester", "Chittenden", "Clarendon", "Colchester", "Concord", 
+    "Corinth", "Cornwall", "Coventry", "Craftsbury", "Danby", 
+    "Danville", "Derby", "Dorset", "Dover", "Dummerston", "Duxbury", 
+    "East Haven", "East Montpelier", "Eden", "Elmore", "Enosburgh", 
+    "Essex Junction", "Essex", "Fair Haven", "Fairfax", "Fairfield", 
+    "Fairlee", "Fayston", "Ferdinand", "Ferrisburgh", "Fletcher", 
+    "Franklin", "Georgia", "Glastenbury", "Glover", "Goshen", 
+    "Grafton", "Granby", "Grand Isle", "Granville", "Greensboro", 
+    "Groton", "Guildhall", "Guilford", "Halifax", "Hancock", 
+    "Hardwick", "Hartford", "Hartland", "Highgate", "Hinesburg", 
+    "Holland", "Hubbardton", "Huntington", "Hyde Park", "Ira", 
+    "Irasburg", "Isle La Motte", "Jamaica", "Jay", "Jericho", 
+    "Johnson", "Killington", "Kirby", "Landgrove", "Leicester", 
+    "Lemington", "Lewis", "Lincoln", "Londonderry", "Lowell", 
+    "Ludlow", "Lunenburg", "Lyndon", "Maidstone", "Manchester", 
+    "Marlboro","Marshfield", "Mendon", "Middlebury", "Middlesex", 
+    "Middletown Springs", "Milton", "Monkton", "Montgomery", 
+    "Montpelier", "Moretown", "Morgan", "Morristown", "Mount Holly", 
+    "Mount Tabor", "New Haven", "Newark", "Newbury", "Newfane", 
+    "Newport City", "Newport Town", "North Hero", "Northfield", 
+    "Norton", "Norwich", "Orange", "Orwell", "Panton", "Pawlet", 
+    "Peacham", "Peru", "Pittsfield", "Pittsford", "Plainfield", 
+    "Plymouth", "Pomfret", "Poultney", "Pownal", "Proctor", "Putney", 
+    "Randolph", "Reading", "Readsboro", "Richford", "Richmond", 
+    "Ripton", "Rochester", "Rockingham", "Roxbury", "Royalton", 
+    "Rupert", "Rutland City", "Rutland Town", "Ryegate", 
+    "Saint Albans City", "Saint Albans Town", "Saint George", 
+    "Saint Johnsbury", "Salisbury", "Sandgate", "Searsburg", 
+    "Shaftsbury", "Sharon", "Sheffield", "Shelburne", "Sheldon", 
+    "Shoreham", "Shrewsbury", "Somerset", "South Burlington", 
+    "South Hero", "Springfield", "Stamford", "Stannard", "Starksboro", 
+    "Stockbridge", "Stowe", "Strafford", "Stratton", "Sudbury", 
+    "Sunderland", "Sutton", "Swanton", "Thetford", "Tinmouth", 
+    "Topsham", "Townshend", "Troy", "Tunbridge", "Underhill", 
+    "Vergennes", "Vernon", "Vershire", "Victory", "Waitsfield", 
+    "Walden", "Wallingford", "Waltham", "Wardsboro", "Warners Grant", 
+    "Warren Gore", "Warren", "Washington", "Waterbury", "Waterford", 
+    "Waterville", "Weathersfield", "Wells", "West Fairlee", 
+    "West Haven", "West Rutland", "West Windsor", "Westfield", 
+    "Westford", "Westminster", "Westmore", "Weston", "Weybridge", 
+    "Wheelock", "Whiting", "Whitingham", "Williamstown", "Williston", 
+    "Wilmington", "Windham", "Windsor", "Winhall", "Winooski", 
+    "Wolcott", "Woodbury", "Woodford", "Woodstock", "Worcester"
+]
+
+
+
+
+BASE = "https://maps.vcgi.vermont.gov/gisdata/vcgi/packaged_zips/CadastralParcels_VTPARCELS/"
+
+def fetch_town(town):                     
+    r = requests.get(f"{BASE}VTPARCELS_{town}.zip", timeout=60)
+    r.raise_for_status()
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    z.extractall(f"Data/parcels/backfill/{town}")
+    return gpd.read_file(f"Data/parcels/backfill/{town}/VTPARCELS_{town}.shp")
+
+for town in vermont_towns_from_parcels:
+    fetch_town(town)
+    print(town + " Done")
+
+print("successful bro")
+#SOMETHING OF NOTE! the names are capital letter for the first character of each name only, the saints are "Saint", and there are towns and cities for a select few, like barre
+
+#making a list of all those i need to get
+```
+making the view for all of the joined parcel towns
+```{python}
+import geopandas as gpd
+from pathlib import Path
+
+#KEEP_COLS = ["SPAN","GLIST_SPAN","MAPID","PARCID","PROPTYPE","YEAR","GLYEAR",
+            #  "TOWN","SOURCENAME","SOURCETYPE","SOURCEDATE","EDITDATE","MATCHSTAT",
+            #  "OWNER1","CITYGL","STGL","ZIPGL","DESCPROP","LOCAPROP","CAT","RESCODE",
+            #  "ACRESGL","REAL_FLV","HSTED_FLV","NRES_FLV","LAND_LV","IMPRV_LV",
+            #  "EQUIPVAL","INVENVAL","HSDECL","HSITEVAL","VETEXAMT",
+            #  "EXAMT_HS","EXAMT_NR","UVREDUC_HS","UVREDUC_NR",
+            #  "GLVAL_HS","GLVAL_NR","CRHOUSPCT","MUNGL1PCT","AOEGL_HS","AOEGL_NR",
+            #  "E911ADDR","geometry"]
+
+#all_columns = ['OGC_FID', 'OBJECTID', 'SPAN', 'GLIST_SPAN', 'MAPID', 'PARCID', 'PROPTYPE', 'YEAR', 'GLYEAR', 'TOWN', 'TNAME', 'SOURCENAME', 'SOURCETYPE', 'SOURCEDATE', 'EDITMETHOD', 'EDITOR', 'EDITDATE', 'MATCHSTAT', 'EDITNOTE', 'OWNER1', 'OWNER2', 'ADDRGL1', 'ADDRGL2', 'CITYGL', 'STGL', 'ZIPGL', 'DESCPROP', 'LOCAPROP', 'CAT', 'RESCODE', 'ACRESGL', 'REAL_FLV', 'HSTED_FLV', 'NRES_FLV', 'LAND_LV', 'IMPRV_LV', 'EQUIPVAL', 'EQUIPCODE', 'INVENVAL', 'HSDECL', 'HSITEVAL', 'VETEXAMT', 'EXPDESC', 'ENDDATE', 'STATUTE', 'EXAMT_HS', 'EXAMT_NR', 'UVREDUC_HS', 'UVREDUC_NR', 'GLVAL_HS', 'GLVAL_NR', 'CRHOUSPCT', 'MUNGL1PCT', 'AOEGL_HS', 'AOEGL_NR', 'E911ADDR', 'geom']
+
+def standardize_town(shp_path: Path) -> gpd.GeoDataFrame:
+    gdf = gpd.read_file(shp_path)
+    gdf = gdf.to_crs(4326)                         
+    gdf["TOWN"] = gdf["TOWN"].str.upper().str.strip()
+    # missing = [c for c in KEEP_COLS if c not in gdf.columns]
+    # if missing:
+    #     print(f"{shp_path.name}: missing {missing}") 
+    # gdf = gdf[[c for c in KEEP_COLS if c in gdf.columns]]
+    return gdf
+```
+making the new join
+Design philosophy: while it might be a more efficient idea to backfill only those towns missing with complementary data from the parcels that I just ingested, my thought is that if there are parcels missing for whole towns, there cannot be a guarantee that ALL parcels for all towns are there wit hno issue, so im deciding to follow the path of creating a new dataset
+```{python}
+import pandas as pd
+import numpy as np
+
+frames = []
+for town in vermont_towns_from_parcels:
+    shp = Path(f"Data/parcels/backfill/{town}") / f"VTPARCELS_{town}.shp"
+    g = standardize_town(shp)
+    frames.append(g)
+    print(town + " Done")
+print("frame created successfully")
+
+#concatenating all the frames from the town parcels into one
+backfill = pd.concat(frames, ignore_index=True)
+backfill = gpd.GeoDataFrame(backfill, geometry="geometry", crs=4326)
+#making teh objectid and adding
+backfill["OBJECTID"] = 1_000_000 + backfill.index
+```
+investigating the backfill frame, and adding the county column
+also, mapping new values to old columns that I deem valid  - run this after having ran the dictionary definition cell
+```{python}
+#print((backfill.columns))
+# print(backfill.head(5))
+
+#adding a counties column - filling the dictionary 
+counties_dict = {}
+unknown = []
+for town in backfill["TOWN"].unique():
+  for item in counties_key:
+    if town in item:
+            counties_dict[town] = names_key[(counties_key.index(item))]
+#adding in sourcename as city and town
+city_town_dict = {}
+
+city_source = backfill[
+    (backfill["SOURCENAME"] == "CITY") |
+    (backfill["SOURCENAME"] == "TOWN")
+]
+
+
+#finding if the parcel was found from a local department or not
+backfill["SOURCENAME"] = np.where(
+    backfill["SOURCENAME"].isin(["CITY", "TOWN", "City of Burlington"]),
+    "LOCAL DEPARTMENT",
+    "NOT LOCAL DEPARTMENT"
+)
+
+#this code aids in the creation of a column that sees if the primary people live there, or if it is an investment property. 
+residential_codes = ['R1', 'R2', 'MHL', "MHU"] 
+
+is_residential = backfill["CAT"].isin(residential_codes)
+is_not_homestead = backfill["HSDECL"].isna() | (backfill["HSDECL"] == 'N')
+
+vt_mask = backfill["STGL"].str.startswith("VT", na=False) | backfill["STGL"].str.startswith("Vt", na=False) | backfill["STGL"].str.startswith("05", na=False) |  backfill["STGL"].str.contains("VT", na=False) | backfill["STGL"].str.contains("V T", na=False) | backfill["STGL"].str.startswith("vt", na=False)
+backfill.loc[vt_mask, "STGL"] = "VERMONT"
+canada_mask = backfill["STGL"].str.contains("CANADA", na=False) | backfill["STGL"].str.contains("Canada", na=False) | backfill["STGL"].str.contains("QC", na=False)
+backfill.loc[canada_mask, "STGL"] = "CANADA"
+
+#mapping new items in columns
+backfill["INVESTMENTPROP"] = is_residential & is_not_homestead
+
+
+
+backfill["VACANTLAND"] = (backfill["LAND_LV"] > 0) & (backfill["IMPRV_LV"].fillna(0) == 0)
+equipcode_dict = {"E" : "ELECTRIC UTILITY", "C": "CABLE UTILITY"}
+backfill["EXEMPT"] = backfill["STATUTE"].notna().map({True:"YES", False:"NO"})
+backfill["STATUTE"] = backfill["STATUTE"].map(statutes_dict).fillna("No Exemption")
+backfill["EXPDESC"] = backfill["EXPDESC"].map(expdesc_dict).fillna("None")
+backfill["EQUIPCODE"] = backfill["EQUIPCODE"].map(equipcode_dict).fillna("NOT A UTILITY")
+#creating a foreign ownerpship column
+
+
+
+
+backfill["COUNTY"] = backfill["TOWN"].map(counties_dict)
+backfill["RESCODE"] = backfill["RESCODE"].map(rescode_dict)
+backfill["CATEGORY"] = backfill["CAT"].map(cat_dict)
+backfill["PURPOSE"] = backfill["CAT"].map(purpose_dict)
+#adding state abbreivaitions and owner lcoations
+backfill["STGL"] = backfill["STGL"].replace(oos_dict)
+catch_all_mask = (
+    ~backfill["STGL"].isin(['CANADA', 'FOREIGN', 'US TERRITORY']) & 
+    backfill["STGL"].notna() & 
+    ~backfill["STGL"].isin(states)
+)
+backfill.loc[catch_all_mask, "STGL"] = "UNNAMED AMERICA"
+backfill["OOSOWNER"] = backfill["STGL"].fillna("VT") != "VT"
+
+backfill["ADDRESS"] = backfill["E911ADDR"] 
+
+#adding an area in acres to geometry column, a
+if "AREAACRESGEOM" not in backfill:
+    backfill["AREAACRESGEOM"] = backfill.to_crs(32145).geometry.area / 4046.8564224
+backfill["ACREVALUE"] = np.where(
+    (backfill.REAL_FLV > 0) & (backfill.AREAACRESGEOM > 0),
+    backfill.REAL_FLV / backfill.AREAACRESGEOM, np.nan)
+```
+RUN THIS CELL TO CHECK THE NULL COUNTS/percentage OF EACH column adn choosing to drop them.
+```{python}
+#inspeacting the data
+
+# backfill = backfill.drop(columns = ["LOCAPROP", "ADDRGL2", "ENDDATE", "OWNER1", "OWNER2", "EDITNOTE", "MAPID", "YEAR", "GLYEAR", "SOURCETYPE", "SOURCEDATE", "EDITMETHOD", "OBJECTID", "SHAPE_STAr", "SHAPE_STLe", "GLIST_SPAN", "PARCID", "CRHOUSPCT", "MUNGL1PCT", "AOEGL_HS", "AOEGL_NR", "HSITEVAL", "E911ADDR", "ADDRGL1", "ZIPGL"])
+
+print(backfill["OOSOWNER"].value_counts())
+
+# print(backfill[backfill["TOWN"] == "BUELS GORE"]["STGL"].value_counts())
+
+# prof = pd.DataFrame({
+#     "dtype": backfill.dtypes.astype(str),
+#     "null_pct": (backfill.isna().mean() * 100).round(1),
+#     "n_unique": backfill.nunique(dropna=True),
+#     "sample": [backfill[c].dropna().iloc[0] if backfill[c].notna().any() else None
+#                for c in backfill.columns],
+# })
+# prof.sort_values("null_pct", ascending=False)
+
+```
+```{python}
+
+residential_codes = ['R1', 'R2', 'MH'] 
+is_residential = backfill["PROPTYPE"].isin(residential_codes)
+is_not_homestead = backfill["HSDECL"].isna() | (backfill["HSDECL"] == '0')
+
+states = [
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", 
+    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", 
+    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", 
+    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", 
+    "SD", "TN", "TX", "UT", "VA", "WA", "WV", "WI", "WY", "VT", "DC"
+]
+
+
+
+#print(backfill[~backfill["STGL"].isin(states)]["STGL"].value_counts())
+
+#print(backfill[backfill["STGL"] == "MA"][["STGL", "ZIPGL"]].value_counts())
+
+print((backfill["STGL"].value_counts()))
+
+
+#print(len(states_except_vt))
+
+#print(backfill[["TOWN", "REAL_FLV", "CAT", "INVESTMENTPROP"]])
+#print(backfill[["CAT", "DESCPROP"]].value_counts())
+#print(backfill[["CATEGORY", "TOWN", "ACRESGL", 'REAL_FLV']].value_counts().sort_index(level="REAL_FLV", ascending=False))
+
+#print(backfill[backfill["STGL"] == "MA"][["CITYGL", "STGL"]].value_counts())
+
+# mismatch_count = (backfill["E911ADDR"] != backfill["ADDR1"]).sum()
+# print(f"Number of mismatched addresses: {mismatch_count}")
+
+
+
+#print(backfill["CAT"].value_counts())
+#print(backfill["CAT"].isin(residential_codes).value_counts())
+#print(backfill["VACANTLAND"].value_counts())
+
+# foreign_investment = backfill[backfill["VACANTLAND"] == True]
+# print(foreign_investment["TOWN"].value_counts())
+
+
+# data_directory = Path("Data")
+# parcel_path = data_directory / "parcels" / "parcels_vermont.geojson" 
+
+# parcels_parquet = Path("Data/parcels/parcels_p.parquet")
+# parcels_fgb = Path("Data/parcels/parcels_f.fgb")
+
+
+# con = duckdb.connect()
+# con.execute("INSTALL spatial; LOAD spatial;")
+
+# if not parcels_fgb.exists():
+#     con.execute(f"""
+#         COPY (
+#             SELECT * FROM ST_Read('{parcel_path}')
+#             WHERE geom IS NOT NULL
+#         )
+#         TO '{parcels_fgb}' (FORMAT GDAL, DRIVER 'FlatGeobuf')
+#     """)
+
+
+# prof = pd.DataFrame({
+#     "dtype": backfill.dtypes.astype(str),
+#     "null_pct": (backfill.isna().mean() * 100).round(1),
+#     "n_unique": backfill.nunique(dropna=True),
+#     "sample": [backfill[c].dropna().iloc[0] if backfill[c].notna().any() else None
+#                for c in backfill.columns],
+# })
+# prof.sort_values("null_pct", ascending=False)
+```
+RUN THIS TO DROP COLUMNS FROM BACKFILL
+```{python}
+backfill = backfill.drop(columns = ["LOCAPROP", "ADDRGL2", "ENDDATE", "OWNER1", "OWNER2", "EDITNOTE", "MAPID", "YEAR", "GLYEAR", "SOURCETYPE", "SOURCEDATE", "EDITMETHOD", "SHAPE_STAr", "SHAPE_STLe", "GLIST_SPAN", "PARCID", "CRHOUSPCT", "MUNGL1PCT", "AOEGL_HS", "AOEGL_NR", "HSITEVAL", "E911ADDR", "ADDRGL1", "ZIPGL"])
+
+```
+SAVING THE BACKFILL df AS A FILE 
+```{python}
+from pathlib import Path
+import geopandas as gpd
+from shapely.geometry import MultiPolygon
+
+out_path = Path("Data/parcels/all_parcels_vermont.fgb")
+out_path.parent.mkdir(parents=True, exist_ok=True)
+
+bad_geom = backfill.geometry.isna() | backfill.geometry.is_empty
+gdf = backfill.loc[~bad_geom].copy()
+
+assert gdf.geom_type.isin(["Polygon", "MultiPolygon"]).all(), gdf.geom_type.value_counts()
+gdf["geometry"] = gdf.geometry.apply(
+    lambda g: MultiPolygon([g]) if g.geom_type == "Polygon" else g
+)
+
+gdf.to_file(out_path, driver="FlatGeobuf")
+print("wrote", out_path, "|", gdf.shape)
+
+
+#quick check 
+parcels = gpd.read_file("Data/parcels/all_parcels_vermont.fgb")
+print(parcels.shape, "|", parcels.crs)
+print(parcels.geom_type.value_counts())
+
+# quick round-trip check — did the derived cols survive with sane values?
+# print(parcels[["OOSOWNER", "INVESTMENTPROP", "EXEMPT", "VACANTLAND"]].apply(lambda s: s.value_counts()).T)
+# parcels.head()
+```
+```{python}
+print(gdf.columns)
+
+```
+
+
+
+
+Bottom of the page cell where I am storing the dictionaries of transmuted columns 
+```{python}
+statutes_dict = {
+    '3848:3849': 'Business Inventory & Equipment',
+    '3848:38:00': 'Business Inventory & Equipment',
+    '3840': 'Charitable, Fraternal, or Rescue',
+    '3840;5405a(a)(4)': 'Charitable/Rescue (inc. Education Tax)',
+    '3840;54': 'Charitable/Rescue (inc. Education Tax)',
+    '2741': 'Tax Stabilization Contract',
+    '24/2741': 'Tax Stabilization Contract',
+    '3832': 'Public, Pious, or Charitable',
+    '3832(1)': 'Out-of-Town Municipal Property',
+    '3832(7)': 'Health or Recreational Property',
+    '3832(7)(B)': 'Non-profit Ice Skating Rink',
+    '3832(7B': 'Non-profit Ice Skating Rink', 
+    '5401': 'Statewide Education Tax Exception',
+    '3752(7)': 'Agricultural / Current Use'
+}
+
+expdesc_dict = {
+    'Statutory': 'State Law Exemption',
+    'Solar Plant': 'Solar Energy Facility',
+    'Non-Approved (Voted)': 'Local Town-Voted Exemption',
+    'Qualified Housing Units': 'Affordable / Qualified Housing',
+    'Grandfathered': 'Pre-existing Historical Exemption',
+    'Partial-Statutory': 'Partial State Law Exemption',
+    'Municipal Contract (Owner Pays)': 'Payment in Lieu of Taxes (PILOT)',
+    'Ski Lifts / Snow Making Equip': 'Ski Resort Equipment',
+    'Court Ordered': 'Judicially Mandated Exemption',
+    'Wind Plant': 'Wind Energy Facility'
+}
+
+rescode_dict = {
+    "T" :   "TOWN RESIDENT",
+    "NS"  :  "OUT OF STATE RESIDENT", 
+    "S" : "VERMONT RESIDENT",     
+    "C" : "CORPORATION/ENTITY",    
+    "c"   :  "CORPORATION/ENTITY"    
+}
+
+cat_dict = {
+    "R1": "Residential I (Under 6 Acres)",
+    "R2": "Residential II (6 Acres or More)",
+    "M": "Miscellaneous",
+    "O": "Other",
+    "C": "Commercial",
+    "MHL": "Mobile Home Landed (With Land)",
+    "S1": "Seasonal I (Under 6 Acres)",
+    "MHU": "Mobile Home Unlanded (Without Land)",
+    "W": "Woodland",
+    "S2": "Seasonal II (6 Acres or More)",
+    "F": "Farm",
+    "CA": "Commercial Apartments",
+    "I": "Industrial",
+    "UE": "Utility Electric",
+    "UO": "Utility Other"
+}
+
+purpose_dict = {
+    "R1" : "PRIMARY RESIDENCE",
+    "R2" : "PRIMARY RESIDENCE",
+    "MHL" : "PRIMARY RESIDENCE",
+    "MHU": "PRIMARY RESIDENCE",
+    "S1": "SEASONAL PROPERTY",
+    "S2": "SEASONAL PROPERTY", 
+    "W": "WOODLAND",
+    "F": "FARM",
+    "CA" : "COMMERCIAL APARTMENTS", 
+    "M": "NOT LISTED",
+    "O" : "NOT LISTED",
+    "C": "COMMERCIAL/INDUSTRIAL/UTILITY",
+    "I": "COMMERCIAL/INDUSTRIAL/UTILITY",
+    "UE" : "COMMERCIAL/INDUSTRIAL/UTILITY",
+    "UO": "COMMERCIAL/INDUSTRIAL/UTILITY"
+}
+
+
+oos_dict = {
+    "VERMONT" : "VT",
+}
+oos_dict.update(dict.fromkeys(['QC', 'QC CANADA', 'PQ', "QUEBEC", "ON", "ONTARIO", "QUE", "BC", "ONT", "CAN"], 'CANADA'))
+oos_dict.update(dict.fromkeys(["MASS", "MA."], 'MA'))
+oos_dict.update(dict.fromkeys(["MICHIGAN"], 'MI'))
+oos_dict.update(dict.fromkeys(["OHIO"], 'OH'))
+oos_dict.update(dict.fromkeys(["CT."], 'CT'))
+oos_dict.update(dict.fromkeys(["R.I."], 'RI'))
+oos_dict.update(dict.fromkeys(["W VA"], 'WV'))
+oos_dict.update(dict.fromkeys(["MARYLAND"], 'MD'))
+oos_dict.update(dict.fromkeys(["N CAROLINA"], 'NC'))
+oos_dict.update(dict.fromkeys(["NEW YORK", "N.Y.", "12513", "N Y"], 'NY'))
+oos_dict.update(dict.fromkeys(["FLORIDA", "FLA"], 'FL'))
+oos_dict.update(dict.fromkeys(["ENGLAND", "AE", "UNK", "BERMUDA", "UK", "VY", "FRANCE", "IND", "ARUBA", "GERMANY", "IRELAND", "SWITZERLAN", "QLD AUS", "LIN", "0R", "BERLIN", "AUSTRALIA", "NS", "FWI", "BAHAMAS"], 'FOREIGN'))
+oos_dict.update(dict.fromkeys(["VI", "PR", "GUAM"], 'US TERRITORY'))
+
+
+```

@@ -1,0 +1,56 @@
+---
+title: "Investigating the features of the parcels dataset"
+author: Isaac Wedaman
+date: today
+description:  The second version of the vermotn parcels the exploratory motion
+format: 
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute: 
+  cache: true
+editor:
+    render-on-save: true
+---
+#ill get to this later
+```{python}
+from pathlib import Path 
+import os
+import sys
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+sys.path.insert(0, str(_project_root))
+print(os.getcwd())
+
+from api.models import FilterSource
+from sql_render import sql_filter_block
+import json
+from query.processed_db import DB
+
+
+
+sql_dir = Path("query/sql/parcels")
+src = FilterSource(filter_table="parcels_info", filters={"TOWN": ["PUTNEY"]},
+                   join_key="OBJECTID", join_type="inner")
+sql, params = sql_filter_block(sql_dir / "geo_query_parcels.sql", [src])
+print(sql)       
+```
+
+#before we do anything, we must download all six datasets and explore
+```{python}
+GEOJSON_FULL = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Cadastral_VTPARCELS_poly_standardized_parcels_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+GEOJSON_INACTIVE = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Cadastral_VTPARCELS_poly_standardized_inactive_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+GEOJSON_PARCEL_STATUS_BY_TOWN = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Cadastral_VTPARCELS_poly_DataStatus_SP_v1/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+GEOJSON_PARCELS_TRANSFERS = "https://services1.arcgis.com/BkFxaEFNwHqX3tAw/arcgis/rest/services/FS_VCGI_OPENDATA_Cadastral_PTTR_point_WM_v1_view/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+
+
+
+```
