@@ -35,7 +35,6 @@ def fetch_footprints() -> pd.DataFrame | None:
 
 def collect():
     df = fetch_footprints()
-    print(f"ROW COUNT: {len(df)}")
     return df
 
 

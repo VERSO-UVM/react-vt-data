@@ -18,10 +18,10 @@ def _load_spatial() -> None:
     Load the spatial extension, installing it first if necessary.
     """
     try:
-        con.execute("""--sql LOAD spatial""")
+        con.execute("""LOAD spatial""")
     except Exception:
-        con.execute("""--sql INSTALL spatial""")
-        con.execute("""--sql LOAD spatial""")
+        con.execute("""INSTALL spatial""")
+        con.execute("""LOAD spatial""")
 
 
 def build_footprints():

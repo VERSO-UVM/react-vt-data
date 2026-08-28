@@ -14,34 +14,34 @@
 import argparse
 
 from data_collection import (
-    # acs5,
+    acs5,
     building_footprints,
-    # cdc,
-    # demographics,
-    # economic,
-    # education,
-    # fips,
-    # flood,
-    # historic_population,
-    # housing,
-    # qcew,
-    # wastewater,
-    # zoning,
+    cdc,
+    demographics,
+    economic,
+    education,
+    fips,
+    flood,
+    historic_population,
+    housing,
+    qcew,
+    wastewater,
+    zoning,
 )
 from datastore.lake_build import insert_year, replace_table
 
 # Datasets WITH year columns (longitudinal)
-YEARLY_SCRAPERS = []  # acs5, demographics, economic, education, housing, qcew]
+YEARLY_SCRAPERS = [acs5, demographics, economic, education, housing, qcew]
 
 # Datasets WITHOUT year columns (static)
 STATIC_SCRAPERS = [
     building_footprints,
-    # cdc,
-    # fips,
-    # flood,
-    # historic_population,
-    # wastewater,
-    # zoning,
+    cdc,
+    fips,
+    flood,
+    historic_population,
+    wastewater,
+    zoning,
 ]
 
 
