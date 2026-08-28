@@ -22,9 +22,6 @@ backend/Data/Parcels/
 backend/Data/lake
 backend/Data/lake.files/
 
-# DuckDB Database with CLEAN tables
-backend/Data/warehouse.duckdb
-
 # Local planning/notes files
 claude_todo.md
 claude-work-done.md
