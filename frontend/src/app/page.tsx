@@ -640,7 +640,13 @@ function FeaturedDatasets() {
   ];
 
   return (
-    <Box style={{ background: COLORS.birchDim, borderRadius: 28 }} py={56}>
+    <Box
+      style={{
+        background: COLORS.birchDim,
+        borderRadius: 28,
+      }}
+      py={56}
+    >
       <Container size="lg">
         <Reveal>
           <Text
@@ -657,6 +663,7 @@ function FeaturedDatasets() {
             Featured data
           </Text>
         </Reveal>
+
         <Reveal delay={0.1}>
           <Text
             ta="center"
@@ -671,27 +678,39 @@ function FeaturedDatasets() {
           >
             {datasets.map((d, i) => (
               <span key={d}>
-                <Link
-                  // NOTE: Placeholder link for each dataset for now
-                  href="#"
-                  style={{
-                    color: 'inherit',
-                    textDecoration: 'underline',
-                    textDecorationStyle: 'dotted',
-                    textDecorationColor: COLORS.slate,
-                    textUnderlineOffset: 4,
-                  }}
-                >
-                  {d}
-                </Link>
+                {d}
                 {i < datasets.length - 1 && (
-                  <span style={{ color: COLORS.amber, margin: '0 12px' }}>
+                  <span
+                    style={{
+                      color: COLORS.amber,
+                      margin: '0 10px',
+                    }}
+                  >
                     ·
                   </span>
                 )}
               </span>
             ))}
           </Text>
+        </Reveal>
+
+        <Reveal delay={0.2}>
+          <Box ta="center" mt={28}>
+            <Link
+              href="resources/data-sources"
+              style={{
+                fontFamily: FONTS.mono,
+                fontSize: 13,
+                letterSpacing: '0.04em',
+                color: COLORS.ink,
+                textDecoration: 'none',
+                borderBottom: `1px solid ${COLORS.amber}`,
+                paddingBottom: 4,
+              }}
+            >
+              Browse all data sources →
+            </Link>
+          </Box>
         </Reveal>
       </Container>
     </Box>
