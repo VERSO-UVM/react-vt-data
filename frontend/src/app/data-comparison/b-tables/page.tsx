@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
-  Center,
+  Box,
   Container,
   Group,
+  Grid,
+  Loader,
   Paper,
   Select,
   Stack,
@@ -14,8 +16,9 @@ import {
 } from '@mantine/core';
 import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
-import { ChartStack } from '@/components/Charts';
-import { createChartItem } from '@/utils/itemFactory';
+import { DemographicsDashboard } from '@/components/Reports/dashboards';
+// import { ChartStack } from '@/components/Charts';
+// import { createChartItem } from '@/utils/itemFactory';
 import { DataRow } from '@/types/cachedCharts';
 
 // ---------------------------------------------------------------------------
@@ -70,14 +73,216 @@ const SECTIONS: Record<string, SectionConfig> = {
   },
 };
 
+function HeroSection({
+  section,
+  setSection,
+  year,
+  setYear,
+  availableYears,
+}: any) {
+  return (
+    <Box
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        width: '100vw',
+        height: 350,
+        left: '50%',
+        marginLeft: '-50vw',
+        background: '#1B3A2F',
+        paddingTop: 30,
+        paddingBottom: 64,
+      }}
+    >
+      <Container size="xl">
+        <Grid gap="xl" align="center">
+          <Grid.Col span={{ base: 12, lg: 7 }}>
+            <Stack gap="md" maw={760}>
+              <Text
+                style={{
+                  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                  fontSize: 12,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: '#E7B563',
+                }}
+              >
+                American Community Survey
+              </Text>
+
+              <Title
+                order={1}
+                style={{
+                  fontFamily: "'Fraunces', 'Iowan Old Style', serif",
+                  fontWeight: 600,
+                  fontSize: 'clamp(2.4rem,5vw,4rem)',
+                  lineHeight: 1.05,
+                  color: '#F6F5EF',
+                }}
+              >
+                Detailed Table Explorer
+              </Title>
+
+              <Text
+                size="lg"
+                maw={620}
+                style={{
+                  color: 'rgba(246,245,239,0.78)',
+                }}
+              >
+                Explore the complete American Community Survey with detailed
+                demographic, education, housing, employment, and income tables
+                for every Vermont community.
+              </Text>
+            </Stack>
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, lg: 5 }}>
+            <ExplorerControls
+              section={section}
+              setSection={setSection}
+              year={year}
+              setYear={setYear}
+              availableYears={availableYears}
+            />
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </Box>
+  );
+}
+
+function ExplorerControls({
+  section,
+  setSection,
+  year,
+  setYear,
+  availableYears,
+}: {
+  section: string;
+  setSection: (value: string) => void;
+  year: number;
+  setYear: (value: number) => void;
+  availableYears: number[];
+}) {
+  return (
+    <Box
+      mt={48}
+      style={{
+        background: 'rgba(246,245,239,0.07)',
+        border: '1px solid rgba(246,245,239,0.18)',
+        borderRadius: 18,
+        padding: '24px 28px',
+        backdropFilter: 'blur(8px)',
+        maxWidth: 720,
+      }}
+    >
+      <Stack gap="lg">
+        <Stack gap={2}>
+          <Text
+            style={{
+              fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+              fontSize: 11,
+              letterSpacing: '.08em',
+              textTransform: 'uppercase',
+              color: 'rgba(246,245,239,0.55)',
+            }}
+          >
+            Analysis
+          </Text>
+
+          <Title
+            order={3}
+            style={{
+              fontFamily: "'Fraunces', 'Iowan Old Style', serif",
+              color: '#F6F5EF',
+            }}
+          >
+            Choose a dataset
+          </Title>
+
+          <Text
+            style={{
+              color: 'rgba(246,245,239,0.72)',
+            }}
+          >
+            Select an ACS topic and year to begin exploring detailed Census
+            tables.
+          </Text>
+        </Stack>
+
+        <Group align="flex-end" gap="md" wrap="wrap">
+          <Select
+            label="Topic"
+            value={section}
+            onChange={(v) => v && setSection(v)}
+            data={Object.keys(SECTIONS)}
+            flex={1}
+            miw={260}
+            styles={{
+              label: {
+                color: '#E7B563',
+                fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                textTransform: 'uppercase',
+                fontSize: 11,
+                letterSpacing: '.08em',
+              },
+              input: {
+                borderRadius: 12,
+                height: 48,
+                background: 'rgba(255,255,255,.08)',
+                border: '1px solid rgba(255,255,255,.18)',
+                color: '#F6F5EF',
+              },
+              dropdown: {
+                borderRadius: 12,
+              },
+            }}
+          />
+          <Select
+            label="Year"
+            value={String(year)}
+            onChange={(v) => v && setYear(Number(v))}
+            data={availableYears.map((y) => ({
+              value: String(y),
+              label: String(y),
+            }))}
+            disabled={availableYears.length === 0}
+            w={150}
+            styles={{
+              label: {
+                color: '#E7B563',
+                fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
+                textTransform: 'uppercase',
+                fontSize: 11,
+                letterSpacing: '.08em',
+              },
+              input: {
+                borderRadius: 12,
+                height: 48,
+                background: 'rgba(255,255,255,.08)',
+                border: '1px solid rgba(255,255,255,.18)',
+                color: '#F6F5EF',
+              },
+              dropdown: {
+                borderRadius: 12,
+              },
+            }}
+          />
+        </Group>
+      </Stack>
+    </Box>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
 export default function DataComparisonPage() {
   const { myLocation, comparison, yearMax: profileYearMax } = useProfile();
-
-  const [section, setSection] = useState<string>('Demographics');
+  type DashboardSection =
+    'Demographics' | 'Housing' | 'Education' | 'Economy' | 'Labor Force';
+  const [section, setSection] = useState<DashboardSection>('Demographics');
   const [primaryData, setPrimaryData] = useState<DataRow[]>([]);
   const [compareData, setCompareData] = useState<DataRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,13 +299,25 @@ export default function DataComparisonPage() {
 
     const fetchOne = (name: string) =>
       axios
-        .post(cfg.url, { name, year_min: cfg.yearMin, year_max: cfg.yearMax })
+        .post(cfg.url, {
+          filters: {
+            Location: [name],
+            year: {
+              min: cfg.yearMin,
+              max: cfg.yearMax,
+            },
+          },
+          include: [],
+        })
         .then((r) => r.data);
 
     Promise.all([fetchOne(myLocation.name), fetchOne(comparison.name)])
       .then(([primary, comp]) => {
-        setPrimaryData(primary.data ?? []);
-        setCompareData(comp.data ?? []);
+        console.log('PRIMARY RESPONSE', primary);
+        console.log('COMPARE RESPONSE', comp);
+
+        setPrimaryData(Array.isArray(primary.data) ? primary.data : []);
+        setCompareData(Array.isArray(comp.data) ? comp.data : []);
       })
       .catch(() => setError('Failed to load data. Is the API running?'))
       .finally(() => setLoading(false));
@@ -110,7 +327,11 @@ export default function DataComparisonPage() {
   // Derive available years from fetched data; default to profile yearMax
   // ---------------------------------------------------------------------------
   const availableYears: number[] = Array.from(
-    new Set(primaryData.map((r) => Number(r.year))),
+    new Set(
+      (Array.isArray(primaryData) ? primaryData : [])
+        .map((r) => Number(r.year))
+        .filter(Boolean),
+    ),
   ).sort();
 
   const [year, setYear] = useState<number>(profileYearMax);
@@ -135,64 +356,87 @@ export default function DataComparisonPage() {
   const primaryForYear = primaryData.filter((r) => String(r.year) === yearStr);
   const compareForYear = compareData.filter((r) => String(r.year) === yearStr);
 
-  const chartItem = createChartItem({
-    title: `${section} Comparison — ${year}`,
-    xField: 'Variable',
-    yField: cfg.yField,
-    subtype: 'CompareHBarChart',
-    data: primaryForYear,
-    compareData: compareForYear,
-    categories: [section === 'Labor Force' ? 'Labor & Economy' : section],
-    chartParams: {
-      legendLabels: [myLocation.name, comparison.name],
-      unit: cfg.unit,
-    },
-  });
+  const dashboardData = useMemo(
+    () => ({
+      year,
+
+      primary: {
+        current: primaryForYear,
+        history: primaryData,
+        name: myLocation.name,
+      },
+
+      comparison: {
+        current: compareForYear,
+        history: compareData,
+        name: comparison.name,
+      },
+    }),
+    [
+      year,
+      primaryForYear,
+      compareForYear,
+      primaryData,
+      compareData,
+      myLocation.name,
+      comparison.name,
+    ],
+  );
+
+  interface DashboardData {
+    year: number;
+    primary: {
+      name: string;
+      current: DataRow[];
+      history: DataRow[];
+    };
+    comparison: {
+      name: string;
+      current: DataRow[];
+      history: DataRow[];
+    };
+  }
+
+  interface DashboardProps {
+    data: DashboardData;
+  }
+
+  const dashboards: Partial<
+    Record<DashboardSection, React.ComponentType<DashboardProps>>
+  > = {
+    Demographics: DemographicsDashboard,
+    Housing: () => <div>Coming soon</div>,
+    Education: () => <div>Coming soon</div>,
+    Economy: () => <div>Coming soon</div>,
+    'Labor Force': () => <div>Coming soon</div>,
+  };
+
+  const Dashboard = dashboards[section];
 
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   return (
     <>
-      <Center pt="xl" mb="md">
-        <Title order={2}>Detailed Table Comparison</Title>
-      </Center>
-
-      <Container size="lg">
-        <Stack>
-          <Paper withBorder p="md" radius="md">
-            <Group gap="md" align="flex-end">
-              <Select
-                label="Section"
-                value={section}
-                onChange={(v) => v && setSection(v)}
-                data={Object.keys(SECTIONS)}
-                w={180}
-              />
-              <Select
-                label="Year"
-                value={String(year)}
-                onChange={(v) => v && setYear(Number(v))}
-                data={availableYears.map((y) => ({
-                  value: String(y),
-                  label: String(y),
-                }))}
-                disabled={availableYears.length === 0}
-                w={100}
-              />
-            </Group>
+      <HeroSection
+        section={section}
+        setSection={setSection}
+        year={year}
+        setYear={setYear}
+        availableYears={availableYears}
+      />
+      <Container size="xl" mb="xl" mt="xl">
+        {error && <Text c="red">{error}</Text>}
+        {loading ? (
+          <Paper radius="lg" p={60} withBorder>
+            <Stack align="center">
+              <Loader color="#dd9a2f" type="dots" />
+              <Text c="dimmed">Loading Census data...</Text>
+            </Stack>
           </Paper>
-
-          {error && <Text c="red">{error}</Text>}
-
-          {loading ? (
-            <Text c="dimmed" py="xl" ta="center">
-              Loading…
-            </Text>
-          ) : (
-            <ChartStack charts={[chartItem]} action="add" />
-          )}
-        </Stack>
+        ) : (
+          Dashboard && <Dashboard data={dashboardData} />
+        )}
       </Container>
     </>
   );
