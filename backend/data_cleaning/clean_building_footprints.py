@@ -6,8 +6,10 @@
 **Description**:
     Data cleaning script for the raw `building_footprints` table in the DuckLake
     Run with:
-python -m ETL.data_cleaning.clean_building_footprints
+python -m data_cleaning.clean_building_footprints
 """
+
+import pandas as pd
 
 from datastore.lake_build import con
 
@@ -24,46 +26,61 @@ def _load_spatial() -> None:
         con.execute("""LOAD spatial""")
 
 
-def build_footprints():
+def build_footprints() -> pd.DataFrame:
     """
-    Clean FEMA flood polygons.
+    Clean building footprints polygons.
     """
-    con.execute(
+    df = con.execute(
         """--sql
-        CREATE OR REPLACE VIEW footprints AS
         SELECT
-            POLY_ID,
-            E911TOWN,
-            TOWNGEOID,
-            COUNTY,
-            HEIGHTFT,
-            SITETYPE,
-            POLYTYPE,
+            OBJECTID AS object_id,
+            E911TOWN AS town,
+            COUNTY AS county,
+            HEIGHTFT AS height_ft,
+            SITETYPE AS building_type,
+            POLY_TYPE AS print_type,
             ST_GeomFromWKB(geometry) AS geometry,
-        
         FROM lake.RAW.building_footprints
         """
-    )
+    ).df()
+
+    # Capitalize the first character town and county columns
+    df["town"] = df["town"].str.title() + ", "
+    df["county"] = df["county"].str.capitalize() + " County, Vermont"
+    df["NAME"] = df["town"] + df["county"]
+
+    cols = [
+        "object_id",
+        "town",
+        "county",
+        "NAME",
+        "height_ft",
+        "building_type",
+        "print_type",
+        "geometry",
+    ]
+    return df[cols]
 
 
-def add_to_lake():
+def add_to_lake(df: pd.DataFrame) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.VCGI_buildingFootprints_geom AS
         SELECT *
-        FROM footprints
+        FROM df
         """
     )
 
 
 def clean():
     _load_spatial()
-    build_footprints()
+    df = build_footprints()
+    return df
 
 
 def main():
-    clean()
-    add_to_lake()
+    df = clean()
+    add_to_lake(df)
 
 
 if __name__ == "__main__":
