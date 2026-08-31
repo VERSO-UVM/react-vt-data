@@ -16,7 +16,11 @@ import {
 } from '@mantine/core';
 import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
-import { DemographicsDashboard } from '@/components/Reports/dashboards';
+import {
+  DemographicsDashboard,
+  LandUseDashboard,
+  HousingDashboard,
+} from '@/components/Reports/dashboards';
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
 import { DataRow } from '@/types/cachedCharts';
@@ -41,35 +45,42 @@ const SECTIONS: Record<string, SectionConfig> = {
     yField: 'Percent',
     unit: '%',
     yearMin: 2010,
-    yearMax: 2023,
+    yearMax: 2024,
   },
   Education: {
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
     yField: 'Percent',
     unit: '%',
     yearMin: 2012,
-    yearMax: 2023,
+    yearMax: 2024,
   },
   Housing: {
     url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
     yField: 'Value',
     unit: '',
     yearMin: 2010,
-    yearMax: 2023,
+    yearMax: 2024,
   },
   'Labor Force': {
     url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
     yField: 'Percent',
     unit: '%',
     yearMin: 2010,
-    yearMax: 2023,
+    yearMax: 2024,
   },
   Income: {
     url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
     yField: 'Value',
     unit: '',
     yearMin: 2010,
-    yearMax: 2023,
+    yearMax: 2024,
+  },
+  'Land Use': {
+    url: `${BASE_API_URL}/load/mapping/zoning/standard_new`,
+    yField: 'Value',
+    unit: '',
+    yearMin: 2024,
+    yearMax: 2024,
   },
 };
 
@@ -120,7 +131,7 @@ function HeroSection({
                   color: '#F6F5EF',
                 }}
               >
-                Detailed Table Explorer
+                Reports by Topic
               </Title>
 
               <Text
@@ -281,7 +292,12 @@ function ExplorerControls({
 export default function DataComparisonPage() {
   const { myLocation, comparison, yearMax: profileYearMax } = useProfile();
   type DashboardSection =
-    'Demographics' | 'Housing' | 'Education' | 'Economy' | 'Labor Force';
+    | 'Demographics'
+    | 'Housing'
+    | 'Education'
+    | 'Economy'
+    | 'Labor Force'
+    | 'Land Use';
   const [section, setSection] = useState<DashboardSection>('Demographics');
   const [primaryData, setPrimaryData] = useState<DataRow[]>([]);
   const [compareData, setCompareData] = useState<DataRow[]>([]);
@@ -405,10 +421,11 @@ export default function DataComparisonPage() {
     Record<DashboardSection, React.ComponentType<DashboardProps>>
   > = {
     Demographics: DemographicsDashboard,
-    Housing: () => <div>Coming soon</div>,
+    Housing: HousingDashboard,
     Education: () => <div>Coming soon</div>,
     Economy: () => <div>Coming soon</div>,
     'Labor Force': () => <div>Coming soon</div>,
+    'Land Use': LandUseDashboard,
   };
 
   const Dashboard = dashboards[section];

@@ -1,1 +1,3 @@
 export { default as DemographicsDashboard } from './DemographicDashboard';
+export { default as LandUseDashboard } from './LandUseDashboard';
+export { default as HousingDashboard } from './HousingDashboard';
