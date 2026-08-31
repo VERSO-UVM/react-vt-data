@@ -45,9 +45,9 @@ def build_footprints() -> pd.DataFrame:
     ).df()
 
     # Capitalize the first character town and county columns
-    df["town"] = df["town"].str.title() + ", "
+    df["town"] = df["town"].str.title()
     df["county"] = df["county"].str.capitalize() + " County, Vermont"
-    df["NAME"] = df["town"] + df["county"]
+    df["NAME"] = df["town"] + ", " + df["county"]
 
     cols = [
         "object_id",
