@@ -8,13 +8,13 @@ A **React-based Website** for exploring, visualizing, and interpreting Vermont d
 
 Install these before you start. Every one of them is used by the standard workflow.
 
-| Tool                                          | Why it's needed                                                                                      |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [git-lfs](https://git-lfs.com/)               | The datasets in `Data/` are tracked with Git LFS.                                                    |
-| [just](https://just.systems/man/en/)          | Task runner. Every dev command in this project is a `just` recipe (see [justfile](justfile)).        |
-| [uv](https://docs.astral.sh/uv/)              | Python dependency management and script running for the backend.                                     |
-| [Node + npm](https://nodejs.org/)             | Frontend dependencies and the Next.js dev server.                                                    |
-| [podman](https://podman.io/docs/installation) | Builds and runs the containerized stack.  |
+| Tool                                          | Why it's needed                                                                               |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [git-lfs](https://git-lfs.com/)               | The datasets in `Data/` are tracked with Git LFS.                                             |
+| [just](https://just.systems/man/en/)          | Task runner. Every dev command in this project is a `just` recipe (see [justfile](justfile)). |
+| [uv](https://docs.astral.sh/uv/)              | Python dependency management and script running for the backend.                              |
+| [Node + npm](https://nodejs.org/)             | Frontend dependencies and the Next.js dev server.                                             |
+| [podman](https://podman.io/docs/installation) | Builds and runs the containerized stack.                                                      |
 
 > **Note:** podman is required even for the non-containerized workflow, because the `local-*` recipes call `just down` first to make sure a running container isn't already holding the ports.
 
@@ -137,10 +137,7 @@ This project is open-source under the **MIT License**.
 
 # VM Deployment
 
-
-
 1. sudo su - appuser0
-
 
 ## Credits
 
