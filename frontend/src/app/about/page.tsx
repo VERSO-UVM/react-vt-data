@@ -29,7 +29,6 @@ import {
   IconBuildingCommunity,
   IconArrowRight,
   IconRoute,
-
 } from '@tabler/icons-react';
 
 import {
@@ -87,7 +86,7 @@ function AboutHero() {
           zIndex: 2,
         }}
       >
-        <Stack gap="xl" maw={900}>
+        <Stack gap="xs" maw={900}>
           <Group gap={10}>
             <Box
               style={{
@@ -207,7 +206,7 @@ function Stat({ number, label }: { number: string; label: string }) {
     <Group
       justify="center"
       align="baseline"
-      gap="md"
+      gap="xs"
       style={{
         borderRight: '1px solid rgba(246,245,239,.15)',
       }}
@@ -244,7 +243,7 @@ function Stat({ number, label }: { number: string; label: string }) {
 function WhySection() {
   return (
     <Container size="lg" py={{ base: 80, md: 130 }}>
-      <Grid gap="xl" align="center">
+      <Grid gap="xs" align="center">
         <Grid.Col span={{ base: 12, md: 9 }}>
           <Text
             style={{
@@ -348,7 +347,7 @@ function WhatWeDo() {
         <SectionHeading
           eyebrow="The platform"
           title="What you can do"
-          description="VDC turns complex public datasets into tools designed for exploration, comparison, and discovery."
+          description="Explore the tools designed for exploration, comparison, and discovery."
           light
         />
 
@@ -503,14 +502,14 @@ function TopicsSection() {
       <SectionHeading
         eyebrow="Areas of focus"
         title="A fuller picture of Vermont"
-        description="Community questions rarely fit neatly into a single dataset. VDC connects information across the topics that shape Vermont communities."
+        description="Questions about your community rarely fit into a single dataset. The Vermont Data Collaborative connects information across the topics that shape Vermont communities."
       />
 
       <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing={0} mt={55}>
         {topics.map((topic, index) => (
           <Box
             key={topic.title}
-            p="xl"
+            p="lg"
             style={{
               borderTop: `1px solid ${COLORS.line}`,
               borderRight:
@@ -534,6 +533,7 @@ function TopicsSection() {
               mt="lg"
               style={{
                 fontFamily: FONTS.display,
+                color: COLORS.spruceDeep,
               }}
             >
               {topic.title}
@@ -607,7 +607,7 @@ function HowItWorks() {
           {steps.map((step, index) => (
             <Box
               key={step.number}
-              p="xl"
+              p="lg"
               style={{
                 borderTop: `1px solid rgba(246,245,239,.18)`,
                 borderRight:
@@ -698,7 +698,7 @@ function WhoItsFor() {
             key={audience.title}
             withBorder
             radius="lg"
-            p="xl"
+            p="md"
             style={{
               borderColor: COLORS.line,
               backgroundColor: index % 2 === 0 ? COLORS.birchDim : COLORS.birch,
@@ -876,7 +876,7 @@ function ExploreCTA() {
       }}
     >
       <Container size="md">
-        <Stack align="center" gap="xl">
+        <Stack align="center" gap="xs">
           <Text
             style={{
               fontFamily: FONTS.mono,
