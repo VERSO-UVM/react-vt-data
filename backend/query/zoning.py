@@ -70,3 +70,12 @@ def get_zoning_allowances(
     table = DB.execute(*sql_filter_block(sql_dir / "rules_table.sql", sources)).df()
 
     return agg, table
+
+
+def get_building_footprints(
+    sources: list[FilterSource],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    agg = DB.execute(*sql_filter_block(sql_dir / "agg_footprints.sql", sources)).df()
+    table = DB.execute(*sql_filter_block(sql_dir / "footprints.sql", sources)).df()
+
+    return agg, table

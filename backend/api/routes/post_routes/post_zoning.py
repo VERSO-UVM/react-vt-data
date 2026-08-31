@@ -4,6 +4,7 @@ from api.core_functions import request_to_source, spec_to_source
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, FilterSpec, make_response
 from query.zoning import (
+    get_building_footprints,
     get_unzoned_geojson,
     get_zoning_aggregated_acres,
     get_zoning_allowances,
@@ -51,6 +52,17 @@ async def acreage_response(request: FilterRequest):
 async def zoning_allowances(request: FilterRequest):
     source = request_to_source(request, "zoning_info", "default")
     agg, table = get_zoning_allowances([source])
+    return make_response(
+        data=agg,
+        metadata=get_metadata("zoning"),
+        tableData=table,
+    )
+
+
+@router.post("/load/data/zoning/building-footprints")
+async def building_footprints(request: FilterRequest):
+    source = request_to_source(request, "building_footprints", "default")
+    agg, table = get_building_footprints([source])
     return make_response(
         data=agg,
         metadata=get_metadata("zoning"),

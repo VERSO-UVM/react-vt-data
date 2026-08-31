@@ -35,6 +35,16 @@
         "Value": "val"
       }
     },
+    "building_footprints": {
+      "join_key": "object_id",
+      "join_type": "inner",
+      "columns": {
+        "County": "county",
+        "Jurisdiction": "town",
+        "Height (ft)": "height_ft",
+        "Building Type": "building_type"
+      }
+    },
     "cdc_county_places": {
       "join_key": "LocationID",
       "join_type": "inner",

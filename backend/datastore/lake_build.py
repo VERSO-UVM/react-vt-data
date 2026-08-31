@@ -37,8 +37,8 @@ con.execute(
 )
 
 # Create schemas in the lake catalog
-con.execute("""--sql CREATE SCHEMA IF NOT EXISTS lake.RAW""")
-con.execute("""--sql CREATE SCHEMA IF NOT EXISTS lake.CLEANED""")
+con.execute("""CREATE SCHEMA IF NOT EXISTS lake.RAW""")
+con.execute("""CREATE SCHEMA IF NOT EXISTS lake.CLEANED""")
 
 
 def insert_year(name: str, df: pd.DataFrame, year: int):

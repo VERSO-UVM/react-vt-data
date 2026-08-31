@@ -15,6 +15,7 @@ import argparse
 
 from data_collection import (
     acs5,
+    building_footprints,
     cdc,
     demographics,
     economic,
@@ -34,6 +35,7 @@ YEARLY_SCRAPERS = [acs5, demographics, economic, education, housing, qcew]
 
 # Datasets WITHOUT year columns (static)
 STATIC_SCRAPERS = [
+    building_footprints,
     cdc,
     fips,
     flood,
