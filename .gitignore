@@ -49,6 +49,7 @@ backend/logger/*.log
 # Per Next.js docs, this one below should be in .gitignore
 next-env.d.ts
 
+
 # MacOS / IDE files
 .DS_Store
 *.swp
@@ -58,5 +59,6 @@ next-env.d.ts
 out/
 dist/
 backend/Data/Census/**/*.csv
+frontend/tsconfig.tsbuildinfo
 
 tmp/

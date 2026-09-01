@@ -24,7 +24,7 @@ interface MyMapProps {
    * own `rgba_color` and `tooltip` properties, exactly like the main layer.
    */
   baseGeojson?: FeatureCollection | null;
-  largeBorders: boolean;
+  largeBorders?: boolean;
 }
 
 const BASE_STYLES = {
@@ -56,7 +56,7 @@ export default function VTMap({
   controllerOn = true,
   initialZoom = 7,
   baseGeojson = null,
-  largeBorders,
+  largeBorders = false,
 }: MyMapProps) {
   const [viewState, setViewState] = useState({
     ...INITIAL_VIEW_STATE,
