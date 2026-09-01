@@ -21,6 +21,7 @@ import {
   LandUseDashboard,
   HousingDashboard,
   EducationDashboard,
+  HealthDashboard,
 } from '@/components/Reports/dashboards';
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
@@ -71,6 +72,13 @@ const SECTIONS: Record<string, SectionConfig> = {
   },
   'Land Use': {
     url: `${BASE_API_URL}/load/mapping/zoning/standard_new`,
+    yField: 'Value',
+    unit: '',
+    yearMin: 2024,
+    yearMax: 2024,
+  },
+  'Community Health': {
+    url: `${BASE_API_URL}/load/mapping/cdc/places/single`,
     yField: 'Value',
     unit: '',
     yearMin: 2024,
@@ -286,7 +294,12 @@ function ExplorerControls({
 export default function DataComparisonPage() {
   const { myLocation, comparison, yearMax: profileYearMax } = useProfile();
   type DashboardSection =
-    'Demographics' | 'Housing' | 'Education' | 'Labor & Economy' | 'Land Use';
+    | 'Demographics'
+    | 'Housing'
+    | 'Education'
+    | 'Labor & Economy'
+    | 'Land Use'
+    | 'Community Health';
   const [section, setSection] = useState<DashboardSection>('Demographics');
   const [primaryData, setPrimaryData] = useState<DataRow[]>([]);
   const [compareData, setCompareData] = useState<DataRow[]>([]);
@@ -414,6 +427,7 @@ export default function DataComparisonPage() {
     Education: EducationDashboard,
     'Labor & Economy': () => <div>Coming soon</div>,
     'Land Use': LandUseDashboard,
+    'Community Health': HealthDashboard,
   };
 
   const Dashboard = dashboards[section];
