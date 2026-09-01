@@ -86,8 +86,9 @@ SECTOR_ORDER = [
 ]
 
 BASE_URL = "https://data.bls.gov/cew/data/api/{year}/{q}/area/{fips}.csv"
-# YEARS = list(range(2009, 2024))
 QUARTERS = [1, 2, 3, 4]
+
+YEARS = range(2009, 2025)
 
 
 # ---------------------------------------------------------------------------
@@ -215,18 +216,17 @@ def process_county(area_fips: str, county_name: str, year: int) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
-def run_qcew_scrape(year: int) -> pd.DataFrame:
+def run_qcew_scrape(years: range = YEARS) -> pd.DataFrame:
     STORAGE_PATH.mkdir(parents=True, exist_ok=True)
     all_frames = []
-
-    for fips, name in VT_COUNTIES.items():
-        print(f"\n=== {name} County ({fips}) ===")
-        df = process_county(fips, name, year)
-        if not df.empty:
-            all_frames.append(df)
-            print(f"  {len(df):,} rows")
-        else:
-            print("  No data")
+    for year in years:
+        for fips, name in VT_COUNTIES.items():
+            print(f"\n=== {name} County ({fips}) ===")
+            df = process_county(fips, name, year)
+            if not df.empty:
+                all_frames.append(df)
+            else:
+                print("No data")
 
     if not all_frames:
         print("No data fetched.")
@@ -236,13 +236,11 @@ def run_qcew_scrape(year: int) -> pd.DataFrame:
     combined.sort_values(["County", "year", "quarter", "sector"], inplace=True)
     combined.reset_index(drop=True, inplace=True)
 
-    # combined.to_parquet(OUTPUT_FILE, index=False)
-    # print(f"\nDone. {len(combined):,} rows → {OUTPUT_FILE}")
     return combined
 
 
-def collect(year: int = 2024):
-    df = run_qcew_scrape(year)
+def collect(years: range = YEARS):
+    df = run_qcew_scrape(years)
     return df
 
 

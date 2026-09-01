@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 
 from app_utils.sql_render import render_sql
-from datastore.lake_build import con
+from lake_build import con
 
 SQL_PATH = Path(__file__).resolve().parent / "sql"
 # Town and zoning-district boundaries were digitised separately, so subtracting

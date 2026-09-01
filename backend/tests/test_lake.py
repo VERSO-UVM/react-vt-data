@@ -5,7 +5,7 @@ Usage (from backend):
 python -m tests.test_lake
 """
 
-from datastore.lake_build import con
+from lake_build import con
 
 
 def inspect_schema(schema: str) -> None:

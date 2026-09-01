@@ -14,16 +14,11 @@ RUN --mount=type=cache,target=/home/app/.cache/uv,uid=1000,gid=1000 \
 # Spatial extension installation
 RUN uv run python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')"
 
-
-COPY --chown=app:app ./run_data_loading.py /code/run_data_loading.py
-# TODO: Remove the dependency on app_utils
-COPY --chown=app:app ./app_utils /code/app_utils
-# For lake connection import
+# The source data collection scripts (source --> destination)
 COPY --chown=app:app ./lake_build.py /code/lake_build.py
-
 
 ENV DATA_DIR=/data
 ENV PYTHONPATH=/code
 
-# Command to run the data collection scripts (container entrypoint) 
-ENTRYPOINT ["uv", "run", "python", "-u", "-m", "run_data_loading"]
+# Command to run the DuckLake builder script (container entrypoint) 
+ENTRYPOINT ["uv", "run", "python", "-u", "-m", "lake_build"]

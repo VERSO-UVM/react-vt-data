@@ -9,7 +9,7 @@
 python -m ETL.data_cleaning.clean_flood
 """
 
-from datastore.lake_build import con
+from lake_build import con
 
 
 ## LOAD SPATIAL EXTENSION FUNCTION --------------------

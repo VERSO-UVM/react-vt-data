@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Iterable, Union
 
 import duckdb
 import geopandas as gpd
@@ -25,7 +26,7 @@ except duckdb.Error:
 
 # Attach DuckLake catalog
 con.execute(
-    f"""
+    f"""--sql
     ATTACH '{LAKE_PATH.as_posix()}'
     AS lake
     (
@@ -37,17 +38,21 @@ con.execute(
 )
 
 # Create schemas in the lake catalog
-con.execute("""--sql CREATE SCHEMA IF NOT EXISTS lake.RAW""")
-con.execute("""--sql CREATE SCHEMA IF NOT EXISTS lake.CLEANED""")
+con.execute("""CREATE SCHEMA IF NOT EXISTS lake.RAW""")
+con.execute("""CREATE SCHEMA IF NOT EXISTS lake.CLEANED""")
 
 
-def insert_year(name: str, df: pd.DataFrame, year: int):
+def insert_year(name: str, df: pd.DataFrame, years: Union[int, Iterable[int]]):
     """
-    Insert or replace one year's data in a DuckLake table.
+    Insert or replace data for specific year(s) in a DuckLake table.
     """
-
     if "year" not in map(str.lower, df.columns):
         raise ValueError(f"DataFrame for {name!r} does not contain a 'year' column.")
+
+    if isinstance(years, int):
+        years_list = [years]
+    else:
+        years_list = list(years)
 
     if isinstance(df, gpd.GeoDataFrame):
         df = df.copy()
@@ -81,19 +86,20 @@ def insert_year(name: str, df: pd.DataFrame, year: int):
             )
             return
 
-        # Remove this year's existing data.
+        # Remove existing data for the target years
         con.execute(
             f"""
             DELETE FROM lake.{schema}.{table}
-            WHERE year = ?
+            WHERE year IN ({",".join("?" for _ in years_list)})
             """,
-            [year],
+            years_list,
         )
 
-        # Insert the replacement.
+        # Insert the replacement data
         con.execute(
             f"""
             INSERT INTO lake.{schema}.{table}
+            BY NAME
             SELECT * FROM tmp_df
             """
         )

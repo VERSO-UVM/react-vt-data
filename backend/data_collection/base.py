@@ -21,6 +21,7 @@ whose NAME appears in the newly fetched data (so a re-run of state/national
 replaces rather than duplicates those rows), then writes the merged result.
 """
 
+import os
 import time
 from dataclasses import dataclass
 
@@ -29,10 +30,10 @@ import requests
 
 from app_utils.census import split_name_col
 
-API_KEY = "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"
+# Define API key through the .env file
+API_KEY = os.environ.get("CENSUS_API_KEY")
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5"
 STATE_FIPS = "50"
-# YEARS = list(range(2009, 2025))
 STORAGE_LOCATION = "Data/Census/ACS_5"
 
 # ---------------------------------------------------------------------------

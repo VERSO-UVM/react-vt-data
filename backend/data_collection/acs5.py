@@ -11,6 +11,7 @@ Pass --geos on the CLI to scrape only specific geographic levels.
 Use --append to merge new rows into existing files instead of overwriting.
 """
 
+import os
 import time
 
 import pandas as pd
@@ -19,9 +20,10 @@ import requests
 from app_utils.census import tidy_census
 from data_collection.base import ALL_GEOS
 
-API_KEY = (
-    "29af5488bbdb8c7d9f67b7f4ff9c9151e8c2bd0a"  # TODO: Get this as a .env variable!!!
-)
+# Define API key through the .env file
+API_KEY = os.environ.get("CENSUS_API_KEY")
+
+
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5/profile"
 STATE_FIPS = "50"  # Vermont
 TABLES = {
@@ -30,9 +32,10 @@ TABLES = {
     "DP04": "Housing",
     "DP05": "Demographic",
 }
-YEARS = list(range(2009, 2025))
 STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
+
+YEARS = range(2009, 2025)
 
 # Default geos list in (label, for_clause, in_clause) format
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
@@ -70,21 +73,25 @@ def fetch_table(year, table, for_clause, in_clause):
         return None
 
 
-def run_acs5_scrape(year: int = 2024, geos: list = GEOS, append: bool = False):
+def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = False):
+    """
+    Collect ACS 5-year profile tables for multiple years.
+    """
     # Collect raw frames per table
     all_frames = {table: [] for table in TABLES}
 
-    print(f"\n=== {year} ===")
-    for geo_label, for_clause, in_clause in geos:
-        for table in TABLES:
-            print(f"  {table} / {geo_label}...")
-            df = fetch_table(year, table, for_clause, in_clause)
-            if df is not None:
-                df["geo_type"] = geo_label
-                all_frames[table].append(df)
-            time.sleep(0.1)
+    for year in years:
+        print(f"\n=== {year} ===")
+        for geo_label, for_clause, in_clause in geos:
+            for table in TABLES:
+                print(f"  {table} / {geo_label}...")
+                df = fetch_table(year, table, for_clause, in_clause)
+                if df is not None:
+                    df["geo_type"] = geo_label
+                    all_frames[table].append(df)
+                time.sleep(0.1)
 
-    # Save wide + tidy per table
+        # Save wide + tidy per table
     results = {}
     for table, frames in all_frames.items():
         if not frames:
@@ -106,7 +113,7 @@ def run_acs5_scrape(year: int = 2024, geos: list = GEOS, append: bool = False):
         # wide_csv_path = f"{STORAGE_LOCATION}/{title}.csv"
 
         if append:
-            new_names = set(combined["NAME"].unique())
+            new_names = set(combined["year", "geo_type", "NAME"].unique())
             # --- Wide ---
             try:
                 existing_wide = pd.read_parquet(wide_parquet_path)
@@ -123,31 +130,41 @@ def run_acs5_scrape(year: int = 2024, geos: list = GEOS, append: bool = False):
         # print(f"Saved wide: {title} ({len(combined):,} rows)")
 
         # Tidy: run per-year so column labels are year-accurate
-        tidy_frames = []
+        # Tidy: run per-year so column labels are year-accurate
+    tidy_frames = []
+
+    for year in sorted(combined["year"].unique()):
         year_df = combined[combined["year"] == year]
-        if not year_df.empty:
-            try:
-                tidy_year = tidy_census(year_df, year=year, id_vars=ID_VARS)
-                tidy_year["table"] = table
-                tidy_frames.append(tidy_year)
-            except Exception as e:
-                print(f"  SKIP tidy {year} / {table}: {e}")
 
-        if tidy_frames:
-            tidy = pd.concat(tidy_frames, ignore_index=True)
+        if year_df.empty:
+            continue
 
-            label = TABLES[table]
+        try:
+            tidy_year = tidy_census(
+                year_df,
+                year=year,
+                id_vars=ID_VARS,
+            )
+            tidy_year["table"] = table
+            tidy_frames.append(tidy_year)
 
-            results[f"acs5_{label.lower()}"] = tidy
-            # tidy_parquet_path = f"{STORAGE_LOCATION}/{title}_tidy.parquet"
-            # tidy_csv_path = f"{STORAGE_LOCATION}/{title}_tidy.csv"
+        except Exception as e:
+            print(f"  SKIP tidy {year} / {table}: {e}")
 
-            # No separate append needed for tidy: it's derived from the
-            # already-merged wide frame, so it naturally contains all geos.
+    if tidy_frames:
+        tidy = pd.concat(tidy_frames, ignore_index=True)
 
-            # tidy.to_csv(tidy_csv_path, index=False)
-            # tidy.to_parquet(tidy_parquet_path, index=False)
-            # print(f"Saved tidy: {title}_tidy ({len(tidy):,} rows)")
+        label = TABLES[table]
+        results[f"acs5_{label.lower()}"] = tidy
+        # tidy_parquet_path = f"{STORAGE_LOCATION}/{title}_tidy.parquet"
+        # tidy_csv_path = f"{STORAGE_LOCATION}/{title}_tidy.csv"
+
+        # No separate append needed for tidy: it's derived from the
+        # already-merged wide frame, so it naturally contains all geos.
+
+        # tidy.to_csv(tidy_csv_path, index=False)
+        # tidy.to_parquet(tidy_parquet_path, index=False)
+        # print(f"Saved tidy: {title}_tidy ({len(tidy):,} rows)")
 
     return results
 
@@ -171,13 +188,13 @@ def merge_tidy_tables():
     return
 
 
-def collect(year: int = 2024, geos=GEOS, append=False):
+def collect(years: range = YEARS, geos=GEOS, append=False):
     """
     Collect ACS profile tables and return tidy datasets.
     """
 
     tables = run_acs5_scrape(
-        year=year,
+        years=years,
         geos=geos,
         append=append,
     )

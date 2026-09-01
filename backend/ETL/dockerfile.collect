@@ -21,7 +21,7 @@ COPY --chown=app:app ./run_data_collection.py /code/run_data_collection.py
 # TODO: Remove the dependency on app_utils
 COPY --chown=app:app ./app_utils /code/app_utils
 
-COPY --chown=app:app ./datastore /code/datastore
+COPY --chown=app:app ./lake_build.py /code/lake_build.py
 
 
 ENV DATA_DIR=/data

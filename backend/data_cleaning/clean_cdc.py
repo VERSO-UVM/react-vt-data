@@ -14,7 +14,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 
 from build.core_functions import bin_measures
-from datastore.lake_build import con
+from lake_build import con
 
 # Columns we'd like excluded from the cleaned tables, IF they exist on that
 # particular RAW table. Tract- and county-level releases don't always share

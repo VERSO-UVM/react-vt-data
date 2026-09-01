@@ -12,7 +12,7 @@ python -m data_cleaning.clean_education
 
 import pandas as pd
 
-from datastore.lake_build import con
+from lake_build import con
 
 
 def read_raw_data() -> pd.DataFrame:

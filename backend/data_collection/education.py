@@ -12,6 +12,8 @@ Six categories matching the Annual Report:
 Output: vt_acs5_b_education_tidy.parquet
 """
 
+import pandas as pd
+
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
 
 TOTAL = "B15003_001E"
@@ -37,40 +39,49 @@ fetch_specs = {
     "B15003": [TOTAL] + [f"B15003_{str(i).zfill(3)}E" for i in range(2, 26)],
 }
 
+YEARS = range(2009, 2025)
 
-def collect(year: int = 2024, geos=None, append=False):
+
+def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
     if geos is None:
         geos = [(k, *ALL_GEOS[k]) for k in ALL_GEOS]
 
-    return run_acs_b_scrape(
-        fetch_specs,
-        var_groups,
-        "vt_acs5_b_education_tidy.parquet",
-        year=year,
-        geos=geos,
-        append=append,
-    )
+    frames = []
+    for year in years:
+        df = run_acs_b_scrape(
+            fetch_specs,
+            var_groups,
+            "vt_acs5_b_education_tidy.parquet",
+            year=year,
+            geos=geos,
+            append=append,
+        )
+        if df is not None:
+            frames.append(df)
+
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Scrape ACS B-table education data.")
-    parser.add_argument("year", type=int, nargs="?", default=2024)
-    parser.add_argument(
+    p = argparse.ArgumentParser(description="Scrape ACS B-table education data.")
+    p.add_argument("--start-year", type=int, default=2009)
+    p.add_argument("--end-year", type=int, default=2024)
+    p.add_argument(
         "--geos",
         nargs="+",
         choices=list(ALL_GEOS),
         default=list(ALL_GEOS),
     )
-    parser.add_argument("--append", action="store_true")
+    p.add_argument("--append", action="store_true")
 
-    args = parser.parse_args()
+    args = p.parse_args()
 
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
 
     df = collect(
-        year=args.year,
+        years=range(args.start_year, args.end_year + 1),
         geos=selected_geos,
         append=args.append,
     )

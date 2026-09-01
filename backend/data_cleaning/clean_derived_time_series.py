@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import pandas as pd
 
-from datastore.lake_build import con
+from lake_build import con
 
 UNAVAILABLE_SENTINEL = -666666666.0
 
