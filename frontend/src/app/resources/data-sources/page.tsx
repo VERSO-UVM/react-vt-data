@@ -9,7 +9,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Category, Dataset, Variable } from './source_description';
 
 import {
   Button,
