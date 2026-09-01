@@ -29,11 +29,20 @@ import {
 import { ArrowLeftIcon, MagnifyingGlassIcon } from '@phosphor-icons/react';
 import * as motion from 'motion/react-client';
 import {
+  DATA_SOURCES,
   Category,
   Dataset,
-  DATA_SOURCES,
   Variable,
 } from './source_description';
+
+const COLOR = {
+  spruce: '#1B3A2F',
+  spruceDeep: '#122820',
+  slate: '#40525A',
+  birch: '#F6F5EF',
+  amberSoft: '#E7B563',
+  line: 'rgba(27, 58, 47, 0.14)',
+};
 
 import { COLORS, FONTS } from '@/app/theme';
 
