@@ -7,6 +7,7 @@ export function generateStaticParams() {
     { slug: 'treatment-facilities' },
     { slug: 'service-areas' },
     { slug: 'flood-legal' },
+    { slug: 'ambulance' },
   ];
 }
 

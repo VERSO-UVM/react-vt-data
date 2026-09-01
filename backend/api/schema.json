@@ -85,6 +85,14 @@
         "Jurisdiction": "Municipal_Name",
         "Town": "TownName"
       }
+    },
+    "ambulance_ambulance_info": {
+      "join_key": "OBJECTID",
+      "join_type": "inner",
+      "columns": {
+        "Zip Code": "Zip_Code",
+        "City or Town": "City"
+      }
     }
   }
 }

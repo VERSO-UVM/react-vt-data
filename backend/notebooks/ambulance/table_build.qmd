@@ -1,0 +1,175 @@
+---
+title: "ambulance data sql workthrough"
+author: Atticus Tarleton
+date: today
+description:  builds SQL tables from wastewater data.
+format:
+  html:
+    html-math-method: mathjax
+    fig-responsive: true
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+  ipynb:
+    wrap: none
+execute:
+  cache: true
+editor:
+    render-on-save: true
+---
+
+# Setup
+
+Navigate to root:
+```{python}
+import sys, os
+from pathlib import Path
+
+_project_root = Path.cwd()
+while not (_project_root / "api").exists():
+    _project_root = _project_root.parent
+os.chdir(_project_root)
+print(os.getcwd())
+```
+
+```{python}
+import pandas as pd
+import geopandas as gpd
+import pyogrio
+from pathlib import Path
+import duckdb
+import re
+
+from app_utils.data_loading import crs_set
+```
+
+```{python}
+con = duckdb.connect()
+```
+
+# Examining the ambulance dataset
+
+```{python}
+data_dir= Path("Data")
+path = data_dir / "ambulance" / "ambulance_service_areas.parquet"
+ambulance_data = gpd.read_parquet(path)
+ambulance_data = crs_set(ambulance_data)
+
+display(ambulance_data.head())
+print(f'The number of rows is: {len(ambulance_data)}')
+```
+
+# Reading the datasets into SQL
+
+```{python}
+con.execute("INSTALL spatial; LOAD spatial")
+```
+
+```{python}
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW ambulance_service_areas AS
+  SELECT * FROM read_parquet('{path}')
+""")
+```
+now checking that this worked, and getting column names
+
+As we can see from the column names below, the Cov_Area columns seem rather arbitrary. What they really
+correspond to is different towns that are covered by the ambulance service provider. But they don't correspond
+in a 1 to 1 fashion, rather if a service provider covers 17 towns, then those 17 columns each have one town name.
+To fix this, there are two options. One is to create a new column called towns_serviced as it would hold a list
+of the towns serviced by the given provider. The other is to create a column for each town, and each column would
+be a binary yes no variable representing whether the given provider services that town
+
+```{python}
+df = con.execute("SELECT * FROM ambulance_service_areas").df()
+for col in df.columns:
+  print(col)
+
+display(df.head())
+```
+
+
+Now to separate the table
+
+`OBJECTID` will be the main hash key
+
+There are two tables, Information and Geometry
+- INFORMATION
+    - main hash key: `OBJECTID`
+    - goal: store all the useful information besides the geometry data
+- GEOMETRY
+    - main hash key: `OBJECTID`
+    - goal: store the geometry data because it is so large
+
+```{python}
+info_cols = [
+    "OBJECTID",
+    "Serv_Name",
+    "Cert_Level",
+    "Address",
+    "Street_1",
+    "Street_2",
+    "City",
+    "State",
+    "Zip_Code",
+    "Total_Tran",
+    "Per_No_Tran",
+    "Re_Per_Tran",
+    "Cost_Per",
+    "Cost_Call"
+    #figure out how to solve the cov area problem
+        # for right now can just ignore it as the area does not make a big difference on anything
+]
+
+geom_cols = [
+    "OBJECTID",
+    "Shape__Area",
+    "Shape__Length",
+    "geometry"
+]
+```
+
+Creating the ambulance info table
+```{python}
+ambulance_info_string = ", ".join(info_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW ambulance_info AS
+  SELECT {ambulance_info_string}
+  FROM ambulance_service_areas
+""")
+
+ambulance_info = con.execute("SELECT * FROM ambulance_info").df()
+display(ambulance_info.head())
+```
+
+Creating the ambulance geometry table
+```{python}
+ambulance_geom_string = ", ".join(geom_cols)
+
+con.execute(f"""--sql
+  CREATE OR REPLACE VIEW ambulance_geom AS
+  SELECT {ambulance_geom_string}
+  FROM ambulance_service_areas
+""")
+
+ambulance_geom = con.execute("SELECT * FROM ambulance_geom").df()
+display(ambulance_geom.head())
+```
+
+creating a color table for fill colors
+```{python}
+con.execute(f"""--sql
+CREATE TABLE ambulance_cert_level_colors (
+    certification_level   TEXT PRIMARY KEY,
+    hex_color       TEXT NOT NULL,
+    rgba            TEXT NOT NULL  -- '[255,127,14,180]' as JSON-ish text
+);
+
+INSERT INTO ambulance_cert_level_colors VALUES
+    ('Paramedic',         '#2ca02c', '[44, 160, 44, 180]'),
+    ('Advanced EMT',   '#ffcc00', '[255, 204, 0, 180]'),
+    ('Paramedic - Critical Care Endorsement',   '#fd7e14', '[253, 126, 20, 180]')
+""")
+```

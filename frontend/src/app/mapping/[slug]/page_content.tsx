@@ -28,6 +28,8 @@ type MapConfig = {
   filterURL?: string;
   dataURL?: string;
   legendURL?: string;
+  townBorder?: boolean;
+  largeBorder?: boolean;
 };
 
 const MAP_CONFIG: Record<string, MapConfig> = {
@@ -61,21 +63,29 @@ const MAP_CONFIG: Record<string, MapConfig> = {
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_serviceAreas_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
+  ambulance: {
+    title: 'Ambulance Service Areas',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=ambulance_ambulance_info`,
+    dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+    legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
+    townBorder: false,
+    largeBorder: true,
+  },
 };
 
 export default function MappingContent() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
-
   const config = slug ? MAP_CONFIG[slug] : undefined;
+  const townBorderDef = config?.townBorder ?? false;
+  const largeBorderDef = config?.largeBorder ?? true;
 
   const [data, setData] = useState<FeatureCollection | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showCountyLines, setShowCountyLines] = useState(townBorderDef);
+  const [largeBorder, setLargeBorder] = useState(largeBorderDef);
+
   const [legendData, setLegendData] = useState<LegendRow[]>([]);
-
-  const [dataLoading, setDataLoading] = useState(false);
-  const [legendLoading, setLegendLoading] = useState(false);
-
-  const [showCountyLines, setShowCountyLines] = useState(true);
 
   /*
    * Reset map data when navigating between map pages.
@@ -183,6 +193,8 @@ export default function MappingContent() {
 
   const loading = dataLoading || legendLoading;
 
+  const borderSwitchText = `Show ${config?.title ?? slug}`;
+
   return (
     <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>
       <Group h="100%" align="stretch" gap="md" wrap="nowrap">
@@ -217,6 +229,13 @@ export default function MappingContent() {
                   }
                   label="Show Town Borders"
                 />
+                <Switch
+                  checked={largeBorder}
+                  onChange={(event) =>
+                    setLargeBorder(event.currentTarget.checked)
+                  }
+                  label={borderSwitchText}
+                />
               </Stack>
             </Paper>
 
@@ -248,8 +267,11 @@ export default function MappingContent() {
           }}
         >
           <LoadingOverlay visible={loading} zIndex={1000} />
-
-          <VTMap geojson={data} showCountyLines={showCountyLines} />
+          <VTMap
+            geojson={data}
+            showCountyLines={showCountyLines}
+            largeBorders={largeBorder}
+          />
         </Box>
       </Group>
     </Box>

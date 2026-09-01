@@ -39,6 +39,13 @@ export const links = [
       'Identify FEMA flood hazard areas and understand development and insurance implications.',
     badges: ['FEMA', 'Flood Risk'],
   },
+  {
+    link: '/mapping/ambulance',
+    label: 'Ambulance Service Areas',
+    description:
+      'Cover ambulance service areas in Vermont and the summary statistics of their calls',
+    badges: ['Health'],
+  },
 ];
 
 export default function BaseMappingPage() {

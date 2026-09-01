@@ -283,7 +283,7 @@ export const chartDefs: ChartDef[] = [
   // Median Earnings
   {
     id: 'earnings',
-    title: 'Median Earnings - Value',
+    title: 'Median Earnings by Sex',
     url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/median-earnings`,
     xField: '',
     yField: '',

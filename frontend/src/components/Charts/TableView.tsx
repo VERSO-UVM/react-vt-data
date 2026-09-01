@@ -1,49 +1,249 @@
 // TableView.tsx
-
+import { useState, useMemo } from 'react';
+import {
+  Box,
+  Button,
+  Group,
+  ScrollArea,
+  Table,
+  Text,
+  Title,
+  SegmentedControl,
+} from '@mantine/core';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
-import { Table } from '@mantine/core';
-import { Group, Title, SegmentedControl, ScrollArea } from '@mantine/core';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
+  rows?: DataRow[]; // derived/reshaped rows (e.g. trend plotData) take priority
 }
+
+const HOME_BG = 'var(--mantine-color-green-0)';
+const COMP_BG = 'var(--mantine-color-blue-0)';
+const SPLIT_BORDER = '1px solid var(--mantine-color-gray-3)';
+const CMP_SUFFIX = ' (cmp)';
+
+const formatCell = (v: unknown) => {
+  if (v == null) return '—';
+  if (typeof v === 'number')
+    return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  return String(v);
+};
 
 export const TableView = <TData extends DataRow>({
   chart,
+  rows: rowsOverride,
 }: TableViewProps<TData>) => {
-  const rows = (chart.tableData || chart.data) as TData[];
+  const rows = (rowsOverride ?? chart.tableData ?? chart.data) as DataRow[];
+  const [showCompare, setShowCompare] = useState(false);
+  const usePivot = !!chart.trendChart;
 
   if (!rows || rows.length === 0) return null;
 
-  // start with show cols, fall back to x and y field provided they're in there.
-  const columns =
-    chart.showCols?.filter((c) => c.visible ?? true) ??
-    (rows[0] ? [chart.xField, chart.yField].filter((k) => k in rows[0]) : []);
+  const labels = chart.chartParams?.legendLabels as
+    [string, string] | undefined;
+  const homeLabel = labels?.[0] ?? 'Primary';
+  const compareLabel = labels?.[1] ?? 'Comparison';
+
+  // Check if comparison data exists in rows (keys ending with ' (cmp)')
+  const allKeys = rows[0] ? Object.keys(rows[0]) : [];
+  const cmpKeys = allKeys.filter((k) => k.endsWith(CMP_SUFFIX));
+  const hasCompare =
+    cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
+
+  // Render the comparison toggle header control
+  const ComparisonToggleHeader = () =>
+    hasCompare ? (
+      <Group mb="xs" gap="sm" align="center">
+        <Button
+          size="xs"
+          variant={showCompare ? 'filled' : 'light'}
+          color="blue"
+          onClick={() => setShowCompare((v) => !v)}
+        >
+          {showCompare ? 'Hide Comparison' : 'Show Comparison'}
+        </Button>
+        {showCompare && (
+          <Group gap={6}>
+            <Box
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: HOME_BG,
+                border: '1px solid var(--mantine-color-green-3)',
+                display: 'inline-block',
+              }}
+            />
+            <Text size="xs">{homeLabel}</Text>
+            <Box
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: COMP_BG,
+                border: '1px solid var(--mantine-color-blue-3)',
+                display: 'inline-block',
+                marginLeft: 8,
+              }}
+            />
+            <Text size="xs">{compareLabel}</Text>
+          </Group>
+        )}
+      </Group>
+    ) : null;
+
+  // --- MODE A: PIVOTED TABLE (FOR TREND CHARTS) ---
+  if (usePivot) {
+    const xKey =
+      chart.xField && rows[0] && chart.xField in rows[0]
+        ? chart.xField
+        : 'year';
+
+    const xValues = Array.from(new Set(rows.map((r) => r[xKey]))).filter(
+      (v) => v != null,
+    );
+
+    const seriesKeys = allKeys.filter(
+      (k) => k !== xKey && !k.endsWith(CMP_SUFFIX),
+    );
+
+    const findRow = (x: unknown) => rows.find((r) => r[xKey] === x);
+
+    return (
+      <Box h="100%">
+        <ComparisonToggleHeader />
+        <ScrollArea>
+          <Table striped withTableBorder withColumnBorders fz="xs">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th></Table.Th>
+                {xValues.map((x) => (
+                  <Table.Th key={String(x)}>{String(x)}</Table.Th>
+                ))}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {seriesKeys.map((key) => (
+                <Table.Tr key={key}>
+                  <Table.Td>{key}</Table.Td>
+                  {xValues.map((x) => {
+                    const row = findRow(x);
+                    const mainVal = row?.[key];
+                    if (!showCompare || !hasCompare) {
+                      return (
+                        <Table.Td key={String(x)}>
+                          {formatCell(mainVal)}
+                        </Table.Td>
+                      );
+                    }
+                    const cmpVal = row?.[`${key}${CMP_SUFFIX}`];
+                    return (
+                      <Table.Td key={String(x)} style={{ padding: 0 }}>
+                        <div style={{ display: 'flex', minWidth: 90 }}>
+                          <div
+                            style={{
+                              flex: 1,
+                              padding: '3px 6px',
+                              background: HOME_BG,
+                              textAlign: 'right',
+                            }}
+                          >
+                            {formatCell(mainVal)}
+                          </div>
+                          <div
+                            style={{
+                              flex: 1,
+                              padding: '3px 6px',
+                              background: COMP_BG,
+                              borderLeft: SPLIT_BORDER,
+                              textAlign: 'right',
+                            }}
+                          >
+                            {formatCell(cmpVal)}
+                          </div>
+                        </div>
+                      </Table.Td>
+                    );
+                  })}
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </ScrollArea>
+      </Box>
+    );
+  }
+
+  // --- MODE B: DIRECT TABLE (FOR BAR CHARTS) ---
+  // Determine standard columns vs comparison columns
+  const baseColumns = allKeys.filter((k) => !k.endsWith(CMP_SUFFIX));
 
   return (
-    <Table>
-      <Table.Thead>
-        <Table.Tr>
-          {columns.map((col) =>
-            typeof col === 'string' ? (
-              <Table.Th key={col}>{col}</Table.Th>
-            ) : (
-              <Table.Th key={col.key}>{col.label ?? col.key}</Table.Th>
-            ),
-          )}
-        </Table.Tr>
-      </Table.Thead>
-      <Table.Tbody>
-        {rows.map((row, i) => (
-          <Table.Tr key={i}>
-            {columns.map((col) => {
-              const key = typeof col === 'string' ? col : col.key;
-              return <Table.Td key={key}>{String(row[key])}</Table.Td>;
-            })}
-          </Table.Tr>
-        ))}
-      </Table.Tbody>
-    </Table>
+    <Box h="100%">
+      <ComparisonToggleHeader />
+      <ScrollArea>
+        <Table striped withTableBorder withColumnBorders fz="xs">
+          <Table.Thead>
+            <Table.Tr>
+              {baseColumns.map((column) => {
+                const hasColCompare =
+                  hasCompare &&
+                  rows.some((r) => r[`${column}${CMP_SUFFIX}`] != null);
+
+                return <Table.Th key={column}>{column}</Table.Th>;
+              })}
+            </Table.Tr>
+          </Table.Thead>
+
+          <Table.Tbody>
+            {rows.map((row, i) => (
+              <Table.Tr key={i}>
+                {baseColumns.map((column) => {
+                  const mainVal = row[column];
+                  const cmpVal = row[`${column}${CMP_SUFFIX}`];
+                  const isComparableCell =
+                    hasCompare && showCompare && cmpVal != null;
+
+                  if (isComparableCell) {
+                    return (
+                      <Table.Td key={column} style={{ padding: 0 }}>
+                        <div style={{ display: 'flex', minWidth: 90 }}>
+                          <div
+                            style={{
+                              flex: 1,
+                              padding: '3px 6px',
+                              background: HOME_BG,
+                              textAlign: 'right',
+                            }}
+                          >
+                            {formatCell(mainVal)}
+                          </div>
+                          <div
+                            style={{
+                              flex: 1,
+                              padding: '3px 6px',
+                              background: COMP_BG,
+                              borderLeft: SPLIT_BORDER,
+                              textAlign: 'right',
+                            }}
+                          >
+                            {formatCell(cmpVal)}
+                          </div>
+                        </div>
+                      </Table.Td>
+                    );
+                  }
+
+                  return (
+                    <Table.Td key={column}>{formatCell(mainVal)}</Table.Td>
+                  );
+                })}
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </ScrollArea>
+    </Box>
   );
 };
 
