@@ -20,6 +20,7 @@ import {
   DemographicsDashboard,
   LandUseDashboard,
   HousingDashboard,
+  EducationDashboard,
 } from '@/components/Reports/dashboards';
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
@@ -61,15 +62,8 @@ const SECTIONS: Record<string, SectionConfig> = {
     yearMin: 2010,
     yearMax: 2024,
   },
-  'Labor Force': {
-    url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
-    yField: 'Percent',
-    unit: '%',
-    yearMin: 2010,
-    yearMax: 2024,
-  },
-  Income: {
-    url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
+  'Labor & Economy': {
+    url: `${BASE_API_URL}/load/acs5-db/tidy/economics`,
     yField: 'Value',
     unit: '',
     yearMin: 2010,
@@ -292,12 +286,7 @@ function ExplorerControls({
 export default function DataComparisonPage() {
   const { myLocation, comparison, yearMax: profileYearMax } = useProfile();
   type DashboardSection =
-    | 'Demographics'
-    | 'Housing'
-    | 'Education'
-    | 'Economy'
-    | 'Labor Force'
-    | 'Land Use';
+    'Demographics' | 'Housing' | 'Education' | 'Labor & Economy' | 'Land Use';
   const [section, setSection] = useState<DashboardSection>('Demographics');
   const [primaryData, setPrimaryData] = useState<DataRow[]>([]);
   const [compareData, setCompareData] = useState<DataRow[]>([]);
@@ -422,9 +411,8 @@ export default function DataComparisonPage() {
   > = {
     Demographics: DemographicsDashboard,
     Housing: HousingDashboard,
-    Education: () => <div>Coming soon</div>,
-    Economy: () => <div>Coming soon</div>,
-    'Labor Force': () => <div>Coming soon</div>,
+    Education: EducationDashboard,
+    'Labor & Economy': () => <div>Coming soon</div>,
     'Land Use': LandUseDashboard,
   };
 

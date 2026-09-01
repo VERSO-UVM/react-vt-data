@@ -48,7 +48,7 @@ export default function MedianHomeValueCard({
           </Title>
         </Stack>
 
-        <ThemeIcon size={48} radius="xl" variant="light" color="violet">
+        <ThemeIcon size={48} radius="xl" variant="light" color="red">
           <IconHomeDollar size={24} />
         </ThemeIcon>
       </Group>
@@ -74,11 +74,7 @@ export default function MedianHomeValueCard({
           <Text
             fw={700}
             c={
-              difference === null
-                ? undefined
-                : difference > 0
-                  ? 'violet'
-                  : 'blue'
+              difference === null ? undefined : difference > 0 ? 'green' : 'red'
             }
           >
             {difference === null

@@ -1,6 +1,6 @@
 import { Table, ScrollArea, Paper, Text, Stack, Grid } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
-import { MedianHomeValueCard } from '@/components/Reports/housing';
+import { EducationalAttainment } from '@/components/Reports/education';
 
 export interface DashboardData {
   year: number;
@@ -22,15 +22,17 @@ export interface DashboardProps {
   data: DashboardData;
 }
 
-export default function HousingDashboard({ data }: DashboardProps) {
+export default function EducationDashboard({ data }: DashboardProps) {
   const { primary, comparison } = data;
 
   return (
     <Grid gap="lg">
       <Grid.Col span={{ base: 12, md: 6 }}>
-        <MedianHomeValueCard
+        <EducationalAttainment
           primary={primary.current}
           comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
         />
       </Grid.Col>
     </Grid>
