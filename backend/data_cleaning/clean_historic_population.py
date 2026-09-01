@@ -9,12 +9,11 @@
 python -m data_cleaning.clean_historic_population
 """
 
+import duckdb
 import pandas as pd
 
-from lake_build import con
 
-
-def read_raw_data() -> pd.DataFrame:
+def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     raw_df = con.execute(
         """--sql
         SELECT * 
@@ -25,7 +24,7 @@ def read_raw_data() -> pd.DataFrame:
     return raw_df
 
 
-def clean_column_names(df: pd.DataFrame):
+def clean_column_names(df: pd.DataFrame) -> None:
     """
     Cleans historic_population data column names
     """
@@ -39,7 +38,7 @@ def clean_column_names(df: pd.DataFrame):
     df["geo_type"] = "town"
 
 
-def long_format(df: pd.DataFrame):
+def long_format(df: pd.DataFrame) -> pd.DataFrame:
     """
     Turns raw historic_population estimates data into long_format
     """
@@ -57,7 +56,7 @@ def long_format(df: pd.DataFrame):
     return df_long
 
 
-def add_NAME_column(long_df: pd.DataFrame):
+def add_NAME_column(long_df: pd.DataFrame) -> pd.DataFrame:
     import requests
 
     json_file = "https://raw.githubusercontent.com/VERSO-UVM/react-vt-data/refs/heads/main/frontend/public/data/municipalites.json"
@@ -75,7 +74,7 @@ def add_NAME_column(long_df: pd.DataFrame):
     return long_df
 
 
-def add_population_aggregations(df: pd.DataFrame):
+def add_population_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     """
     Aggregates town-level population to county and state levels,
     and appends them as additional rows in the long-format dataframe.
@@ -107,9 +106,9 @@ def add_population_aggregations(df: pd.DataFrame):
     return combined
 
 
-def clean():
+def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     # Get raw dataframe from DuckLake RAW tables
-    raw_df = read_raw_data()
+    raw_df = read_raw_data(con)
     # Clean column names
     clean_column_names(raw_df)
     # Melt DataFrame into long format (Cols: "geoid", "NAME", "year", "Population", "geo_type")
@@ -125,7 +124,7 @@ def clean():
     return df
 
 
-def add_to_lake(clean_df: pd.DataFrame):
+def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame) -> None:
     """
     Writes the cleaned, long-format historic population dataframe
     to the CLEANED schema in DuckLake.
@@ -138,9 +137,9 @@ def add_to_lake(clean_df: pd.DataFrame):
     )
 
 
-def main():
-    clean_df = clean()
-    add_to_lake(clean_df)
+def main(con: duckdb.DuckDBPyConnection):
+    clean_df = clean(con)
+    add_to_lake(con, clean_df)
 
 
 if __name__ == "__main__":

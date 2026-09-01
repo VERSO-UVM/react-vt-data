@@ -11,10 +11,10 @@ python -m data_cleaning.clean_zoning
 
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 
 from app_utils.sql_render import render_sql
-from lake_build import con
 
 SQL_PATH = Path(__file__).resolve().parent / "sql"
 # Town and zoning-district boundaries were digitised separately, so subtracting
@@ -59,24 +59,7 @@ boolean_remapper = {
 }
 
 
-## LOAD SPATIAL EXTENSION FUNCTION --------------------
-def _load_spatial() -> None:
-    """
-    Load the spatial extension, installing it first if necessary.
-    """
-    try:
-        con.execute("INSTALL spatial;")
-    except Exception as e:
-        print(f"Spatial install note: {e}")
-
-    try:
-        con.execute("LOAD spatial;")
-    except Exception as e:
-        print(f"CRITICAL: Failed to load spatial extension: {e}")
-        raise e
-
-
-def read_raw_data() -> pd.DataFrame:
+def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     raw_df = con.execute(
         """--sql
         SELECT * 
@@ -89,7 +72,7 @@ def read_raw_data() -> pd.DataFrame:
     return raw_df
 
 
-def build_info():
+def build_info(con: duckdb.DuckDBPyConnection) -> None:
     info_string = ", ".join(info_cols)
 
     info_sql = render_sql(
@@ -108,7 +91,7 @@ def build_info():
     con.register("info", info_df)
 
 
-def build_geom():
+def build_geom(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE TEMP VIEW geom AS
@@ -120,7 +103,7 @@ def build_geom():
     )
 
 
-def get_rule_cols():
+def get_rule_cols(con: duckdb.DuckDBPyConnection) -> list[str]:
     dropped_cols = ["Shape_Area", "Shape_Length"]
     all_cols = (
         con.execute(
@@ -139,7 +122,7 @@ def get_rule_cols():
     return rule_cols
 
 
-def split_col(col: str, use_types: set[str]):
+def split_col(col: str, use_types: set[str]) -> tuple[str | None, str | None]:
     for use_type in use_types:
         if col.startswith(f"{use_type}_"):
             rule = col[len(use_type) + 1 :]
@@ -148,8 +131,8 @@ def split_col(col: str, use_types: set[str]):
     return None, None
 
 
-def build_rules(raw_df: pd.DataFrame):
-    rule_cols = get_rule_cols()
+def build_rules(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
+    rule_cols = get_rule_cols(con)
     clean_rule_cols = [col.replace("/", "_") for col in rule_cols]
 
     cast_df = raw_df[["OBJECT_ID"] + rule_cols].copy()
@@ -187,7 +170,7 @@ def build_rules(raw_df: pd.DataFrame):
     con.register("rules", rules)
 
 
-def build_full():
+def build_full(con: duckdb.DuckDBPyConnection) -> None:
     drop_cols = ["geometry", "Shape_Area", "Shape_Length"]
     exclude = ", ".join(drop_cols)
     con.execute(
@@ -198,7 +181,7 @@ def build_full():
     )
 
 
-def build_color():
+def build_color(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE TEMP VIEW colors AS
@@ -214,7 +197,7 @@ def build_color():
     )
 
 
-def build_empty_geom():
+def build_empty_geom(con: duckdb.DuckDBPyConnection) -> None:
     """
     Build the geometry for the polygons
     *where we don't have zoning information*.
@@ -238,20 +221,19 @@ def build_empty_geom():
     con.register("empty_geom", empty_geom_df)
 
 
-def clean():
-    _load_spatial()
-    df = read_raw_data()
-    build_info()
-    build_geom()
-    build_rules(df)
-    build_empty_geom()
-    build_color()
-    build_full()
+def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    df = read_raw_data(con)
+    build_info(con)
+    build_geom(con)
+    build_rules(con, df)
+    build_empty_geom(con)
+    build_color(con)
+    build_full(con)
 
     return df
 
 
-def add_to_lake():
+def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
     """
     Persists each cleaned zoning table (info, geom, rules, empty_geom, wide, colors)
     into the CLEANED schema in DuckLake.
@@ -266,9 +248,9 @@ def add_to_lake():
         )
 
 
-def main():
-    clean()
-    add_to_lake()
+def main(con: duckdb.DuckDBPyConnection):
+    clean(con)
+    add_to_lake(con)
 
 
 if __name__ == "__main__":

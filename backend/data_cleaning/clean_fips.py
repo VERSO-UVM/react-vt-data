@@ -28,26 +28,11 @@ Run with:
     python -m data_cleaning.clean_boundaries
 """
 
-from lake_build import con
-
-## LOAD SPATIAL EXTENSION FUNCTION --------------------
-
-
-def _load_spatial() -> None:
-    """
-    Load the spatial extension, installing it first if necessary.
-    """
-    try:
-        con.execute("LOAD spatial")
-    except Exception:
-        con.execute("INSTALL spatial")
-        con.execute("LOAD spatial")
+import duckdb
 
 
 ## BUILD CLEANED VIEWS --------------------
-
-
-def build_county_lines():
+def build_county_lines(con: duckdb.DuckDBPyConnection) -> None:
     """
     Clean VT county boundary lines.
 
@@ -69,7 +54,7 @@ def build_county_lines():
     )
 
 
-def build_town_lines():
+def build_town_lines(con: duckdb.DuckDBPyConnection) -> None:
     """
     Clean VT town boundary lines.
 
@@ -91,7 +76,7 @@ def build_town_lines():
     )
 
 
-def build_tract_lines():
+def build_tract_lines(con: duckdb.DuckDBPyConnection) -> None:
     """
     Clean VT Census tract boundary lines.
 
@@ -110,9 +95,7 @@ def build_tract_lines():
 
 
 ## WRITE CLEANED TABLES --------------------
-
-
-def add_to_lake():
+def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
     table_names = [
         "vt_county_lines",
         "vt_town_lines",
@@ -129,17 +112,15 @@ def add_to_lake():
         )
 
 
-def clean():
-    _load_spatial()
-
-    build_county_lines()
-    build_town_lines()
-    build_tract_lines()
+def clean(con: duckdb.DuckDBPyConnection) -> None:
+    build_county_lines(con)
+    build_town_lines(con)
+    build_tract_lines(con)
 
 
-def main():
-    clean()
-    add_to_lake()
+def main(con: duckdb.DuckDBPyConnection):
+    clean(con)
+    add_to_lake(con)
 
 
 if __name__ == "__main__":

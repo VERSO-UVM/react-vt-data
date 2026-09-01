@@ -5,7 +5,9 @@ Usage (from backend):
 python -m tests.test_lake
 """
 
-from lake_build import con
+from lake_build import get_connection
+
+con = get_connection()
 
 
 def inspect_schema(schema: str) -> None:

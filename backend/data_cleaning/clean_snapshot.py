@@ -10,12 +10,13 @@
     python -m data_cleaning.clean_snapshot
 """
 
+import duckdb
 import pandas as pd
 
-from lake_build import con
 
-
-def read_raw_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def read_raw_data(
+    con: duckdb.DuckDBPyConnection,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Read the source tables from the RAW schema in DuckLake.
     """
@@ -44,18 +45,15 @@ def read_raw_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     return dem_df, housing_df, econ_df
 
 
-def clean() -> pd.DataFrame:
+def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """
     Select the snapshot indicators from the source datasets
     and combine them into a single dataframe.
     """
 
-    dem_df, housing_df, econ_df = read_raw_data()
-
+    dem_df, housing_df, econ_df = read_raw_data(con)
     dem_vars = dem_df[dem_df["Variable"].isin(["Population (ACS)", "Median Age"])]
-
     housing_vars = housing_df[housing_df["Variable"].isin(["Median Home Value"])]
-
     econ_vars = econ_df[
         econ_df["Variable"].isin(
             ["Labor Force Participation Rate (16+)", "Median Household Income"]
@@ -63,11 +61,10 @@ def clean() -> pd.DataFrame:
     ]
 
     combined = pd.concat([dem_vars, econ_vars, housing_vars], ignore_index=True)
-
     return combined
 
 
-def add_to_lake(clean_df: pd.DataFrame):
+def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame):
     """
     Writes the cleaned snapshot dataframe
     to the CLEANED schema in DuckLake.
@@ -80,9 +77,9 @@ def add_to_lake(clean_df: pd.DataFrame):
     )
 
 
-def main():
-    clean_df = clean()
-    add_to_lake(clean_df)
+def main(con: duckdb.DuckDBPyConnection):
+    clean_df = clean(con)
+    add_to_lake(con, clean_df)
 
 
 if __name__ == "__main__":

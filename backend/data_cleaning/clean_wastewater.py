@@ -10,27 +10,11 @@
 python -m data_cleaning.clean_wastewater
 """
 
-from lake_build import con
-
-# TODO: Path is useful when sql files are created!
-# from build import BACKEND
-# sql_path = BACKEND / "data_cleaning" / "sql"
-
-
-## LOAD SPATIAL EXTENSION FUNCTION --------------------
-def _load_spatial() -> None:
-    """
-    Load the spatial extension, installing it first if necessary.
-    """
-    try:
-        con.execute("""LOAD spatial""")
-    except Exception:
-        con.execute("""INSTALL spatial""")
-        con.execute("""LOAD spatial""")
+import duckdb
 
 
 ## ADD UNIQUE ID COLUMNS --------------------
-def build_service_area_id() -> None:
+def build_service_area_id(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW service_areas_with_id AS
@@ -42,7 +26,7 @@ def build_service_area_id() -> None:
     )
 
 
-def build_facility_id() -> None:
+def build_facility_id(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW treatment_facilities_with_id AS
@@ -54,7 +38,7 @@ def build_facility_id() -> None:
     )
 
 
-def build_soil_combined() -> None:
+def build_soil_combined(con: duckdb.DuckDBPyConnection) -> None:
     RPCs = [
         "ACRPC",
         "BCRC",
@@ -78,7 +62,7 @@ def build_soil_combined() -> None:
     )
 
 
-def build_soil_suitability_id() -> None:
+def build_soil_suitability_id(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW soil_suitability_with_id AS
@@ -91,7 +75,7 @@ def build_soil_suitability_id() -> None:
 
 
 ## SERVICE AREA TABLES --------------------
-def build_service_info() -> None:
+def build_service_info(con: duckdb.DuckDBPyConnection) -> None:
     service_area_info_cols = [
         "Area_ID",
         "TownID",
@@ -113,7 +97,7 @@ def build_service_info() -> None:
     )
 
 
-def build_service_geom() -> None:
+def build_service_geom(con: duckdb.DuckDBPyConnection) -> None:
     # service_geom_cols = ["Area_ID", "geometry"]
     con.execute(
         """--sql
@@ -126,7 +110,7 @@ def build_service_geom() -> None:
     )
 
 
-def build_service_misc() -> None:
+def build_service_misc(con: duckdb.DuckDBPyConnection) -> None:
     service_miscellaneous_info_cols = [
         "Area_ID",
         "GISNotes",
@@ -147,7 +131,7 @@ def build_service_misc() -> None:
 
 
 ## TREATMENT FACILITY TABLES --------------------
-def build_facility_info() -> None:
+def build_facility_info(con: duckdb.DuckDBPyConnection) -> None:
     facility_info_cols = [
         "Facility_ID",
         "DesignHydraulicCapacityInMGD",
@@ -169,7 +153,7 @@ def build_facility_info() -> None:
     )
 
 
-def build_facility_geom() -> None:
+def build_facility_geom(con: duckdb.DuckDBPyConnection) -> None:
     # facility_geom_cols = ["Facility_ID", "Latitude", "Longitude", "geometry"]
     con.execute(
         """--sql
@@ -184,7 +168,7 @@ def build_facility_geom() -> None:
     )
 
 
-def build_facility_permits() -> None:
+def build_facility_permits(con: duckdb.DuckDBPyConnection) -> None:
     permit_info_cols = [
         "Facility_ID",
         "PermitID",
@@ -203,7 +187,7 @@ def build_facility_permits() -> None:
     )
 
 
-def build_facility_misc() -> None:
+def build_facility_misc(con: duckdb.DuckDBPyConnection) -> None:
     facility_miscellaneous_info_cols = ["Facility_ID", "SourceFile", "GEOIDTXT"]
 
     con.execute(
@@ -216,7 +200,7 @@ def build_facility_misc() -> None:
 
 
 ## SOIL SUITABILITY TABLES --------------------
-def build_suitability_info() -> None:
+def build_suitability_info(con: duckdb.DuckDBPyConnection) -> None:
     suitability_info_cols = ["OGC_FID", "Suitability", "Jurisdiction", "RPC", "Acres"]
 
     con.execute(
@@ -228,7 +212,7 @@ def build_suitability_info() -> None:
     )
 
 
-def build_suitability_geom() -> None:
+def build_suitability_geom(con: duckdb.DuckDBPyConnection) -> None:
     # suitability_geom_cols = ["OGC_FID", "geometry"]
     con.execute(
         """--sql
@@ -241,7 +225,7 @@ def build_suitability_geom() -> None:
     )
 
 
-def build_suitability_colors() -> None:
+def build_suitability_colors(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE TABLE soilSuitability_colors (
@@ -261,7 +245,7 @@ def build_suitability_colors() -> None:
 
 
 ## STORMWATER MANAGEMENT TABLES --------------------
-def build_stormwater_info() -> None:
+def build_stormwater_info(con: duckdb.DuckDBPyConnection) -> None:
     # "Type" labels derived from VERSO WIM GitHub pages
     con.execute(
         """--sql
@@ -296,7 +280,7 @@ def build_stormwater_info() -> None:
     )
 
 
-def build_stormwater_geom() -> None:
+def build_stormwater_geom(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW stormwaterManagement_geom AS 
@@ -309,38 +293,35 @@ def build_stormwater_geom() -> None:
 
 
 ## CLEANING PIPELINE --------------------
-def clean():
-    # Load spatial extension in SQL
-    _load_spatial()
-
+def clean(con: duckdb.DuckDBPyConnection):
     # Add unique IDs to each table
-    build_service_area_id()
-    build_facility_id()
-    build_soil_combined()
-    build_soil_suitability_id()
+    build_service_area_id(con)
+    build_facility_id(con)
+    build_soil_combined(con)
+    build_soil_suitability_id(con)
 
     # Service area tables
-    build_service_info()
-    build_service_geom()
-    build_service_misc()
+    build_service_info(con)
+    build_service_geom(con)
+    build_service_misc(con)
 
     # Treatment facility tables
-    build_facility_info()
-    build_facility_geom()
-    build_facility_permits()
-    build_facility_misc()
+    build_facility_info(con)
+    build_facility_geom(con)
+    build_facility_permits(con)
+    build_facility_misc(con)
 
     # Soil suitability Tables
-    build_suitability_info()
-    build_suitability_geom()
-    build_suitability_colors()
+    build_suitability_info(con)
+    build_suitability_geom(con)
+    build_suitability_colors(con)
 
     # Stormwater Management Tables
-    build_stormwater_info()
-    build_stormwater_geom()
+    build_stormwater_info(con)
+    build_stormwater_geom(con)
 
 
-def add_to_lake():
+def add_to_lake(con: duckdb.DuckDBPyConnection):
     table_names = [
         "serviceAreas_info",
         "serviceAreas_geom",
@@ -367,9 +348,9 @@ def add_to_lake():
         )
 
 
-def main():
-    clean()
-    add_to_lake()
+def main(con: duckdb.DuckDBPyConnection):
+    clean(con)
+    add_to_lake(con)
 
 
 if __name__ == "__main__":
