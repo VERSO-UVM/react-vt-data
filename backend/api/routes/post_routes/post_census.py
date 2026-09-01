@@ -7,7 +7,9 @@ from app_utils import timeseries_db
 from app_utils.df_filtering import (
     filter_from_request,
 )
-from query.production_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 router = APIRouter()
 

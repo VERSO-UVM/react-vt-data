@@ -6,7 +6,7 @@ from query.ambulance import (
 )
 from query.cdc import dual_var_comparison, get_cdc_county_pca, single_var_geojson
 from query.core_functions import filter_options, filter_tree
-from query.production_db import DB
+from query.production_db import get_db
 from query.wastewater import (
     get_soil_suit_geojson,
     get_soil_suit_legend,

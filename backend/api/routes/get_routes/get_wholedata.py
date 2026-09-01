@@ -5,7 +5,9 @@ from fastapi import APIRouter
 
 from app_utils import data_loading
 from app_utils.flooding import add_flood_color
-from query.production_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 logger = logging.getLogger(__name__)
 
