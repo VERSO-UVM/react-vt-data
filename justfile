@@ -116,7 +116,6 @@ build-collection:
 # Collect the data for a specified year and add to lake.RAW tables
 [working-directory("backend")]
 get-data start_year end_year: build-collection
-    echo "Using API key: $CENSUS_API_KEY"
     podman run --rm \
         -v "$(pwd)/Data:/data:z" \
         -e DATA_DIR=/data \
