@@ -22,6 +22,7 @@ import {
   HousingDashboard,
   EducationDashboard,
   HealthDashboard,
+  EconomicDashboard,
 } from '@/components/Reports/dashboards';
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
@@ -425,7 +426,7 @@ export default function DataComparisonPage() {
     Demographics: DemographicsDashboard,
     Housing: HousingDashboard,
     Education: EducationDashboard,
-    'Labor & Economy': () => <div>Coming soon</div>,
+    'Labor & Economy': EconomicDashboard,
     'Land Use': LandUseDashboard,
     'Community Health': HealthDashboard,
   };
