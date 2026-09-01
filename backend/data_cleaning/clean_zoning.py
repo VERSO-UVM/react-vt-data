@@ -111,7 +111,7 @@ def build_info():
 def build_geom():
     con.execute(
         """--sql
-        CREATE OR REPLACE VIEW geom AS
+        CREATE OR REPLACE TEMP VIEW geom AS
         SELECT
             OBJECT_ID,
             ST_GeomFromWKB(geometry) AS geometry
@@ -192,7 +192,7 @@ def build_full():
     exclude = ", ".join(drop_cols)
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW wide AS
+        CREATE OR REPLACE TEMP VIEW wide AS
         SELECT * EXCLUDE ({exclude}) FROM zoning_raw
         """
     )
@@ -201,7 +201,7 @@ def build_full():
 def build_color():
     con.execute(
         """--sql
-        CREATE OR REPLACE VIEW colors AS
+        CREATE OR REPLACE TEMP VIEW colors AS
         SELECT *
         FROM (
             VALUES
@@ -224,7 +224,7 @@ def build_empty_geom():
     """
 
     con.execute("""--sql
-        CREATE OR REPLACE VIEW town_boundaries
+        CREATE OR REPLACE TEMP VIEW town_boundaries
         AS SELECT *
         FROM lake.RAW.vt_town_lines
     """)

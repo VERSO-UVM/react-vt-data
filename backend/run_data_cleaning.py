@@ -24,10 +24,26 @@ def get_cleaners():
 
 
 def run_master_clean():
+    failed = []
+
     for cleaner in get_cleaners():
-        print(f"Running {cleaner.__name__.split('.')[-1]}...")
-        cleaner.main()
-        print(f"Completed {cleaner.__name__.split('.')[-1]}")
+        name = cleaner.__name__.split(".")[-1]
+        print(f"Running {name}...")
+
+        try:
+            cleaner.main()
+            print(f"Completed {name}")
+
+        except Exception as e:
+            failed.append(name)
+            print(f"FAILED {name}: {e}")
+
+    print("\nCleaning ETL process completed.")
+
+    if failed:
+        print(f"Failed cleaners: {', '.join(failed)}")
+    else:
+        print("All cleaners completed successfully.")
 
 
 def main():

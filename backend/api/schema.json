@@ -86,7 +86,7 @@
         "Town": "TownName"
       }
     },
-    "ambulance_ambulance_info": {
+    "VCGI_ambulanceService_info": {
       "join_key": "OBJECTID",
       "join_type": "inner",
       "columns": {

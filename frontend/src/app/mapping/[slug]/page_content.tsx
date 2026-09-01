@@ -63,9 +63,12 @@ const MAP_CONFIG: Record<string, MapConfig> = {
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_serviceAreas_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
+
   ambulance: {
     title: 'Ambulance Service Areas',
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=ambulance_ambulance_info`,
+    initialURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VCGI_ambulanceService_info`,
     dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
     legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
     townBorder: false,
@@ -77,23 +80,29 @@ export default function MappingContent() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
   const config = slug ? MAP_CONFIG[slug] : undefined;
+
   const townBorderDef = config?.townBorder ?? false;
   const largeBorderDef = config?.largeBorder ?? true;
 
   const [data, setData] = useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(false);
+  const [legendLoading, setLegendLoading] = useState(false);
+
   const [showCountyLines, setShowCountyLines] = useState(townBorderDef);
+
   const [largeBorder, setLargeBorder] = useState(largeBorderDef);
 
   const [legendData, setLegendData] = useState<LegendRow[]>([]);
 
   /*
-   * Reset map data when navigating between map pages.
+   * Reset map state when navigating between map pages.
    */
   useEffect(() => {
     setData(null);
     setLegendData([]);
-  }, [slug]);
+    setShowCountyLines(townBorderDef);
+    setLargeBorder(largeBorderDef);
+  }, [slug, townBorderDef, largeBorderDef]);
 
   /*
    * Load initial map data.
@@ -107,7 +116,7 @@ export default function MappingContent() {
     let cancelled = false;
 
     const loadData = async () => {
-      setDataLoading(true);
+      setLoading(true);
 
       try {
         const response =
@@ -127,7 +136,7 @@ export default function MappingContent() {
         }
       } finally {
         if (!cancelled) {
-          setDataLoading(false);
+          setLoading(false);
         }
       }
     };
@@ -184,6 +193,7 @@ export default function MappingContent() {
     return (
       <Box p="md">
         <Title order={2}>Map Not Found</Title>
+
         <Text c="dimmed" mt="xs">
           The requested map could not be found.
         </Text>
@@ -191,9 +201,7 @@ export default function MappingContent() {
     );
   }
 
-  const loading = dataLoading || legendLoading;
-
-  const borderSwitchText = `Show ${config?.title ?? slug}`;
+  const borderSwitchText = `Show ${config.title}`;
 
   return (
     <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>
@@ -229,6 +237,7 @@ export default function MappingContent() {
                   }
                   label="Show Town Borders"
                 />
+
                 <Switch
                   checked={largeBorder}
                   onChange={(event) =>
@@ -251,6 +260,10 @@ export default function MappingContent() {
             )}
 
             {/* Legend */}
+            {config.legendURL && (
+              <LoadingOverlay visible={legendLoading} zIndex={10} />
+            )}
+
             {config.legendURL && legendData.length > 0 && (
               <MapLegend data={legendData} />
             )}
@@ -267,6 +280,7 @@ export default function MappingContent() {
           }}
         >
           <LoadingOverlay visible={loading} zIndex={1000} />
+
           <VTMap
             geojson={data}
             showCountyLines={showCountyLines}
