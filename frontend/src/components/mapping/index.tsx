@@ -24,6 +24,7 @@ interface MyMapProps {
    * own `rgba_color` and `tooltip` properties, exactly like the main layer.
    */
   baseGeojson?: FeatureCollection | null;
+  largeBorders?: boolean;
 }
 
 const BASE_STYLES = {
@@ -55,6 +56,7 @@ export default function VTMap({
   controllerOn = true,
   initialZoom = 7,
   baseGeojson = null,
+  largeBorders = false,
 }: MyMapProps) {
   const [viewState, setViewState] = useState({
     ...INITIAL_VIEW_STATE,
@@ -113,6 +115,23 @@ export default function VTMap({
     }
   };
 
+  const [lineWidth, setLineWidth] = useState<number>(0.5);
+  const [lineColor, setLineColor] = useState<[number, number, number, number]>([
+    80, 80, 80, 80,
+  ]);
+
+  // Changes the line width and color if there are large borders
+  // done this way so that things don't have infinite loops. not sure if this is the best practice though
+  useEffect(() => {
+    if (largeBorders) {
+      setLineWidth(3);
+      setLineColor([0, 0, 0, 100]);
+    } else {
+      setLineWidth(0.5);
+      setLineColor([80, 80, 80, 80]);
+    }
+  }, [largeBorders]);
+
   const getFillColor = (d: {
     properties?: { rgba_color?: [number, number, number, number] };
   }) => d.properties?.rgba_color ?? [0, 0, 0, 0];
@@ -139,8 +158,10 @@ export default function VTMap({
         data: geojson,
         filled: true,
         getFillColor,
-        getLineColor: [80, 80, 80, 80],
-        lineWidthMinPixels: 0.5,
+        // getLineColor: [80, 80, 80, 80],
+        getLineColor: lineColor,
+        lineWidthMinPixels: lineWidth,
+        // lineWidthMinPixels: 0.5,
         pickable: true,
         autoHighlight: true,
         highlightColor: [222, 102, 0, 200],

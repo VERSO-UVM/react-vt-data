@@ -12,7 +12,7 @@ import pytest
 from sqlfluff.core import FluffConfig, Linter
 
 from api.models import FilterSource, RangeFilter
-from sql_render import (
+from app_utils.sql_render import (
     compile_filters,
     compile_where,
     filter_clauses,
@@ -61,19 +61,13 @@ QUERY_TEMPLATE_SOURCES = {
         )
     ],
     "query/sql/zoning/agg_info_table.sql": [CTE_SOURCE],
-    "query/sql/zoning/agg_rules_table.sql": [CTE_SOURCE],
     "query/sql/zoning/info_table.sql": [CTE_SOURCE],
     "query/sql/zoning/geo_query.sql": [CTE_SOURCE],
     "query/sql/zoning/unzoned.sql": [],
     "query/sql/zoning/agg_rules_table.sql": [CTE_SOURCE],
     "query/sql/zoning/geo_rule_table.sql": [CTE_SOURCE],
     "query/sql/zoning/rules_table.sql": [CTE_SOURCE],
-    "query/sql/wastewater/service_area_geo_query.sql": [CTE_SOURCE],
-    "query/sql/wastewater/soil_suitability_geo_query.sql": [CTE_SOURCE],
-    "query/sql/wastewater/waste_treatment_geo_query.sql": [CTE_SOURCE],
-    "query/sql/wastewater/waste_treatment_permit_table.sql": [CTE_SOURCE],
     "query/sql/zoning/rules.sql": [CTE_SOURCE],
-    "query/sql/zoning/rules_table.sql": [CTE_SOURCE],
     "query/sql/wastewater/service_area_geo_query.sql": [
         FilterSource(
             filter_table="service_areas_service_area_info",
