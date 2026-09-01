@@ -15,24 +15,24 @@ import argparse
 from datetime import datetime
 
 from data_collection import (
-    # acs5,
+    acs5,
     ambulance,
     cdc,
-    # demographics,
-    # economic,
-    # education,
+    demographics,
+    economic,
+    education,
     fips,
     flood,
     historic_population,
-    # housing,
-    # qcew,
+    housing,
+    qcew,
     wastewater,
     zoning,
 )
 from lake_build import insert_year, replace_table
 
 # Datasets WITH year columns (longitudinal)
-# YEARLY_SCRAPERS = [acs5, demographics, economic, education, housing, qcew]
+YEARLY_SCRAPERS = [acs5, demographics, economic, education, housing, qcew]
 
 # Datasets WITHOUT year columns (static)
 STATIC_SCRAPERS = [
@@ -82,8 +82,8 @@ def run_scraper(scraper, yearly: bool = False, years: range = YEARS):
 
 
 def run_master_scrape(start_year: int = 2009, end_year: int = MAX_YEAR - 1):
-    # for scraper in YEARLY_SCRAPERS:
-    #     run_scraper(scraper, yearly=True, years=range(start_year, end_year + 1))
+    for scraper in YEARLY_SCRAPERS:
+        run_scraper(scraper, yearly=True, years=range(start_year, end_year + 1))
 
     for scraper in STATIC_SCRAPERS:
         run_scraper(scraper, yearly=False)
