@@ -5,6 +5,8 @@ import { DataRow } from '@/types/cachedCharts';
 interface MedianHomeValueCardProps {
   primary: DataRow[];
   comparison: DataRow[];
+  primaryName?: string;
+  comparisonName?: string;
 }
 
 function getVariableValue(data: DataRow[], variable: string): number | null {
@@ -17,6 +19,8 @@ function getVariableValue(data: DataRow[], variable: string): number | null {
 export default function MedianHomeValueCard({
   primary,
   comparison,
+  primaryName,
+  comparisonName,
 }: MedianHomeValueCardProps) {
   const primaryValue = getVariableValue(primary, 'Median Home Value');
   const comparisonValue = getVariableValue(comparison, 'Median Home Value');
@@ -56,21 +60,18 @@ export default function MedianHomeValueCard({
       <Stack gap={5}>
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
-            Comparison
+            {comparisonName}
           </Text>
-
           <Text fw={600}>
             {comparisonValue !== null
               ? `$${comparisonValue.toLocaleString()}`
               : '—'}
           </Text>
         </Group>
-
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
             Difference
           </Text>
-
           <Text
             fw={700}
             c={
@@ -84,13 +85,24 @@ export default function MedianHomeValueCard({
         </Group>
 
         <Text size="xs" c="dimmed" mt="xs">
-          {difference === null
-            ? ''
-            : difference > 0
-              ? 'Higher median home value'
-              : difference < 0
-                ? 'Lower median home value'
-                : 'Same median home value'}
+          {difference === null ? (
+            ''
+          ) : difference > 0 ? (
+            <>
+              <span style={{ color: '#a73c00' }}>{primaryName}</span> has a
+              higher median home value than <span>{comparisonName}</span>
+            </>
+          ) : difference < 0 ? (
+            <>
+              <span style={{ color: '#a73c00' }}>{primaryName}</span> has a
+              lower median home value than <span>{comparisonName}</span>
+            </>
+          ) : (
+            <>
+              <span style={{ color: '#a73c00' }}>{primaryName}</span> and{' '}
+              <span>{comparisonName}</span> have the same median home value
+            </>
+          )}
         </Text>
       </Stack>
     </Card>

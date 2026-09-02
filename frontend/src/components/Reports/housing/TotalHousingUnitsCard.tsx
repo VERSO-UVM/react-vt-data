@@ -1,9 +1,8 @@
 import { Card, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconCalendarStats } from '@tabler/icons-react';
+import { IconBuildingCommunity } from '@tabler/icons-react';
 import { DataRow } from '@/types/cachedCharts';
-import { COLORS, FONTS } from '@/app/theme';
 
-interface MedianAgeCardProps {
+interface HousingUnitsCardProps {
   primary: DataRow[];
   comparison: DataRow[];
   primaryName?: string;
@@ -17,18 +16,18 @@ function getVariableValue(data: DataRow[], variable: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export default function MedianAgeCard({
+export default function TotalHousingUnitsCard({
   primary,
   comparison,
   primaryName,
   comparisonName,
-}: MedianAgeCardProps) {
-  const primaryAge = getVariableValue(primary, 'Median Age');
-  const comparisonAge = getVariableValue(comparison, 'Median Age');
+}: HousingUnitsCardProps) {
+  const primaryValue = getVariableValue(primary, 'Total Housing Units');
+  const comparisonValue = getVariableValue(comparison, 'Total Housing Units');
 
   const difference =
-    primaryAge !== null && comparisonAge !== null
-      ? primaryAge - comparisonAge
+    primaryValue !== null && comparisonValue !== null
+      ? primaryValue - comparisonValue
       : null;
 
   return (
@@ -45,35 +44,34 @@ export default function MedianAgeCard({
       <Group justify="space-between" mb="md">
         <Stack gap={2}>
           <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-            Median Age
+            Total Housing Units
           </Text>
 
           <Title order={3}>
-            {primaryAge !== null ? `${primaryAge.toFixed(1)} years` : '—'}
+            {primaryValue !== null ? `${primaryValue.toLocaleString()}` : '—'}
           </Title>
         </Stack>
 
-        <ThemeIcon size={48} radius="xl" variant="light" color="blue">
-          <IconCalendarStats size={24} />
+        <ThemeIcon size={48} radius="xl" variant="light" color="red">
+          <IconBuildingCommunity size={24} />
         </ThemeIcon>
       </Group>
 
       <Stack gap={5}>
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
-            {comparisonName ? `${comparisonName}` : 'Comparison'}
+            {comparisonName}
           </Text>
-
           <Text fw={600}>
-            {comparisonAge !== null ? `${comparisonAge.toFixed(1)} years` : '—'}
+            {comparisonValue !== null
+              ? `${comparisonValue.toLocaleString()}`
+              : '—'}
           </Text>
         </Group>
-
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
             Difference
           </Text>
-
           <Text
             fw={700}
             c={
@@ -82,7 +80,7 @@ export default function MedianAgeCard({
           >
             {difference === null
               ? '—'
-              : `${difference > 0 ? '+' : ''}${difference.toFixed(1)} yrs`}
+              : `${difference > 0 ? '+' : ''}${difference.toLocaleString()}`}
           </Text>
         </Group>
 
@@ -91,18 +89,20 @@ export default function MedianAgeCard({
             ''
           ) : difference > 0 ? (
             <>
-              <span style={{ color: '#5474B4' }}>{primaryName}</span> has an
-              older median population than <span>{comparisonName}</span>
+              <span style={{ color: '#a73c00' }}>{primaryName}</span> has{' '}
+              <span>{difference}</span> more housing units than{' '}
+              <span>{comparisonName}</span>
             </>
           ) : difference < 0 ? (
             <>
-              <span style={{ color: '#5474B4' }}>{primaryName}</span> has a
-              younger median population than <span>{comparisonName}</span>
+              <span style={{ color: '#a73c00' }}>{primaryName}</span> has{' '}
+              <span>{difference}</span> less housing units than{' '}
+              <span>{comparisonName}</span>
             </>
           ) : (
             <>
-              <span style={{ color: '#5474B4' }}>{primaryName}</span> and{' '}
-              <span>{comparisonName}</span> have the same median age
+              <span style={{ color: '#a73c00' }}>{primaryName}</span> and{' '}
+              <span>{comparisonName}</span> have the number of housing units
             </>
           )}
         </Text>
