@@ -4,6 +4,10 @@ export DATA_DIR := justfile_directory() / "Data"
 # Load environment variables
 set dotenv-filename := ".env"
 
+api_host := env_var_or_default("API_HOST", "127.0.0.1")
+api_port := env_var_or_default("API_PORT", "6767")
+api_url := env_var_or_default("NEXT_PUBLIC_API_URL", "http://localhost:6767/api")
+
 ################
 # CLI Development  #
 ################
@@ -96,7 +100,6 @@ dev-frontend: build-pod build-frontend run-frontend
 check-frontend:
     npx tsc --noEmit    
 
-
 ## ETL (Pipeline) Container
 ################
 
@@ -105,7 +108,6 @@ check-frontend:
 build-lake:
     podman build -t localhost/vdc-lake -f ETL/dockerfile.lake .
     podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-lake
-
 
 # --------- 1. Data Collection (E) ---------------------
 # build the backend COLLECTION image
@@ -121,8 +123,7 @@ get-data start_year end_year: build-collection
         -v "$(pwd)/Data:/data:z" \
         -e DATA_DIR=/data \
         -e CENSUS_API_KEY="$CENSUS_API_KEY" \
-        localhost/vdc-collection {{start_year}} {{end_year}}
-
+        localhost/vdc-collection {{ start_year }} {{ end_year }}
 
 # --------- 2. Data Cleaning (T) ---------------------
 # Run each RAW table through it's data cleaning script
@@ -138,12 +139,11 @@ load-data:
     podman build -t localhost/vdc-loading -f ETL/dockerfile.load .
     podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
 
-
 # Collect (E), clean (T), and load (L) the data (Full pipeline run)
 [working-directory("backend")]
 run-etl start_year end_year:
     # Collect the data for a certain year
-    just get-data {{start_year}} {{end_year}}
+    just get-data {{ start_year }} {{ end_year }}
     # Clean the RAW populated lake tables into CLEANED
     just transform-data
     # Load CLEANED tables into DuckDB instance
