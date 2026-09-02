@@ -7,7 +7,10 @@ import './globals.css';
 import { MantineProvider, Container, Box } from '@mantine/core';
 
 import HeaderMenu from '../components/HeaderMenu';
+import Maintenance from '../components/Maintenance';
 import { theme } from './theme';
+
+const isMaintenanceMode = process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true';
 
 const zillaSlab = Zilla_Slab({
   variable: '--font-zilla-slab',
@@ -33,10 +36,16 @@ export default function RootLayout({
 
       <body className={`${zillaSlab.variable} antialiased`}>
         <MantineProvider theme={theme}>
-          <HeaderMenu />
-          <Box>
-            <main>{children}</main>
-          </Box>
+          {isMaintenanceMode ? (
+            <Maintenance />
+          ) : (
+            <>
+              <HeaderMenu />
+              <Box>
+                <main>{children}</main>
+              </Box>
+            </>
+          )}
         </MantineProvider>
       </body>
     </html>
