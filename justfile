@@ -20,7 +20,7 @@ local-api:
 
 [working-directory("frontend")]
 local-frontend:
-    NEXT_PUBLIC_API_URL={{ api_url }} npm run dev -- --port 3000
+    npm run dev -- --port 3000
 
 # turns on non-container full apps, interleaved in terminal (from Procfile). Note: no longer turns off containers
 local-dev:
