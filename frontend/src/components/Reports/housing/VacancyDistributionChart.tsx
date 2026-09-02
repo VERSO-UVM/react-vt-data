@@ -70,16 +70,16 @@ export default function VacancyDistributionChart({
       <ResponsiveContainer width="100%" height={300}>
         <BarChart
           data={data}
-          layout="vertical"
+          layout="horizontal"
           margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-          <XAxis
+          <YAxis
             type="number"
-            domain={[0, 100]}
+            domain={[0, 6]}
             tickFormatter={(value) => `${value}%`}
           />
-          <YAxis type="category" dataKey="category" width={120} />
+          <XAxis type="category" dataKey="category" />
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
           <Bar dataKey={primaryName} fill="#a73c00" radius={[0, 4, 4, 0]} />

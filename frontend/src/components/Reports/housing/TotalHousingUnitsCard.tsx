@@ -96,8 +96,8 @@ export default function TotalHousingUnitsCard({
           ) : difference < 0 ? (
             <>
               <span style={{ color: '#a73c00' }}>{primaryName}</span> has{' '}
-              <span>{difference}</span> less housing units than{' '}
-              <span>{comparisonName}</span>
+              <span>{(difference * -1).toLocaleString()}</span> less housing
+              units than <span>{comparisonName}</span>
             </>
           ) : (
             <>
