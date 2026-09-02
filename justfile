@@ -1,6 +1,6 @@
 ## Set up environment ##
 
-export DATA_DIR := justfile_directory() / "Data"
+export DATA_DIR := justfile_directory() / "backend" / "Data"
 # Load environment variables
 set dotenv-filename := ".env"
 
@@ -96,8 +96,8 @@ dev-frontend: build-pod build-frontend run-frontend
 check-frontend:
     npx tsc --noEmit    
 
-
-## ETL (Pipeline) Container
+################
+# ETL (Pipeline) Container
 ################
 
 # --------- Pre-step: Lake Builder ---------------------
@@ -116,7 +116,6 @@ build-collection:
 # Collect the data for a specified year and add to lake.RAW tables
 [working-directory("backend")]
 get-data start_year end_year: build-collection
-    echo "Using API key: $CENSUS_API_KEY"
     podman run --rm \
         -v "$(pwd)/Data:/data:z" \
         -e DATA_DIR=/data \

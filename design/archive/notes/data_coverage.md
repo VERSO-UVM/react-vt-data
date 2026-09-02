@@ -4,7 +4,7 @@
 
 The scrapers in `backend/data_collection/` pull from the **ACS 5-year estimates** via the Census API. The ACS 5-year program began with the 2005–2009 dataset, released in December 2010. **2009 is the earliest year available in this product** and is the hard floor for all longitudinal tables (demographics, education, housing, labor force, income).
 
-Current scraper config: `YEARS = list(range(2009, 2025))` in `data_collection/base.py`.
+Current scraper config: `YEARS = list(range(2009, MAX_YEAR))` in `data_collection/base.py`.
 
 Education data starts at 2012 in practice (earlier tables used different variable structures).
 
@@ -21,7 +21,7 @@ The ACS replaced the decennial Census long-form starting with the 2010 cycle. Be
 
 | Period           | Source                        | Resolution  | Town-level?             |
 | ---------------- | ----------------------------- | ----------- | ----------------------- |
-| 2009–2024        | ACS 5-year estimates          | Annual      | Yes                     |
+| 2009–Present     | ACS 5-year estimates          | Annual      | Yes                     |
 | 2005–2008        | ACS 1-year estimates          | Annual      | No (≥65k pop only)      |
 | 2000, 2010, 2020 | Decennial Census (short form) | Every 10 yr | Yes (limited variables) |
 | 1970–2000        | Decennial Census long-form    | Every 10 yr | Partial                 |

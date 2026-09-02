@@ -2,31 +2,35 @@
 **Author**:
     Ian Sargent
 **Created**:
-    2026-07-14
+    2026-08-25
 **Description**:
-    Data cleaning script for health insurance coverage.
+    Data cleaning script for median earnings (Male, Female, All Workers).
     Derived from the `RAW.acs5_economic` DuckLake table
 **Run with**:
-python -m data_cleaning.clean_health_insurance_coverage
+python -m data_cleaning.clean_median_earnings
 """
+
+from datetime import datetime
 
 import duckdb
 import numpy as np
 import pandas as pd
 
+INFLATION_YEAR = datetime.now().year - 2
+
 
 def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     raw_df = con.execute(
-        """--sql
-        SELECT year, NAME, Variable, Value, geo_type
+        f"""--sql
+        SELECT year, NAME, Subcategory AS 'Variable', Value, geo_type
         FROM lake.RAW.acs5_economic
-        WHERE Category LIKE '%INSURANCE%'
-        AND Subcategory = 'Civilian noninstitutionalized population'
-        AND Variable IN (
-            'With health insurance coverage: With public coverage',
-            'With health insurance coverage: With private health insurance',
-            'No health insurance coverage'
+        WHERE Category LIKE '%INCOME AND BENEFITS ' || chr(40) || 'IN {INFLATION_YEAR}%'
+        AND Subcategory IN (
+            'Median earnings for male full-time, year-round workers (dollars)',
+            'Median earnings for female full-time, year-round workers (dollars)',
+            'Median earnings for workers (dollars)'
         )
+        AND Variable = 'Total'
         AND Measure = 'Estimate'
         ORDER BY year;
         """
@@ -60,7 +64,7 @@ def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame) -> None:
     """
     con.execute(
         """--sql
-        CREATE OR REPLACE TABLE lake.CLEANED.acs5Economics_healthInsurance_timeseries AS
+        CREATE OR REPLACE TABLE lake.CLEANED.acs5Economics_medianEarnings_timeseries AS
         SELECT * FROM clean_df
         """
     )

@@ -457,7 +457,7 @@ export const MedianAgeTrendChart = <TData,>({
 }) =>
   single(
     chart,
-    { seriesKey: 'Median Age', valueField: 'Value', format: 'years' },
+    { seriesKey: null, valueField: 'Median_Age', format: 'years' },
     view,
     onPlotData,
   );
@@ -566,8 +566,8 @@ export const UnemploymentTrendChart = <TData,>({
   single(
     chart,
     {
-      seriesKey: null,
-      valueField: 'Value',
+      seriesKey: 'Unemployment Rate',
+      valueField: 'Percent',
       format: 'percent',
       decimals: 1,
     },
@@ -587,8 +587,8 @@ export const HouseholdIncomeTrendChart = <TData,>({
   single(
     chart,
     {
-      seriesKey: 'Median Household Income',
-      valueField: 'Value',
+      seriesKey: null,
+      valueField: 'Median_Household_Income',
       format: 'currency',
       showHelperText: false,
     },
@@ -608,8 +608,8 @@ export const PerCapitaIncomeTrendChart = <TData,>({
   single(
     chart,
     {
-      seriesKey: 'Per Capita Income',
-      valueField: 'Value',
+      seriesKey: null,
+      valueField: 'Per_Capita_Income',
       format: 'currency',
       showHelperText: false,
     },
@@ -704,15 +704,21 @@ export const EarningsTrendChart = <TData,>({
       series: [
         {
           key: 'Male Full-Time Workers',
-          matchVariable: 'DP03_0093',
+          matchVariable:
+            'Median earnings for male full-time, year-round workers (dollars)',
           color: '#161E54',
         },
         {
           key: 'Female Full-Time Workers',
-          matchVariable: 'DP03_0094',
+          matchVariable:
+            'Median earnings for female full-time, year-round workers (dollars)',
           color: '#F16D34',
         },
-        { key: 'All Workers', matchVariable: 'DP03_0092', color: '#9BB0C1' },
+        {
+          key: 'All Workers',
+          matchVariable: 'Median earnings for workers (dollars)',
+          color: '#9BB0C1',
+        },
       ],
     },
     view,

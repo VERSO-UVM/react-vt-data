@@ -6,25 +6,13 @@
 **Description**:
     Data cleaning script for the raw `flood` table in the DuckLake
     Run with:
-python -m ETL.data_cleaning.clean_flood
+python -m data_cleaning.clean_flood
 """
 
-from lake_build import con
+import duckdb
 
 
-## LOAD SPATIAL EXTENSION FUNCTION --------------------
-def _load_spatial() -> None:
-    """
-    Load the spatial extension, installing it first if necessary.
-    """
-    try:
-        con.execute("""--sql LOAD spatial""")
-    except Exception:
-        con.execute("""--sql INSTALL spatial""")
-        con.execute("""--sql LOAD spatial""")
-
-
-def build_flood():
+def build_flood(con: duckdb.DuckDBPyConnection) -> None:
     """
     Clean FEMA flood polygons.
     """
@@ -52,7 +40,7 @@ def build_flood():
     )
 
 
-def add_to_lake():
+def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.FEMA_floodHazard_geom AS
@@ -62,14 +50,13 @@ def add_to_lake():
     )
 
 
-def clean():
-    _load_spatial()
-    build_flood()
+def clean(con: duckdb.DuckDBPyConnection) -> None:
+    build_flood(con)
 
 
-def main():
-    clean()
-    add_to_lake()
+def main(con: duckdb.DuckDBPyConnection):
+    clean(con)
+    add_to_lake(con)
 
 
 if __name__ == "__main__":

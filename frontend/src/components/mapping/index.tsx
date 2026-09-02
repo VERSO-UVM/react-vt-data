@@ -156,7 +156,10 @@ export default function VTMap({
       new GeoJsonLayer({
         id: 'geojson',
         data: geojson,
-        filled: true,
+        pointType: 'circle',
+        pointRadiusUnits: 'pixels',
+        pointRadiusMinPixels: 12,
+        pointRadiusMaxPixels: 12,
         getFillColor,
         // getLineColor: [80, 80, 80, 80],
         getLineColor: lineColor,
@@ -164,7 +167,7 @@ export default function VTMap({
         // lineWidthMinPixels: 0.5,
         pickable: true,
         autoHighlight: true,
-        highlightColor: [222, 102, 0, 200],
+        highlightColor: [255, 255, 255, 255],
         onHover,
       }),
     showCountyLines &&

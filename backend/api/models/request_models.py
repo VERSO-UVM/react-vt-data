@@ -1,6 +1,9 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, model_validator
+
+MAX_YEAR = datetime.now().year - 2
 
 
 class RangeFilter(BaseModel):
@@ -30,7 +33,7 @@ class DPSeriesRequest(BaseModel):
     variable: str
     measure: str
     year_min: int = 2009
-    year_max: int = 2024
+    year_max: int = MAX_YEAR
 
 
 join_types = Literal["inner", "left", "spatial_intersect"]

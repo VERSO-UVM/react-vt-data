@@ -10,12 +10,11 @@
 python -m data_cleaning.clean_economic
 """
 
+import duckdb
 import pandas as pd
 
-from lake_build import con
 
-
-def read_raw_data() -> pd.DataFrame:
+def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     raw_df = con.execute(
         """--sql
         SELECT * 
@@ -26,13 +25,13 @@ def read_raw_data() -> pd.DataFrame:
     return raw_df
 
 
-def clean():
-    raw_df = read_raw_data()
+def clean(con: duckdb.DuckDBPyConnection):
+    raw_df = read_raw_data(con)
     # NOTE: Cleaning already included in data fetch --> returning raw dataframe
     return raw_df
 
 
-def add_to_lake(clean_df: pd.DataFrame):
+def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame):
     """
     Writes the cleaned economic dataframe
     to the CLEANED schema in DuckLake.
@@ -45,9 +44,9 @@ def add_to_lake(clean_df: pd.DataFrame):
     )
 
 
-def main():
-    clean_df = clean()
-    add_to_lake(clean_df)
+def main(con: duckdb.DuckDBPyConnection):
+    clean_df = clean(con)
+    add_to_lake(con, clean_df)
 
 
 if __name__ == "__main__":

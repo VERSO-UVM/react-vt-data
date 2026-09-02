@@ -6,7 +6,7 @@
 **Description**:
     Cleaning script for the single-variable timeseries tables
     (median age, median household income, median home value,
-    per capita income, total housing units,vacancy rate, unemployment_rate).
+    per capita income, total housing units, vacancy rate).
 
     Pipeline steps:
     1. Read raw data
@@ -26,10 +26,11 @@ import argparse
 import sys
 from dataclasses import dataclass, field
 
+import duckdb
 import numpy as np
 import pandas as pd
 
-from lake_build import con
+from lake_build import get_connection
 
 UNAVAILABLE_SENTINEL = -666666666.0
 
@@ -101,18 +102,10 @@ CONFIGS: dict[str, DatasetConfig] = {
         output_table="acs5Housing_vacancyRates_timeseries",
         keep_variable_col=True,
     ),
-    "unemployment_rate": DatasetConfig(
-        source_table="acs5_economic",
-        variables=["Unemployment Rate"],
-        value_source_col="Value",
-        output_value_col="Unemployment_Rate",
-        output_table="acs5Economics_unemploymentRate_timeseries",
-        extra_where_statement="Measure = 'Percent'",
-    ),
 }
 
 
-def read_raw_data(cfg: DatasetConfig) -> pd.DataFrame:
+def read_raw_data(cfg: DatasetConfig, con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     select_parts = ["year", "NAME"]
     if cfg.keep_variable_col:
         select_parts.append("Variable")
@@ -148,14 +141,16 @@ def replace_unavailable_data(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
     return df
 
 
-def clean(cfg: DatasetConfig) -> pd.DataFrame:
-    df = read_raw_data(cfg)
+def clean(con: duckdb.DuckDBPyConnection, cfg: DatasetConfig) -> pd.DataFrame:
+    df = read_raw_data(cfg, con)
     df = change_dtype(df, cfg.output_value_col)
     df = replace_unavailable_data(df, cfg.output_value_col)
     return df
 
 
-def add_to_lake(clean_df: pd.DataFrame, output_table: str) -> None:
+def add_to_lake(
+    con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame, output_table: str
+) -> None:
     """
     Writes a cleaned, long-format dataframe to the CLEANED schema in DuckLake.
     """
@@ -168,13 +163,13 @@ def add_to_lake(clean_df: pd.DataFrame, output_table: str) -> None:
     )
 
 
-def run(name: str) -> None:
+def run(name: str, con: duckdb.DuckDBPyConnection) -> None:
     cfg = CONFIGS[name]
-    clean_df = clean(cfg)
-    add_to_lake(clean_df, cfg.output_table)
+    clean_df = clean(con, cfg)
+    add_to_lake(con, clean_df, cfg.output_table)
 
 
-def main(names: list[str] | None = None) -> None:
+def main(con: duckdb.DuckDBPyConnection, names: list[str] | None = None) -> None:
     targets = names or list(CONFIGS)
     unknown = [n for n in targets if n not in CONFIGS]
 
@@ -184,7 +179,7 @@ def main(names: list[str] | None = None) -> None:
         )
 
     for name in targets:
-        run(name)
+        run(name, con)
 
 
 if __name__ == "__main__":
@@ -198,5 +193,10 @@ if __name__ == "__main__":
         help="Dataset name(s) to clean. Omit to run all.",
         metavar="DATASET",
     )
-    args = parser.parse_args()
-    main(args.datasets or None)
+    con = get_connection()
+
+    try:
+        args = parser.parse_args()
+        main(con, args.datasets or None)
+    finally:
+        con.close()

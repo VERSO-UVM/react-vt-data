@@ -3,8 +3,10 @@
     Fitz Koch
 **Created**:
     2026-06-01
+**Updated**:
+    2026-08-20
 **Description**:
-    Functions for serving zoning_info data to the API from the parquet files.
+    Functions for serving VersoZoning_info data to the API from the database.
 """
 
 import logging
@@ -14,7 +16,9 @@ import pandas as pd
 
 from api.models import FilterSource
 from app_utils.sql_render import render_sql, sql_filter_block
-from query.processed_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql" / "zoning"

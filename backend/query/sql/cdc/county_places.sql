@@ -6,7 +6,9 @@ SELECT
     ROUND(p.natl_pct * 100, 2) AS natl_pct,
     c.CountyFIPS,
     c.CountyName,
-    ST_ASGEOJSON(c.geom) AS geometry
-FROM cdc_county_places AS p
-LEFT JOIN vermont_counties AS c ON p.LocationID = c.CountyFIPS
+    ST_ASGEOJSON(ST_GeomFromWKB(c.geometry)) AS geometry
+FROM cdc_places_county AS p
+LEFT JOIN vt_county_lines_geom AS c
+    ON p.LocationID = c.CountyFIPS
+
 {{ where_string }}

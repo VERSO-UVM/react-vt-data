@@ -5,6 +5,9 @@ from fastapi import APIRouter
 
 from app_utils import data_loading
 from app_utils.flooding import add_flood_color
+from query.production_db import get_db
+
+DB = get_db()
 
 logger = logging.getLogger(__name__)
 
@@ -16,14 +19,33 @@ def read_root():
     return {"Default Message": "No endpoint specified"}
 
 
-# Flood Endpoint (Hardcoded for now)
+# Flood Endpoint
 @router.get("/load/mapping/flood_legal")
 async def read_flood_data():
-    data = data_loading.masterload(name="flood_legal")
-    # Re-apply zone-based colors at serve time so the static JSON
-    # does not need to be regenerated when the color scheme changes.
-    data = add_flood_color(data)
-    return json.loads(data.to_json())
+    result = DB.execute("""--sql
+        SELECT
+            *,
+            ST_AsGeoJSON(geometry)::JSON AS geometry_json
+        FROM FEMA_floodHazard_geom
+    """).df()
+
+    result = add_flood_color(result)
+
+    features = []
+    for _, row in result.iterrows():
+        properties = row.drop(["geometry", "geometry_json"]).to_dict()
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": json.loads(row["geometry_json"]),
+                "properties": properties,
+            }
+        )
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+    }
 
 
 # Soil Septic Endpoint (Hardcoded for now)

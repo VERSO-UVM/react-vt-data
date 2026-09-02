@@ -3,7 +3,9 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
-from query.processed_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 router = APIRouter()
 
@@ -36,7 +38,7 @@ async def employment_by_sector(request: FilterRequest):
     if not county and is_statewide:
         query = """
             SELECT year, quarter, quarter_label, sector, employment_4qma
-            FROM qcew_employment
+            FROM qcew_sectorEmployment_timeseries
             WHERE sector != 'Total'
             ORDER BY year, quarter, sector
         """
@@ -44,7 +46,7 @@ async def employment_by_sector(request: FilterRequest):
     elif county:
         query = """
             SELECT year, quarter, quarter_label, sector, employment_4qma
-            FROM qcew_employment
+            FROM qcew_sectorEmployment_timeseries
             WHERE sector != 'Total'
             AND County = ?
             ORDER BY year, quarter, sector

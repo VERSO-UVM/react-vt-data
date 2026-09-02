@@ -4,5 +4,5 @@ SELECT
     r.use_type,
     r.rule,
     r.val
-FROM zoning_rules AS r
+FROM VersoZoning_rules AS r
 {{ join_filter_block }}
