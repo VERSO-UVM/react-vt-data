@@ -4,6 +4,10 @@ export DATA_DIR := justfile_directory() / "backend" / "Data"
 # Load environment variables
 set dotenv-filename := ".env"
 
+# Host-specific podman flags. Empty by default (Docker, macOS, rootful podman).
+# On the VM with rootless podman, override:  just podman_flags="--userns=keep-id:uid=1000,gid=1000"
+podman_flags := env_var_or_default("PODMAN_FLAGS", "")
+
 ################
 # CLI Development  #
 ################
@@ -104,8 +108,7 @@ check-frontend:
 [working-directory("backend")]
 build-lake:
     podman build -t localhost/vdc-lake -f ETL/dockerfile.lake .
-    podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-lake
-
+    podman run --rm {{ podman_flags }} -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-lake
 
 # --------- 1. Data Collection (E) ---------------------
 # build the backend COLLECTION image
@@ -116,33 +119,32 @@ build-collection:
 # Collect the data for a specified year and add to lake.RAW tables
 [working-directory("backend")]
 get-data start_year end_year: build-collection
-    podman run --rm \
+    podman run --rm {{ podman_flags }} \
         -v "$(pwd)/Data:/data:z" \
         -e DATA_DIR=/data \
         -e CENSUS_API_KEY="$CENSUS_API_KEY" \
-        localhost/vdc-collection {{start_year}} {{end_year}}
-
+        localhost/vdc-collection {{ start_year }} {{ end_year }}
 
 # --------- 2. Data Cleaning (T) ---------------------
 # Run each RAW table through it's data cleaning script
 [working-directory("backend")]
 transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
-    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
+    podman run --rm {{ podman_flags }} \
+     -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
 
 # --------- 3. Data Loading (L) ---------------------
 # Load the lake.CLEANED tables into a DuckDB database
 [working-directory("backend")]
 load-data:
     podman build -t localhost/vdc-loading -f ETL/dockerfile.load .
-    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
-
+    podman run {{ podman_flags }} --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
 
 # Collect (E), clean (T), and load (L) the data (Full pipeline run)
 [working-directory("backend")]
 run-etl start_year end_year:
     # Collect the data for a certain year
-    just get-data {{start_year}} {{end_year}}
+    just get-data {{ start_year }} {{ end_year }}
     # Clean the RAW populated lake tables into CLEANED
     just transform-data
     # Load CLEANED tables into DuckDB instance
