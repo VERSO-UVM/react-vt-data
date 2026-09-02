@@ -75,7 +75,7 @@ const SECTIONS: Record<string, SectionConfig> = {
     yearMax: 2024,
   },
   'Land Use': {
-    url: `${BASE_API_URL}/load/mapping/zoning/standard_new`,
+    url: `${BASE_API_URL}/load/data/zoning/aggregated`,
     yField: 'Value',
     unit: '',
     yearMin: 2024,

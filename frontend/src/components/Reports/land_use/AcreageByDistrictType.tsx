@@ -18,17 +18,10 @@ interface DistrictTypeChartProps {
   comparisonName: string;
 }
 
-const DISTRICT_TYPES = [
-  'Nonresidential',
-  'Mixed with Residential',
-  'Overlay not Affecting Use',
-  'Primarily Residential',
-  'No Data',
-];
+const DISTRICT_TYPES = ['Nonresidential', 'Mixed', 'Overlay', 'Residential'];
 
-function getValue(data: DataRow[], variable: string): number {
-  const row = data.find((d) => d.Variable === variable);
-  return row ? Number(row.Percent) : 0;
+function getRow(data: DataRow[], districtType: string): DataRow | undefined {
+  return data.find((d) => d['District Type'] === districtType);
 }
 
 function buildDistrictTypeData(
@@ -37,14 +30,20 @@ function buildDistrictTypeData(
   primaryName: string,
   comparisonName: string,
 ) {
-  return DISTRICT_TYPES.map((type) => ({
-    type,
-    [primaryName]: getValue(primary, type),
-    [comparisonName]: getValue(comparison, type),
-  }));
+  return DISTRICT_TYPES.map((type) => {
+    const primaryRow = getRow(primary, type);
+    const comparisonRow = getRow(comparison, type);
+
+    return {
+      category: type,
+      [primaryName]: Number(primaryRow?.Acres ?? 0),
+      [comparisonName]: Number(comparisonRow?.Acres ?? 0),
+      primaryColor: primaryRow?.hex_color || '#a73c00',
+    };
+  });
 }
 
-export default function RaceDistributionChart({
+export default function DistrictTypeChart({
   primary,
   comparison,
   primaryName,
@@ -62,29 +61,45 @@ export default function RaceDistributionChart({
       radius="xl"
       padding="lg"
       withBorder
-      style={{
-        height: '100%',
-        transition: 'all 180ms ease',
-      }}
+      style={{ transition: 'all 180ms ease' }}
     >
       <Title order={4} mb="md">
         Acreage by District Type
       </Title>
 
-      <ResponsiveContainer width="100%" height={420}>
-        <BarChart data={data} layout="vertical" responsive>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" tickFormatter={(v) => `${v}%`} />
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+
+          <XAxis
+            type="number"
+            tickFormatter={(value) => Number(value).toLocaleString()}
+          />
+
           <YAxis
             type="category"
-            dataKey="District_Type"
+            dataKey="category"
             width={180}
             tick={{ fontSize: 12 }}
           />
-          <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
+
+          <Tooltip
+            formatter={(value) =>
+              `${Number(value).toLocaleString(undefined, {
+                maximumFractionDigits: 1,
+              })} acres`
+            }
+          />
+
           <Legend />
-          <Bar dataKey={primaryName} fill="#4F8EF7" radius={[0, 6, 6, 0]} />
-          <Bar dataKey={comparisonName} fill="#A78BFA" radius={[0, 6, 6, 0]} />
+
+          <Bar dataKey={primaryName} radius={[0, 4, 4, 0]} fill="#a73c00" />
+
+          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>
