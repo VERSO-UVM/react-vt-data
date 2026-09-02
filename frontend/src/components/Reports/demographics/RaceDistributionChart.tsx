@@ -28,7 +28,6 @@ const RACE_CATEGORIES = [
   'Two or more races',
   'Hispanic or Latino (of any race)',
 ];
-2;
 
 function getValue(data: DataRow[], variable: string): number {
   const row = data.find((d) => d.Variable === variable);
@@ -81,23 +80,17 @@ export default function RaceDistributionChart({
           responsive
         >
           <CartesianGrid strokeDasharray="3 3" />
-
           <XAxis type="number" tickFormatter={(v) => `${v}%`} />
-
           <YAxis
             type="category"
             dataKey="race"
             width={180}
             tick={{ fontSize: 12 }}
           />
-
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
-
           <Legend />
-
-          <Bar dataKey={primaryName} fill="#4F8EF7" radius={[0, 6, 6, 0]} />
-
-          <Bar dataKey={comparisonName} fill="#A78BFA" radius={[0, 6, 6, 0]} />
+          <Bar dataKey={primaryName} fill="#5474B4" radius={[0, 6, 6, 0]} />
+          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>

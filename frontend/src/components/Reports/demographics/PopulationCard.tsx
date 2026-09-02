@@ -5,6 +5,8 @@ import { DataRow } from '@/types/cachedCharts';
 interface PopulationCardProps {
   primary: DataRow[];
   comparison: DataRow[];
+  primaryName?: string;
+  comparisonName?: string;
 }
 
 function findValue(data: DataRow[], variable: string): number | null {
@@ -17,6 +19,8 @@ function findValue(data: DataRow[], variable: string): number | null {
 export default function PopulationCard({
   primary,
   comparison,
+  primaryName,
+  comparisonName,
 }: PopulationCardProps) {
   const primaryPopulation = findValue(primary, 'Population (ACS)');
   const comparisonPopulation = findValue(comparison, 'Population (ACS)');
@@ -59,7 +63,7 @@ export default function PopulationCard({
       <Stack gap={4}>
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
-            Comparison
+            {comparisonName ? `${comparisonName}` : 'Comparison'}
           </Text>
 
           <Text fw={600}>{comparisonPopulation?.toLocaleString() ?? '—'}</Text>

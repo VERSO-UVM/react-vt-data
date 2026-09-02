@@ -1,25 +1,27 @@
 import { Card, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconCalendarStats } from '@tabler/icons-react';
 import { DataRow } from '@/types/cachedCharts';
+import { COLORS, FONTS } from '@/app/theme';
 
 interface MedianAgeCardProps {
   primary: DataRow[];
   comparison: DataRow[];
+  primaryName?: string;
+  comparisonName?: string;
 }
 
 function getVariableValue(data: DataRow[], variable: string): number | null {
   const row = data.find((d) => d.Variable === variable);
-
   if (!row) return null;
-
   const value = Number(row.Value);
-
   return Number.isFinite(value) ? value : null;
 }
 
 export default function MedianAgeCard({
   primary,
   comparison,
+  primaryName,
+  comparisonName,
 }: MedianAgeCardProps) {
   const primaryAge = getVariableValue(primary, 'Median Age');
   const comparisonAge = getVariableValue(comparison, 'Median Age');
@@ -51,7 +53,7 @@ export default function MedianAgeCard({
           </Title>
         </Stack>
 
-        <ThemeIcon size={48} radius="xl" variant="light" color="violet">
+        <ThemeIcon size={48} radius="xl" variant="light" color="blue">
           <IconCalendarStats size={24} />
         </ThemeIcon>
       </Group>
@@ -59,7 +61,7 @@ export default function MedianAgeCard({
       <Stack gap={5}>
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
-            Comparison
+            {comparisonName ? `${comparisonName}` : 'Comparison'}
           </Text>
 
           <Text fw={600}>
@@ -75,11 +77,7 @@ export default function MedianAgeCard({
           <Text
             fw={700}
             c={
-              difference === null
-                ? undefined
-                : difference > 0
-                  ? 'violet'
-                  : 'blue'
+              difference === null ? undefined : difference > 0 ? 'green' : 'red'
             }
           >
             {difference === null
@@ -89,13 +87,25 @@ export default function MedianAgeCard({
         </Group>
 
         <Text size="xs" c="dimmed" mt="xs">
-          {difference === null
-            ? ''
-            : difference > 0
-              ? 'Older median population'
-              : difference < 0
-                ? 'Younger median population'
-                : 'Same median age'}
+          {difference === null ? (
+            ''
+          ) : difference > 0 ? (
+            <>
+              <span style={{ color: '#5474B4' }}>{primaryName}</span> has an
+              older median population than <span>{comparisonName}</span>
+            </>
+          ) : difference < 0 ? (
+            <>
+              <span style={{ color: '#5474B4' }}>{primaryName}</span> has a
+              younger median population than <span>{comparisonName}</span>
+            </>
+          ) : (
+            <>
+              <span style={{ color: '#5474B4' }}>{primaryName}</span> and{' '}
+              <span style={{ color: '#c0c5cf' }}>{comparisonName}</span> have
+              the same median age
+            </>
+          )}
         </Text>
       </Stack>
     </Card>

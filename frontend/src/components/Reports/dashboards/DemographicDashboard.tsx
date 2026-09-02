@@ -37,6 +37,8 @@ export default function DemographicsDashboard({ data }: DashboardProps) {
         <PopulationCard
           primary={primary.current}
           comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
         />
       </Grid.Col>
 
@@ -44,6 +46,8 @@ export default function DemographicsDashboard({ data }: DashboardProps) {
         <MedianAgeCard
           primary={primary.current}
           comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
         />
       </Grid.Col>
 

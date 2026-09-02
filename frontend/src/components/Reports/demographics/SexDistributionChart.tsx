@@ -20,12 +20,12 @@ function buildSexData(data: DataRow[]) {
     {
       name: 'Female',
       value: getValue(data, 'Female'),
-      fill: '#E76F51',
+      fill: '#5474B4',
     },
     {
       name: 'Male',
       value: getValue(data, 'Male'),
-      fill: '#457B9D',
+      fill: '#c0c5cf',
     },
   ];
 }

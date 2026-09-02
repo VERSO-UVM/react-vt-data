@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { DataRow } from '@/types/cachedCharts';
+import { COLORS } from '@/app/theme';
 
 interface AgeDistributionChartProps {
   primary: DataRow[];
@@ -84,8 +85,8 @@ export default function AgeDistributionChart({
           <YAxis tickFormatter={(value) => `${value}%`} />
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey={primaryName} fill="#4F8EF7" radius={[6, 6, 0, 0]} />
-          <Bar dataKey={comparisonName} fill="#A78BFA" radius={[6, 6, 0, 0]} />
+          <Bar dataKey={primaryName} fill="#5474B4" radius={[6, 6, 0, 0]} />
+          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>
