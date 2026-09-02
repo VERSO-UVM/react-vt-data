@@ -25,6 +25,7 @@ export interface DashboardProps {
 export default function EducationDashboard({ data }: DashboardProps) {
   const { primary, comparison } = data;
 
+  // TODO: Add more charts and tables for educational attainment dashboard (from dept of education data?)
   return (
     <Grid gap="lg">
       <Grid.Col span={{ base: 12, md: 6 }}>

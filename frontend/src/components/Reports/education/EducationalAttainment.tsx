@@ -19,10 +19,12 @@ interface EducationalAttainmentProps {
 }
 
 const EDUCATION_CATEGORIES = [
-  'No High School',
-  'High School Diploma',
+  'No High School Diploma',
+  'High School Graduate',
+  'Some College, No Degree',
+  "Associate's Degree",
   "Bachelor's Degree",
-  'Post-Graduate Degree',
+  'Postgraduate Degree',
 ];
 
 function getValue(data: DataRow[], variable: string): number {
@@ -82,14 +84,14 @@ export default function EducationalAttainmentChart({
           <XAxis type="number" tickFormatter={(v) => `${v}%`} />
           <YAxis
             type="category"
-            dataKey="education"
-            width={180}
+            dataKey="educ"
+            width={100}
             tick={{ fontSize: 12 }}
           />
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey={primaryName} fill="#4F8EF7" radius={[0, 6, 6, 0]} />
-          <Bar dataKey={comparisonName} fill="#A78BFA" radius={[0, 6, 6, 0]} />
+          <Bar dataKey={primaryName} fill="#e17800" radius={[0, 6, 6, 0]} />
+          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>
