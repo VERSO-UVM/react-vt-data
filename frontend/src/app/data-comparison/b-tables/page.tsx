@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
   Box,
+  Button,
   Container,
   Group,
   Grid,
@@ -27,6 +28,8 @@ import {
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
 import { DataRow } from '@/types/cachedCharts';
+import { IconDownload } from '@tabler/icons-react';
+import { exportReport } from '@/utils/exportReport';
 
 // ---------------------------------------------------------------------------
 // Section config — url and which field to use as the bar value
@@ -306,6 +309,7 @@ export default function DataComparisonPage() {
   const [compareData, setCompareData] = useState<DataRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Fetch both locations whenever section or location names change
@@ -432,6 +436,22 @@ export default function DataComparisonPage() {
   };
 
   const Dashboard = dashboards[section];
+
+  const handleExportPdf = async () => {
+    setIsExporting(true);
+    try {
+      await exportReport('demographics-dashboard-report', {
+        title: section,
+        primaryName: myLocation.name,
+        comparisonName: comparison.name,
+        year: year,
+      });
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // ---------------------------------------------------------------------------
   // Render
