@@ -24,8 +24,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-allowedDevOrigins: ['vtdatacollab.uvm.edu'];
+  allowedDevOrigins: ['vtdatacollab.uvm.edu'],
 };
 
 export default nextConfig;
-
