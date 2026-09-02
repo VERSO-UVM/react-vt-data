@@ -16,8 +16,16 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   typescript: { ignoreBuildErrors: true }, // TODO: remove for eventual production.
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3001/api/:path*',
+      },
+    ];
+  },
+allowedDevOrigins: ['vtdatacollab.uvm.edu'];
 };
 
 export default nextConfig;
 
-allowedDevOrigins: ['vtdatacollab.uvm.edu'];
