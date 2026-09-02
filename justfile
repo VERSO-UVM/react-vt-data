@@ -15,12 +15,12 @@ api_url := env_var_or_default("NEXT_PUBLIC_API_URL", "http://localhost:6767/api"
 # turns on non-containerized backend. note: no longer turns off containers
 [working-directory("backend")]
 local-api:
-    ALLOW_DEV_CORS=1 uv run uvicorn api.main:app --reload --port 6767
+    ALLOW_DEV_CORS=1 uv run uvicorn api.main:app --reload \
+        --host {{ api_host }} --port {{ api_port }}
 
-# turns on non-container frontend. note: no longer turns off containers
 [working-directory("frontend")]
 local-frontend:
-    NEXT_PUBLIC_API_URL=http://localhost:6767/api npm run dev -- --port 3000
+    NEXT_PUBLIC_API_URL={{ api_url }} npm run dev -- --port 3000
 
 # turns on non-container full apps, interleaved in terminal (from Procfile). Note: no longer turns off containers
 local-dev:
