@@ -1,34 +1,37 @@
 import { Card, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconBriefcase } from '@tabler/icons-react';
+import { IconPigMoney } from '@tabler/icons-react';
 import { DataRow } from '@/types/cachedCharts';
 import { COLORS } from '@/app/theme';
 
-interface UnemploymentRateCardProps {
+interface MedianHHIncomeCardProps {
   primary: DataRow[];
   comparison: DataRow[];
-  primaryName: string;
-  comparisonName: string;
+  primaryName?: string;
+  comparisonName?: string;
 }
 
 function getVariableValue(data: DataRow[], variable: string): number | null {
   const row = data.find((d) => d.Variable === variable);
   if (!row) return null;
-  const value = Number(row.Percent);
+  const value = Number(row.Value);
   return Number.isFinite(value) ? value : null;
 }
 
-export default function UnemploymentRateCard({
+export default function MedianHouseholdIncomeCard({
   primary,
   comparison,
   primaryName,
   comparisonName,
-}: UnemploymentRateCardProps) {
-  const primaryRate = getVariableValue(primary, 'Unemployment Rate');
-  const comparisonRate = getVariableValue(comparison, 'Unemployment Rate');
+}: MedianHHIncomeCardProps) {
+  const primaryValue = getVariableValue(primary, 'Median Household Income');
+  const comparisonValue = getVariableValue(
+    comparison,
+    'Median Household Income',
+  );
 
   const difference =
-    primaryRate !== null && comparisonRate !== null
-      ? primaryRate - comparisonRate
+    primaryValue !== null && comparisonValue !== null
+      ? primaryValue - comparisonValue
       : null;
 
   return (
@@ -45,16 +48,16 @@ export default function UnemploymentRateCard({
       <Group justify="space-between" mb="md">
         <Stack gap={2}>
           <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-            Unemployment Rate
+            Median Household Income
           </Text>
 
           <Title order={3}>
-            {primaryRate !== null ? `${primaryRate.toFixed(1)}%` : '—'}
+            {primaryValue !== null ? `$${primaryValue.toLocaleString()}` : '—'}
           </Title>
         </Stack>
 
         <ThemeIcon size={48} radius="xl" variant="light" color="green">
-          <IconBriefcase size={24} />
+          <IconPigMoney size={24} />
         </ThemeIcon>
       </Group>
 
@@ -63,26 +66,25 @@ export default function UnemploymentRateCard({
           <Text size="sm" c="dimmed">
             {comparisonName}
           </Text>
-
           <Text fw={600}>
-            {comparisonRate !== null ? `${comparisonRate.toFixed(1)}%` : '—'}
+            {comparisonValue !== null
+              ? `$${comparisonValue.toLocaleString()}`
+              : '—'}
           </Text>
         </Group>
-
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
             Difference
           </Text>
-
           <Text
             fw={700}
             c={
-              difference === null ? undefined : difference > 0 ? 'red' : 'green'
+              difference === null ? undefined : difference > 0 ? 'green' : 'red'
             }
           >
             {difference === null
               ? '—'
-              : `${difference > 0 ? '+' : ''}${difference.toFixed(1)} %`}
+              : `${difference > 0 ? '+' : ''}$${difference.toLocaleString()}`}
           </Text>
         </Group>
 
@@ -92,17 +94,18 @@ export default function UnemploymentRateCard({
           ) : difference > 0 ? (
             <>
               <span style={{ color: COLORS.spruce }}>{primaryName}</span> has a
-              higher unemployment rate than <span>{comparisonName}</span>
+              higher median household income than <span>{comparisonName}</span>
             </>
           ) : difference < 0 ? (
             <>
               <span style={{ color: COLORS.spruce }}>{primaryName}</span> has a
-              lower unemployment rate than <span>{comparisonName}</span>
+              lower median household income than <span>{comparisonName}</span>
             </>
           ) : (
             <>
               <span style={{ color: COLORS.spruce }}>{primaryName}</span> and{' '}
-              <span>{comparisonName}</span> have the same unemployment rate
+              <span>{comparisonName}</span> have the same median household
+              income
             </>
           )}
         </Text>
