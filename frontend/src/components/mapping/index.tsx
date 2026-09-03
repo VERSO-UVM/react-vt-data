@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Map } from 'react-map-gl/maplibre';
 import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
+import { FlyToInterpolator } from '@deck.gl/core';
+import { WebMercatorViewport } from '@math.gl/web-mercator';
 import type { LayersList } from '@deck.gl/core';
 import type { FeatureCollection } from 'geojson';
 import { Paper, Divider } from '@mantine/core';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type { MapRef } from 'react-map-gl/maplibre';
 
 export interface MapLayerItem {
   id: string;
@@ -22,6 +25,7 @@ interface MyMapProps {
   showCountyLines: boolean;
   controllerOn?: boolean;
   initialZoom?: number;
+  targetBBox?: [number, number, number, number] | null;
 }
 
 const BASE_STYLES = {
@@ -54,8 +58,53 @@ export default function VTMap({
   showCountyLines,
   controllerOn = true,
   initialZoom = 7,
+  targetBBox,
 }: MyMapProps) {
-  // Normalize layers array to support both `layers` array and legacy single `geojson`/`baseGeojson` props
+  const mapRef = useRef<MapRef>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [viewState, setViewState] = useState<any>({
+    ...INITIAL_VIEW_STATE,
+    zoom: initialZoom,
+  });
+
+  // Handle targetBBox camera transitions via WebMercatorViewport & FlyToInterpolator
+  useEffect(() => {
+    if (!targetBBox) return;
+
+    const [west, south, east, north] = targetBBox;
+    if (west === 0 && south === 0) return;
+
+    // Get current container width/height or fallback to window dimensions
+    const width = containerRef.current?.clientWidth || window.innerWidth;
+    const height = containerRef.current?.clientHeight || window.innerHeight;
+
+    try {
+      const viewport = new WebMercatorViewport({ width, height });
+
+      const { longitude, latitude, zoom } = viewport.fitBounds(
+        [
+          [west, south],
+          [east, north],
+        ],
+        {
+          padding: { top: 80, bottom: 80, left: 380, right: 80 },
+        },
+      );
+
+      setViewState((prev: any) => ({
+        ...prev,
+        longitude,
+        latitude,
+        zoom: clamp(zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
+        transitionDuration: 1800,
+        transitionInterpolator: new FlyToInterpolator(),
+      }));
+    } catch (err) {
+      console.error('Failed to fit bounds:', err);
+    }
+  }, [targetBBox]);
+
   const activeLayers: MapLayerItem[] = layerConfigs ?? [
     ...(baseGeojson
       ? [{ id: 'base-geojson', geojson: baseGeojson, visible: true }]
@@ -63,10 +112,6 @@ export default function VTMap({
     ...(geojson ? [{ id: 'main-geojson', geojson, visible: true }] : []),
   ];
 
-  const [viewState, setViewState] = useState({
-    ...INITIAL_VIEW_STATE,
-    zoom: initialZoom,
-  });
   const [baseStyle] = useState(BASE_STYLES.OSM);
   const [tooltip, setTooltip] = useState<{
     x: number;
@@ -86,8 +131,8 @@ export default function VTMap({
       .catch(() => {});
   }, []);
 
-  const onViewStateChange = useCallback((params: { viewState: unknown }) => {
-    const vs = params.viewState as typeof INITIAL_VIEW_STATE;
+  const onViewStateChange = useCallback((params: { viewState: any }) => {
+    const vs = params.viewState;
     setViewState({
       ...vs,
       zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
@@ -124,7 +169,6 @@ export default function VTMap({
     properties?: { rgba_color?: [number, number, number, number] };
   }) => d.properties?.rgba_color ?? [0, 0, 0, 0];
 
-  // Map activeLayers into deck.gl layers
   const deckLayers: LayersList = activeLayers
     .filter((layer) => layer.visible && layer.geojson)
     .map(
@@ -162,6 +206,7 @@ export default function VTMap({
 
   return (
     <div
+      ref={containerRef}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -184,7 +229,7 @@ export default function VTMap({
           layers={deckLayers}
           style={{ width: '100%', height: '100%' }}
         >
-          <Map mapStyle={baseStyle} />
+          <Map ref={mapRef} mapStyle={baseStyle} />
         </DeckGL>
 
         {tooltip && tooltip.content && (

@@ -1,5 +1,6 @@
 import json
 import logging
+from pathlib import Path
 
 from fastapi import APIRouter
 
@@ -10,6 +11,9 @@ from query.production_db import DB
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+CURRENT_DIR = Path(__file__).resolve().parent
+BASE_DIR = CURRENT_DIR.parent.parent.parent
 
 
 @router.get("/")
@@ -72,3 +76,13 @@ async def read_service_areas():
 async def read_zoning_data():
     data = data_loading.masterload(name="zoning")
     return json.loads(data.to_json())
+
+
+# VT Municipalities Endpoint
+@router.get("/data/vermont/municipalities")
+async def read_municipalities_data():
+    with open(
+        BASE_DIR / "Data" / "vermont" / "municipalities.json", "r", encoding="utf-8"
+    ) as file:
+        data = json.load(file)
+    return data

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 import {
+  Autocomplete,
   Box,
   Group,
   Paper,
@@ -22,25 +23,34 @@ import {
 } from '@mantine/core';
 import {
   IconChevronLeft,
-  IconChevronRight,
-  IconChevronUp,
   IconChevronDown,
+  IconChevronUp,
   IconChartBarPopular,
   IconLayersIntersect,
 } from '@tabler/icons-react';
 
+import { Search } from 'lucide-react';
+
 import VTMap from '@/components/mapping';
 import LayerPanel from './LayerPanel';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
+import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
+import { getFeatureBBox } from './geoUtils';
 import { COLORS } from '@/app/theme';
 
 export default function MapExplorerPage() {
   const theme = useMantineTheme();
   const searchParams = useSearchParams();
 
-  // Layout State
+  // Layout & Municipality State
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [reportExpanded, setReportExpanded] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [selectedBBox, setSelectedBBox] = useState<
+    [number, number, number, number] | null
+  >(null);
+
+  const { data: municipalities } = useMunicipalities();
 
   const [activeLayers, setActiveLayers] = useState<Set<string>>(() => {
     const initial = searchParams.get('layer');
@@ -61,6 +71,93 @@ export default function MapExplorerPage() {
       .then((res) => setUnzoned(res.data))
       .catch((e) => console.error('unzoned layer fetch failed', e));
   }, []);
+
+  // 1. Build lookup dictionary & formatted options string list
+  const { optionsList, municipalityMap } = useMemo(() => {
+    if (!municipalities?.features) {
+      return {
+        optionsList: [],
+        municipalityMap: new Map<string, MunicipalityFeature>(),
+      };
+    }
+
+    const map = new Map<string, MunicipalityFeature>();
+    const uniqueOptionsSet = new Set<string>();
+
+    municipalities.features.forEach((f) => {
+      const fullName = f.properties.NAME; // e.g. "Newport city, Orleans County, Vermont"
+      const parts = fullName.split(',').map((s) => s.trim());
+
+      const rawName = parts[0] || ''; // "Newport city"
+      const county = parts[1] || 'VT'; // "Orleans County"
+
+      // Capitalize designation cleanly (e.g., "Newport City", "Newport Town")
+      const formattedName = rawName
+        .replace(/\btown\b/i, 'Town')
+        .replace(/\bcity\b/i, 'City')
+        .replace(/\bgore\b/i, 'Gore')
+        .replace(/\bgrant\b/i, 'Grant')
+        .replace(/\blocation\b/i, 'Location');
+
+      // Unique display label: "Newport City (Orleans County)"
+      const displayLabel = `${formattedName} (${county})`;
+
+      // Store lowercased keys for robust lookup matching
+      map.set(displayLabel.toLowerCase(), f);
+      map.set(fullName.toLowerCase(), f);
+      map.set(rawName.toLowerCase(), f); // "newport city"
+      map.set(formattedName.toLowerCase(), f);
+
+      uniqueOptionsSet.add(displayLabel);
+    });
+
+    return {
+      optionsList: Array.from(uniqueOptionsSet),
+      municipalityMap: map,
+    };
+  }, [municipalities]);
+
+  // 2. Centralized selection/bounds update handler
+  const triggerBBoxUpdate = useCallback(
+    (query: string) => {
+      if (!query) return;
+
+      const normalized = query.trim().toLowerCase();
+
+      // Direct lookup or partial match fallback
+      let match = municipalityMap.get(normalized);
+
+      if (!match) {
+        // Fallback search if user typed partial name (e.g., "Windsor")
+        for (const [key, feature] of municipalityMap.entries()) {
+          if (key.includes(normalized)) {
+            match = feature;
+            break;
+          }
+        }
+      }
+
+      if (match?.geometry) {
+        const bbox = getFeatureBBox(match.geometry);
+        // Ensure bbox is valid before setting
+        if (bbox && (bbox[0] !== 0 || bbox[1] !== 0)) {
+          setSelectedBBox(bbox);
+        }
+      }
+    },
+    [municipalityMap],
+  );
+
+  const handleSelectMunicipality = (value: string) => {
+    setSearchValue(value);
+    triggerBBoxUpdate(value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      triggerBBoxUpdate(searchValue);
+    }
+  };
 
   const handleToggle = useCallback((id: string, active: boolean) => {
     setActiveLayers((prev) => {
@@ -107,16 +204,59 @@ export default function MapExplorerPage() {
         fontFamily: theme.fontFamily,
       }}
     >
+      {/* 1. FULL CANVAS MAP BACKGROUND */}
+      <Box style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+        <VTMap
+          layers={mapLayers}
+          showCountyLines={showCountyLines}
+          targetBBox={selectedBBox}
+        />
+      </Box>
+
+      {/* 2. TOP CENTER SEARCH BAR OVERLAY */}
       <Box
         style={{
           position: 'absolute',
-          inset: 0,
-          zIndex: 1,
+          top: 16,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 20,
+          width: '100%',
+          maxWidth: 420,
+          padding: '0 16px',
         }}
       >
-        <VTMap layers={mapLayers} showCountyLines={showCountyLines} />
+        <Paper
+          shadow="md"
+          radius="md"
+          p={4}
+          withBorder
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <Autocomplete
+            placeholder="Search Vermont Town or City..."
+            leftSection={<Search size={16} color={COLORS.spruce} />}
+            data={optionsList}
+            value={searchValue}
+            onChange={setSearchValue}
+            onOptionSubmit={handleSelectMunicipality}
+            onKeyDown={handleKeyDown}
+            variant="unstyled"
+            styles={{
+              input: {
+                fontSize: '14px',
+                fontWeight: 500,
+                paddingLeft: '36px',
+              },
+            }}
+          />
+        </Paper>
       </Box>
 
+      {/* 3. FLOATING SIDEBAR PANEL */}
       <Box
         style={{
           position: 'absolute',
@@ -126,7 +266,6 @@ export default function MapExplorerPage() {
           display: 'flex',
           alignItems: 'flex-start',
           gap: 0,
-          transition: 'transform 0.3s ease',
         }}
       >
         <Paper
@@ -151,10 +290,7 @@ export default function MapExplorerPage() {
             <Group justify="space-between" align="center">
               <Title
                 order={3}
-                style={{
-                  fontFamily: theme.headings?.fontFamily,
-                  fontSize: 18,
-                }}
+                style={{ fontFamily: theme.headings?.fontFamily, fontSize: 18 }}
               >
                 Vermont Mapping
               </Title>
@@ -193,14 +329,7 @@ export default function MapExplorerPage() {
             />
           </Paper>
 
-          <Box
-            mt="xs"
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              paddingRight: 4,
-            }}
-          >
+          <Box mt="xs" style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
             <LayerPanel
               activeLayers={activeLayers}
               onToggle={handleToggle}
@@ -216,7 +345,6 @@ export default function MapExplorerPage() {
             borderTopLeftRadius: sidebarOpen ? 0 : undefined,
             borderBottomLeftRadius: sidebarOpen ? 0 : undefined,
             marginLeft: sidebarOpen ? -1 : 0,
-            borderLeft: sidebarOpen ? 'none' : undefined,
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(8px)',
           }}
@@ -229,7 +357,6 @@ export default function MapExplorerPage() {
             aria-label="Toggle Sidebar"
             px={sidebarOpen ? 'xs' : 'md'}
             style={{
-              width: sidebarOpen ? 'auto' : 'auto',
               minWidth: sidebarOpen ? 40 : 110,
               transition: 'all 0.2s ease',
             }}
@@ -248,6 +375,7 @@ export default function MapExplorerPage() {
         </Paper>
       </Box>
 
+      {/* 4. BOTTOM REPORT DRAWER */}
       <Paper
         shadow="lg"
         withBorder
@@ -259,7 +387,7 @@ export default function MapExplorerPage() {
           zIndex: 10,
           borderBottomLeftRadius: 0,
           borderBottomRightRadius: 0,
-          transition: 'left 0.3s ease, transform 0.3s ease',
+          transition: 'left 0.3s ease',
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(10px)',
         }}
@@ -269,23 +397,14 @@ export default function MapExplorerPage() {
           px="md"
           py="xs"
           onClick={() => setReportExpanded(!reportExpanded)}
-          style={{
-            cursor: 'pointer',
-            userSelect: 'none',
-            borderBottom: reportExpanded
-              ? '1px solid var(--mantine-color-default-border)'
-              : 'none',
-          }}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
         >
           <Group gap="xs">
             <IconChartBarPopular size={16} color={COLORS.spruce} />
             <Text
               size="xs"
               fw={700}
-              style={{
-                fontFamily: theme.headings?.fontFamily,
-                letterSpacing: '0.3px',
-              }}
+              style={{ fontFamily: theme.headings?.fontFamily }}
             >
               SPATIAL ANALYSIS & REPORT SUMMARY
             </Text>
@@ -294,22 +413,20 @@ export default function MapExplorerPage() {
             </Text>
           </Group>
 
-          <Group gap="xs">
-            <Button
-              variant="subtle"
-              size="compact-xs"
-              color="gray"
-              rightSection={
-                reportExpanded ? (
-                  <IconChevronDown size={14} />
-                ) : (
-                  <IconChevronUp size={14} />
-                )
-              }
-            >
-              {reportExpanded ? 'Collapse Report' : 'Expand Insights'}
-            </Button>
-          </Group>
+          <Button
+            variant="subtle"
+            size="compact-xs"
+            color="gray"
+            rightSection={
+              reportExpanded ? (
+                <IconChevronDown size={14} />
+              ) : (
+                <IconChevronUp size={14} />
+              )
+            }
+          >
+            {reportExpanded ? 'Collapse Report' : 'Expand Insights'}
+          </Button>
         </Group>
 
         <Collapse expanded={reportExpanded}>
@@ -326,9 +443,6 @@ export default function MapExplorerPage() {
                 </Text>
                 <Text fw={700} size="xl" c={COLORS.spruce}>
                   {totalLoadedFeatures.toLocaleString()}
-                </Text>
-                <Text size="xs" c="dimmed" mt={4}>
-                  Active spatial polygon & point objects
                 </Text>
               </Paper>
 
