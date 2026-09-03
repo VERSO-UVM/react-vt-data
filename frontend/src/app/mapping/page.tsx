@@ -204,7 +204,6 @@ export default function MapExplorerPage() {
         fontFamily: theme.fontFamily,
       }}
     >
-      {/* 1. FULL CANVAS MAP BACKGROUND */}
       <Box style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
         <VTMap
           layers={mapLayers}
@@ -213,7 +212,6 @@ export default function MapExplorerPage() {
         />
       </Box>
 
-      {/* 2. TOP CENTER SEARCH BAR OVERLAY */}
       <Box
         style={{
           position: 'absolute',
@@ -256,7 +254,6 @@ export default function MapExplorerPage() {
         </Paper>
       </Box>
 
-      {/* 3. FLOATING SIDEBAR PANEL */}
       <Box
         style={{
           position: 'absolute',
@@ -365,17 +362,16 @@ export default function MapExplorerPage() {
               <IconChevronLeft size={18} />
             ) : (
               <Group gap={6} align="center" wrap="nowrap">
-                <Text size="xs" fw={600}>
+                <Text size="sm" fw={600}>
                   Layers
                 </Text>
-                <IconLayersIntersect size={18} />
+                <IconLayersIntersect size={26} stroke={1.5} />
               </Group>
             )}
           </ActionIcon>
         </Paper>
       </Box>
 
-      {/* 4. BOTTOM REPORT DRAWER */}
       <Paper
         shadow="lg"
         withBorder

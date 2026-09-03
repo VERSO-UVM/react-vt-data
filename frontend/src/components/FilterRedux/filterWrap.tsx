@@ -11,6 +11,7 @@ import { FilterSpec, FilterValue, filterDef } from './filterTypes';
 import { Group, Stack, Button, Fieldset } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { FilterUI } from './filterUI';
+import { COLORS } from '@/app/theme';
 
 function filterSpecFactory(def: filterDef): FilterSpec {
   return { filter_table: def.filter_table, filters: {} };
@@ -51,7 +52,11 @@ export function FilterWrap(props: FilterWrapProps) {
           <Button variant="default" type="button" onClick={() => form.reset()}>
             Reset
           </Button>
-          <Button type="submit" disabled={!form.isDirty()}>
+          <Button
+            type="submit"
+            disabled={!form.isDirty()}
+            color={COLORS.spruce}
+          >
             Apply
           </Button>
         </Group>

@@ -31,11 +31,9 @@ export type MapLayerConfig = {
   title: string;
   dataURL: string;
   method: 'GET' | 'POST';
-  /** Empty array = no filter UI is rendered; layer just loads once toggled on. */
   filterList: filterDef[];
   legendURL?: string;
   responseShape: ResponseShape;
-  /** Swatch color shown next to the layer name in the toggle list. */
   color: string;
 };
 
