@@ -63,7 +63,7 @@ def get_soil_suit_geojson(sources: list[FilterSource]):
 
 def get_soil_suit_legend():
     result = DB.execute(
-        "SELECT json_group_array(to_json(soil_suitability_soil_suitability_colors)) FROM soil_suitability_soil_suitability_colors;"
+        "SELECT json_group_array(to_json(VersoWastewater_soilSuitability_colors)) FROM VersoWastewater_soilSuitability_colors;"
     ).fetchone()
     if result is None:
         logger.error("color query returned no rows for the colors dataset")

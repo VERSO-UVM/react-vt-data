@@ -1,29 +1,27 @@
 'use client';
 
-// react
 import { useState, useCallback, useEffect } from 'react';
 import { Map } from 'react-map-gl/maplibre';
-
-// deck, geojson, and maplibre styling
 import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
+import type { LayersList } from '@deck.gl/core';
 import type { FeatureCollection } from 'geojson';
+import { Paper, Divider } from '@mantine/core';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-// mantine and ui
-import { Paper, Divider } from '@mantine/core';
+export interface MapLayerItem {
+  id: string;
+  geojson: FeatureCollection | null;
+  visible: boolean;
+}
 
 interface MyMapProps {
-  geojson: FeatureCollection | null;
+  layers?: MapLayerItem[];
+  geojson?: FeatureCollection | null;
+  baseGeojson?: FeatureCollection | null;
   showCountyLines: boolean;
   controllerOn?: boolean;
   initialZoom?: number;
-  /**
-   * Optional context layer drawn *underneath* `geojson` — e.g. the grey
-   * "no zoning information here" areas on the zoning map. Features carry their
-   * own `rgba_color` and `tooltip` properties, exactly like the main layer.
-   */
-  baseGeojson?: FeatureCollection | null;
 }
 
 const BASE_STYLES = {
@@ -50,12 +48,21 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export default function VTMap({
-  geojson,
+  layers: layerConfigs,
+  geojson = null,
+  baseGeojson = null,
   showCountyLines,
   controllerOn = true,
   initialZoom = 7,
-  baseGeojson = null,
 }: MyMapProps) {
+  // Normalize layers array to support both `layers` array and legacy single `geojson`/`baseGeojson` props
+  const activeLayers: MapLayerItem[] = layerConfigs ?? [
+    ...(baseGeojson
+      ? [{ id: 'base-geojson', geojson: baseGeojson, visible: true }]
+      : []),
+    ...(geojson ? [{ id: 'main-geojson', geojson, visible: true }] : []),
+  ];
+
   const [viewState, setViewState] = useState({
     ...INITIAL_VIEW_STATE,
     zoom: initialZoom,
@@ -117,40 +124,31 @@ export default function VTMap({
     properties?: { rgba_color?: [number, number, number, number] };
   }) => d.properties?.rgba_color ?? [0, 0, 0, 0];
 
-  // order matters: deck.gl draws in array order, so the base layer is listed
-  // first and ends up underneath the main data layer
-  const layers = [
-    baseGeojson &&
-      new GeoJsonLayer({
-        id: 'geojson-base',
-        data: baseGeojson,
-        filled: true,
-        getFillColor,
-        getLineColor: [120, 120, 120, 90],
-        lineWidthMinPixels: 0.5,
-        pickable: true,
-        autoHighlight: true,
-        highlightColor: [222, 102, 0, 120],
-        onHover,
-      }),
-    geojson &&
-      new GeoJsonLayer({
-        id: 'geojson',
-        data: geojson,
-        pointType: 'circle',
-        pointRadiusUnits: 'pixels',
-        pointRadiusMinPixels: 12,
-        pointRadiusMaxPixels: 12,
-        getFillColor,
-        getLineColor: [20, 70, 160, 255],
-        lineWidthMinPixels: 2,
-        pickable: true,
-        autoHighlight: true,
-        highlightColor: [255, 255, 255, 255],
-        onHover,
-      }),
-    showCountyLines &&
-      countylines &&
+  // Map activeLayers into deck.gl layers
+  const deckLayers: LayersList = activeLayers
+    .filter((layer) => layer.visible && layer.geojson)
+    .map(
+      (layer) =>
+        new GeoJsonLayer({
+          id: `layer-${layer.id}`,
+          data: layer.geojson!,
+          filled: true,
+          pointType: 'circle',
+          pointRadiusUnits: 'pixels',
+          pointRadiusMinPixels: 8,
+          pointRadiusMaxPixels: 12,
+          getFillColor,
+          getLineColor: [120, 120, 120, 150],
+          lineWidthMinPixels: 1,
+          pickable: true,
+          autoHighlight: true,
+          highlightColor: [255, 255, 255, 180],
+          onHover,
+        }),
+    );
+
+  if (showCountyLines && countylines) {
+    deckLayers.push(
       new GeoJsonLayer({
         id: 'county-lines',
         data: countylines,
@@ -159,10 +157,10 @@ export default function VTMap({
         getLineColor: [80, 80, 80, 200],
         lineWidthMinPixels: 1,
       }),
-  ].filter(Boolean);
+    );
+  }
 
   return (
-    // Fill the parent container completely (parent must have position:relative and a defined height)
     <div
       style={{
         display: 'flex',
@@ -171,7 +169,6 @@ export default function VTMap({
         height: '100%',
       }}
     >
-      {/* Map area — fills remaining height, clips overflow */}
       <div
         style={{
           flex: 1,
@@ -184,7 +181,7 @@ export default function VTMap({
           viewState={viewState}
           onViewStateChange={onViewStateChange}
           controller={controllerOn}
-          layers={layers}
+          layers={deckLayers}
           style={{ width: '100%', height: '100%' }}
         >
           <Map mapStyle={baseStyle} />
@@ -203,7 +200,7 @@ export default function VTMap({
               maxWidth: 280,
             }}
           >
-            <strong>{String(tooltip.content.__title__)}</strong>
+            <strong>{String(tooltip.content.__title__ ?? 'Details')}</strong>
             <Divider my={4} />
             {Object.entries(tooltip.content).map(
               ([k, v]) =>
