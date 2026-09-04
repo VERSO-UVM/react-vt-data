@@ -14,7 +14,7 @@ import { FilterUI } from './filterUI';
 import { COLORS } from '@/app/theme';
 
 function filterSpecFactory(def: filterDef): FilterSpec {
-  return { filter_table: def.filter_table, filters: {} };
+  return { filter_table: def.filter_table, filters: {}, cols: def.cols };
 }
 
 interface FilterWrapProps {

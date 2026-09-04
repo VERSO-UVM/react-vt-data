@@ -23,8 +23,17 @@ import { COLORS } from '@/app/theme';
 
 export function CheckboxFilter(params: apiFilterParams) {
   const { spec, setValue } = params;
+
   const [options, setOptions] = useState<Record<string, string[]>>({}); // {label: [optionA, optionB...]}
-  const filterURL = `${BASE_API_URL}/filters/options?filter_table=${spec.filter_table}`;
+  const query = new URLSearchParams({
+    filter_table: spec.filter_table,
+  });
+
+  spec.cols?.forEach((col) => {
+    query.append('cols', col);
+  });
+
+  const filterURL = `${BASE_API_URL}/filters/options?${query.toString()}`;
 
   // fetch the raw info for the filter options.
   useEffect(() => {
