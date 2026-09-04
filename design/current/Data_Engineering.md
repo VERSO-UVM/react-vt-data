@@ -17,7 +17,7 @@
 
 # Overview of Steps
 
-0. **LAKE CREATION** If the DuckLake is not yet instanciated, the `just build-lake` justfile recipe will create the DuckLake instance, install the spatial extension, and establish both the `RAW` and `CLEANED` table schemas.
+0. **LAKE CREATION** If the DuckLake is not yet instantiated, the `just build-lake` justfile recipe will create the DuckLake instance, install the spatial extension, and establish both the `RAW` and `CLEANED` table schemas.
 
 - Files called upon: [`backend/lake_build.py`](../../backend/lake_build.py)
 
