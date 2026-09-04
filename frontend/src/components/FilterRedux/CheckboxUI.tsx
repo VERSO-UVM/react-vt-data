@@ -9,8 +9,17 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BASE_API_URL } from '@/config';
-import { Accordion, Group, Text, Badge, Chip } from '@mantine/core';
+import {
+  Accordion,
+  Group,
+  Text,
+  Stack,
+  UnstyledButton,
+  Divider,
+  Checkbox,
+} from '@mantine/core';
 import { apiFilterParams } from './filterTypes';
+import { COLORS } from '@/app/theme';
 
 export function CheckboxFilter(params: apiFilterParams) {
   const { spec, setValue } = params;
@@ -36,41 +45,132 @@ export function CheckboxFilter(params: apiFilterParams) {
   };
 
   return (
-    <Accordion multiple defaultValue={Object.keys(options)}>
+    <Accordion
+      multiple
+      defaultValue={Object.keys(options)}
+      variant="separated"
+      chevronPosition="right"
+      styles={{
+        root: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        },
+        item: {
+          border: '1px solid var(--mantine-color-gray-2)',
+          borderRadius: '6px',
+          overflow: 'hidden',
+          backgroundColor: 'white',
+        },
+        control: {
+          padding: '10px 12px',
+          backgroundColor: 'white',
+        },
+        panel: {
+          borderTop: '1px solid var(--mantine-color-gray-2)',
+        },
+        content: {
+          padding: '12px',
+        },
+      }}
+    >
       {Object.entries(options).map(([label, options]) => {
         const current = Array.isArray(spec.filters?.[label])
           ? (spec.filters[label] as string[])
           : options;
+
+        const allSelected = current.length === options.length;
+        const noneSelected = current.length === 0;
+
         return (
           <Accordion.Item key={label} value={label}>
             <Accordion.Control>
-              <Group justify="space-between" pr="sm">
-                <Text fw={500}>{label} </Text>
-                <Badge>
-                  {current.length} / {options.length}
-                </Badge>
+              <Group justify="space-between" wrap="nowrap" pr="xs">
+                <Text size="sm" fw={500} c="gray.8" truncate>
+                  {label}
+                </Text>
+
+                <Text size="xs" c={noneSelected ? 'red.6' : 'gray.5'} fw={500}>
+                  {current.length} of {options.length}
+                </Text>
               </Group>
             </Accordion.Control>
+
             <Accordion.Panel>
-              <Chip.Group
-                multiple
-                value={current}
-                onChange={(selections) => handleToggle(label, selections)}
-              >
-                <Group gap="xs">
-                  {options.map((opt) => (
-                    <Chip
-                      key={opt}
-                      value={opt}
-                      color="teal"
-                      variant="light"
-                      size="xs"
+              <Stack gap="xs">
+                <Group justify="space-between">
+                  <Group gap="xs">
+                    <UnstyledButton
+                      onClick={() =>
+                        setValue({
+                          ...spec.filters,
+                          [label]: options,
+                        })
+                      }
+                      disabled={allSelected}
                     >
-                      {opt}
-                    </Chip>
-                  ))}
+                      <Text
+                        size="xs"
+                        fw={500}
+                        c={allSelected ? 'gray.4' : 'gray.7'}
+                      >
+                        Select all
+                      </Text>
+                    </UnstyledButton>
+
+                    <Text size="xs" c="gray.4">
+                      /
+                    </Text>
+
+                    <UnstyledButton
+                      onClick={() =>
+                        setValue({
+                          ...spec.filters,
+                          [label]: [],
+                        })
+                      }
+                      disabled={noneSelected}
+                    >
+                      <Text
+                        size="xs"
+                        fw={500}
+                        c={noneSelected ? 'gray.4' : 'gray.7'}
+                      >
+                        Clear
+                      </Text>
+                    </UnstyledButton>
+                  </Group>
                 </Group>
-              </Chip.Group>
+
+                <Divider />
+
+                <Stack gap={0}>
+                  {options.map((opt) => (
+                    <Checkbox
+                      key={opt}
+                      label={opt}
+                      checked={current.includes(opt)}
+                      onChange={() => {
+                        const selections = current.includes(opt)
+                          ? current.filter((item) => item !== opt)
+                          : [...current, opt];
+
+                        handleToggle(label, selections);
+                      }}
+                      size="xs"
+                      py={5}
+                      radius="3px"
+                      styles={{
+                        label: {
+                          fontSize: '0.8rem',
+                          color: 'var(--mantine-color-gray-7)',
+                          cursor: 'pointer',
+                        },
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </Stack>
             </Accordion.Panel>
           </Accordion.Item>
         );
