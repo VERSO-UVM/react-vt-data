@@ -150,6 +150,7 @@ export function CheckboxFilter(params: apiFilterParams) {
                       key={opt}
                       label={opt}
                       checked={current.includes(opt)}
+                      color={COLORS.spruce}
                       onChange={() => {
                         const selections = current.includes(opt)
                           ? current.filter((item) => item !== opt)
