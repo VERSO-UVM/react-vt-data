@@ -1,0 +1,87 @@
+---
+title: "Flood Hazard Table Build"
+format: html
+---
+
+## Load dataset
+
+```{python}
+import duckdb
+import pandas as pd
+
+con = duckdb.connect("flood.db")
+raw = con.execute("SELECT * FROM raw").df()
+raw.head()
+
+raw.isna().sum().sort_values(ascending=False)
+
+for col in raw.columns:
+    print("COLUMN:", col)
+    try:
+        print(raw[col].value_counts().head())
+    except Exception as e:
+        print("Could not compute value counts:", e)
+    print("\n")
+
+
+```
+
+## Null values
+
+```{python}
+for col in raw.columns:
+    print(col)
+    print(raw[col].value_counts(dropna=False).head(10))
+    print("\n")
+import numpy as np
+
+raw["VELOCITY"] = raw["VELOCITY"].replace(-9999, np.nan)
+
+
+```
+
+## Dropping columns
+
+```{python}
+
+
+drop_cols = [
+    "AR_SUBTRV",
+    "BFE_REVERT",
+    "DEP_REVERT"
+]
+
+drop_cols
+
+info_cols = [
+    "OBJECTID",
+    "AR_REVERT",
+    "DFIRM_ID",
+    "VERSION_ID",
+    "FLD_AR_ID",
+    "STUDY_TYP",
+    "FLD_ZONE",
+    "ZONE_SUBTYP",
+    "SFHA_TF",
+    "STATIC_BFE",
+    "V_DATUM",
+    "DEPTH",
+    "LEN_UNIT",
+    "VELOCITY",
+    "VEL_UNIT",
+    "DUAL_ZONE",
+    "SOURCE_CIT"
+]
+
+info_cols
+
+```
+
+```{python}
+geom_cols = ["OBJECTID", "geometry"]
+geom_cols
+
+final_cols = info_cols + ["geometry"]
+final_cols
+
+```

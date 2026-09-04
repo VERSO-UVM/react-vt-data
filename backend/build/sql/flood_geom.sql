@@ -1,0 +1,5 @@
+CREATE OR REPLACE TABLE geom AS
+SELECT
+    OBJECTID AS id,
+    geometry
+FROM raw;
