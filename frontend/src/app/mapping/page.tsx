@@ -85,13 +85,12 @@ export default function MapExplorerPage() {
     const uniqueOptionsSet = new Set<string>();
 
     municipalities.features.forEach((f) => {
-      const fullName = f.properties.NAME; // e.g. "Newport city, Orleans County, Vermont"
+      const fullName = f.properties.NAME;
       const parts = fullName.split(',').map((s) => s.trim());
 
-      const rawName = parts[0] || ''; // "Newport city"
-      const county = parts[1] || 'VT'; // "Orleans County"
+      const rawName = parts[0] || '';
+      const county = parts[1] || 'VT';
 
-      // Capitalize designation cleanly (e.g., "Newport City", "Newport Town")
       const formattedName = rawName
         .replace(/\btown\b/i, 'Town')
         .replace(/\bcity\b/i, 'City')
@@ -99,20 +98,23 @@ export default function MapExplorerPage() {
         .replace(/\bgrant\b/i, 'Grant')
         .replace(/\blocation\b/i, 'Location');
 
-      // Unique display label: "Newport City (Orleans County)"
       const displayLabel = `${formattedName} (${county})`;
 
-      // Store lowercased keys for robust lookup matching
       map.set(displayLabel.toLowerCase(), f);
       map.set(fullName.toLowerCase(), f);
-      map.set(rawName.toLowerCase(), f); // "newport city"
+      map.set(rawName.toLowerCase(), f);
       map.set(formattedName.toLowerCase(), f);
 
       uniqueOptionsSet.add(displayLabel);
     });
 
+    // Convert Set → array and sort alphabetically
+    const optionsList = Array.from(uniqueOptionsSet).sort((a, b) =>
+      a.localeCompare(b),
+    );
+
     return {
-      optionsList: Array.from(uniqueOptionsSet),
+      optionsList,
       municipalityMap: map,
     };
   }, [municipalities]);
