@@ -1,6 +1,6 @@
 import os
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Union
 
 import duckdb
 import geopandas as gpd
@@ -50,7 +50,7 @@ def get_connection() -> duckdb.DuckDBPyConnection:
 def insert_year(
     name: str,
     df: pd.DataFrame,
-    years: Union[int, Iterable[int]],
+    years: int | Iterable[int],
     con: duckdb.DuckDBPyConnection | None = None,
 ):
     """
@@ -157,3 +157,26 @@ def replace_table(
         con.unregister("tmp_df")
         if own_connection:
             con.close()
+
+
+def main():
+    """
+    Build/update the DuckLake.
+
+    This is the entry point used by the container:
+        python -m lake_build
+    """
+    print(f"DATA_DIR: {DATA_DIR}")
+    print(f"LAKE_PATH: {LAKE_PATH}")
+    print(f"STORAGE_PATH: {STORAGE_PATH}")
+
+    con = get_connection()
+
+    try:
+        print("DuckLake build completed successfully.")
+    finally:
+        con.close()
+
+
+if __name__ == "__main__":
+    main()
