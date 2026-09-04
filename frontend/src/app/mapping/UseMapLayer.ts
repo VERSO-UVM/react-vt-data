@@ -90,5 +90,5 @@ export function useMapLayer(config: MapLayerConfig) {
     fetchLegend();
   }, [loaded, applyFilters, fetchLegend]);
 
-  return { geojson, legend, loading, applyFilters, loadInitial };
+  return { geojson, legend, loading, applyFilters, loadInitial, fetchLegend };
 }

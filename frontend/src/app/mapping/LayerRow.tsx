@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Switch, Group, Text, Box, LoadingOverlay } from '@mantine/core';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 import MapLegend from '@/components/Legend';
 import { useMapLayer } from './UseMapLayer';
 import type { MapLayerConfig } from '@/app/mapping/MapLayers';
+import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import type { FeatureCollection } from 'geojson';
 
 interface LayerRowProps {
@@ -13,6 +14,10 @@ interface LayerRowProps {
   active: boolean;
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
+  /** Initial filters to apply for this layer, e.g. from a use-case preset. */
+  presetFilters?: FilterSpec[];
+  /** Bumped whenever a preset is (re)selected, so a preset can be re-applied. */
+  presetVersion: number;
 }
 
 export default function LayerRow({
@@ -20,8 +25,10 @@ export default function LayerRow({
   active,
   onToggle,
   onDataChange,
+  presetFilters,
+  presetVersion,
 }: LayerRowProps) {
-  const { geojson, legend, loading, applyFilters, loadInitial } =
+  const { geojson, legend, loading, applyFilters, loadInitial, fetchLegend } =
     useMapLayer(config);
 
   // Push this layer's geojson up to the map whenever it changes, and clear
@@ -32,10 +39,23 @@ export default function LayerRow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geojson, active]);
 
+  // Apply a preset's filters at most once per presetVersion (so re-toggling
+  // the layer afterwards doesn't clobber the user's own filter tweaks), and
+  // otherwise fall back to the plain first-activation load.
+  const lastAppliedPreset = useRef<number | null>(null);
   useEffect(() => {
-    if (active) loadInitial();
+    if (!active) return;
+    if (presetFilters) {
+      if (lastAppliedPreset.current !== presetVersion) {
+        lastAppliedPreset.current = presetVersion;
+        applyFilters(presetFilters);
+        fetchLegend();
+      }
+    } else {
+      loadInitial();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+  }, [active, presetFilters, presetVersion]);
 
   return (
     <Box style={{ position: 'relative' }}>
@@ -67,8 +87,10 @@ export default function LayerRow({
       {active && config.filterList.length > 0 && (
         <Box mt="sm">
           <FilterWrap
+            key={presetVersion}
             filterList={config.filterList}
             handleApply={applyFilters}
+            initialSpecs={presetFilters}
           />
         </Box>
       )}

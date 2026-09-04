@@ -27,6 +27,8 @@ import {
   IconChevronUp,
   IconChartBarPopular,
   IconLayersIntersect,
+  IconBuildingCommunity,
+  IconDroplet,
 } from '@tabler/icons-react';
 
 import { Search } from 'lucide-react';
@@ -34,9 +36,16 @@ import { Search } from 'lucide-react';
 import VTMap from '@/components/mapping';
 import LayerPanel from './LayerPanel';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
+import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
+import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
 import { getFeatureBBox } from './geoUtils';
 import { COLORS } from '@/app/theme';
+
+const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
+  'buildable-areas': IconBuildingCommunity,
+  infrastructure: IconDroplet,
+};
 
 export default function MapExplorerPage() {
   const theme = useMantineTheme();
@@ -62,6 +71,11 @@ export default function MapExplorerPage() {
   const [layerData, setLayerData] = useState<
     Record<string, FeatureCollection | null>
   >({});
+  const [presetFilters, setPresetFilters] = useState<
+    Record<string, FilterSpec[]>
+  >({});
+  const [presetVersion, setPresetVersion] = useState(0);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [showCountyLines, setShowCountyLines] = useState(true);
   const [unzoned, setUnzoned] = useState<FeatureCollection | null>(null);
 
@@ -171,6 +185,23 @@ export default function MapExplorerPage() {
     if (!active) {
       setLayerData((prev) => ({ ...prev, [id]: null }));
     }
+    // Manual toggling breaks out of "preset" mode so the picker no longer
+    // shows a preset as selected.
+    setActivePresetId(null);
+  }, []);
+
+  const handlePresetSelect = useCallback((preset: MapPreset) => {
+    setActiveLayers(new Set(preset.layers));
+    setPresetFilters(preset.filters ?? {});
+    setPresetVersion((v) => v + 1);
+    setActivePresetId(preset.id);
+  }, []);
+
+  const handlePresetClear = useCallback(() => {
+    setActiveLayers(new Set());
+    setLayerData({});
+    setPresetFilters({});
+    setActivePresetId(null);
   }, []);
 
   const handleDataChange = useCallback(
@@ -303,6 +334,53 @@ export default function MapExplorerPage() {
             </Text>
           </Stack>
 
+          <Stack gap={6} mb="xs">
+            <Group justify="space-between" align="center">
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase">
+                Quick Start
+              </Text>
+              {activePresetId && (
+                <Button
+                  variant="subtle"
+                  size="compact-xs"
+                  color="gray"
+                  onClick={handlePresetClear}
+                >
+                  Clear
+                </Button>
+              )}
+            </Group>
+            <SimpleGrid cols={2} spacing="xs">
+              {MAP_PRESETS.map((preset) => {
+                const Icon = PRESET_ICONS[preset.id] ?? IconLayersIntersect;
+                const isActive = activePresetId === preset.id;
+                return (
+                  <Button
+                    key={preset.id}
+                    variant={isActive ? 'filled' : 'default'}
+                    color={COLORS.spruce}
+                    size="xs"
+                    h="auto"
+                    py={8}
+                    justify="flex-start"
+                    leftSection={<Icon size={16} />}
+                    onClick={() => handlePresetSelect(preset)}
+                    title={preset.description}
+                    styles={{
+                      label: {
+                        whiteSpace: 'normal',
+                        textAlign: 'left',
+                        lineHeight: 1.2,
+                      },
+                    }}
+                  >
+                    {preset.label}
+                  </Button>
+                );
+              })}
+            </SimpleGrid>
+          </Stack>
+
           <Divider my="xs" />
 
           <Paper
@@ -333,6 +411,8 @@ export default function MapExplorerPage() {
               activeLayers={activeLayers}
               onToggle={handleToggle}
               onDataChange={handleDataChange}
+              presetFilters={presetFilters}
+              presetVersion={presetVersion}
             />
           </Box>
         </Paper>

@@ -13,20 +13,32 @@ import { useForm } from '@mantine/form';
 import { FilterUI } from './filterUI';
 import { COLORS } from '@/app/theme';
 
-function filterSpecFactory(def: filterDef): FilterSpec {
-  return { filter_table: def.filter_table, filters: {}, cols: def.cols };
+function filterSpecFactory(def: filterDef, seed?: FilterSpec): FilterSpec {
+  return {
+    filter_table: def.filter_table,
+    filters: seed?.filters ?? {},
+    cols: def.cols,
+  };
 }
 
 interface FilterWrapProps {
   handleApply: (specs: FilterSpec[]) => void;
   filterList: filterDef[];
+  /** Initial filter values (same order as filterList) to seed the form with,
+   *  e.g. from a use-case preset. Pass a changing `key` on FilterWrap to
+   *  force a remount when these should be re-applied. */
+  initialSpecs?: FilterSpec[];
 }
 
 export function FilterWrap(props: FilterWrapProps) {
-  const { handleApply, filterList } = props;
+  const { handleApply, filterList, initialSpecs } = props;
 
   const form = useForm<{ specs: FilterSpec[] }>({
-    initialValues: { specs: filterList.map(filterSpecFactory) },
+    initialValues: {
+      specs: filterList.map((def, i) =>
+        filterSpecFactory(def, initialSpecs?.[i]),
+      ),
+    },
   });
 
   return (
