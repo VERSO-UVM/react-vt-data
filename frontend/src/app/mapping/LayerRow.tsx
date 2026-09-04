@@ -16,8 +16,15 @@ interface LayerRowProps {
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
   /** Initial filters to apply for this layer, e.g. from a use-case preset. */
   presetFilters?: FilterSpec[];
-  /** Bumped whenever a preset is (re)selected, so a preset can be re-applied. */
-  presetVersion: number;
+  /** Candidate spellings of the selected town's name, merged into every
+   *  fetch this layer makes so requests stay scoped to that town. */
+  townCandidates: string[] | null;
+  /** The selected town's bounding box; every fetch is cropped to it
+   *  client-side regardless of server-side jurisdiction scoping. */
+  townBBox: [number, number, number, number] | null;
+  /** Bumped whenever a preset is (re)selected or the town changes, so the
+   *  active filters get re-applied against the new scope. */
+  scopeVersion: number;
 }
 
 export default function LayerRow({
@@ -26,10 +33,15 @@ export default function LayerRow({
   onToggle,
   onDataChange,
   presetFilters,
-  presetVersion,
+  townCandidates,
+  townBBox,
+  scopeVersion,
 }: LayerRowProps) {
-  const { geojson, legend, loading, applyFilters, loadInitial, fetchLegend } =
-    useMapLayer(config);
+  const { geojson, legend, loading, applyFilters, fetchLegend } = useMapLayer(
+    config,
+    townCandidates,
+    townBBox,
+  );
 
   // Push this layer's geojson up to the map whenever it changes, and clear
   // it from the map immediately when the layer is switched off (data stays
@@ -39,23 +51,20 @@ export default function LayerRow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geojson, active]);
 
-  // Apply a preset's filters at most once per presetVersion (so re-toggling
-  // the layer afterwards doesn't clobber the user's own filter tweaks), and
-  // otherwise fall back to the plain first-activation load.
-  const lastAppliedPreset = useRef<number | null>(null);
+  // (Re)fetch at most once per scopeVersion while active: once on first
+  // activation, and again whenever a preset is (re)selected or the town
+  // changes (both bump scopeVersion). Re-toggling the layer off/on in
+  // between doesn't re-fetch, so it never clobbers the user's own filter
+  // tweaks made via the Apply button below.
+  const appliedVersion = useRef<number | null>(null);
   useEffect(() => {
     if (!active) return;
-    if (presetFilters) {
-      if (lastAppliedPreset.current !== presetVersion) {
-        lastAppliedPreset.current = presetVersion;
-        applyFilters(presetFilters);
-        fetchLegend();
-      }
-    } else {
-      loadInitial();
-    }
+    if (appliedVersion.current === scopeVersion) return;
+    appliedVersion.current = scopeVersion;
+    applyFilters(presetFilters ?? []);
+    fetchLegend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, presetFilters, presetVersion]);
+  }, [active, scopeVersion]);
 
   return (
     <Box style={{ position: 'relative' }}>
@@ -87,7 +96,7 @@ export default function LayerRow({
       {active && config.filterList.length > 0 && (
         <Box mt="sm">
           <FilterWrap
-            key={presetVersion}
+            key={scopeVersion}
             filterList={config.filterList}
             handleApply={applyFilters}
             initialSpecs={presetFilters}

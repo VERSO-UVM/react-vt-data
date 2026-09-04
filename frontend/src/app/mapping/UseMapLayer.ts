@@ -17,8 +17,23 @@ import { assemble } from '@/components/FilterRedux/apiHelpers';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import type { MapLayerConfig } from '@/app/mapping/MapLayers';
 import type { LegendRow } from '@/components/Legend';
+import { applyJurisdictionScope } from './jurisdictionMatch';
+import { recolorLayer } from './layerColors';
+import { cropToBBox } from './spatialScope';
 
-export function useMapLayer(config: MapLayerConfig) {
+/** @param townCandidates - plausible spellings of the selected town's name
+ *    (see jurisdictionCandidates), auto-merged into every fetch this layer
+ *    makes so requests stay scoped to that town. Null/empty = unscoped.
+ *  @param townBBox - the selected town's bounding box. Every fetch is
+ *    cropped to it client-side, regardless of townCandidates — this is what
+ *    keeps layers with no server-side jurisdiction filter (flood) from
+ *    rendering statewide data, and safety-nets any jurisdiction name-match
+ *    misses on the other layers. */
+export function useMapLayer(
+  config: MapLayerConfig,
+  townCandidates: string[] | null = null,
+  townBBox: [number, number, number, number] | null = null,
+) {
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
   const [legend, setLegend] = useState<LegendRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,9 +59,15 @@ export function useMapLayer(config: MapLayerConfig) {
       try {
         if (config.method === 'GET' || config.filterList.length === 0) {
           const res = await axios.get(config.dataURL);
-          setGeojson(res.data as FeatureCollection);
+          const fc = cropToBBox(res.data as FeatureCollection, townBBox);
+          setGeojson(recolorLayer(config.id, fc));
         } else {
-          const assembledPayload = assemble(specs);
+          const scopedSpecs = applyJurisdictionScope(
+            config,
+            specs,
+            townCandidates,
+          );
+          const assembledPayload = assemble(scopedSpecs);
 
           // Zoning requires a top-level list [...], whereas wastewater endpoints require an object {...}
           let formattedPayload: unknown;
@@ -65,11 +86,11 @@ export function useMapLayer(config: MapLayerConfig) {
             payload: formattedPayload,
           });
 
-          setGeojson(
-            (config.responseShape === 'geojson-stats'
-              ? res.geojson
-              : res) as FeatureCollection,
-          );
+          const rawFc = (
+            config.responseShape === 'geojson-stats' ? res.geojson : res
+          ) as FeatureCollection;
+          const fc = cropToBBox(rawFc, townBBox);
+          setGeojson(recolorLayer(config.id, fc));
         }
         setLoaded(true);
       } catch (e) {
@@ -79,7 +100,7 @@ export function useMapLayer(config: MapLayerConfig) {
         setLoading(false);
       }
     },
-    [config],
+    [config, townCandidates, townBBox],
   );
   /** Called the first time a layer is switched on: loads with no filters,
    *  matching the old per-page "initial load" behavior. No-ops on repeat

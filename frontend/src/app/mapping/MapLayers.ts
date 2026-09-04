@@ -26,6 +26,16 @@ import {
  */
 export type ResponseShape = 'direct' | 'geojson-stats';
 
+/** How to auto-scope a layer's fetch to the selected town: which table (and
+ *  under which filter label) carries the town/jurisdiction name. Merged into
+ *  that layer's request filters automatically once a town is selected — see
+ *  UseMapLayer.ts. Omit for layers with no town-name column (flood, which is
+ *  small enough statewide to not need it). */
+export type JurisdictionScope = {
+  filterTable: string;
+  label: string;
+};
+
 export type MapLayerConfig = {
   id: string;
   title: string;
@@ -35,6 +45,7 @@ export type MapLayerConfig = {
   legendURL?: string;
   responseShape: ResponseShape;
   color: string;
+  jurisdiction?: JurisdictionScope;
 };
 
 export const MAP_LAYERS: MapLayerConfig[] = [
@@ -56,6 +67,10 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     legendURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_legend`,
     responseShape: 'direct',
     color: '#c98a2b',
+    jurisdiction: {
+      filterTable: 'VersoWastewater_soilSuitability_info',
+      label: 'Jurisdiction',
+    },
   },
   {
     id: 'treatment-facilities',
@@ -65,6 +80,10 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     filterList: treatment_facility_filtering,
     responseShape: 'direct',
     color: '#2bb673',
+    jurisdiction: {
+      filterTable: 'VersoWastewater_treatmentFacilities_info',
+      label: 'Jurisdiction',
+    },
   },
   {
     id: 'service-areas',
@@ -74,6 +93,10 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     filterList: service_area_filtering,
     responseShape: 'direct',
     color: '#8a5bd6',
+    jurisdiction: {
+      filterTable: 'VersoWastewater_serviceAreas_info',
+      label: 'Jurisdiction',
+    },
   },
   {
     id: 'zoning',
@@ -83,6 +106,10 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     filterList: zoning_filtering,
     responseShape: 'geojson-stats',
     color: '#d64545',
+    jurisdiction: {
+      filterTable: 'VersoZoning_info',
+      label: 'Jurisdiction',
+    },
   },
 ];
 

@@ -29,6 +29,7 @@ import {
   IconLayersIntersect,
   IconBuildingCommunity,
   IconDroplet,
+  IconMapPin,
 } from '@tabler/icons-react';
 
 import { Search } from 'lucide-react';
@@ -37,6 +38,7 @@ import VTMap from '@/components/mapping';
 import LayerPanel from './LayerPanel';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
 import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
+import { jurisdictionCandidates } from './jurisdictionMatch';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
 import { getFeatureBBox } from './geoUtils';
@@ -74,10 +76,26 @@ export default function MapExplorerPage() {
   const [presetFilters, setPresetFilters] = useState<
     Record<string, FilterSpec[]>
   >({});
-  const [presetVersion, setPresetVersion] = useState(0);
+  // Bumped whenever a preset is (re)selected or the selected town changes,
+  // so active layers re-fetch scoped to the new preset/town.
+  const [scopeVersion, setScopeVersion] = useState(0);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [showCountyLines, setShowCountyLines] = useState(true);
   const [unzoned, setUnzoned] = useState<FeatureCollection | null>(null);
+
+  // Gate: no layer data loads until a town is selected. Statewide layers
+  // (soil suitability alone is ~180k polygons) are too much to fetch and
+  // render at once, so every layer fetch is scoped to this town instead.
+  const [selectedTown, setSelectedTown] = useState<MunicipalityFeature | null>(
+    null,
+  );
+  const townCandidates = useMemo(
+    () =>
+      selectedTown
+        ? jurisdictionCandidates(selectedTown.properties.NAME)
+        : null,
+    [selectedTown],
+  );
 
   useEffect(() => {
     axios
@@ -159,6 +177,12 @@ export default function MapExplorerPage() {
         if (bbox && (bbox[0] !== 0 || bbox[1] !== 0)) {
           setSelectedBBox(bbox);
         }
+        // Selecting a (new) town rescopes every active layer's data to it —
+        // stale data from the previous town shouldn't linger on screen
+        // while the rescoped fetch is in flight.
+        setSelectedTown(match);
+        setLayerData({});
+        setScopeVersion((v) => v + 1);
       }
     },
     [municipalityMap],
@@ -193,7 +217,7 @@ export default function MapExplorerPage() {
   const handlePresetSelect = useCallback((preset: MapPreset) => {
     setActiveLayers(new Set(preset.layers));
     setPresetFilters(preset.filters ?? {});
-    setPresetVersion((v) => v + 1);
+    setScopeVersion((v) => v + 1);
     setActivePresetId(preset.id);
   }, []);
 
@@ -225,6 +249,24 @@ export default function MapExplorerPage() {
     (acc, fc) => acc + (fc?.features?.length || 0),
     0,
   );
+
+  // Sum of zoning district acreage under the currently-applied zoning
+  // filters (e.g. the Buildable Areas preset's Permitted/Public Hearing
+  // housing allowances). Zoning districts are Vermont's full, non-overlapping
+  // land partition, so this is a real acreage total — soil suitability and
+  // flood hazard are separate polygon layers that overlap zoning
+  // geographically, so summing their acreage in too would double-count land
+  // rather than narrow it.
+  const buildableAcres = useMemo(() => {
+    const zoningFc = layerData['zoning'];
+    if (!activeLayers.has('zoning') || !zoningFc?.features?.length) {
+      return null;
+    }
+    return zoningFc.features.reduce((sum, f) => {
+      const acres = Number(f.properties?.Acres);
+      return sum + (Number.isFinite(acres) ? acres : 0);
+    }, 0);
+  }, [layerData, activeLayers]);
 
   return (
     <Box
@@ -285,6 +327,28 @@ export default function MapExplorerPage() {
             }}
           />
         </Paper>
+
+        {!selectedTown && (
+          <Paper
+            mt="xs"
+            radius="md"
+            p="xs"
+            withBorder
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(8px)',
+              textAlign: 'center',
+            }}
+          >
+            <Group gap={6} justify="center" wrap="nowrap">
+              <IconMapPin size={14} color={COLORS.spruce} />
+              <Text size="xs" fw={500} c="dimmed">
+                Select a town to explore zoning, soil, flood & wastewater data
+                for that area
+              </Text>
+            </Group>
+          </Paper>
+        )}
       </Box>
 
       <Box
@@ -334,87 +398,119 @@ export default function MapExplorerPage() {
             </Text>
           </Stack>
 
-          <Stack gap={6} mb="xs">
-            <Group justify="space-between" align="center">
-              <Text size="xs" fw={700} c="dimmed" tt="uppercase">
-                Quick Start
+          {!selectedTown ? (
+            <Paper
+              p="md"
+              radius="sm"
+              style={{
+                backgroundColor: 'var(--mantine-color-gray-0)',
+                border: '1px dashed var(--mantine-color-gray-4)',
+                textAlign: 'center',
+              }}
+            >
+              <IconMapPin
+                size={22}
+                color="var(--mantine-color-gray-5)"
+                style={{ marginBottom: 6 }}
+              />
+              <Text size="sm" fw={600} c="dimmed">
+                No town selected
               </Text>
-              {activePresetId && (
-                <Button
-                  variant="subtle"
-                  size="compact-xs"
-                  color="gray"
-                  onClick={handlePresetClear}
-                >
-                  Clear
-                </Button>
-              )}
-            </Group>
-            <SimpleGrid cols={2} spacing="xs">
-              {MAP_PRESETS.map((preset) => {
-                const Icon = PRESET_ICONS[preset.id] ?? IconLayersIntersect;
-                const isActive = activePresetId === preset.id;
-                return (
-                  <Button
-                    key={preset.id}
-                    variant={isActive ? 'filled' : 'default'}
-                    color={COLORS.spruce}
-                    size="xs"
-                    h="auto"
-                    py={8}
-                    justify="flex-start"
-                    leftSection={<Icon size={16} />}
-                    onClick={() => handlePresetSelect(preset)}
-                    title={preset.description}
-                    styles={{
-                      label: {
-                        whiteSpace: 'normal',
-                        textAlign: 'left',
-                        lineHeight: 1.2,
-                      },
-                    }}
-                  >
-                    {preset.label}
-                  </Button>
-                );
-              })}
-            </SimpleGrid>
-          </Stack>
+              <Text size="xs" c="dimmed" mt={4}>
+                Search for a Vermont town or city above to unlock data layers,
+                scoped to that area.
+              </Text>
+            </Paper>
+          ) : (
+            <>
+              <Stack gap={6} mb="xs">
+                <Group justify="space-between" align="center">
+                  <Text size="xs" fw={700} c="dimmed" tt="uppercase">
+                    Quick Start
+                  </Text>
+                  {activePresetId && (
+                    <Button
+                      variant="subtle"
+                      size="compact-xs"
+                      color="gray"
+                      onClick={handlePresetClear}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </Group>
+                <SimpleGrid cols={2} spacing="xs">
+                  {MAP_PRESETS.map((preset) => {
+                    const Icon = PRESET_ICONS[preset.id] ?? IconLayersIntersect;
+                    const isActive = activePresetId === preset.id;
+                    return (
+                      <Button
+                        key={preset.id}
+                        variant={isActive ? 'filled' : 'default'}
+                        color={COLORS.spruce}
+                        size="xs"
+                        h="auto"
+                        py={8}
+                        justify="flex-start"
+                        leftSection={<Icon size={16} />}
+                        onClick={() => handlePresetSelect(preset)}
+                        title={preset.description}
+                        styles={{
+                          label: {
+                            whiteSpace: 'normal',
+                            textAlign: 'left',
+                            lineHeight: 1.2,
+                          },
+                        }}
+                      >
+                        {preset.label}
+                      </Button>
+                    );
+                  })}
+                </SimpleGrid>
+              </Stack>
 
-          <Divider my="xs" />
+              <Divider my="xs" />
 
-          <Paper
-            p="xs"
-            radius="sm"
-            style={{
-              backgroundColor: 'var(--mantine-color-gray-0)',
-              border: '1px solid var(--mantine-color-gray-3)',
-            }}
-          >
-            <Switch
-              checked={showCountyLines}
-              onChange={(event) =>
-                setShowCountyLines(event.currentTarget.checked)
-              }
-              color={COLORS.spruce}
-              label={
-                <Text size="xs" fw={600}>
-                  Show Municipal Boundaries
-                </Text>
-              }
-              styles={{ track: { cursor: 'pointer' } }}
-            />
-          </Paper>
+              <Paper
+                p="xs"
+                radius="sm"
+                style={{
+                  backgroundColor: 'var(--mantine-color-gray-0)',
+                  border: '1px solid var(--mantine-color-gray-3)',
+                }}
+              >
+                <Switch
+                  checked={showCountyLines}
+                  onChange={(event) =>
+                    setShowCountyLines(event.currentTarget.checked)
+                  }
+                  color={COLORS.spruce}
+                  label={
+                    <Text size="xs" fw={600}>
+                      Show Municipal Boundaries
+                    </Text>
+                  }
+                  styles={{ track: { cursor: 'pointer' } }}
+                />
+              </Paper>
 
-          <Box mt="xs" style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
-            <LayerPanel
-              activeLayers={activeLayers}
-              onToggle={handleToggle}
-              onDataChange={handleDataChange}
-              presetFilters={presetFilters}
-              presetVersion={presetVersion}
-            />
-          </Box>
+              <Box
+                mt="xs"
+                style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}
+              >
+                <LayerPanel
+                  activeLayers={activeLayers}
+                  onToggle={handleToggle}
+                  onDataChange={handleDataChange}
+                  presetFilters={presetFilters}
+                  townCandidates={townCandidates}
+                  townBBox={selectedBBox}
+                  scopeVersion={scopeVersion}
+                />
+              </Box>
+            </>
+          )}
         </Paper>
 
         <Paper
@@ -454,152 +550,177 @@ export default function MapExplorerPage() {
         </Paper>
       </Box>
 
-      <Paper
-        shadow="lg"
-        withBorder
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: sidebarOpen ? 370 : 16,
-          right: 16,
-          zIndex: 10,
-          borderBottomLeftRadius: 0,
-          borderBottomRightRadius: 0,
-          transition: 'left 0.3s ease',
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-        }}
-      >
-        <Group
-          justify="space-between"
-          px="md"
-          py="xs"
-          onClick={() => setReportExpanded(!reportExpanded)}
-          style={{ cursor: 'pointer', userSelect: 'none' }}
+      {selectedTown && (
+        <Paper
+          shadow="lg"
+          withBorder
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: sidebarOpen ? 370 : 16,
+            right: 16,
+            zIndex: 10,
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0,
+            transition: 'left 0.3s ease',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+          }}
         >
-          <Group gap="xs">
-            <IconChartBarPopular size={16} color={COLORS.spruce} />
-            <Text
-              size="xs"
-              fw={700}
-              style={{ fontFamily: theme.headings?.fontFamily }}
+          <Group
+            justify="space-between"
+            px="md"
+            py="xs"
+            onClick={() => setReportExpanded(!reportExpanded)}
+            style={{ cursor: 'pointer', userSelect: 'none' }}
+          >
+            <Group gap="xs">
+              <IconChartBarPopular size={16} color={COLORS.spruce} />
+              <Text
+                size="xs"
+                fw={700}
+                style={{ fontFamily: theme.headings?.fontFamily }}
+              >
+                SPATIAL ANALYSIS & REPORT SUMMARY
+              </Text>
+              <Text size="xs" c="dimmed" ml="sm">
+                • {totalLoadedFeatures.toLocaleString()} records active
+              </Text>
+            </Group>
+
+            <Button
+              variant="subtle"
+              size="compact-xs"
+              color="gray"
+              rightSection={
+                reportExpanded ? (
+                  <IconChevronDown size={14} />
+                ) : (
+                  <IconChevronUp size={14} />
+                )
+              }
             >
-              SPATIAL ANALYSIS & REPORT SUMMARY
-            </Text>
-            <Text size="xs" c="dimmed" ml="sm">
-              • {totalLoadedFeatures.toLocaleString()} records active
-            </Text>
+              {reportExpanded ? 'Collapse Report' : 'Expand Insights'}
+            </Button>
           </Group>
 
-          <Button
-            variant="subtle"
-            size="compact-xs"
-            color="gray"
-            rightSection={
-              reportExpanded ? (
-                <IconChevronDown size={14} />
-              ) : (
-                <IconChevronUp size={14} />
-              )
-            }
-          >
-            {reportExpanded ? 'Collapse Report' : 'Expand Insights'}
-          </Button>
-        </Group>
-
-        <Collapse expanded={reportExpanded}>
-          <Box p="md" style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-            <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
-              <Paper
-                withBorder
-                p="xs"
-                radius="sm"
-                bg="var(--mantine-color-body)"
-              >
-                <Text size="xs" c="dimmed" fw={600}>
-                  Total Rendered Features
-                </Text>
-                <Text fw={700} size="xl" c={COLORS.spruce}>
-                  {totalLoadedFeatures.toLocaleString()}
-                </Text>
-              </Paper>
-
-              <Paper
-                withBorder
-                p="xs"
-                radius="sm"
-                bg="var(--mantine-color-body)"
-              >
-                <Text size="xs" c="dimmed" fw={600} mb="xs">
-                  Layer Density Distribution
-                </Text>
-                {activeLayers.size === 0 ? (
-                  <Text size="xs" c="dimmed" fs="italic">
-                    No active layer data
-                  </Text>
-                ) : (
-                  <Stack gap={6}>
-                    {MAP_LAYERS.filter((l) => activeLayers.has(l.id)).map(
-                      (layer) => {
-                        const count =
-                          layerData[layer.id]?.features?.length || 0;
-                        return (
-                          <Box key={layer.id}>
-                            <Group justify="space-between" mb={2}>
-                              <Text size="xs" fw={500} lineClamp={1}>
-                                {layer.title}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                {count}
-                              </Text>
-                            </Group>
-                            <Progress
-                              value={
-                                totalLoadedFeatures > 0
-                                  ? (count / totalLoadedFeatures) * 100
-                                  : 0
-                              }
-                              color={layer.color}
-                              size="xs"
-                              radius="xl"
-                            />
-                          </Box>
-                        );
-                      },
-                    )}
-                  </Stack>
-                )}
-              </Paper>
-
-              <Paper
-                withBorder
-                p="xs"
-                radius="sm"
-                bg="var(--mantine-color-body)"
-              >
-                <Text size="xs" c="dimmed" fw={600} mb={4}>
-                  Regional Findings
-                </Text>
-                <Box
-                  mt="xs"
-                  h={70}
-                  style={{
-                    border: '1px dashed var(--mantine-color-default-border)',
-                    borderRadius: theme.radius.sm,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+          <Collapse expanded={reportExpanded}>
+            <Box p="md" style={{ maxHeight: '35vh', overflowY: 'auto' }}>
+              <SimpleGrid cols={{ base: 1, md: 4 }} spacing="md">
+                <Paper
+                  withBorder
+                  p="xs"
+                  radius="sm"
+                  bg="var(--mantine-color-body)"
                 >
-                  <Text size="xs" c="dimmed">
-                    Chart Canvas / Spatial Distribution Plot
+                  <Text size="xs" c="dimmed" fw={600}>
+                    Total Rendered Features
                   </Text>
-                </Box>
-              </Paper>
-            </SimpleGrid>
-          </Box>
-        </Collapse>
-      </Paper>
+                  <Text fw={700} size="xl" c={COLORS.spruce}>
+                    {totalLoadedFeatures.toLocaleString()}
+                  </Text>
+                </Paper>
+
+                <Paper
+                  withBorder
+                  p="xs"
+                  radius="sm"
+                  bg="var(--mantine-color-body)"
+                >
+                  <Text size="xs" c="dimmed" fw={600}>
+                    Buildable Acreage
+                  </Text>
+                  {buildableAcres !== null ? (
+                    <Text fw={700} size="xl" c={COLORS.spruce}>
+                      {Math.round(buildableAcres).toLocaleString()} ac
+                    </Text>
+                  ) : (
+                    <Text size="xs" c="dimmed" fs="italic" mt={6}>
+                      Enable the Zoning layer to see acreage
+                    </Text>
+                  )}
+                  <Text size="xs" c="dimmed" mt={2}>
+                    Zoning districts under the current filters
+                  </Text>
+                </Paper>
+
+                <Paper
+                  withBorder
+                  p="xs"
+                  radius="sm"
+                  bg="var(--mantine-color-body)"
+                >
+                  <Text size="xs" c="dimmed" fw={600} mb="xs">
+                    Layer Density Distribution
+                  </Text>
+                  {activeLayers.size === 0 ? (
+                    <Text size="xs" c="dimmed" fs="italic">
+                      No active layer data
+                    </Text>
+                  ) : (
+                    <Stack gap={6}>
+                      {MAP_LAYERS.filter((l) => activeLayers.has(l.id)).map(
+                        (layer) => {
+                          const count =
+                            layerData[layer.id]?.features?.length || 0;
+                          return (
+                            <Box key={layer.id}>
+                              <Group justify="space-between" mb={2}>
+                                <Text size="xs" fw={500} lineClamp={1}>
+                                  {layer.title}
+                                </Text>
+                                <Text size="xs" c="dimmed">
+                                  {count}
+                                </Text>
+                              </Group>
+                              <Progress
+                                value={
+                                  totalLoadedFeatures > 0
+                                    ? (count / totalLoadedFeatures) * 100
+                                    : 0
+                                }
+                                color={layer.color}
+                                size="xs"
+                                radius="xl"
+                              />
+                            </Box>
+                          );
+                        },
+                      )}
+                    </Stack>
+                  )}
+                </Paper>
+
+                <Paper
+                  withBorder
+                  p="xs"
+                  radius="sm"
+                  bg="var(--mantine-color-body)"
+                >
+                  <Text size="xs" c="dimmed" fw={600} mb={4}>
+                    Regional Findings
+                  </Text>
+                  <Box
+                    mt="xs"
+                    h={70}
+                    style={{
+                      border: '1px dashed var(--mantine-color-default-border)',
+                      borderRadius: theme.radius.sm,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text size="xs" c="dimmed">
+                      Chart Canvas / Spatial Distribution Plot
+                    </Text>
+                  </Box>
+                </Paper>
+              </SimpleGrid>
+            </Box>
+          </Collapse>
+        </Paper>
+      )}
     </Box>
   );
 }

@@ -11,7 +11,9 @@ interface LayerPanelProps {
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
   presetFilters?: Record<string, FilterSpec[]>;
-  presetVersion: number;
+  townCandidates: string[] | null;
+  townBBox: [number, number, number, number] | null;
+  scopeVersion: number;
 }
 
 export default function LayerPanel({
@@ -19,7 +21,9 @@ export default function LayerPanel({
   onToggle,
   onDataChange,
   presetFilters,
-  presetVersion,
+  townCandidates,
+  townBBox,
+  scopeVersion,
 }: LayerPanelProps) {
   return (
     <Stack gap="md">
@@ -32,7 +36,9 @@ export default function LayerPanel({
             onToggle={onToggle}
             onDataChange={onDataChange}
             presetFilters={presetFilters?.[cfg.id]}
-            presetVersion={presetVersion}
+            townCandidates={townCandidates}
+            townBBox={townBBox}
+            scopeVersion={scopeVersion}
           />
         </div>
       ))}
