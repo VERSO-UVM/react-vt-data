@@ -41,6 +41,14 @@ QUERY_CONFIG = {
                 "table": "VCGI_historicPopulation_timeseries",
                 "fixed_filters": {},
             },
+            "historic_population_change": {
+                "table": "VCGI_historicPopulation_pctChange_timeseries",
+                "fixed_filters": {},
+            },
+            "population_change": {
+                "table": "acs5Demographics_populationChange_timeseries",
+                "fixed_filters": {},
+            },
         },
     },
     "economics": {
@@ -179,6 +187,35 @@ def get_acs5_timeseries(
         fixed_filters=config.get("fixed_filters"),
     )
 
+    print(
+        DB.execute(
+            """
+            SELECT *
+            FROM acs5Demographics_populationChange_timeseries
+            LIMIT 5
+            """
+        ).df()
+    )
+
+    print(
+        DB.execute(
+            """
+            SELECT DISTINCT NAME
+            FROM acs5Demographics_populationChange_timeseries
+            WHERE NAME ILIKE '%Essex%'
+            """
+        ).df()
+    )
+
+    print(
+        DB.execute(
+            """
+            SELECT MIN(year), MAX(year), COUNT(*)
+            FROM acs5Demographics_populationChange_timeseries
+            """
+        ).df()
+    )
+
     sql, params = sql_filter_block(
         sql_path / "acs5_timeseries.sql",
         [source],
@@ -197,21 +234,6 @@ def get_acs5_timeseries(
         raise ValueError(
             f"No results for timeseries: {category}/{dataset}, filters: {filters}"
         )
-
-    return result
-
-
-# FIXME: Link to new database table name (broken for now)
-def get_median_earnings_ts(filters: dict | None = None) -> pd.DataFrame:
-    source = _acs5_source(table="acs5_median_earnings", filters=filters)
-
-    sql, params = sql_filter_block(sql_path / "median_earnings.sql", [source])
-
-    result = DB.execute(sql, params).df()
-
-    if result is None or result.empty:
-        logger.error("Median earnings query returned no rows for filters=%s", filters)
-        raise ValueError("no results for median_earnings query")
 
     return result
 

@@ -25,10 +25,9 @@
     python -m data_cleaning.clean_housing_cost_burden
 """
 
+import duckdb
 import numpy as np
 import pandas as pd
-
-from lake_build import con
 
 MORTGAGE_SUBCATEGORY = (
     "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)"
@@ -39,7 +38,7 @@ NO_MORTGAGE_SUBCATEGORY = (
 )
 
 
-def read_raw_data(subcategory: str) -> pd.DataFrame:
+def read_raw_data(con: duckdb.DuckDBPyConnection, subcategory: str) -> pd.DataFrame:
     """
     Read and aggregate housing cost burden percentages for a subcategory.
 
@@ -91,15 +90,17 @@ def replace_unavailable_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def clean() -> pd.DataFrame:
-    raw_df = read_raw_data(MORTGAGE_SUBCATEGORY)
+def clean(
+    con: duckdb.DuckDBPyConnection,
+) -> pd.DataFrame:
+    raw_df = read_raw_data(con, MORTGAGE_SUBCATEGORY)
     df = change_dtype(raw_df)
     df = replace_unavailable_data(df)
 
     return df
 
 
-def add_to_lake(clean_df: pd.DataFrame):
+def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame):
     """
     Writes the cleaned, long-format housing cost burden dataframe
     to the CLEANED schema in DuckLake.
@@ -112,9 +113,9 @@ def add_to_lake(clean_df: pd.DataFrame):
     )
 
 
-def main():
-    clean_df = clean()
-    add_to_lake(clean_df)
+def main(con: duckdb.DuckDBPyConnection):
+    clean_df = clean(con)
+    add_to_lake(con, clean_df)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,8 @@ export {
 export {
   DemographicsTrendChart,
   PopulationTrendChart,
+  HistoricPopulationChangeTrendChart,
+  PopulationChangeTrendChart,
   MedianAgeTrendChart,
   EducationTrendChart,
   HomeValueTrendChart,

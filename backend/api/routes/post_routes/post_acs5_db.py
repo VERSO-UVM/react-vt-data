@@ -106,6 +106,29 @@ async def get_historic_population(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
+# Percent Population Change (Historic, Decade-over-Decade)
+@router.post("/load/acs5-db/timeseries/demographics/historic-population-change")
+async def get_historic_population_change(request: FilterRequest):
+    filters = {key: value for key, value in request.filters.items() if key != "year"}
+
+    rows = get_acs5_timeseries(
+        category="demographics",
+        dataset="historic_population_change",
+        filters=filters,
+    )
+
+    return make_response(data=rows, metadata=get_metadata("demographics"))
+
+
+# Percent Population Change (ACS-5, Year-over-Year)
+@router.post("/load/acs5-db/timeseries/demographics/population-change")
+async def get_population_change(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="demographics", dataset="population_change", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("demographics"))
+
+
 ##### ECONOMICS #####
 # Heath Insurance Coverage
 @router.post("/load/acs5-db/timeseries/economics/health-insurance")

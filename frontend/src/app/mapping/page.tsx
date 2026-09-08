@@ -1,82 +1,332 @@
 'use client';
 
-import React from 'react';
-import { Title, Center, Container, Text } from '@mantine/core';
-import ExploratoryMappingGrid from '@/components/Grids/ExploratoryMappingOptions';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
+import axios from 'axios';
+import type { FeatureCollection } from 'geojson';
+import {
+  Autocomplete,
+  Box,
+  Group,
+  Paper,
+  Stack,
+  Switch,
+  Title,
+  Text,
+  SimpleGrid,
+  Progress,
+  Divider,
+  ActionIcon,
+  Collapse,
+  Button,
+  Tooltip,
+  useMantineTheme,
+} from '@mantine/core';
+import {
+  IconChevronLeft,
+  IconChevronDown,
+  IconChevronUp,
+  IconChartBarPopular,
+  IconLayersIntersect,
+  IconBuildingCommunity,
+  IconDroplet,
+  IconMapPin,
+  IconInfoCircle,
+} from '@tabler/icons-react';
 
-export const links = [
-  {
-    link: '/mapping/zoning',
-    label: 'Zoning',
-    description:
-      'Explore zoning classifications by town to understand residential, commercial, agricultural, and mixed-use regulations across Vermont.',
-    badges: ['Land Use', 'Municipal'],
-  },
-  {
-    link: '/mapping/soil-suitability',
-    label: 'Soil Suitability',
-    description:
-      'Assess soil limitations and suitability for on-site wastewater systems and rural development.',
-    badges: ['NRCS', 'Septic'],
-  },
-  {
-    link: '/mapping/treatment-facilities',
-    label: 'Wastewater Treatment Facilities',
-    description:
-      'Explore locations of current public wastewater treatment facilities and their capacities.',
-    badges: ['ANR', 'Wastewater'],
-  },
-  {
-    link: '/mapping/service-areas',
-    label: 'Wastewater System Service Areas',
-    description: 'Examine current service areas of public wastewater systems.',
-    badges: ['ANR', 'Wastewater'],
-  },
-  {
-    link: '/mapping/flood-legal',
-    label: 'Flood Insurance',
-    description:
-      'Identify FEMA flood hazard areas and understand development and insurance implications.',
-    badges: ['FEMA', 'Flood Risk'],
-  },
-];
+import { Search } from 'lucide-react';
 
-export default function BaseMappingPage() {
-  return (
-    <>
-      <Center py={60}>
-        <Container size="lg">
-          <Title order={1} ta="center">
-            Vermont Mapping Explorer
-          </Title>
+import VTMap from '@/components/mapping';
+import LayerPanel from './LayerPanel';
+import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
+import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
+import { jurisdictionCandidates } from './jurisdictionMatch';
+import { computeBuildableOverlay } from './buildableOverlay';
+import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
+import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
+import { getFeatureBBox } from './geoUtils';
+import { COLORS } from '@/app/theme';
 
-          <Text ta="center" c="dimmed" size="lg" maw={750} mx="auto" mt="md">
-            Explore statewide zoning regulations, environmental constraints, and
-            flood hazards through interactive geospatial datasets.
-          </Text>
-        </Container>
-      </Center>
+const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
+  'buildable-areas': IconBuildingCommunity,
+  infrastructure: IconDroplet,
+};
 
-      <Container size="lg">
-        <ExploratoryMappingGrid links={links} />
-      </Container>
+export default function MapExplorerPage() {
+  const theme = useMantineTheme();
+  const searchParams = useSearchParams();
 
-      <div style={{ height: 100 }} />
-    </>
-  );
-}
+  // Layout & Municipality State
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [reportExpanded, setReportExpanded] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [selectedBBox, setSelectedBBox] = useState<
+    [number, number, number, number] | null
+  >(null);
 
-/*
-export default function BaseMappingPage() {
-  const items = links.map((link) => {
-    return (
-      <Link href={link.link} key={link.link}>
-        <Button style={{ display: 'flex', alignItems: 'center' }}>
-          <span>{link.label}</span>
-        </Button>
-      </Link>
-    );
+  const { data: municipalities } = useMunicipalities();
+
+  const [activeLayers, setActiveLayers] = useState<Set<string>>(() => {
+    const initial = searchParams.get('layer');
+    return initial && MAP_LAYERS.some((l) => l.id === initial)
+      ? new Set([initial])
+      : new Set();
   });
+
+  const [layerData, setLayerData] = useState<
+    Record<string, FeatureCollection | null>
+  >({});
+  const [presetFilters, setPresetFilters] = useState<
+    Record<string, FilterSpec[]>
+  >({});
+  // Bumped whenever a preset is (re)selected or the selected town changes,
+  // so active layers re-fetch scoped to the new preset/town.
+  const [scopeVersion, setScopeVersion] = useState(0);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [showCountyLines, setShowCountyLines] = useState(true);
+  const [unzoned, setUnzoned] = useState<FeatureCollection | null>(null);
+
+  // Gate: no layer data loads until a town is selected. Statewide layers
+  // (soil suitability alone is ~180k polygons) are too much to fetch and
+  // render at once, so every layer fetch is scoped to this town instead.
+  const [selectedTown, setSelectedTown] = useState<MunicipalityFeature | null>(
+    null,
+  );
+  const townCandidates = useMemo(
+    () =>
+      selectedTown
+        ? jurisdictionCandidates(selectedTown.properties.NAME)
+        : null,
+    [selectedTown],
+  );
+
+  useEffect(() => {
+    axios
+      .get(UNZONED_URL)
+      .then((res) => setUnzoned(res.data))
+      .catch((e) => console.error('unzoned layer fetch failed', e));
+  }, []);
+
+  // The unzoned backdrop is fetched statewide (it's small — a few hundred
+  // features), but each feature's tooltip title is the exact TIGER town
+  // name it belongs to, so it can be scoped to the selected town with an
+  // exact match — no fuzzy jurisdiction matching needed here.
+  const unzonedForTown = useMemo(() => {
+    if (!selectedTown || !unzoned) return null;
+    const townName = selectedTown.properties.NAME;
+    return {
+      ...unzoned,
+      features: unzoned.features.filter(
+        (f) => f.properties?.tooltip?.__title__ === townName,
+      ),
+    };
+  }, [unzoned, selectedTown]);
+
+  // 1. Build lookup dictionary & formatted options string list
+  const { optionsList, municipalityMap } = useMemo(() => {
+    if (!municipalities?.features) {
+      return {
+        optionsList: [],
+        municipalityMap: new Map<string, MunicipalityFeature>(),
+      };
+    }
+
+    const map = new Map<string, MunicipalityFeature>();
+    const uniqueOptionsSet = new Set<string>();
+
+    municipalities.features.forEach((f) => {
+      const fullName = f.properties.NAME;
+      const parts = fullName.split(',').map((s) => s.trim());
+
+      const rawName = parts[0] || '';
+      const county = parts[1] || 'VT';
+
+      const formattedName = rawName
+        .replace(/\btown\b/i, 'Town')
+        .replace(/\bcity\b/i, 'City')
+        .replace(/\bgore\b/i, 'Gore')
+        .replace(/\bgrant\b/i, 'Grant')
+        .replace(/\blocation\b/i, 'Location');
+
+      const displayLabel = `${formattedName} (${county})`;
+
+      map.set(displayLabel.toLowerCase(), f);
+      map.set(fullName.toLowerCase(), f);
+      map.set(rawName.toLowerCase(), f);
+      map.set(formattedName.toLowerCase(), f);
+
+      uniqueOptionsSet.add(displayLabel);
+    });
+
+    // Convert Set → array and sort alphabetically
+    const optionsList = Array.from(uniqueOptionsSet).sort((a, b) =>
+      a.localeCompare(b),
+    );
+
+    return {
+      optionsList,
+      municipalityMap: map,
+    };
+  }, [municipalities]);
+
+  // 2. Centralized selection/bounds update handler
+  const triggerBBoxUpdate = useCallback(
+    (query: string) => {
+      if (!query) return;
+
+      const normalized = query.trim().toLowerCase();
+
+      // Direct lookup or partial match fallback
+      let match = municipalityMap.get(normalized);
+
+      if (!match) {
+        // Fallback search if user typed partial name (e.g., "Windsor")
+        for (const [key, feature] of municipalityMap.entries()) {
+          if (key.includes(normalized)) {
+            match = feature;
+            break;
+          }
+        }
+      }
+
+      if (match?.geometry) {
+        const bbox = getFeatureBBox(match.geometry);
+        // Ensure bbox is valid before setting
+        if (bbox && (bbox[0] !== 0 || bbox[1] !== 0)) {
+          setSelectedBBox(bbox);
+        }
+        // Selecting a (new) town rescopes every active layer's data to it —
+        // stale data from the previous town shouldn't linger on screen
+        // while the rescoped fetch is in flight.
+        setSelectedTown(match);
+        setLayerData({});
+        setScopeVersion((v) => v + 1);
+      }
+    },
+    [municipalityMap],
+  );
+
+  const handleSelectMunicipality = (value: string) => {
+    setSearchValue(value);
+    triggerBBoxUpdate(value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      triggerBBoxUpdate(searchValue);
+    }
+  };
+
+  const handleToggle = useCallback((id: string, active: boolean) => {
+    setActiveLayers((prev) => {
+      const next = new Set(prev);
+      if (active) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    if (!active) {
+      setLayerData((prev) => ({ ...prev, [id]: null }));
+    }
+    // Manual toggling breaks out of "preset" mode so the picker no longer
+    // shows a preset as selected.
+    setActivePresetId(null);
+  }, []);
+
+  const handlePresetSelect = useCallback((preset: MapPreset) => {
+    setActiveLayers(new Set(preset.layers));
+    setPresetFilters(preset.filters ?? {});
+    setScopeVersion((v) => v + 1);
+    setActivePresetId(preset.id);
+  }, []);
+
+  const handlePresetClear = useCallback(() => {
+    setActiveLayers(new Set());
+    setLayerData({});
+    setPresetFilters({});
+    setActivePresetId(null);
+  }, []);
+
+  // While a preset is active, its layers' filters are locked — changing
+  // them would silently redefine what "Buildable Areas" means without the
+  // user realizing it. Toggling a layer off (which exits preset mode via
+  // handleToggle) is still allowed; only in-place filter edits are blocked.
+  const lockedLayerIds = useMemo(
+    () =>
+      activePresetId ? new Set(Object.keys(presetFilters)) : new Set<string>(),
+    [activePresetId, presetFilters],
+  );
+
+  const handleDataChange = useCallback(
+    (id: string, geojson: FeatureCollection | null) => {
+      setLayerData((prev) => ({ ...prev, [id]: geojson }));
+    },
+    [],
+  );
+
+  // Whenever both zoning and soil-suitability layers are active,
+  // replace polygons with one derived "buildable" shape (permitted zoning ∩ suited
+  // soil, minus flood) instead.
+  const bothZoningAndSoilActive =
+    activeLayers.has('zoning') && activeLayers.has('soil-suitability');
+
+  const buildableOverlay = useMemo(() => {
+    if (!bothZoningAndSoilActive) return null;
+    return computeBuildableOverlay(
+      layerData['zoning'],
+      layerData['soil-suitability'],
+      activeLayers.has('flood-legal') ? layerData['flood-legal'] : null,
+      townCandidates?.[0],
+    );
+  }, [bothZoningAndSoilActive, layerData, activeLayers, townCandidates]);
+
+  const mapLayers = MAP_LAYERS.map((cfg) => {
+    const suppressed =
+      bothZoningAndSoilActive &&
+      (cfg.id === 'zoning' || cfg.id === 'soil-suitability');
+    return {
+      id: cfg.id,
+      geojson: suppressed ? null : (layerData[cfg.id] ?? null),
+      visible: !suppressed && activeLayers.has(cfg.id),
+    };
+  });
+
+  if (buildableOverlay) {
+    mapLayers.push({
+      id: 'buildable-overlay',
+      geojson: buildableOverlay.geojson,
+      visible: true,
+    });
+  }
+
+  if (activeLayers.has('zoning') && unzonedForTown) {
+    mapLayers.unshift({
+      id: 'zoning-base',
+      geojson: unzonedForTown,
+      visible: true,
+    });
+  }
+
+  const totalLoadedFeatures = Object.values(layerData).reduce(
+    (acc, fc) => acc + (fc?.features?.length || 0),
+    0,
+  );
+
+  const buildableAcres = useMemo(() => {
+    if (buildableOverlay) return buildableOverlay.acres;
+
+    const zoningFc = layerData['zoning'];
+    if (
+      bothZoningAndSoilActive ||
+      !activeLayers.has('zoning') ||
+      !zoningFc?.features?.length
+    ) {
+      return null;
+    }
+    return zoningFc.features.reduce((sum, f) => {
+      const acres = Number(f.properties?.Acres);
+      return sum + (Number.isFinite(acres) ? acres : 0);
+    }, 0);
+  }, [buildableOverlay, layerData, activeLayers, bothZoningAndSoilActive]);
 
   return (
     <Box
