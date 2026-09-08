@@ -30,11 +30,9 @@ import {
   ChartItem,
   ChartMetadata,
   DataRow,
-  ChartPayload,
 } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
 
-<<<<<<< HEAD
 // one chart's backend payload, keyed by chart def id in state below
 export type ChartPayload = {
   data: DataRow[];
@@ -42,8 +40,6 @@ export type ChartPayload = {
   tableData?: DataRow[];
 };
 
-=======
->>>>>>> origin/main
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';
 import { PdfModeContext } from '@/contexts/PdfModeContext';
