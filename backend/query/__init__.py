@@ -1,4 +1,5 @@
 from query.cdc import dual_var_comparison, get_cdc_county_pca, single_var_geojson
+from query.comparison import compare_variables, composite_index, dataset_registry
 from query.core_functions import filter_options, filter_ranges, filter_tree
 from query.production_db import DB
 from query.wastewater import (

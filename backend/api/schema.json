@@ -54,6 +54,46 @@
         "Prevalence Measure": "Data_Value_Type"
       }
     },
+    "acs5_demographics_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
+      }
+    },
+    "acs5_housing_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
+      }
+    },
+    "acs5_education_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
+      }
+    },
+    "acs5_economics_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
+      }
+    },
     "VersoWastewater_soilSuitability_info": {
       "join_key": "OGC_FID",
       "join_type": "inner",

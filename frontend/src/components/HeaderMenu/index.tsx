@@ -35,7 +35,17 @@ const links = [
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
     ],
   },
-  { link: '/data-viewer', label: 'Analyze' }, // accessible via Working Report
+  {
+    link: '/data-viewer',
+    label: 'Analyze',
+    links: [
+      { link: '/data-viewer', label: 'Data Viewer' },
+      {
+        link: '/data-comparison/variable-explorer',
+        label: 'Variable Explorer',
+      },
+    ],
+  },
   {
     link: '/data-comparison',
     label: 'Compare',
