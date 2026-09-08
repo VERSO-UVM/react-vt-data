@@ -1,11 +1,3 @@
-/**
- * @author Fitz Koch
- * @since 2026-07-22
- *
- * @description
- *   scratch page; purely lists previous stuff.
- */
-
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BASE_API_URL } from '@/config';
@@ -95,11 +87,11 @@ export function CheckboxFilter(params: apiFilterParams) {
           <Accordion.Item key={label} value={label}>
             <Accordion.Control>
               <Group justify="space-between" wrap="nowrap" pr="xs">
-                <Text size="sm" fw={500} c="gray.8" truncate>
+                <Text size="md" fw={600} c="gray.8" truncate>
                   {label}
                 </Text>
 
-                <Text size="xs" c={noneSelected ? 'red.6' : 'gray.5'} fw={500}>
+                <Text size="sm" c={noneSelected ? 'red.6' : 'gray.5'} fw={500}>
                   {current.length} of {options.length}
                 </Text>
               </Group>
@@ -119,7 +111,7 @@ export function CheckboxFilter(params: apiFilterParams) {
                       disabled={allSelected}
                     >
                       <Text
-                        size="xs"
+                        size="sm"
                         fw={500}
                         c={allSelected ? 'gray.4' : 'gray.7'}
                       >
@@ -127,7 +119,7 @@ export function CheckboxFilter(params: apiFilterParams) {
                       </Text>
                     </UnstyledButton>
 
-                    <Text size="xs" c="gray.4">
+                    <Text size="sm" c="gray.4">
                       /
                     </Text>
 
@@ -141,7 +133,7 @@ export function CheckboxFilter(params: apiFilterParams) {
                       disabled={noneSelected}
                     >
                       <Text
-                        size="xs"
+                        size="sm"
                         fw={500}
                         c={noneSelected ? 'gray.4' : 'gray.7'}
                       >
@@ -167,12 +159,12 @@ export function CheckboxFilter(params: apiFilterParams) {
 
                         handleToggle(label, selections);
                       }}
-                      size="xs"
-                      py={5}
+                      size="sm"
+                      py={6}
                       radius="3px"
                       styles={{
                         label: {
-                          fontSize: '0.8rem',
+                          fontSize: '0.95rem',
                           color: 'var(--mantine-color-gray-7)',
                           cursor: 'pointer',
                         },

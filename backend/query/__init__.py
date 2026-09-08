@@ -1,7 +1,5 @@
-# ruff: noqa: F401
-
 from query.cdc import dual_var_comparison, get_cdc_county_pca, single_var_geojson
-from query.core_functions import filter_options, filter_tree
+from query.core_functions import filter_options, filter_ranges, filter_tree
 from query.production_db import DB
 from query.wastewater import (
     get_soil_suit_geojson,

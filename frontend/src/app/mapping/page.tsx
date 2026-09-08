@@ -19,6 +19,7 @@ import {
   ActionIcon,
   Collapse,
   Button,
+  Tooltip,
   useMantineTheme,
 } from '@mantine/core';
 import {
@@ -30,6 +31,7 @@ import {
   IconBuildingCommunity,
   IconDroplet,
   IconMapPin,
+  IconInfoCircle,
 } from '@tabler/icons-react';
 
 import { Search } from 'lucide-react';
@@ -39,6 +41,7 @@ import LayerPanel from './LayerPanel';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
 import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
 import { jurisdictionCandidates } from './jurisdictionMatch';
+import { computeBuildableOverlay } from './buildableOverlay';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
 import { getFeatureBBox } from './geoUtils';
@@ -103,6 +106,21 @@ export default function MapExplorerPage() {
       .then((res) => setUnzoned(res.data))
       .catch((e) => console.error('unzoned layer fetch failed', e));
   }, []);
+
+  // The unzoned backdrop is fetched statewide (it's small — a few hundred
+  // features), but each feature's tooltip title is the exact TIGER town
+  // name it belongs to, so it can be scoped to the selected town with an
+  // exact match — no fuzzy jurisdiction matching needed here.
+  const unzonedForTown = useMemo(() => {
+    if (!selectedTown || !unzoned) return null;
+    const townName = selectedTown.properties.NAME;
+    return {
+      ...unzoned,
+      features: unzoned.features.filter(
+        (f) => f.properties?.tooltip?.__title__ === townName,
+      ),
+    };
+  }, [unzoned, selectedTown]);
 
   // 1. Build lookup dictionary & formatted options string list
   const { optionsList, municipalityMap } = useMemo(() => {
@@ -228,6 +246,16 @@ export default function MapExplorerPage() {
     setActivePresetId(null);
   }, []);
 
+  // While a preset is active, its layers' filters are locked — changing
+  // them would silently redefine what "Buildable Areas" means without the
+  // user realizing it. Toggling a layer off (which exits preset mode via
+  // handleToggle) is still allowed; only in-place filter edits are blocked.
+  const lockedLayerIds = useMemo(
+    () =>
+      activePresetId ? new Set(Object.keys(presetFilters)) : new Set<string>(),
+    [activePresetId, presetFilters],
+  );
+
   const handleDataChange = useCallback(
     (id: string, geojson: FeatureCollection | null) => {
       setLayerData((prev) => ({ ...prev, [id]: geojson }));
@@ -235,14 +263,47 @@ export default function MapExplorerPage() {
     [],
   );
 
-  const mapLayers = MAP_LAYERS.map((cfg) => ({
-    id: cfg.id,
-    geojson: layerData[cfg.id] ?? null,
-    visible: activeLayers.has(cfg.id),
-  }));
+  // Whenever both zoning and soil-suitability layers are active,
+  // replace polygons with one derived "buildable" shape (permitted zoning ∩ suited
+  // soil, minus flood) instead.
+  const bothZoningAndSoilActive =
+    activeLayers.has('zoning') && activeLayers.has('soil-suitability');
 
-  if (activeLayers.has('zoning') && unzoned) {
-    mapLayers.unshift({ id: 'zoning-base', geojson: unzoned, visible: true });
+  const buildableOverlay = useMemo(() => {
+    if (!bothZoningAndSoilActive) return null;
+    return computeBuildableOverlay(
+      layerData['zoning'],
+      layerData['soil-suitability'],
+      activeLayers.has('flood-legal') ? layerData['flood-legal'] : null,
+      townCandidates?.[0],
+    );
+  }, [bothZoningAndSoilActive, layerData, activeLayers, townCandidates]);
+
+  const mapLayers = MAP_LAYERS.map((cfg) => {
+    const suppressed =
+      bothZoningAndSoilActive &&
+      (cfg.id === 'zoning' || cfg.id === 'soil-suitability');
+    return {
+      id: cfg.id,
+      geojson: suppressed ? null : (layerData[cfg.id] ?? null),
+      visible: !suppressed && activeLayers.has(cfg.id),
+    };
+  });
+
+  if (buildableOverlay) {
+    mapLayers.push({
+      id: 'buildable-overlay',
+      geojson: buildableOverlay.geojson,
+      visible: true,
+    });
+  }
+
+  if (activeLayers.has('zoning') && unzonedForTown) {
+    mapLayers.unshift({
+      id: 'zoning-base',
+      geojson: unzonedForTown,
+      visible: true,
+    });
   }
 
   const totalLoadedFeatures = Object.values(layerData).reduce(
@@ -250,23 +311,22 @@ export default function MapExplorerPage() {
     0,
   );
 
-  // Sum of zoning district acreage under the currently-applied zoning
-  // filters (e.g. the Buildable Areas preset's Permitted/Public Hearing
-  // housing allowances). Zoning districts are Vermont's full, non-overlapping
-  // land partition, so this is a real acreage total — soil suitability and
-  // flood hazard are separate polygon layers that overlap zoning
-  // geographically, so summing their acreage in too would double-count land
-  // rather than narrow it.
   const buildableAcres = useMemo(() => {
+    if (buildableOverlay) return buildableOverlay.acres;
+
     const zoningFc = layerData['zoning'];
-    if (!activeLayers.has('zoning') || !zoningFc?.features?.length) {
+    if (
+      bothZoningAndSoilActive ||
+      !activeLayers.has('zoning') ||
+      !zoningFc?.features?.length
+    ) {
       return null;
     }
     return zoningFc.features.reduce((sum, f) => {
       const acres = Number(f.properties?.Acres);
       return sum + (Number.isFinite(acres) ? acres : 0);
     }, 0);
-  }, [layerData, activeLayers]);
+  }, [buildableOverlay, layerData, activeLayers, bothZoningAndSoilActive]);
 
   return (
     <Box
@@ -327,28 +387,6 @@ export default function MapExplorerPage() {
             }}
           />
         </Paper>
-
-        {!selectedTown && (
-          <Paper
-            mt="xs"
-            radius="md"
-            p="xs"
-            withBorder
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(8px)',
-              textAlign: 'center',
-            }}
-          >
-            <Group gap={6} justify="center" wrap="nowrap">
-              <IconMapPin size={14} color={COLORS.spruce} />
-              <Text size="xs" fw={500} c="dimmed">
-                Select a town to explore zoning, soil, flood & wastewater data
-                for that area
-              </Text>
-            </Group>
-          </Paper>
-        )}
       </Box>
 
       <Box
@@ -392,10 +430,6 @@ export default function MapExplorerPage() {
                 {activeLayers.size} active
               </Text>
             </Group>
-            <Text size="xs" c="dimmed">
-              Select datasets to overlay boundaries, environmental factors, and
-              zoning parameters.
-            </Text>
           </Stack>
 
           {!selectedTown ? (
@@ -417,15 +451,14 @@ export default function MapExplorerPage() {
                 No town selected
               </Text>
               <Text size="xs" c="dimmed" mt={4}>
-                Search for a Vermont town or city above to unlock data layers,
-                scoped to that area.
+                Search for a town above to get started.
               </Text>
             </Paper>
           ) : (
             <>
               <Stack gap={6} mb="xs">
                 <Group justify="space-between" align="center">
-                  <Text size="xs" fw={700} c="dimmed" tt="uppercase">
+                  <Text size="sm" fw={700} c="dimmed" tt="uppercase">
                     Quick Start
                   </Text>
                   {activePresetId && (
@@ -456,14 +489,42 @@ export default function MapExplorerPage() {
                         onClick={() => handlePresetSelect(preset)}
                         title={preset.description}
                         styles={{
-                          label: {
-                            whiteSpace: 'normal',
-                            textAlign: 'left',
-                            lineHeight: 1.2,
-                          },
+                          label: { flex: 1 },
                         }}
                       >
-                        {preset.label}
+                        <Group
+                          gap={4}
+                          wrap="nowrap"
+                          justify="space-between"
+                          w="100%"
+                        >
+                          <Text
+                            size="xs"
+                            fw={600}
+                            style={{ whiteSpace: 'normal', lineHeight: 1.2 }}
+                          >
+                            {preset.label}
+                          </Text>
+                          {preset.definition && (
+                            <Tooltip
+                              label={preset.definition}
+                              multiline
+                              w={280}
+                              withArrow
+                              events={{ hover: true, focus: true, touch: true }}
+                            >
+                              <ActionIcon
+                                component="span"
+                                variant="transparent"
+                                size="xs"
+                                c={isActive ? 'white' : 'gray'}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <IconInfoCircle size={14} />
+                              </ActionIcon>
+                            </Tooltip>
+                          )}
+                        </Group>
                       </Button>
                     );
                   })}
@@ -487,7 +548,7 @@ export default function MapExplorerPage() {
                   }
                   color={COLORS.spruce}
                   label={
-                    <Text size="xs" fw={600}>
+                    <Text size="sm" fw={600}>
                       Show Municipal Boundaries
                     </Text>
                   }
@@ -504,6 +565,7 @@ export default function MapExplorerPage() {
                   onToggle={handleToggle}
                   onDataChange={handleDataChange}
                   presetFilters={presetFilters}
+                  lockedLayerIds={lockedLayerIds}
                   townCandidates={townCandidates}
                   townBBox={selectedBBox}
                   scopeVersion={scopeVersion}
@@ -613,7 +675,7 @@ export default function MapExplorerPage() {
                   radius="sm"
                   bg="var(--mantine-color-body)"
                 >
-                  <Text size="xs" c="dimmed" fw={600}>
+                  <Text size="sm" c="dimmed" fw={600}>
                     Total Rendered Features
                   </Text>
                   <Text fw={700} size="xl" c={COLORS.spruce}>
@@ -627,7 +689,7 @@ export default function MapExplorerPage() {
                   radius="sm"
                   bg="var(--mantine-color-body)"
                 >
-                  <Text size="xs" c="dimmed" fw={600}>
+                  <Text size="sm" c="dimmed" fw={600}>
                     Buildable Acreage
                   </Text>
                   {buildableAcres !== null ? (
@@ -635,13 +697,10 @@ export default function MapExplorerPage() {
                       {Math.round(buildableAcres).toLocaleString()} ac
                     </Text>
                   ) : (
-                    <Text size="xs" c="dimmed" fs="italic" mt={6}>
+                    <Text size="sm" c="dimmed" fs="italic" mt={6}>
                       Enable the Zoning layer to see acreage
                     </Text>
                   )}
-                  <Text size="xs" c="dimmed" mt={2}>
-                    Zoning districts under the current filters
-                  </Text>
                 </Paper>
 
                 <Paper
@@ -650,7 +709,7 @@ export default function MapExplorerPage() {
                   radius="sm"
                   bg="var(--mantine-color-body)"
                 >
-                  <Text size="xs" c="dimmed" fw={600} mb="xs">
+                  <Text size="sm" c="dimmed" fw={600} mb="xs">
                     Layer Density Distribution
                   </Text>
                   {activeLayers.size === 0 ? (
@@ -666,10 +725,10 @@ export default function MapExplorerPage() {
                           return (
                             <Box key={layer.id}>
                               <Group justify="space-between" mb={2}>
-                                <Text size="xs" fw={500} lineClamp={1}>
+                                <Text size="sm" fw={500} lineClamp={1}>
                                   {layer.title}
                                 </Text>
-                                <Text size="xs" c="dimmed">
+                                <Text size="sm" c="dimmed">
                                   {count}
                                 </Text>
                               </Group>
@@ -697,7 +756,7 @@ export default function MapExplorerPage() {
                   radius="sm"
                   bg="var(--mantine-color-body)"
                 >
-                  <Text size="xs" c="dimmed" fw={600} mb={4}>
+                  <Text size="sm" c="dimmed" fw={600} mb={4}>
                     Regional Findings
                   </Text>
                   <Box

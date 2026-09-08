@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from api.config import schema
-from query import filter_options, filter_tree
+from query import filter_options, filter_ranges, filter_tree
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -65,3 +65,22 @@ async def filter_options_endpoint(
         list(colmap.keys()),
         filter_table,
     )
+
+
+@router.get("/filters/ranges")
+async def filter_ranges_endpoint(
+    filter_table: str,
+    target_table: str = "default",
+    cols: Annotated[list[str] | None, Query()] = None,
+):
+    """Min/max bounds for one or more numeric columns (e.g. min lot size
+    sliders). Mirrors /filters/options but for the schema's "range" map."""
+    meta = get_filter_table_metadata(target_table, filter_table)
+    rangemap: dict = meta.get("range", {})
+
+    if cols:
+        rangemap = {
+            label: column for label, column in rangemap.items() if label in cols
+        }
+
+    return filter_ranges(rangemap, filter_table)

@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { Switch, Group, Text, Box, LoadingOverlay } from '@mantine/core';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
-import MapLegend from '@/components/Legend';
 import { useMapLayer } from './UseMapLayer';
 import type { MapLayerConfig } from '@/app/mapping/MapLayers';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
@@ -22,6 +21,11 @@ interface LayerRowProps {
   /** The selected town's bounding box; every fetch is cropped to it
    *  client-side regardless of server-side jurisdiction scoping. */
   townBBox: [number, number, number, number] | null;
+  /** True while a preset that defines this layer's filters is active —
+   *  disables the filter UI so editing it can't silently redefine what the
+   *  preset means (e.g. "Buildable Areas"). Toggling the layer off still
+   *  works and exits preset mode. */
+  locked: boolean;
   /** Bumped whenever a preset is (re)selected or the town changes, so the
    *  active filters get re-applied against the new scope. */
   scopeVersion: number;
@@ -35,9 +39,10 @@ export default function LayerRow({
   presetFilters,
   townCandidates,
   townBBox,
+  locked,
   scopeVersion,
 }: LayerRowProps) {
-  const { geojson, legend, loading, applyFilters, fetchLegend } = useMapLayer(
+  const { geojson, loading, applyFilters } = useMapLayer(
     config,
     townCandidates,
     townBBox,
@@ -62,7 +67,6 @@ export default function LayerRow({
     if (appliedVersion.current === scopeVersion) return;
     appliedVersion.current = scopeVersion;
     applyFilters(presetFilters ?? []);
-    fetchLegend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, scopeVersion]);
 
@@ -82,7 +86,7 @@ export default function LayerRow({
               display: 'inline-block',
             }}
           />
-          <Text fw={500} size="sm">
+          <Text fw={500} size="md">
             {config.title}
           </Text>
         </Group>
@@ -95,17 +99,21 @@ export default function LayerRow({
 
       {active && config.filterList.length > 0 && (
         <Box mt="sm">
+          {locked && (
+            <Text size="xs" c="dimmed" fs="italic" mb={6}>
+              {config.filterList.some((d) => d.filter_style === 'Range')
+                ? 'Categorical filters locked by preset — sliders remain adjustable'
+                : 'Locked by preset — turn the layer off to edit'}
+            </Text>
+          )}
           <FilterWrap
             key={scopeVersion}
             filterList={config.filterList}
             handleApply={applyFilters}
             initialSpecs={presetFilters}
+            locked={locked}
           />
         </Box>
-      )}
-
-      {active && config.legendURL && legend.length > 0 && (
-        <MapLegend data={legend} />
       )}
     </Box>
   );

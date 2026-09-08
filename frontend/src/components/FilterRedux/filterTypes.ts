@@ -39,7 +39,7 @@ export interface FilterUIProps {
 }
 
 ////////// Types for pre-defining filters to hydrate
-type filterStyle = 'Cascade' | 'Checkbox';
+type filterStyle = 'Cascade' | 'Checkbox' | 'Range';
 export type filterDef = {
   filter_table: string;
   filter_style: filterStyle;

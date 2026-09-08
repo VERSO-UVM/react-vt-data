@@ -7,6 +7,7 @@
  */
 import { CascadeFilter } from './CascadeUI';
 import { CheckboxFilter } from './CheckboxUI';
+import { RangeFilter } from './RangeUI';
 import { FilterUIProps } from './filterTypes';
 
 export function FilterUI({ style, params }: FilterUIProps) {
@@ -15,5 +16,7 @@ export function FilterUI({ style, params }: FilterUIProps) {
       return <CascadeFilter {...params} />;
     case 'Checkbox':
       return <CheckboxFilter {...params} />;
+    case 'Range':
+      return <RangeFilter {...params} />;
   }
 }
