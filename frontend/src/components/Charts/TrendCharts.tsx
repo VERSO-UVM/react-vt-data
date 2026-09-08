@@ -617,6 +617,28 @@ export const PerCapitaIncomeTrendChart = <TData,>({
     onPlotData,
   );
 
+export const HousingIncomeBurdenChart = <TData,>({
+  chart,
+  view,
+  onPlotData,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+  onPlotData?: (rows: DataRow[]) => void;
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: null,
+      valueField: 'pct_housing_burden',
+      format: 'percent',
+      decimals: 1,
+      showHelperText: false,
+    },
+    view,
+    onPlotData,
+  );
+
 // MULTI CHARTS
 const multi = (
   chart: ChartItem<any>,
