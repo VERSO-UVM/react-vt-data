@@ -89,6 +89,10 @@ QUERY_CONFIG = {
                 "table": "acs5Housing_vacancyRates_timeseries",
                 "fixed_filters": {},
             },
+            "income_burden": {
+                "table": "acs5Housing_incomeBurden_timeseries",
+                "fixed_filters": {},
+            },
         },
     },
     "education": {

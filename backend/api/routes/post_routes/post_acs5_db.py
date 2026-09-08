@@ -169,6 +169,15 @@ async def get_vacancy_rates(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("housing"))
 
 
+# Housing Income Burden
+@router.post("/load/acs5-db/timeseries/housing/income-burden")
+async def get_income_burden(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="housing", dataset="income_burden", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("housing"))
+
+
 # Geography Snapshot Variables
 @router.post("/load/acs5-db/tidy/snapshot")
 async def tidy_snapshot(request: FilterRequest):
