@@ -47,7 +47,18 @@ Install these before you start. Every one of them is used by the standard workfl
    npm install
    ```
 
-4. **Install** the git pre-commit hooks (from the project root):
+4. **Set up** your environment file (from the project root):
+
+   ```sh
+   cp .env.example .env
+   ```
+
+   Then open `.env` and fill in the values. See [Environment variables](#environment-variables) below for what each one is and where to get it.
+
+   - `.env` is gitignored — it holds secrets and should never be committed. `.env.example` is the committed template; if you add a new variable, add a blank entry there too so the next person knows it exists.
+   - You only need this for the ETL pipeline. Running the website locally (either option below) works without a `.env`.
+
+5. **Install** the git pre-commit hooks (from the project root):
 
    ```sh
    uv tool install pre-commit
@@ -113,6 +124,29 @@ just check-frontend  # typescript check (npx tsc --noEmit)
 ```
 
 > **Note:** the container and local workflows both bind `:3000` and `:6767`, so only one can be up at a time. That's why the `local-*` and `dev` recipes call `just down` first.
+
+---
+
+## Environment variables
+
+Configuration lives in a `.env` file in the project root. Create it by copying the committed template:
+
+```sh
+cp .env.example .env
+```
+
+The justfile loads this file automatically (`set dotenv-filename := ".env"`), so every recipe sees these values without you exporting anything by hand. `.env` is gitignored; `.env.example` is the committed template and should always list every variable with a blank value.
+
+| Variable         | Required for                    | Notes                                                                                                                                                                                  |
+| ---------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CENSUS_API_KEY` | `just get-data`, `just run-etl` | Census Bureau API key for the ACS-5 scrapers. Free and instant from [the signup page](https://api.census.gov/data/key_signup.html).                                                     |
+| `DATA_DIR`       | optional                        | Overrides where the DuckLake catalog and `warehouse.duckdb` live. The justfile and the ETL containers already set this; only override it if you're running the python scripts directly. |
+
+Notes:
+
+- **You don't need a `.env` to run the website.** Both `just local-dev` and `just dev` set their own variables (`NEXT_PUBLIC_API_URL`, `ALLOW_DEV_CORS`) and read pre-built data. The `.env` only matters for the ETL pipeline, which re-collects data from external APIs.
+- **Without `CENSUS_API_KEY` set, the scrapers don't fail loudly** — the Census API just rate-limits you to roughly 500 requests/day, and a full multi-year run makes far more than that. The failures come back as `SKIP` lines and you end up with a mostly-empty lake. If a collection run looks suspiciously fast or sparse, check this first.
+- **Adding a new variable?** Add it to `.env.example` with a blank value and a comment, and add a row to the table above. That's the only way the next person finds out it exists.
 
 ---
 

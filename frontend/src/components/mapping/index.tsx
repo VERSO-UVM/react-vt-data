@@ -25,7 +25,17 @@ interface MyMapProps {
   showCountyLines: boolean;
   controllerOn?: boolean;
   initialZoom?: number;
+<<<<<<< HEAD
   targetBBox?: [number, number, number, number] | null;
+=======
+  /**
+   * Optional context layer drawn *underneath* `geojson` — e.g. the grey
+   * "no zoning information here" areas on the zoning map. Features carry their
+   * own `rgba_color` and `tooltip` properties, exactly like the main layer.
+   */
+  baseGeojson?: FeatureCollection | null;
+  largeBorders?: boolean;
+>>>>>>> origin/main
 }
 
 const BASE_STYLES = {
@@ -58,7 +68,12 @@ export default function VTMap({
   showCountyLines,
   controllerOn = true,
   initialZoom = 7,
+<<<<<<< HEAD
   targetBBox,
+=======
+  baseGeojson = null,
+  largeBorders = false,
+>>>>>>> origin/main
 }: MyMapProps) {
   const mapRef = useRef<MapRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -165,10 +180,28 @@ export default function VTMap({
     }
   };
 
+  const [lineWidth, setLineWidth] = useState<number>(0.5);
+  const [lineColor, setLineColor] = useState<[number, number, number, number]>([
+    80, 80, 80, 80,
+  ]);
+
+  // Changes the line width and color if there are large borders
+  // done this way so that things don't have infinite loops. not sure if this is the best practice though
+  useEffect(() => {
+    if (largeBorders) {
+      setLineWidth(3);
+      setLineColor([0, 0, 0, 100]);
+    } else {
+      setLineWidth(0.5);
+      setLineColor([80, 80, 80, 80]);
+    }
+  }, [largeBorders]);
+
   const getFillColor = (d: {
     properties?: { rgba_color?: [number, number, number, number] };
   }) => d.properties?.rgba_color ?? [0, 0, 0, 0];
 
+<<<<<<< HEAD
   const deckLayers: LayersList = activeLayers
     .filter((layer) => layer.visible && layer.geojson)
     .map(
@@ -197,6 +230,44 @@ export default function VTMap({
 
   if (showCountyLines && countylines) {
     deckLayers.push(
+=======
+  // order matters: deck.gl draws in array order, so the base layer is listed
+  // first and ends up underneath the main data layer
+  const layers = [
+    baseGeojson &&
+      new GeoJsonLayer({
+        id: 'geojson-base',
+        data: baseGeojson,
+        filled: true,
+        getFillColor,
+        getLineColor: [120, 120, 120, 90],
+        lineWidthMinPixels: 0.5,
+        pickable: true,
+        autoHighlight: true,
+        highlightColor: [222, 102, 0, 120],
+        onHover,
+      }),
+    geojson &&
+      new GeoJsonLayer({
+        id: 'geojson',
+        data: geojson,
+        pointType: 'circle',
+        pointRadiusUnits: 'pixels',
+        pointRadiusMinPixels: 12,
+        pointRadiusMaxPixels: 12,
+        getFillColor,
+        // getLineColor: [80, 80, 80, 80],
+        getLineColor: lineColor,
+        lineWidthMinPixels: lineWidth,
+        // lineWidthMinPixels: 0.5,
+        pickable: true,
+        autoHighlight: true,
+        highlightColor: [255, 255, 255, 255],
+        onHover,
+      }),
+    showCountyLines &&
+      countylines &&
+>>>>>>> origin/main
       new GeoJsonLayer({
         id: 'county-lines',
         data: countylines,

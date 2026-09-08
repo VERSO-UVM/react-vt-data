@@ -10,11 +10,11 @@
 python -m data_cleaning.clean_cdc
 """
 
+import duckdb
 import pandas as pd
 from sklearn.decomposition import PCA
 
 from build.core_functions import bin_measures
-from lake_build import con
 
 # Columns we'd like excluded from the cleaned tables, IF they exist on that
 # particular RAW table. Tract- and county-level releases don't always share
@@ -28,7 +28,7 @@ CANDIDATE_EXCLUDE_COLS = [
 ]
 
 
-def get_sme_indicators() -> str:
+def get_sme_indicators(con: duckdb.DuckDBPyConnection) -> str:
     """
     Get CDC Notes indicators
     """
@@ -123,7 +123,7 @@ def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
     return df[df["stateabbr"] == "VT"]
 
 
-def get_columns(table: str) -> list[str]:
+def get_columns(table: str, con: duckdb.DuckDBPyConnection) -> list[str]:
     """
     Returns the actual column names for a RAW table.
     """
@@ -139,7 +139,7 @@ def get_columns(table: str) -> list[str]:
 
 
 def build_places_table(
-    raw_table: str, geo_filter_col: str, indicators: str
+    raw_table: str, geo_filter_col: str, indicators: str, con: duckdb.DuckDBPyConnection
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Cleans a single PLACES RAW table (county or tract).
@@ -149,7 +149,7 @@ def build_places_table(
         vt_df: Vermont-only cleaned dataset with measure bins.
         edge_df: Measure bin edges.
     """
-    existing_cols = set(get_columns(raw_table))
+    existing_cols = set(get_columns(raw_table, con))
     exclude_cols = [c for c in CANDIDATE_EXCLUDE_COLS if c in existing_cols]
     exclude_clause = ", ".join(exclude_cols)
 
@@ -184,14 +184,12 @@ def build_places_table(
     return us_df, vt_df, edge_df
 
 
-def clean() -> dict[str, pd.DataFrame]:
-    indicators = get_sme_indicators()
+def clean(con: duckdb.DuckDBPyConnection) -> dict[str, pd.DataFrame]:
+    indicators = get_sme_indicators(con)
 
     # County: keep the full national dataset for percentile/PCA calculations
     county_us, county_places, county_edges = build_places_table(
-        "cdc_places_county",
-        "stateabbr",
-        indicators,
+        "cdc_places_county", "stateabbr", indicators, con
     )
 
     # PCA is fit on the national county data and applied to Vermont
@@ -199,9 +197,7 @@ def clean() -> dict[str, pd.DataFrame]:
 
     # Tract: national data is needed for the national percentile
     _, tract_places, tract_edges = build_places_table(
-        "cdc_places_tract",
-        "stateabbr",
-        indicators,
+        "cdc_places_tract", "stateabbr", indicators, con
     )
 
     return {
@@ -213,7 +209,9 @@ def clean() -> dict[str, pd.DataFrame]:
     }
 
 
-def add_to_lake(tables: dict[str, pd.DataFrame]) -> None:
+def add_to_lake(
+    tables: dict[str, pd.DataFrame], con: duckdb.DuckDBPyConnection
+) -> None:
     for name, df in tables.items():
         view_name = f"{name}_df"
 
@@ -227,9 +225,9 @@ def add_to_lake(tables: dict[str, pd.DataFrame]) -> None:
         con.unregister(view_name)
 
 
-def main():
-    tables = clean()
-    add_to_lake(tables)
+def main(con: duckdb.DuckDBPyConnection):
+    tables = clean(con)
+    add_to_lake(tables, con)
 
 
 if __name__ == "__main__":

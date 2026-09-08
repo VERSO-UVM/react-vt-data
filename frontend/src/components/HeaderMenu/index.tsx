@@ -33,6 +33,7 @@ const links = [
         label: 'Wastewater System Service Areas',
       },
       { link: '/mapping/flood-legal', label: 'Flood Insurance' },
+      { link: '/mapping/ambulance', label: 'Ambulance Service Areas' },
     ],
   },
   {

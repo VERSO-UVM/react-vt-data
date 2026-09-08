@@ -132,6 +132,14 @@
         "Jurisdiction": "Municipal_Name",
         "Town": "TownName"
       }
+    },
+    "VCGI_ambulanceService_info": {
+      "join_key": "OBJECTID",
+      "join_type": "inner",
+      "columns": {
+        "Zip Code": "Zip_Code",
+        "City or Town": "City"
+      }
     }
   }
 }

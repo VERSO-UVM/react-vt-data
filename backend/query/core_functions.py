@@ -13,7 +13,9 @@
 import logging
 
 from api.models import FilterResponse, RangeDescriptor
-from query.production_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 logger = logging.getLogger(__name__)
 

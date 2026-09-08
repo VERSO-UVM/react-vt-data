@@ -1,4 +1,5 @@
 from .post_acs5_db import router as post_acs5_router
+from .post_ambulance import router as post_ambulance_router
 from .post_cdc import router as post_cdc_router
 from .post_census import router as post_census_router
 from .post_comparison import router as post_comparison_router
@@ -16,4 +17,5 @@ all_post_routers = [
     post_export_router,
     post_cdc_router,
     post_comparison_router,
+    post_ambulance_router,
 ]

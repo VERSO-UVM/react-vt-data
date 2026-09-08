@@ -81,18 +81,18 @@ def build_places(name: str, path: Path, indicators: str) -> None:
     CON.execute(f"""--sql
             CREATE OR REPLACE TABLE {name}_places
             AS SELECT * 
-            FROM df            
+            FROM {df}            
         """)
     CON.execute(f"""--sql
         CREATE OR REPLACE TABLE {name}_edges
         AS SELECT * 
-        FROM edge_df            
+        FROM {edge_df}            
     """)
     if name == "county":
         CON.execute(f"""--sql
                 CREATE OR REPLACE TABLE {name}PcaData
                 AS SELECT * 
-                FROM pca_df            
+                FROM {pca_df}            
             """)
 
 

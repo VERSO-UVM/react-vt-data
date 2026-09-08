@@ -3,7 +3,9 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
-from query.production_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 router = APIRouter()
 

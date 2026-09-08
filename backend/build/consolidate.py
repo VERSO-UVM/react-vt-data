@@ -16,7 +16,6 @@ for db_path in [
     "Data/_Processed/all_data-copy.duckdb",
 ]:
     path = Path(__file__).parent.parent / db_path
-    path.touch(exist_ok=True)
     db = duckdb.connect(str(db_path))
     db.execute("INSTALL SPATIAL")
     db.execute("LOAD SPATIAL")
