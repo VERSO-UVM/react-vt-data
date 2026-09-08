@@ -70,12 +70,12 @@ build-api:
 # run the api image (detached)
 [working-directory("backend")]
 run-api:
-    podman run --pod app --name api -d --rm -v ../Data:/data:ro,z  localhost/my-api    
+    podman run --pod app --name api -d --rm -v {{ justfile_directory() }}/Data:/data:ro,z  localhost/my-api    
 
 # build the api image and then check it with more error printing (non detached)
 [working-directory("backend")]
 run-check-api: build-api
-    podman run --pod app -v ../Data:/data:ro,z  localhost/my-api    
+    podman run --pod app -v {{ justfile_directory() }}/Data:/data:ro,z  localhost/my-api    
 
 # everything to get the api up and running
 dev-api: build-pod build-api run-api
