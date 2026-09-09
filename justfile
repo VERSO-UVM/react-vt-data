@@ -4,12 +4,12 @@ export DATA_DIR := justfile_directory() / "backend" / "Data"
 # Load environment variables
 set dotenv-filename := ".env"
 
-api_host := env_var_or_default("API_HOST", "127.0.0.1")
-api_port := env_var_or_default("API_PORT", "6767")
-api_url := env_var_or_default("NEXT_PUBLIC_API_URL", "http://localhost:6767/api")
+api_host := env("API_HOST", "127.0.0.1")
+api_port := env("API_PORT", "6767")
+api_url := env("NEXT_PUBLIC_API_URL", "http://localhost:6767/api")
 # Host-specific podman flags. Empty by default (Docker, macOS, rootful podman).
 # On the VM with rootless podman, override:  just podman_flags="--userns=keep-id:uid=1000,gid=1000"
-podman_flags := env_var_or_default("PODMAN_FLAGS", "")
+podman_flags := env("PODMAN_FLAGS", "")
 
 ################
 # CLI Development  #
