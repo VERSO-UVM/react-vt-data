@@ -142,7 +142,7 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'population_change',
-    title: 'Population Change (Past Decade)',
+    title: 'Population Change by Year',
     url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/population-change`,
     xField: '',
     yField: '',
