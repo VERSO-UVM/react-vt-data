@@ -38,11 +38,11 @@ local-dev:
 
 # build the pod for local-host co communication
 build-pod:
-    podman pod exists app || podman pod create --name app --userns=keep-id -p 6767:6767 -p 3000:8080
+    podman pod exists app || podman pod create --name app --userns=keep-id {{ podman_flags }} -p 6767:6767 -p 3000:8080
 
 # reset the local host pod (delete and recreate it).
 reset-pod:
-    podman pod create --replace --name app --userns=keep-id -p 6767:6767 -p 3000:8080
+    podman pod create --replace --name app --userns=keep-id {{ podman_flags }} -p 6767:6767 -p 3000:8080
 
 ###########
 # Containers #
@@ -70,12 +70,12 @@ build-api:
 # run the api image (detached)
 [working-directory("backend")]
 run-api:
-    podman run --pod app --name api -d --rm -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api   
+    podman run --pod app --name api -d --rm {{ podman_flags }} -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api
 
 # build the api image and then check it with more error printing (non detached)
 [working-directory("backend")]
 run-check-api: build-api
-    podman run --pod app -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api   
+    podman run --pod app {{ podman_flags }} -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api
 
 # everything to get the api up and running
 dev-api: build-pod build-api run-api
@@ -90,7 +90,7 @@ build-frontend:
 
 # run the frontend image (detached)
 run-frontend:
-    podman run --pod app --name frontend  -d --rm localhost/frontend
+    podman run --pod app --name frontend  -d --rm {{ podman_flags }} localhost/frontend
 
 # everything to get the frontend up and running
 dev-frontend: build-pod build-frontend run-frontend
