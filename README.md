@@ -137,8 +137,8 @@ cp .env.example .env
 
 The justfile loads this file automatically (`set dotenv-filename := ".env"`), so every recipe sees these values without you exporting anything by hand. `.env` is gitignored; `.env.example` is the committed template and should always list every variable with a blank value.
 
-| Variable         | Required for                    | Notes                                                                                                                                                                                  |
-| ---------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Variable         | Required for                    | Notes                                                                                                                                                                                   |
+| ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CENSUS_API_KEY` | `just get-data`, `just run-etl` | Census Bureau API key for the ACS-5 scrapers. Free and instant from [the signup page](https://api.census.gov/data/key_signup.html).                                                     |
 | `DATA_DIR`       | optional                        | Overrides where the DuckLake catalog and `warehouse.duckdb` live. The justfile and the ETL containers already set this; only override it if you're running the python scripts directly. |
 
