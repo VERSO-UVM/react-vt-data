@@ -1,29 +1,36 @@
 'use client';
 
-// react
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Map } from 'react-map-gl/maplibre';
-
-// deck, geojson, and maplibre styling
 import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
+import { FlyToInterpolator } from '@deck.gl/core';
+import { WebMercatorViewport } from '@math.gl/web-mercator';
+import type { LayersList } from '@deck.gl/core';
 import type { FeatureCollection } from 'geojson';
-import 'maplibre-gl/dist/maplibre-gl.css';
-
-// mantine and ui
 import { Paper, Divider } from '@mantine/core';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import type { MapRef } from 'react-map-gl/maplibre';
+
+export interface MapLayerItem {
+  id: string;
+  geojson: FeatureCollection | null;
+  visible: boolean;
+}
 
 interface MyMapProps {
-  geojson: FeatureCollection | null;
+  layers?: MapLayerItem[];
+  geojson?: FeatureCollection | null;
+  baseGeojson?: FeatureCollection | null;
   showCountyLines: boolean;
   controllerOn?: boolean;
   initialZoom?: number;
+  targetBBox?: [number, number, number, number] | null;
   /**
    * Optional context layer drawn *underneath* `geojson` — e.g. the grey
    * "no zoning information here" areas on the zoning map. Features carry their
    * own `rgba_color` and `tooltip` properties, exactly like the main layer.
    */
-  baseGeojson?: FeatureCollection | null;
   largeBorders?: boolean;
 }
 
@@ -51,17 +58,67 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export default function VTMap({
-  geojson,
+  layers: layerConfigs,
+  geojson = null,
+  baseGeojson = null,
   showCountyLines,
   controllerOn = true,
   initialZoom = 7,
-  baseGeojson = null,
+  targetBBox,
   largeBorders = false,
 }: MyMapProps) {
-  const [viewState, setViewState] = useState({
+  const mapRef = useRef<MapRef>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [viewState, setViewState] = useState<any>({
     ...INITIAL_VIEW_STATE,
     zoom: initialZoom,
   });
+
+  // Handle targetBBox camera transitions via WebMercatorViewport & FlyToInterpolator
+  useEffect(() => {
+    if (!targetBBox) return;
+
+    const [west, south, east, north] = targetBBox;
+    if (west === 0 && south === 0) return;
+
+    // Get current container width/height or fallback to window dimensions
+    const width = containerRef.current?.clientWidth || window.innerWidth;
+    const height = containerRef.current?.clientHeight || window.innerHeight;
+
+    try {
+      const viewport = new WebMercatorViewport({ width, height });
+
+      const { longitude, latitude, zoom } = viewport.fitBounds(
+        [
+          [west, south],
+          [east, north],
+        ],
+        {
+          padding: { top: 80, bottom: 80, left: 380, right: 80 },
+        },
+      );
+
+      setViewState((prev: any) => ({
+        ...prev,
+        longitude,
+        latitude,
+        zoom: clamp(zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
+        transitionDuration: 1800,
+        transitionInterpolator: new FlyToInterpolator(),
+      }));
+    } catch (err) {
+      console.error('Failed to fit bounds:', err);
+    }
+  }, [targetBBox]);
+
+  const activeLayers: MapLayerItem[] = layerConfigs ?? [
+    ...(baseGeojson
+      ? [{ id: 'base-geojson', geojson: baseGeojson, visible: true }]
+      : []),
+    ...(geojson ? [{ id: 'main-geojson', geojson, visible: true }] : []),
+  ];
+
   const [baseStyle] = useState(BASE_STYLES.OSM);
   const [tooltip, setTooltip] = useState<{
     x: number;
@@ -81,8 +138,8 @@ export default function VTMap({
       .catch(() => {});
   }, []);
 
-  const onViewStateChange = useCallback((params: { viewState: unknown }) => {
-    const vs = params.viewState as typeof INITIAL_VIEW_STATE;
+  const onViewStateChange = useCallback((params: { viewState: any }) => {
+    const vs = params.viewState;
     setViewState({
       ...vs,
       zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
@@ -136,42 +193,34 @@ export default function VTMap({
     properties?: { rgba_color?: [number, number, number, number] };
   }) => d.properties?.rgba_color ?? [0, 0, 0, 0];
 
-  // order matters: deck.gl draws in array order, so the base layer is listed
-  // first and ends up underneath the main data layer
-  const layers = [
-    baseGeojson &&
-      new GeoJsonLayer({
-        id: 'geojson-base',
-        data: baseGeojson,
-        filled: true,
-        getFillColor,
-        getLineColor: [120, 120, 120, 90],
-        lineWidthMinPixels: 0.5,
-        pickable: true,
-        autoHighlight: true,
-        highlightColor: [222, 102, 0, 120],
-        onHover,
-      }),
-    geojson &&
-      new GeoJsonLayer({
-        id: 'geojson',
-        data: geojson,
-        pointType: 'circle',
-        pointRadiusUnits: 'pixels',
-        pointRadiusMinPixels: 12,
-        pointRadiusMaxPixels: 12,
-        getFillColor,
-        // getLineColor: [80, 80, 80, 80],
-        getLineColor: lineColor,
-        lineWidthMinPixels: lineWidth,
-        // lineWidthMinPixels: 0.5,
-        pickable: true,
-        autoHighlight: true,
-        highlightColor: [255, 255, 255, 255],
-        onHover,
-      }),
-    showCountyLines &&
-      countylines &&
+  const deckLayers: LayersList = activeLayers
+    .filter((layer) => layer.visible && layer.geojson)
+    .map(
+      (layer) =>
+        new GeoJsonLayer({
+          id: `layer-${layer.id}`,
+          data: layer.geojson!,
+          filled: true,
+          pointType: 'circle',
+          pointRadiusUnits: 'pixels',
+          pointRadiusMinPixels: 8,
+          pointRadiusMaxPixels: 12,
+          getFillColor,
+          stroked: true,
+          getLineColor: [255, 255, 255, 130],
+          lineWidthUnits: 'pixels',
+          getLineWidth: 1,
+          lineWidthMinPixels: 0.5,
+          lineWidthMaxPixels: 1,
+          pickable: true,
+          autoHighlight: true,
+          highlightColor: [255, 255, 255, 180],
+          onHover,
+        }),
+    );
+
+  if (showCountyLines && countylines) {
+    deckLayers.push(
       new GeoJsonLayer({
         id: 'county-lines',
         data: countylines,
@@ -180,11 +229,12 @@ export default function VTMap({
         getLineColor: [80, 80, 80, 200],
         lineWidthMinPixels: 1,
       }),
-  ].filter(Boolean);
+    );
+  }
 
   return (
-    // Fill the parent container completely (parent must have position:relative and a defined height)
     <div
+      ref={containerRef}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -192,7 +242,6 @@ export default function VTMap({
         height: '100%',
       }}
     >
-      {/* Map area — fills remaining height, clips overflow */}
       <div
         style={{
           flex: 1,
@@ -205,10 +254,10 @@ export default function VTMap({
           viewState={viewState}
           onViewStateChange={onViewStateChange}
           controller={controllerOn}
-          layers={layers}
+          layers={deckLayers}
           style={{ width: '100%', height: '100%' }}
         >
-          <Map mapStyle={baseStyle} />
+          <Map ref={mapRef} mapStyle={baseStyle} />
         </DeckGL>
 
         {tooltip && tooltip.content && (
@@ -224,7 +273,7 @@ export default function VTMap({
               maxWidth: 280,
             }}
           >
-            <strong>{String(tooltip.content.__title__)}</strong>
+            <strong>{String(tooltip.content.__title__ ?? 'Details')}</strong>
             <Divider my={4} />
             {Object.entries(tooltip.content).map(
               ([k, v]) =>

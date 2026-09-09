@@ -22,6 +22,7 @@ features AS (
             'geometry', ST_ASGEOJSON(ST_SIMPLIFY(geometry, 0.0001))::JSON,
             'properties', JSON_OBJECT(
                 'District Type', District_Type,
+                'District Name', District_Name,
                 'Acres', Acres,
                 'rgba_color', rgba::JSON,
                 'county', County,

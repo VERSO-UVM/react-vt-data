@@ -80,10 +80,15 @@ def add_population_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     and appends them as additional rows in the long-format dataframe.
     """
     df["county_geoid"] = df["geoid"].astype(str).str[:5]
-    # County-level aggregation
-    county_df = df.groupby(["county_geoid", "county", "year"], as_index=False)[
-        "Population"
-    ].sum()
+    # County-level aggregation. Grouped by county_geoid (FIPS-derived, authoritative)
+    # rather than the free-text "county" column: a handful of towns carry the wrong
+    # county label in the source data (e.g. "Warren's Gore" is tagged "Washington"
+    # despite its geoid belonging to Essex), which would otherwise splinter a single
+    # county's towns into two mismatched aggregation groups sharing one geoid.
+    county_df = df.groupby(["county_geoid", "year"], as_index=False).agg(
+        Population=("Population", "sum"),
+        county=("county", lambda s: s.mode().iat[0]),
+    )
     county_df["NAME"] = county_df["county"] + " County, Vermont"
     county_df["geo_type"] = "county"
     county_df = county_df.rename(columns={"county_geoid": "geoid"})

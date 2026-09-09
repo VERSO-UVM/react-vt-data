@@ -1,5 +1,5 @@
 'use client';
-import { Select, keys, Paper, Text } from '@mantine/core';
+import { Select, keys, Paper, Text, SegmentedControl } from '@mantine/core';
 import { useState } from 'react';
 import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';
@@ -146,11 +146,14 @@ function DataSetSelector({
   handleSelect: (value: string | null) => void;
 }) {
   return (
-    <Select
-      label="Select Dataset"
-      data={Object.keys(validDatasets)}
+    <SegmentedControl
+      fullWidth
+      data={[
+        { label: 'County', value: 'CDC, County Level' },
+        { label: 'Census Tract', value: 'CDC, Tract Level' },
+      ]}
       onChange={handleSelect}
-      defaultValue={'CDC, County Level'}
+      defaultValue="CDC, County Level"
     />
   );
 }
@@ -200,7 +203,7 @@ export default function VariableComparison() {
 
   return (
     <QuadTileMapLayout
-      title="Compare Health Indicators"
+      title="Community Health Indicators"
       sidebar={
         <>
           <DataSetSelector handleSelect={handleSelectDataSet} />

@@ -1,9 +1,10 @@
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from api.config import schema
-from query import filter_options, filter_tree
+from query import filter_options, filter_ranges, filter_tree
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -48,19 +49,38 @@ async def filter_tree_endpoint(filter_table: str, target_table: str = "default")
 
 
 @router.get("/filters/options")
-async def filter_options_endpoint(filter_table: str, target_table: str = "default"):
-    """
-    Get the JSON for a option-based checkbox filter on the target_table WITH the 'filter_table' as filter dataset.
-    For now, the primary dataset is 'default', which is the fallback for all non-specified datasets.
-
-
-    Args:
-        filter_table (str): The dataset *doing the filtering*.
-        target_table (str): The dataset to be filtered.
-
-    Returns:
-        options -- structured like {label: [optionA, optionB]}
-    """
+async def filter_options_endpoint(
+    filter_table: str,
+    target_table: str = "default",
+    cols: Annotated[list[str] | None, Query()] = None,
+):
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]
-    return filter_options(colmap, list(colmap.keys()), filter_table)
+
+    if cols:
+        colmap = {label: column for label, column in colmap.items() if label in cols}
+
+    return filter_options(
+        colmap,
+        list(colmap.keys()),
+        filter_table,
+    )
+
+
+@router.get("/filters/ranges")
+async def filter_ranges_endpoint(
+    filter_table: str,
+    target_table: str = "default",
+    cols: Annotated[list[str] | None, Query()] = None,
+):
+    """Min/max bounds for one or more numeric columns (e.g. min lot size
+    sliders). Mirrors /filters/options but for the schema's "range" map."""
+    meta = get_filter_table_metadata(target_table, filter_table)
+    rangemap: dict = meta.get("range", {})
+
+    if cols:
+        rangemap = {
+            label: column for label, column in rangemap.items() if label in cols
+        }
+
+    return filter_ranges(rangemap, filter_table)

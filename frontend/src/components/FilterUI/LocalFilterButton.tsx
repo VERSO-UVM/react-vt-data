@@ -1,6 +1,7 @@
 import { Button } from '@mantine/core';
 import { useFilter } from './FilterContext';
 import { useApplyFilters, FilterValue } from './useApplyFilters';
+import { COLORS } from '@/app/theme';
 
 type ApplyButtonProps = {
   dataURL: string;
@@ -33,7 +34,12 @@ export default function ApplyButton({
   };
 
   return (
-    <Button onClick={handleApply} disabled={disabled}>
+    <Button
+      onClick={handleApply}
+      disabled={disabled}
+      variant="filled"
+      color={COLORS.spruce}
+    >
       Apply
     </Button>
   );

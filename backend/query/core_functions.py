@@ -44,6 +44,18 @@ def filter_options(
     return FilterResponse(labels=labels, options=options)
 
 
+def filter_ranges(rangemap: dict, table: str, db=DB) -> FilterResponse:
+    """Min/max bounds for one or more numeric columns, for slider-style filters."""
+    ranges = []
+    for label, col in rangemap.items():
+        res = db.execute(
+            f'SELECT MIN("{col}"), MAX("{col}") FROM {table} WHERE "{col}" IS NOT NULL'
+        ).fetchone()
+        if res and res[0] is not None:
+            ranges.append(RangeDescriptor(label=label, col=col, bounds=res))
+    return FilterResponse(labels=list(rangemap.keys()), ranges=ranges)
+
+
 def filter_tree(
     colmap: dict, tree_labels: list[str], table: str, db=DB, rangemap: dict = {}
 ) -> FilterResponse:

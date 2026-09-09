@@ -128,6 +128,34 @@ export const chartDefs: ChartDef[] = [
     tableConfig: {},
   },
   {
+    id: 'historic_population_change',
+    title: 'Population Change (100-Year Trend)',
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/historic-population-change`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    trendChart: 'HistoricPopulationChangeTrendChart',
+    categories: ['Demographics'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {},
+  },
+  {
+    id: 'population_change',
+    title: 'Population Change by Year',
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/population-change`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    trendChart: 'PopulationChangeTrendChart',
+    categories: ['Demographics'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+  {
     id: 'demographics_estimates',
     title: 'Demographics Summary Table',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
@@ -233,6 +261,22 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
+  {
+    id: 'housing_income_burden',
+    title: 'Housing Income Burden',
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/housing/income-burden`,
+    xField: '',
+    yField: '',
+    subtype: 'renderTableEstimates',
+    trendChart: 'HousingIncomeBurdenChart',
+    categories: ['Housing'],
+    filterKey: '',
+    dataKey: '',
+    tableConfig: {
+      extraParams: { year_min: 2010, year_max: 2023 },
+    },
+  },
+
   // Labor Force
   {
     id: 'labor_force_trend_16plus',

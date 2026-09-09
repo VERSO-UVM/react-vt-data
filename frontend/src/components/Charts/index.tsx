@@ -15,6 +15,8 @@ export {
 export {
   DemographicsTrendChart,
   PopulationTrendChart,
+  HistoricPopulationChangeTrendChart,
+  PopulationChangeTrendChart,
   MedianAgeTrendChart,
   EducationTrendChart,
   HomeValueTrendChart,
@@ -26,6 +28,7 @@ export {
   EarningsTrendChart,
   HouseholdIncomeTrendChart,
   PerCapitaIncomeTrendChart,
+  HousingIncomeBurdenChart,
   DPTrendChart,
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';

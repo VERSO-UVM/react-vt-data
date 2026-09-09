@@ -41,6 +41,14 @@ QUERY_CONFIG = {
                 "table": "VCGI_historicPopulation_timeseries",
                 "fixed_filters": {},
             },
+            "historic_population_change": {
+                "table": "VCGI_historicPopulation_pctChange_timeseries",
+                "fixed_filters": {},
+            },
+            "population_change": {
+                "table": "acs5Demographics_populationChange_timeseries",
+                "fixed_filters": {},
+            },
         },
     },
     "economics": {
@@ -89,6 +97,10 @@ QUERY_CONFIG = {
             },
             "vacancy_rates": {
                 "table": "acs5Housing_vacancyRates_timeseries",
+                "fixed_filters": {},
+            },
+            "income_burden": {
+                "table": "acs5Housing_incomeBurden_timeseries",
                 "fixed_filters": {},
             },
         },
@@ -193,21 +205,6 @@ def get_acs5_timeseries(
         raise ValueError(
             f"No results for timeseries: {category}/{dataset}, filters: {filters}"
         )
-
-    return result
-
-
-# FIXME: Link to new database table name (broken for now)
-def get_median_earnings_ts(filters: dict | None = None) -> pd.DataFrame:
-    source = _acs5_source(table="acs5_median_earnings", filters=filters)
-
-    sql, params = sql_filter_block(sql_path / "median_earnings.sql", [source])
-
-    result = DB.execute(sql, params).df()
-
-    if result is None or result.empty:
-        logger.error("Median earnings query returned no rows for filters=%s", filters)
-        raise ValueError("no results for median_earnings query")
 
     return result
 

@@ -12,6 +12,7 @@ import { FilterTree, apiFilterParams } from './filterTypes';
 import axios from 'axios';
 import { BASE_API_URL } from '@/config';
 import { Select, Stack } from '@mantine/core';
+import { COLORS, FONTS } from '@/app/theme';
 
 export function CascadeFilter(params: apiFilterParams) {
   const { spec, setValue } = params;
@@ -49,7 +50,7 @@ export function CascadeFilter(params: apiFilterParams) {
     let node = tree;
     for (let i = 0; i < idx; i++) {
       const sel = spec.filters?.[labels[i]];
-      const selVal = Array.isArray(sel) ? sel[0] : null; // get string from string[]
+      const selVal = Array.isArray(sel) ? sel[0] : null;
       if (selVal == null || node?.[selVal] == null) return [];
       node = node[selVal];
     }
@@ -57,7 +58,7 @@ export function CascadeFilter(params: apiFilterParams) {
   };
 
   return (
-    <Stack gap="sm">
+    <Stack gap={18}>
       {labels.map((label, i) => (
         <Select
           key={label}
@@ -67,6 +68,46 @@ export function CascadeFilter(params: apiFilterParams) {
           onChange={(v) => handleSelect(label, v!)}
           disabled={i > 0 && spec.filters?.[labels[i - 1]] == null}
           searchable
+          radius="sm"
+          size="md"
+          styles={{
+            label: {
+              fontFamily: FONTS.body,
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              color: COLORS.ink,
+              marginBottom: 7,
+            },
+
+            input: {
+              backgroundColor: COLORS.birch,
+              border: `1px solid ${COLORS.line}`,
+              color: COLORS.ink,
+              fontFamily: FONTS.body,
+              fontSize: '0.9rem',
+              minHeight: 42,
+              transition: 'border-color 150ms ease',
+            },
+
+            section: {
+              color: COLORS.slate,
+            },
+
+            dropdown: {
+              backgroundColor: COLORS.birch,
+              border: `1px solid ${COLORS.line}`,
+              borderRadius: 6,
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+              overflow: 'hidden',
+            },
+
+            option: {
+              fontFamily: FONTS.body,
+              fontSize: '0.875rem',
+              color: COLORS.ink,
+              padding: '9px 12px',
+            },
+          }}
         />
       ))}
     </Stack>

@@ -36,7 +36,17 @@ const links = [
       { link: '/mapping/ambulance', label: 'Ambulance Service Areas' },
     ],
   },
-  { link: '/data-viewer', label: 'Analyze' }, // accessible via Working Report
+  {
+    link: '/data-viewer',
+    label: 'Analyze',
+    links: [
+      { link: '/data-viewer', label: 'Data Viewer' },
+      {
+        link: '/data-comparison/variable-explorer',
+        label: 'Variable Explorer',
+      },
+    ],
+  },
   {
     link: '/data-comparison',
     label: 'Compare',

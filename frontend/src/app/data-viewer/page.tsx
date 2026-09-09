@@ -35,6 +35,8 @@ import { useEffect, useState } from 'react';
 
 // within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { DataRow, ChartMetadata } from '@/types/cachedCharts';
+import { ChartPayload } from '@/app/working-report/page';
 import { COLORS, FONTS } from '../theme';
 import { FieldLabel } from './FieldLabel';
 import { MetricsPanel } from './MetricsPanels';
