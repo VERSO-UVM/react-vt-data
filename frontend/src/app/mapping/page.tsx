@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
@@ -53,6 +53,14 @@ const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
 };
 
 export default function MapExplorerPage() {
+  return (
+    <Suspense fallback={null}>
+      <MapExplorerContent />
+    </Suspense>
+  );
+}
+
+function MapExplorerContent() {
   const theme = useMantineTheme();
   const searchParams = useSearchParams();
 

@@ -70,12 +70,12 @@ build-api:
 # run the api image (detached)
 [working-directory("backend")]
 run-api:
-    podman run --pod app --name api -d --rm -v ../Data:/data:ro,z  localhost/my-api    
+    podman run --pod app --name api -d --rm -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api   
 
 # build the api image and then check it with more error printing (non detached)
 [working-directory("backend")]
 run-check-api: build-api
-    podman run --pod app -v ../Data:/data:ro,z  localhost/my-api    
+    podman run --pod app -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api   
 
 # everything to get the api up and running
 dev-api: build-pod build-api run-api
@@ -98,7 +98,27 @@ dev-frontend: build-pod build-frontend run-frontend
 # check typescript (not in the next.config, until fixed)
 [working-directory("frontend")]
 check-frontend:
-    npx tsc --noEmit    
+    npx tsc --noEmit 
+
+
+## Maintenance mode
+################
+# build a frontend image that shows the "Under Maintenance" page instead of the app
+[working-directory("frontend")]
+build-frontend-maintenance:
+    podman build -t localhost/frontend:maintenance --build-arg NEXT_PUBLIC_MAINTENANCE_MODE=true -f dockerfile .
+# swap the running frontend container for the maintenance-mode one (api + pod stay up)
+maintenance-on: build-frontend-maintenance
+    podman stop frontend || true
+    podman rm frontend || true
+    podman run --pod app --name frontend -d --rm localhost/frontend:maintenance
+# swap back to the real frontend image
+maintenance-off: build-frontend
+    podman stop frontend || true
+    podman rm frontend || true
+    just run-frontend
+
+
 
 ################
 # ETL (Pipeline) Container
