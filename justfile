@@ -4,9 +4,12 @@ export DATA_DIR := justfile_directory() / "backend" / "Data"
 # Load environment variables
 set dotenv-filename := ".env"
 
+api_host := env("API_HOST", "127.0.0.1")
+api_port := env("API_PORT", "6767")
+api_url := env("NEXT_PUBLIC_API_URL", "http://localhost:6767/api")
 # Host-specific podman flags. Empty by default (Docker, macOS, rootful podman).
 # On the VM with rootless podman, override:  just podman_flags="--userns=keep-id:uid=1000,gid=1000"
-podman_flags := env_var_or_default("PODMAN_FLAGS", "")
+podman_flags := env("PODMAN_FLAGS", "")
 
 ################
 # CLI Development  #
@@ -15,12 +18,12 @@ podman_flags := env_var_or_default("PODMAN_FLAGS", "")
 # turns on non-containerized backend. note: no longer turns off containers
 [working-directory("backend")]
 local-api:
-    ALLOW_DEV_CORS=1 uv run uvicorn api.main:app --reload --port 6767
+    ALLOW_DEV_CORS=1 uv run uvicorn api.main:app --reload \
+        --host {{ api_host }} --port {{ api_port }}
 
-# turns on non-container frontend. note: no longer turns off containers
 [working-directory("frontend")]
 local-frontend:
-    NEXT_PUBLIC_API_URL=http://localhost:6767/api npm run dev -- --port 3000
+    NEXT_PUBLIC_API_URL={{ api_url }} npm run dev -- --port 3000
 
 # turns on non-container full apps, interleaved in terminal (from Procfile). Note: no longer turns off containers
 local-dev:
@@ -38,11 +41,11 @@ local-dev:
 
 # build the pod for local-host co communication
 build-pod:
-    podman pod exists app || podman pod create --name app --userns=keep-id -p 6767:6767 -p 3000:8080
+    podman pod exists app || podman pod create --name app --userns=keep-id {{ podman_flags }} -p 6767:6767 -p 3000:8080
 
 # reset the local host pod (delete and recreate it).
 reset-pod:
-    podman pod create --replace --name app --userns=keep-id -p 6767:6767 -p 3000:8080
+    podman pod create --replace --name app --userns=keep-id {{ podman_flags }} -p 6767:6767 -p 3000:8080
 
 ###########
 # Containers #
@@ -70,12 +73,12 @@ build-api:
 # run the api image (detached)
 [working-directory("backend")]
 run-api:
-    podman run --pod app --name api -d --rm -v ../Data:/data:ro,z  localhost/my-api    
+    podman run --pod app --name api -d --rm -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api
 
 # build the api image and then check it with more error printing (non detached)
 [working-directory("backend")]
 run-check-api: build-api
-    podman run --pod app -v ../Data:/data:ro,z  localhost/my-api    
+    podman run --pod app -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api
 
 # everything to get the api up and running
 dev-api: build-pod build-api run-api
@@ -98,7 +101,27 @@ dev-frontend: build-pod build-frontend run-frontend
 # check typescript (not in the next.config, until fixed)
 [working-directory("frontend")]
 check-frontend:
-    npx tsc --noEmit    
+    npx tsc --noEmit 
+
+
+## Maintenance mode
+################
+# build a frontend image that shows the "Under Maintenance" page instead of the app
+[working-directory("frontend")]
+build-frontend-maintenance:
+    podman build -t localhost/frontend:maintenance --build-arg NEXT_PUBLIC_MAINTENANCE_MODE=true -f dockerfile .
+# swap the running frontend container for the maintenance-mode one (api + pod stay up)
+maintenance-on: build-frontend-maintenance
+    podman stop frontend || true
+    podman rm frontend || true
+    podman run --pod app --name frontend -d --rm localhost/frontend:maintenance
+# swap back to the real frontend image
+maintenance-off: build-frontend
+    podman stop frontend || true
+    podman rm frontend || true
+    just run-frontend
+
+
 
 ################
 # ETL (Pipeline) Container

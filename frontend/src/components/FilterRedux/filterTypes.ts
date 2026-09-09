@@ -18,6 +18,7 @@ export type FilterValue = string[] | { min: number; max: number };
 export interface FilterSpec {
   filter_table: string; // table to filter on
   filters: Record<string, FilterValue>; // filter values {label: value}
+  cols?: string[]; // optional list of column labels to include in the filter
 }
 
 // cascading filter tree to walk down.
@@ -38,9 +39,10 @@ export interface FilterUIProps {
 }
 
 ////////// Types for pre-defining filters to hydrate
-type filterStyle = 'Cascade' | 'Checkbox';
+type filterStyle = 'Cascade' | 'Checkbox' | 'Range';
 export type filterDef = {
   filter_table: string;
   filter_style: filterStyle;
   label?: string; // section heading shown above this filter's controls
+  cols?: string[];
 };

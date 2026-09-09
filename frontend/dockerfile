@@ -41,6 +41,12 @@ ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Shows the "Under Maintenance" page instead of the app when built with
+# --build-arg NEXT_PUBLIC_MAINTENANCE_MODE=true (see `just maintenance-on`).
+# NEXT_PUBLIC_* vars are inlined at build time, so this must be set here.
+ARG NEXT_PUBLIC_MAINTENANCE_MODE=false
+ENV NEXT_PUBLIC_MAINTENANCE_MODE=$NEXT_PUBLIC_MAINTENANCE_MODE
+
 # Build Next.js application
 RUN --mount=type=cache,target=/app/.next/cache \
     npm run build;

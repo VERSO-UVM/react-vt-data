@@ -26,13 +26,15 @@ import {
   XIcon,
 } from '@phosphor-icons/react';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
-import {
-  ChartItem,
-  ChartMetadata,
-  DataRow,
-  ChartPayload,
-} from '@/types/cachedCharts';
+import { ChartItem, ChartMetadata, DataRow } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
+
+// one chart's backend payload, keyed by chart def id in state below
+export type ChartPayload = {
+  data: DataRow[];
+  metadata?: ChartMetadata;
+  tableData?: DataRow[];
+};
 
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';

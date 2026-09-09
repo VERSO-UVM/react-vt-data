@@ -19,4 +19,42 @@ export const zoning_filtering: filterDef[] = [
     filter_style: 'Checkbox',
     label: '',
   },
+  {
+    filter_table: 'VersoZoning_wide',
+    filter_style: 'Range',
+    label: 'Minimum Lot Size',
+    cols: [
+      'Single Family Min Lot Size (ac)',
+      'Two Family Min Lot Size (ac)',
+      'Three Family Min Lot Size (ac)',
+      'Four Family Min Lot Size (ac)',
+    ],
+  },
+];
+
+export const soil_suitability_filtering: filterDef[] = [
+  {
+    filter_table: 'VersoWastewater_soilSuitability_info',
+    filter_style: 'Checkbox',
+    label: 'Soil Suitability Level',
+    cols: ['Soil Suitability Level'],
+  },
+];
+
+export const treatment_facility_filtering: filterDef[] = [
+  {
+    filter_table: 'VersoWastewater_treatmentFacilities_info',
+    filter_style: 'Checkbox',
+    label: 'Treatment Facilities',
+    cols: ['County'],
+  },
+];
+
+export const service_area_filtering: filterDef[] = [
+  {
+    filter_table: 'VersoWastewater_serviceAreas_info',
+    filter_style: 'Checkbox',
+    label: 'Service Areas',
+    cols: ['County'],
+  },
 ];

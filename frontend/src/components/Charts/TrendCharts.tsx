@@ -446,6 +446,50 @@ export const PopulationTrendChart = <TData,>({
     onPlotData,
   );
 
+export const HistoricPopulationChangeTrendChart = <TData,>({
+  chart,
+  view,
+  onPlotData,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+  onPlotData?: (rows: DataRow[]) => void;
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: null,
+      valueField: 'Pct_Population_Change',
+      format: 'percent',
+      decimals: 1,
+      showHelperText: false,
+    },
+    view,
+    onPlotData,
+  );
+
+export const PopulationChangeTrendChart = <TData,>({
+  chart,
+  view,
+  onPlotData,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+  onPlotData?: (rows: DataRow[]) => void;
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: null,
+      valueField: 'Pct_Population_Change',
+      format: 'percent',
+      decimals: 1,
+      showHelperText: false,
+    },
+    view,
+    onPlotData,
+  );
+
 export const MedianAgeTrendChart = <TData,>({
   chart,
   view,
@@ -611,6 +655,28 @@ export const PerCapitaIncomeTrendChart = <TData,>({
       seriesKey: null,
       valueField: 'Per_Capita_Income',
       format: 'currency',
+      showHelperText: false,
+    },
+    view,
+    onPlotData,
+  );
+
+export const HousingIncomeBurdenChart = <TData,>({
+  chart,
+  view,
+  onPlotData,
+}: {
+  chart: ChartItem<TData>;
+  view?: 'gallery' | 'report';
+  onPlotData?: (rows: DataRow[]) => void;
+}) =>
+  single(
+    chart,
+    {
+      seriesKey: null,
+      valueField: 'pct_housing_burden',
+      format: 'percent',
+      decimals: 1,
       showHelperText: false,
     },
     view,

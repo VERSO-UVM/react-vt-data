@@ -1,21 +1,28 @@
-import { FilterSpec } from './filterTypes';
+// src/components/FilterRedux/filterRequest.ts
+
 import axios from 'axios';
 
-interface request {
+interface Request {
   dataURL: string;
-  payload: FilterSpec[];
+  payload: unknown;
 }
-export async function postRequest(request: request) {
-  const { dataURL, payload } = request;
+
+export async function postRequest({ dataURL, payload }: Request) {
   try {
     const res = await axios.post(dataURL, payload);
     return res.data;
   } catch (e) {
     if (axios.isAxiosError(e)) {
-      console.error('postRequest failed: ', e.response?.data);
+      console.error('API Error Details:', {
+        status: e.response?.status,
+        statusText: e.response?.statusText,
+        data: e.response?.data,
+        url: dataURL,
+        sentPayload: payload,
+      });
     } else {
-      console.error('postRequest failed: ', e);
+      console.error('Non-Axios Error:', e);
     }
-    throw e; // re-throw so caller can stop / show state
+    throw e;
   }
 }

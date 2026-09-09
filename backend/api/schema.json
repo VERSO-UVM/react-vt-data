@@ -14,6 +14,7 @@
       "join_key": "OBJECT_ID",
       "join_type": "inner",
       "columns": {
+        "District Type": "District_Type",
         "Accessory Dwelling Unit": "ADU_Allowance",
         "Single Family": "F1F_Allowance",
         "Two Family": "F2F_Allowance",
@@ -22,6 +23,12 @@
         "Affordable Housing": "Affordable_Housing_Allowance",
         "Planned Residential Development": "PRD_Allowance",
         "Planned Unit Development": "PUD_Allowance"
+      },
+      "range": {
+        "Single Family Min Lot Size (ac)": "F1F_Min_Lot_Size",
+        "Two Family Min Lot Size (ac)": "F2F_Min_Lot_Size",
+        "Three Family Min Lot Size (ac)": "F3F_Min_Lot_Size",
+        "Four Family Min Lot Size (ac)": "F4F_Min_Lot_Size"
       }
     },
     "VersoZoning_rules": {
@@ -45,6 +52,46 @@
         "Category": "Category",
         "Measure": "Measure",
         "Prevalence Measure": "Data_Value_Type"
+      }
+    },
+    "acs5_demographics_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
+      }
+    },
+    "acs5_housing_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
+      }
+    },
+    "acs5_education_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
+      }
+    },
+    "acs5_economics_tidy": {
+      "join_key": "NAME",
+      "join_type": "inner",
+      "value_col": "Value",
+      "var_col": "Variable",
+      "columns": {
+        "Section": "Section",
+        "Variable": "Variable"
       }
     },
     "VersoWastewater_soilSuitability_info": {
