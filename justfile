@@ -6,7 +6,7 @@ set dotenv-filename := ".env"
 
 # Host-specific podman flags. Empty by default (Docker, macOS, rootful podman).
 # On the VM with rootless podman, override:  just podman_flags="--userns=keep-id:uid=1000,gid=1000"
-podman_flags := env_var_or_default("PODMAN_FLAGS", "")
+podman_flags := env("PODMAN_FLAGS", "")
 
 ################
 # CLI Development  #
