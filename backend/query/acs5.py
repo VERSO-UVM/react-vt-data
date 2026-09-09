@@ -187,35 +187,6 @@ def get_acs5_timeseries(
         fixed_filters=config.get("fixed_filters"),
     )
 
-    print(
-        DB.execute(
-            """
-            SELECT *
-            FROM acs5Demographics_populationChange_timeseries
-            LIMIT 5
-            """
-        ).df()
-    )
-
-    print(
-        DB.execute(
-            """
-            SELECT DISTINCT NAME
-            FROM acs5Demographics_populationChange_timeseries
-            WHERE NAME ILIKE '%Essex%'
-            """
-        ).df()
-    )
-
-    print(
-        DB.execute(
-            """
-            SELECT MIN(year), MAX(year), COUNT(*)
-            FROM acs5Demographics_populationChange_timeseries
-            """
-        ).df()
-    )
-
     sql, params = sql_filter_block(
         sql_path / "acs5_timeseries.sql",
         [source],
