@@ -8,7 +8,9 @@ FROM (
     SELECT
         json_object(
             'type', 'Feature',
-            'geometry', ST_AsGeoJSON(ST_Simplify(g.geometry, 0.0001))::JSON,
+            'geometry', ST_AsGeoJSON(
+                ST_Simplify(ST_GeomFromWKB(g.geometry), 0.0001)
+                )::JSON,
             'properties', json_object(
                 'Certification Level', i.Cert_Level,
                 'Acres', ROUND(g.Shape__Area, 2),
@@ -22,9 +24,9 @@ FROM (
                 )
             )
         ) AS feature
-    FROM ambulance_ambulance_info AS i
-    INNER JOIN ambulance_ambulance_geom AS g USING (OBJECTID)
-    LEFT JOIN ambulance_ambulance_colors AS c
+    FROM VCGI_ambulanceService_info AS i
+    INNER JOIN VCGI_ambulanceService_geom AS g USING (OBJECTID)
+    LEFT JOIN VCGI_ambulanceService_colors AS c
         ON i.Cert_Level = c.certification_level
     {{ join_filter_block }}
 ) AS features

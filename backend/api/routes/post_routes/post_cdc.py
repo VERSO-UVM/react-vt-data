@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.post("/load/mapping/cdc/places/single")
 async def cdc_single_geojson(request: FilterRequest):
-    source = request_to_source(request, "cdc_county_places", "default")
+    source = request_to_source(request, "cdc_places_county", "default")
     data = single_var_geojson([source])
     return data
 
@@ -38,6 +38,7 @@ async def cdc_comparison_tract(specs: list[FilterSpec]) -> APIResponse:
     return make_response(data=geojson, metadata={"legend": legend})
 
 
+# (FIXME)
 @router.post("/load/mapping/cdc/places/pca_summary")
 async def cdc_pca(specs: list[FilterSpec]) -> APIResponse:
     return make_response(data=get_cdc_county_pca(), metadata={})

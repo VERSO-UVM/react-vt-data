@@ -152,15 +152,16 @@ def serve_dataframe(filters: dict | None = None):
                 c.hex_color     AS hex_color,
                 c.rgba          AS rgba,
                 ST_AsGeoJSON(ST_Simplify(g.geom, 0.0001)) AS geometry
-            FROM zoning_info i
-            JOIN zoning_geom g USING (OBJECT_ID)
-            LEFT JOIN zoning_colors c ON c.district_type = i.District_Type
+            FROM VersoZoning_info i
+            JOIN VersoZoning_geom g USING (OBJECT_ID)
+            LEFT JOIN VersoZoning_colors c ON c.district_type = i.District_Type
             {where} 
     """,
     ).df()
     return df
 
-filter_1 = {"County": ["Chittenden"], "Jurisdiction" : ["Hinesburg"]}
+
+filter_1 = {"County": ["Chittenden"], "Jurisdiction": ["Hinesburg"]}
 
 serve_dataframe(filter_1)
 # print(build_where_query_from_filters(filter_1, FCOLS))
@@ -190,9 +191,9 @@ def serve_geojson(filters: dict | None = None):
                     )
                 )
             ) AS feature
-            FROM zoning_info i
-            JOIN zoning_geom g USING (OBJECT_ID)
-            LEFT JOIN zoning_colors c ON c.district_type = i.District_Type
+            FROM VersoZoning_info i
+            JOIN VersoZoning_geom g USING (OBJECT_ID)
+            LEFT JOIN VersoZoning_colors c ON c.district_type = i.District_Type
             {where}
         )
     """).fetchone()[0]

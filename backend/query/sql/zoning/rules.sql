@@ -21,8 +21,8 @@ FROM (
                 )
             )
         ) AS feature
-    FROM zoning_info AS i
-    INNER JOIN zoning_geom AS g USING (OBJECT_ID)
-    LEFT JOIN zoning_colors AS c ON i.District_Type = c.district_type
+    FROM VersoZoning_info AS i
+    INNER JOIN VersoZoning_geom AS g USING (OBJECT_ID)
+    LEFT JOIN VersoZoning_colors AS c ON i.District_Type = c.district_type
     {{ join_filter_block }}
 ) AS features

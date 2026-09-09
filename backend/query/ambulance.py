@@ -12,7 +12,9 @@ from pathlib import Path
 
 from api.models import FilterSource
 from app_utils.sql_render import sql_filter_block
-from query.processed_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql" / "ambulance"
@@ -29,7 +31,7 @@ def get_ambulance_geojson(sources: list[FilterSource]):
 
 def get_ambulance_legend():
     result = DB.execute(
-        "SELECT json_group_array(to_json(ambulance_ambulance_colors)) FROM ambulance_ambulance_colors;"
+        "SELECT json_group_array(to_json(VCGI_ambulanceService_colors)) FROM VCGI_ambulanceService_colors;"
     ).fetchone()
     if result is None:
         logger.error("color query returned no rows for the colors dataset")

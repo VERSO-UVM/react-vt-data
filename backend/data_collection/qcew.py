@@ -18,6 +18,7 @@ Columns: County | year | quarter | quarter_label | sector | employment | employm
 """
 
 import time
+from datetime import datetime
 from io import StringIO
 from pathlib import Path
 
@@ -88,7 +89,9 @@ SECTOR_ORDER = [
 BASE_URL = "https://data.bls.gov/cew/data/api/{year}/{q}/area/{fips}.csv"
 QUARTERS = [1, 2, 3, 4]
 
-YEARS = range(2009, 2025)
+MAX_YEAR = datetime.now().year - 1
+
+YEARS = range(2009, MAX_YEAR)
 
 
 # ---------------------------------------------------------------------------

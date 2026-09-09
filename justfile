@@ -1,12 +1,15 @@
 ## Set up environment ##
 
-export DATA_DIR := justfile_directory() / "Data"
+export DATA_DIR := justfile_directory() / "backend" / "Data"
 # Load environment variables
 set dotenv-filename := ".env"
 
 api_host := env_var_or_default("API_HOST", "127.0.0.1")
 api_port := env_var_or_default("API_PORT", "6767")
 api_url := env_var_or_default("NEXT_PUBLIC_API_URL", "http://localhost:6767/api")
+# Host-specific podman flags. Empty by default (Docker, macOS, rootful podman).
+# On the VM with rootless podman, override:  just podman_flags="--userns=keep-id:uid=1000,gid=1000"
+podman_flags := env_var_or_default("PODMAN_FLAGS", "")
 
 ################
 # CLI Development  #
@@ -100,14 +103,15 @@ dev-frontend: build-pod build-frontend run-frontend
 check-frontend:
     npx tsc --noEmit    
 
-## ETL (Pipeline) Container
+################
+# ETL (Pipeline) Container
 ################
 
 # --------- Pre-step: Lake Builder ---------------------
 [working-directory("backend")]
 build-lake:
     podman build -t localhost/vdc-lake -f ETL/dockerfile.lake .
-    podman run --rm -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-lake
+    podman run --rm {{ podman_flags }} -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-lake
 
 # --------- 1. Data Collection (E) ---------------------
 # build the backend COLLECTION image
@@ -118,8 +122,7 @@ build-collection:
 # Collect the data for a specified year and add to lake.RAW tables
 [working-directory("backend")]
 get-data start_year end_year: build-collection
-    echo "Using API key: $CENSUS_API_KEY"
-    podman run --rm \
+    podman run --rm {{ podman_flags }} \
         -v "$(pwd)/Data:/data:z" \
         -e DATA_DIR=/data \
         -e CENSUS_API_KEY="$CENSUS_API_KEY" \
@@ -130,14 +133,15 @@ get-data start_year end_year: build-collection
 [working-directory("backend")]
 transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
-    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
+    podman run --rm {{ podman_flags }} \
+     -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
 
 # --------- 3. Data Loading (L) ---------------------
 # Load the lake.CLEANED tables into a DuckDB database
 [working-directory("backend")]
 load-data:
     podman build -t localhost/vdc-loading -f ETL/dockerfile.load .
-    podman run --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
+    podman run {{ podman_flags }} --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
 
 # Collect (E), clean (T), and load (L) the data (Full pipeline run)
 [working-directory("backend")]

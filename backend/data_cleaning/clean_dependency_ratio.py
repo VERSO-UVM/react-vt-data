@@ -15,13 +15,12 @@
 python -m data_cleaning.clean_dependency_ratio
 """
 
+import duckdb
 import numpy as np
 import pandas as pd
 
-from lake_build import con
 
-
-def read_raw_data() -> pd.DataFrame:
+def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """
     Reading in the raw `demographics` table from lake.RAW schema.
     Filters to only age-group variables
@@ -60,7 +59,7 @@ def replace_unavailable_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def calculate_dependency_ratio(df: pd.DataFrame):
+def calculate_dependency_ratio(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates age-dependency ratio as follows:
     **Age Dependency Ratio**
@@ -98,14 +97,14 @@ def calculate_dependency_ratio(df: pd.DataFrame):
     return df[["year", "NAME", "Age_Dependency_Ratio", "geo_type"]]
 
 
-def clean():
-    raw_df = read_raw_data()
+def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    raw_df = read_raw_data(con)
     df = replace_unavailable_data(raw_df)
     df = calculate_dependency_ratio(df)
     return df
 
 
-def add_to_lake(clean_df: pd.DataFrame):
+def add_to_lake(clean_df: pd.DataFrame, con: duckdb.DuckDBPyConnection) -> None:
     """
     Writes the cleaned, long-format age_dependency_ratio dataframe
     to the CLEANED schema in DuckLake.
@@ -119,9 +118,9 @@ def add_to_lake(clean_df: pd.DataFrame):
     )
 
 
-def main():
-    clean_df = clean()
-    add_to_lake(clean_df)
+def main(con: duckdb.DuckDBPyConnection):
+    clean_df = clean(con)
+    add_to_lake(clean_df, con)
 
 
 if __name__ == "__main__":

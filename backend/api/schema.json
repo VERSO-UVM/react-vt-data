@@ -1,6 +1,6 @@
 {
   "default": {
-    "zoning_info": {
+    "VersoZoning_info": {
       "join_key": "OBJECT_ID",
       "join_type": "inner",
       "columns": {
@@ -10,7 +10,7 @@
         "District Name": "District_Name"
       }
     },
-    "zoning_wide": {
+    "VersoZoning_wide": {
       "join_key": "OBJECT_ID",
       "join_type": "inner",
       "columns": {
@@ -24,7 +24,7 @@
         "Planned Unit Development": "PUD_Allowance"
       }
     },
-    "zoning_rules": {
+    "VersoZoning_rules": {
       "join_key": "OBJECT_ID",
       "join_type": "inner",
       "value_col": "val",
@@ -35,7 +35,7 @@
         "Value": "val"
       }
     },
-    "cdc_county_places": {
+    "cdc_places_county": {
       "join_key": "LocationID",
       "join_type": "inner",
       "value_col": "Data_Value",
@@ -47,8 +47,8 @@
         "Prevalence Measure": "Data_Value_Type"
       }
     },
-    "soil_suitability_info_soil_suit": {
-      "join_key": "ID",
+    "VersoWastewater_soilSuitability_info": {
+      "join_key": "OGC_FID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",
@@ -56,8 +56,8 @@
         "Soil Suitability Level": "Suitability"
       }
     },
-    "treatment_facilities_treatment_facility_info": {
-      "join_key": "ID",
+    "VersoWastewater_treatmentFacilities_info": {
+      "join_key": "Facility_ID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",
@@ -66,8 +66,8 @@
         "Town": "TownName"
       }
     },
-    "treatment_facilities_treatment_facility_permit_info": {
-      "join_key": "ID",
+    "VersoWastewater_treatmentFacilitiesPermits_info": {
+      "join_key": "Facility_ID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",
@@ -76,8 +76,8 @@
         "Town": "TownName"
       }
     },
-    "service_areas_service_area_info": {
-      "join_key": "ID",
+    "VersoWastewater_serviceAreas_info": {
+      "join_key": "Area_ID",
       "join_type": "inner",
       "columns": {
         "Regional Planning Commission": "RPC",
@@ -86,7 +86,7 @@
         "Town": "TownName"
       }
     },
-    "ambulance_ambulance_info": {
+    "VCGI_ambulanceService_info": {
       "join_key": "OBJECTID",
       "join_type": "inner",
       "columns": {

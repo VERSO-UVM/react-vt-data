@@ -2,6 +2,8 @@
 import { BASE_API_URL } from '@/config';
 import { ChartParams, TableColumnConfig } from '@/types/cachedCharts';
 
+const YEAR_MAX_OVERALL = new Date().getFullYear() - 2;
+
 export interface TableRowDef {
   label: string;
   variable: string;
@@ -71,18 +73,6 @@ export const chartDefs: ChartDef[] = [
       { key: 'Acres', label: 'Total Acres' },
     ],
   },
-  // tenure bar chart removed — not adding enough information (4.3)
-  // {
-  //   id: 'tenure',
-  //   title: 'Housing Tenure',
-  //   categories: ['Housing'],
-  //   xField: 'Occupied Tenure',
-  //   yField: 'Value',
-  //   subtype: 'CompareDiffPerXBarChart',
-  //   chartParams: { colorScheme: 'schemeAccent', legendLabels: ['Main', 'Compare'] },
-  //   dataKey: 'plot_data.tenure_df',
-  //   url: `${BASE_API_URL}/load/census/housing/snapshot`,
-  // },
   {
     id: 'demographics',
     title: 'Changes in Age Composition',
@@ -108,7 +98,7 @@ export const chartDefs: ChartDef[] = [
     subtype: 'CompareDiffPerXBarChart',
     chartParams: {
       legendLabels: ['Main', 'Compare'],
-      fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
+      fixedYear: YEAR_MAX_OVERALL,
       percentFormat: true,
       includeCategories: [
         'Under 18',
@@ -127,7 +117,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'demographics_population',
     title: 'Historic Population Estimates',
-    url: `${BASE_API_URL}/load/census/demographic/historic_population`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/historic-population`,
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates', // signals to the renderer to use TableStack not ChartStack
@@ -154,7 +144,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'median_age',
     title: 'Median Age',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/demographics/median-age`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/median-age`,
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',
@@ -191,7 +181,7 @@ export const chartDefs: ChartDef[] = [
     subtype: 'CompareDiffPerXBarChart',
     chartParams: {
       legendLabels: ['Main', 'Compare'],
-      fixedYear: 2024, // NOTE: Temporary fix to ensure chart shows most recent year (2024).
+      fixedYear: YEAR_MAX_OVERALL,
       percentFormat: true,
     },
     url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
@@ -278,7 +268,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'unemployment_rate',
     title: 'Unemployment Rate',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/unemployment-rate`,
+    url: `${BASE_API_URL}/load/acs5-db/tidy/labor-force`,
     xField: '',
     yField: '',
     subtype: 'renderTable',
@@ -294,7 +284,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'earnings',
     title: 'Median Earnings by Sex',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/median-earnings`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/median-earnings`,
     xField: '',
     yField: '',
     subtype: 'renderTableEstimates',
@@ -321,7 +311,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'median_hh_income',
     title: 'Median Household Income',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/median-hh-income`,
     xField: '',
     yField: '',
     categories: ['Labor & Economy'],
@@ -337,7 +327,7 @@ export const chartDefs: ChartDef[] = [
   {
     id: 'per_capita_income',
     title: 'Per Capita Income',
-    url: `${BASE_API_URL}/load/acs5-db/tidy/income`,
+    url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/per-capita-income`,
     xField: '',
     yField: '',
     categories: ['Labor & Economy'],

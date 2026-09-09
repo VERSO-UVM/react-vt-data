@@ -2,62 +2,73 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import axios from 'axios';
+import type { FeatureCollection } from 'geojson';
+
 import VTMap from '@/components/mapping';
+import FilterContainer from '@/components/FilterUI/Filter_wrap';
+import MapLegend, { type LegendRow } from '@/components/Legend';
+import { BASE_API_URL } from '@/config';
+
 import {
   Box,
   Group,
   LoadingOverlay,
   Paper,
-  Select,
   Stack,
   Switch,
   Text,
   Title,
 } from '@mantine/core';
-import { BASE_API_URL } from '@/config';
-import FilterContainer from '@/components/FilterUI/Filter_wrap';
-import axios from 'axios';
-import type { FeatureCollection } from 'geojson';
 
-import MapLegend, { type LegendRow } from '@/components/Legend';
+type MapConfig = {
+  title: string;
+  initialURL: string;
+  initialMethod: 'GET' | 'POST';
+  filterURL?: string;
+  dataURL?: string;
+  legendURL?: string;
+  townBorder?: boolean;
+  largeBorder?: boolean;
+};
 
-// NOTE: zoning is NOT here — it has its own route at /mapping/zoning, which
-// takes precedence over this dynamic segment.
-const MAP_CONFIG: Record<
-  string,
-  {
-    title: string;
-    initialURL?: string;
-    filterURL?: string;
-    dataURL?: string;
-    legendURL?: string;
-    townBorder?: boolean;
-    largeBorder?: boolean;
-  }
-> = {
+const MAP_CONFIG: Record<string, MapConfig> = {
   'flood-legal': {
     title: 'Flood Insurance',
     initialURL: `${BASE_API_URL}/load/mapping/flood_legal`,
+    initialMethod: 'GET',
   },
+
   'soil-suitability': {
     title: 'Soil Suitability',
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=soil_suitability_info_soil_suit`,
+    initialURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_soilSuitability_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     legendURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_legend`,
   },
+
   'treatment-facilities': {
     title: 'Wastewater Treatment Facilities',
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=treatment_facilities_treatment_facility_info`,
+    initialURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_treatmentFacilities_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
   },
+
   'service-areas': {
     title: 'Wastewater Service Areas',
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=service_areas_service_area_info`,
+    initialURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_serviceAreas_info`,
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
+
   ambulance: {
     title: 'Ambulance Service Areas',
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=ambulance_ambulance_info`,
+    initialURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+    initialMethod: 'POST',
+    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VCGI_ambulanceService_info`,
     dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
     legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
     townBorder: false,
@@ -69,52 +80,128 @@ export default function MappingContent() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
   const config = slug ? MAP_CONFIG[slug] : undefined;
+
   const townBorderDef = config?.townBorder ?? false;
   const largeBorderDef = config?.largeBorder ?? true;
 
   const [data, setData] = useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(false);
+  const [legendLoading, setLegendLoading] = useState(false);
+
   const [showCountyLines, setShowCountyLines] = useState(townBorderDef);
+
   const [largeBorder, setLargeBorder] = useState(largeBorderDef);
 
   const [legendData, setLegendData] = useState<LegendRow[]>([]);
 
+  /*
+   * Reset map state when navigating between map pages.
+   */
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset map state on navigation to another slug
     setData(null);
-  }, [slug]);
+    setLegendData([]);
+    setShowCountyLines(townBorderDef);
+    setLargeBorder(largeBorderDef);
+  }, [slug, townBorderDef, largeBorderDef]);
 
+  /*
+   * Load initial map data.
+   *
+   * Filterable maps use POST with an empty filter object.
+   * Non-filterable maps use their configured GET endpoint.
+   */
   useEffect(() => {
-    if (!slug || (!config?.dataURL && !config?.initialURL)) return;
+    if (!config) return;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
-    setLoading(true);
+    let cancelled = false;
 
-    // Filterable maps are POST-only and take a FilterRequest body, for now. TODO: At some point we'll go to FilterSource
-    const request = config.dataURL
-      ? axios.post(config.dataURL, { filters: {} })
-      : axios.get(config.initialURL!);
+    const loadData = async () => {
+      setLoading(true);
 
-    request
-      .then((res) => setData(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [slug, config?.dataURL, config?.initialURL]);
+      try {
+        const response =
+          config.initialMethod === 'POST'
+            ? await axios.post(config.dataURL ?? config.initialURL, {
+                filters: {},
+              })
+            : await axios.get(config.initialURL);
 
+        if (!cancelled) {
+          setData(response.data as FeatureCollection);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load map data:', error);
+          setData(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config]);
+
+  /*
+   * Load map legend when one exists.
+   */
   useEffect(() => {
-    if (!slug || !config?.legendURL) return;
+    const legendURL = config?.legendURL;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: mark loading before the async request
-    setLoading(true);
+    if (!legendURL) {
+      setLegendData([]);
+      return;
+    }
 
-    axios
-      .get(config.legendURL) //get the data
-      .then((res) => setLegendData(res.data)) //set the data
-      .catch(console.error) //catch any errors
-      .finally(() => setLoading(false)); //say that loading is done
-  }, [slug, config?.legendURL]); //do only once on initial render ideally
+    let cancelled = false;
 
-  const borderSwitchText = `Show ${config?.title ?? slug}`;
+    const loadLegend = async () => {
+      setLegendLoading(true);
+
+      try {
+        const response = await axios.get(legendURL);
+
+        if (!cancelled) {
+          setLegendData(response.data as LegendRow[]);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load map legend:', error);
+          setLegendData([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLegendLoading(false);
+        }
+      }
+    };
+
+    loadLegend();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config]);
+
+  if (!config) {
+    return (
+      <Box p="md">
+        <Title order={2}>Map Not Found</Title>
+
+        <Text c="dimmed" mt="xs">
+          The requested map could not be found.
+        </Text>
+      </Box>
+    );
+  }
+
+  const borderSwitchText = `Show ${config.title}`;
 
   return (
     <Box h="calc(100vh - 80px)" style={{ overflow: 'hidden' }}>
@@ -131,14 +218,16 @@ export default function MappingContent() {
           }}
         >
           <Stack gap="md">
+            {/* Header */}
             <Box>
-              <Title order={2}>{config?.title ?? slug}</Title>
+              <Title order={2}>{config.title}</Title>
+
               <Text size="sm" c="dimmed" mt={4}>
                 Explore Vermont planning and environmental data.
               </Text>
             </Box>
 
-            {/* Controls */}
+            {/* Map controls */}
             <Paper withBorder p="sm" radius="md" bg="gray.0">
               <Stack gap="sm">
                 <Switch
@@ -148,6 +237,7 @@ export default function MappingContent() {
                   }
                   label="Show Town Borders"
                 />
+
                 <Switch
                   checked={largeBorder}
                   onChange={(event) =>
@@ -159,7 +249,7 @@ export default function MappingContent() {
             </Paper>
 
             {/* Filters */}
-            {config?.filterURL && config?.dataURL && (
+            {config.filterURL && config.dataURL && (
               <FilterContainer
                 apiURL={config.filterURL}
                 dataURL={config.dataURL}
@@ -168,14 +258,19 @@ export default function MappingContent() {
                 }
               />
             )}
-          </Stack>
 
-          {/* Legend */}
-          <MapLegend data={legendData}></MapLegend>
+            {/* Legend */}
+            {config.legendURL && (
+              <LoadingOverlay visible={legendLoading} zIndex={10} />
+            )}
+
+            {config.legendURL && legendData.length > 0 && (
+              <MapLegend data={legendData} />
+            )}
+          </Stack>
         </Paper>
 
         {/* Map */}
-
         <Box
           style={{
             flex: 1,
@@ -185,6 +280,7 @@ export default function MappingContent() {
           }}
         >
           <LoadingOverlay visible={loading} zIndex={1000} />
+
           <VTMap
             geojson={data}
             showCountyLines={showCountyLines}

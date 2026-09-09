@@ -4,15 +4,15 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import DPSeriesRequest, FilterRequest, make_response
-from query.processed_db import DB
 
 # TODO: Simplify / Refactor this script using the new query folder functions
 from query.acs5 import (
     get_acs5_tidy,
-    get_median_earnings,
-    get_snapshot,
-    get_unemployment_rate_ts,
+    get_acs5_timeseries,
 )
+from query.production_db import get_db
+
+DB = get_db()
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -20,6 +20,10 @@ router = APIRouter()
 
 # TODO: Percents might need to be weighted averages instead of simple averages for statewide aggregation
 # TODO: In DB, add an aggregated statewide VT row to each table for easier aggregation requests
+
+# -----------------------------
+# CENSUS TIDY FORMAT TABLES
+# -----------------------------
 
 
 # Demographics
@@ -36,52 +40,142 @@ async def tidy_education(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("education"))
 
 
+# Housing
 @router.post("/load/acs5-db/tidy/housing")
 async def tidy_housing(request: FilterRequest):
     rows = get_acs5_tidy(dataset="housing", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("housing"))
 
 
-# Labor Force
+# Economics
+@router.post("/load/acs5-db/tidy/economics")
+async def tidy_economics(request: FilterRequest):
+    rows = get_acs5_tidy(dataset="economics", filters=request.filters)
+    return make_response(data=rows, metadata=get_metadata("labor_force"))
+
+
+# Labor Force (FIXME: broken)
 @router.post("/load/acs5-db/tidy/labor-force")
 async def tidy_labor_force(request: FilterRequest):
     rows = get_acs5_tidy(dataset="labor_force", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("labor_force"))
 
 
-# Income
+# Income (FIXME: broken)
 @router.post("/load/acs5-db/tidy/income")
 async def tidy_income(request: FilterRequest):
     rows = get_acs5_tidy(dataset="income", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("income"))
 
 
-# Median Age
-@router.post("/load/acs5-db/tidy/demographics/median-age")
-async def tidy_median_age(request: FilterRequest):
-    rows = get_acs5_tidy(dataset="demographics", filters=request.filters)
+# -----------------------------
+# CENSUS TIMESERIES TABLES
+# -----------------------------
+
+
+##### DEMOGRAPHICS #####
+# Age Dependency Ratio
+@router.post("/load/acs5-db/timeseries/demographics/age-dependency-ratio")
+async def get_age_dependency_ratio(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="demographics", dataset="age_dependency_ratio", filters=request.filters
+    )
     return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
-# Unemployment Rate
-@router.post("/load/acs5-db/tidy/unemployment-rate")
-async def tidy_unemployment_rate(request: FilterRequest):
-    rows = get_unemployment_rate_ts(filters=request.filters)
-    return make_response(data=rows, metadata=get_metadata("unemployment_rate"))
+# Median Age
+@router.post("/load/acs5-db/timeseries/demographics/median-age")
+async def get_median_age(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="demographics", dataset="median_age", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
-# Median Earnings
-@router.post("/load/acs5-db/tidy/median-earnings")
-async def tidy_median_earnings(request: FilterRequest):
-    rows = get_median_earnings(filters=request.filters)
-    return make_response(data=rows, metadata=get_metadata("median_earnings"))
+# Historic Population
+@router.post("/load/acs5-db/timeseries/demographics/historic-population")
+async def get_historic_population(request: FilterRequest):
+    filters = {key: value for key, value in request.filters.items() if key != "year"}
+
+    rows = get_acs5_timeseries(
+        category="demographics",
+        dataset="historic_population",
+        filters=filters,
+    )
+
+    return make_response(data=rows, metadata=get_metadata("demographics"))
+
+
+##### ECONOMICS #####
+# Heath Insurance Coverage
+@router.post("/load/acs5-db/timeseries/economics/health-insurance")
+async def get_health_insurance(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="economics", dataset="health_insurance", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("labor_force"))
+
+
+# Median Household Income
+@router.post("/load/acs5-db/timeseries/economics/median-hh-income")
+async def get_household_income(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="economics", dataset="household_income", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("income"))
+
+
+# Per Capita Income
+@router.post("/load/acs5-db/timeseries/economics/per-capita-income")
+async def get_per_capita_income(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="economics", dataset="per_capita_income", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("income"))
+
+
+# Median Earnings (FIXME: broken)
+@router.post("/load/acs5-db/timeseries/economics/median-earnings")
+async def get_median_earnings(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="economics", dataset="median_earnings", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("income"))
+
+
+##### HOUSING #####
+# Total Housing Units
+@router.post("/load/acs5-db/timeseries/housing/total-units")
+async def get_housing_units(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="housing", dataset="housing_units", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("housing"))
+
+
+# Median Home Value
+@router.post("/load/acs5-db/timeseries/housing/median-home-value")
+async def get_median_home_value(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="housing", dataset="median_home_value", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("housing"))
+
+
+# Vacancy Rates
+@router.post("/load/acs5-db/timeseries/housing/vacancy-rates")
+async def get_vacancy_rates(request: FilterRequest):
+    rows = get_acs5_timeseries(
+        category="housing", dataset="vacancy_rates", filters=request.filters
+    )
+    return make_response(data=rows, metadata=get_metadata("housing"))
 
 
 # Geography Snapshot Variables
 @router.post("/load/acs5-db/tidy/snapshot")
 async def tidy_snapshot(request: FilterRequest):
-    rows = get_snapshot(filters=request.filters)
-    return make_response(data=rows, metadata=get_metadata("snapshot"))
+    rows = get_acs5_tidy(dataset="snapshot", filters=request.filters)
+    return make_response(data=rows, metadata=get_metadata("demographics"))
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +206,7 @@ async def dp_combined_tree():
     rows = DB.execute(
         """--sql
         SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
-        FROM acs5_dp_combined
+        FROM acs5_dp_combined_tidy
         ORDER BY "table", Category, Subcategory, Variable, Measure
         """
     ).df()
@@ -128,7 +222,7 @@ async def dp_combined_series(request: DPSeriesRequest):
         """--sql
         SELECT CAST(year AS INTEGER) AS year,
                CAST(Value AS DOUBLE) AS Value
-        FROM acs5_dp_combined
+        FROM acs5_dp_combined_tidy
         WHERE NAME = ?
           AND "table" = ?
           AND Category = ?

@@ -21,7 +21,7 @@ export const INTEREST_OPTIONS = [
 export type Interest = (typeof INTEREST_OPTIONS)[number];
 
 export const YEAR_MIN_OVERALL = 2009;
-export const YEAR_MAX_OVERALL = 2024;
+export const YEAR_MAX_OVERALL = new Date().getFullYear() - 2;
 
 interface ProfileStore {
   myLocation: Location;

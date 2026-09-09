@@ -1,6 +1,6 @@
 """
 Fetch ACS 5-Year economic data for Vermont:
-  B23025 – Employment Status (labor force participation, 16+)
+  B23025 – Employment Status (labor force participation, 16+ and unemployment)
   B23001 – Sex by Age by Employment Status (prime-age 25-54 LFP)
   B19013 – Median Household Income
   B19301 – Per Capita Income
@@ -20,6 +20,8 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
 Output: vt_acs5_b_economic_tidy.parquet
 """
 
+from datetime import datetime
+
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
@@ -37,6 +39,7 @@ _PRIME_IN_LF = [
     "B23001_125E",
     "B23001_132E",  # female 25-54
 ]
+
 _PRIME_TOTAL = [
     "B23001_024E",
     "B23001_031E",
@@ -56,6 +59,12 @@ var_groups = [
         ["B23025_001E"],
     ),
     VarGroup(
+        "Unemployment Rate",
+        SL,
+        ["B23025_005E"],
+        ["B23025_003E"],
+    ),
+    VarGroup(
         "Prime-Age Labor Force Participation Rate (25-54)",
         SL,
         _PRIME_IN_LF,
@@ -66,13 +75,20 @@ var_groups = [
 ]
 
 fetch_specs = {
-    "B23025": ["B23025_001E", "B23025_002E"],
+    "B23025": [
+        "B23025_001E",
+        "B23025_002E",
+        "B23025_003E",
+        "B23025_005E",
+    ],
     "B23001": _PRIME_TOTAL + _PRIME_IN_LF,
     "B19013": ["B19013_001E"],
     "B19301": ["B19301_001E"],
 }
 
-YEARS = range(2009, 2025)
+MAX_YEAR = datetime.now().year - 1
+
+YEARS = range(2009, MAX_YEAR)
 
 
 def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
@@ -100,7 +116,7 @@ if __name__ == "__main__":
 
     p = argparse.ArgumentParser(description="Scrape ACS B-table economic data.")
     p.add_argument("--start-year", type=int, default=2009)
-    p.add_argument("--end-year", type=int, default=2024)
+    p.add_argument("--end-year", type=int, default=MAX_YEAR - 1)
     p.add_argument(
         "--geos",
         nargs="+",

@@ -23,7 +23,7 @@ FROM (
                 )
             )
         ) AS feature
-    FROM treatment_facilities_treatment_facility_info AS i
-    INNER JOIN treatment_facilities_treatment_facility_geom AS g USING (ID)
+    FROM VersoWastewater_treatmentFacilities_info AS i
+    INNER JOIN VersoWastewater_treatmentFacilities_geom AS g USING (Facility_ID)
     {{ join_filter_block }}
 ) AS features

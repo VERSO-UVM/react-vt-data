@@ -194,10 +194,20 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   );
 };
 
-const YEAR_MARKS = [2009, 2012, 2015, 2018, 2021, 2024].map((y) => ({
-  value: y,
-  label: String(y),
-}));
+const START_YEAR = 2009;
+const YEAR_STEP = 3;
+const LATEST_YEAR = new Date().getFullYear() - 2;
+
+const YEAR_MARKS = Array.from(
+  { length: Math.floor((LATEST_YEAR - START_YEAR) / YEAR_STEP) + 1 },
+  (_, i) => {
+    const year = START_YEAR + i * YEAR_STEP;
+    return {
+      value: year,
+      label: String(year),
+    };
+  },
+);
 
 export const ProfileModal: React.FC = () => {
   const {

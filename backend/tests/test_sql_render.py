@@ -29,14 +29,14 @@ BUILD_SQL = BACKEND / "build" / "sql"
 # ---------------------------------------------------------------------------
 
 WHERE_SOURCE = FilterSource(
-    filter_table="acs5_b10_census",
+    filter_table="acs5_demographics_tidy",
     filters={
         "NAME": ["Vergennes", "Addison town"],
         "year": RangeFilter(min=2015, max=2020),
     },
 )
 CTE_SOURCE = FilterSource(
-    filter_table="zoning_info",
+    filter_table="VersoZoning_info",
     filters={"County": ["Addison"]},
     join_key="OBJECT_ID",
     join_type="inner",
@@ -50,7 +50,7 @@ QUERY_TEMPLATE_SOURCES = {
     "query/sql/acs5/unemployment_rate.sql": [WHERE_SOURCE],
     "query/sql/cdc/county_places.sql": [
         FilterSource(
-            filter_table="cdc_county_places",
+            filter_table="cdc_places_county",
             filters={"Measure": ["Depression among adults"]},
         )
     ],
@@ -176,7 +176,9 @@ class TestCompileFilters:
 
     def test_spatial_join(self):
         src = FilterSource(
-            filter_table="zoning_geom", join_key="geom", join_type="spatial_intersect"
+            filter_table="VersoZoning_geom",
+            join_key="geom",
+            join_type="spatial_intersect",
         )
         _, join = compile_filters([src], [])
         assert join == "JOIN f0 ON ST_Intersects(g.geom, f0.geom)"
@@ -199,7 +201,7 @@ class TestRendering:
         sql, params = sql_filter_block(
             BACKEND / "query/sql/acs5/acs5_tidy.sql", [WHERE_SOURCE]
         )
-        assert "FROM acs5_b10_census" in sql
+        assert "FROM acs5_demographics_tidy" in sql
         assert 'WHERE "NAME" IN ($1, $2)' in sql
         assert params == ["Vergennes", "Addison town", 2015.0, 2020.0]
         assert "{{" not in sql and "{%" not in sql

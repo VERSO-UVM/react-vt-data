@@ -8,6 +8,8 @@ Fetch ACS 5-Year demographics data for Vermont:
 Output: vt_acs5_b_demographics_tidy.parquet
 """
 
+from datetime import datetime
+
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
@@ -27,7 +29,9 @@ _AGE_BANDS = [
     ("75 Plus", range(23, 26), range(47, 50)),
 ]
 
-YEARS = range(2009, 2025)
+MAX_YEAR = datetime.now().year - 1
+
+YEARS = range(2009, MAX_YEAR)
 
 
 def _b01001_codes(male_r, female_r):
@@ -116,7 +120,7 @@ if __name__ == "__main__":
 
     p = argparse.ArgumentParser(description="Scrape ACS B-table demographics data.")
     p.add_argument("--start-year", type=int, default=2009)
-    p.add_argument("--end-year", type=int, default=2024)
+    p.add_argument("--end-year", type=int, default=MAX_YEAR - 1)
     p.add_argument(
         "--geos",
         nargs="+",

@@ -6,7 +6,9 @@ Use query_timeseries(table_name, filters) to filter any registered table.
 
 import logging
 
-from query.processed_db import DB
+from query.production_db import get_db
+
+DB = get_db()
 
 logger = logging.getLogger(__name__)
 
