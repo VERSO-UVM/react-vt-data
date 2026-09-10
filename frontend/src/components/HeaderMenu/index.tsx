@@ -16,7 +16,16 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ProfileModal } from '../profile/SetProfile';
 
-const links = [
+type SubLink = { link: string; label: string };
+type NavGroup = { label: string; links: SubLink[] };
+type NavItem = {
+  link: string;
+  label: string;
+  links?: SubLink[];
+  groups?: NavGroup[];
+};
+
+const links: NavItem[] = [
   { link: '/', label: 'Home' },
   {
     link: '/mapping',
@@ -38,32 +47,47 @@ const links = [
   },
   {
     link: '/data-viewer',
-    label: 'Analyze',
-    links: [
-      { link: '/data-viewer', label: 'Data Viewer' },
+    label: 'Data',
+    groups: [
       {
-        link: '/data-comparison/variable-explorer',
-        label: 'Variable Explorer',
+        label: 'Explore',
+        links: [
+          { link: '/data-viewer', label: 'Data Viewer' },
+          {
+            link: '/data-comparison/variable-explorer',
+            label: 'Variable Explorer',
+          },
+        ],
+      },
+      {
+        label: 'Compare',
+        links: [
+          {
+            link: '/data-comparison/dp-explorer',
+            label: 'Data Profile Comparison',
+          },
+          {
+            link: '/data-comparison/variable-comparison',
+            label: 'Variable Comparison',
+          },
+        ],
+      },
+      {
+        label: 'Reports',
+        links: [
+          {
+            link: '/data-comparison/b-tables',
+            label: 'Automatic/Topic Reports',
+          },
+          { link: '/working-report', label: 'Working Report' },
+        ],
+      },
+      {
+        label: 'Export',
+        links: [{ link: '/data-export', label: 'Data Export' }],
       },
     ],
   },
-  {
-    link: '/data-comparison',
-    label: 'Compare',
-    links: [
-      {
-        link: '/data-comparison/dp-explorer',
-        label: 'Data Profile Comparison',
-      },
-      { link: '/data-comparison/b-tables', label: 'Detailed Table Comparison' },
-      {
-        link: '/data-comparison/variable-comparison',
-        label: 'Variable Comparison',
-      },
-    ],
-  },
-  { link: '/working-report', label: 'Report' },
-  { link: '/data-export', label: 'Data Export' },
   {
     link: '/resources',
     label: 'Resources',
@@ -119,16 +143,44 @@ export default function HeaderMenu() {
   }, []);
 
   const items = links.map((link) => {
-    const isActive = (link: string) =>
-      pathname === link || pathname.startsWith(link + '/');
+    const subRoutes: SubLink[] =
+      link.links ?? link.groups?.flatMap((group) => group.links) ?? [];
 
-    const menuItems = link.links?.map((item) => (
+    const active =
+      pathname === link.link ||
+      pathname.startsWith(link.link + '/') ||
+      subRoutes.some(
+        (sub) => pathname === sub.link || pathname.startsWith(sub.link + '/'),
+      );
+
+    const flatItems = link.links?.map((item) => (
       <Menu.Item key={item.link} component={Link} href={item.link}>
         {item.label}
       </Menu.Item>
     ));
 
-    const active = isActive(link.link);
+    const groupedItems = link.groups?.flatMap((group, groupIndex) => {
+      const groupContent = [
+        <Menu.Label key={`${link.label}-${group.label}-label`}>
+          {group.label}
+        </Menu.Label>,
+        ...group.links.map((item) => (
+          <Menu.Item key={item.link} component={Link} href={item.link}>
+            {item.label}
+          </Menu.Item>
+        )),
+      ];
+
+      if (groupIndex < (link.groups?.length ?? 0) - 1) {
+        groupContent.push(
+          <Menu.Divider key={`${link.label}-${group.label}-divider`} />,
+        );
+      }
+
+      return groupContent;
+    });
+
+    const menuItems = flatItems ?? groupedItems;
 
     if (menuItems) {
       return (
