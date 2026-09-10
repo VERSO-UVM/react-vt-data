@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Card,
-  Center,
   Container,
   Divider,
   Group,
@@ -15,12 +15,12 @@ import {
   Stack,
   Text,
   Title,
-  ThemeIcon,
-  Paper,
 } from '@mantine/core';
 import { IconDownload, IconDatabase, IconMap } from '@tabler/icons-react';
+import { motion } from 'motion/react';
 import { BASE_API_URL } from '@/config';
 import { useProfile } from '@/components/profile/profileStore';
+import { COLORS, FONTS } from '@/app/theme';
 
 interface SourceMeta {
   label: string;
@@ -154,156 +154,257 @@ export default function DataExport() {
 
   /* ---------------- UI ---------------- */
   return (
-    <Container size="sm" py="xl">
-      {/* HEADER */}
-      <Center mb="lg">
-        <Stack align="center" gap={6}>
-          <Group gap="sm">
-            <Title order={2}>Data Export</Title>
-            <Badge color="blue" variant="light">
-              Beta
-            </Badge>
-          </Group>
-
-          <Text size="sm" c="dimmed" maw={520} ta="center">
-            Download structured Vermont datasets as CSV. Data is cleaned and
-            labeled for analysis (not raw census codes).
-          </Text>
-        </Stack>
-      </Center>
-
-      {/* ALERTS */}
-      <Stack gap="sm" mb="md">
-        {error && (
-          <Alert color="red" onClose={() => setError(null)} withCloseButton>
-            {error}
-          </Alert>
-        )}
-        {successMsg && (
-          <Alert
-            color="green"
-            onClose={() => setSuccessMsg(null)}
-            withCloseButton
-          >
-            {successMsg}
-          </Alert>
-        )}
-      </Stack>
-
-      {/* STEP 1 */}
-      <Card withBorder radius="md" p="lg" mb="md">
-        <Group mb="sm">
-          <ThemeIcon variant="light" color="blue">
-            <IconDatabase size={16} />
-          </ThemeIcon>
-          <Text fw={600}>1. Select dataset</Text>
-        </Group>
-
-        {sourceSelectData.length === 0 ? (
-          <Loader size="sm" />
-        ) : (
-          <Select
-            placeholder="Choose a dataset"
-            data={sourceSelectData}
-            value={selectedSource}
-            onChange={setSelectedSource}
-            searchable
-          />
-        )}
-
-        {currentSource && (
-          <>
-            <Divider my="sm" />
-            <Text size="sm">{currentSource.description}</Text>
-
-            <Text size="xs" c="dimmed" mt="xs">
-              Source:{' '}
-              <a
-                href={currentSource.primary_source}
-                target="_blank"
-                rel="noreferrer"
-              >
-                documentation
-              </a>
-            </Text>
-          </>
-        )}
-      </Card>
-
-      {/* STEP 2 */}
-      <Card withBorder radius="md" p="lg" mb="md">
-        <Group mb="sm">
-          <ThemeIcon variant="light" color="blue">
-            <IconMap size={16} />
-          </ThemeIcon>
-          <Text fw={600}>2. Geographic scope</Text>
-        </Group>
-
-        <Text size="xs" c="dimmed" mb="md">
-          Defaults to your profile location. Leave blank for statewide data.
-        </Text>
-
-        <Stack gap="sm">
-          <Select
-            label="County"
-            placeholder="All counties"
-            data={locations.counties}
-            value={selectedCounty}
-            onChange={(v) => {
-              setSelectedCounty(v);
-              setSelectedTown(null);
-            }}
-            searchable
-            clearable
-          />
-
-          <Select
-            label="Town"
-            placeholder="All towns"
-            data={locations.towns}
-            value={selectedTown}
-            onChange={setSelectedTown}
-            searchable
-            clearable
-          />
-        </Stack>
-
-        <Paper mt="md" p="sm" radius="md" bg="gray.0">
-          <Text size="sm">
-            <b>Selected:</b> {areaLabel()}
-          </Text>
-        </Paper>
-      </Card>
-
-      {/* STEP 3 */}
-      <Card
-        withBorder
-        radius="md"
-        p="lg"
-        style={{
-          borderLeft: '4px solid #339af0',
-        }}
-      >
-        <Group mb="xs">
-          <ThemeIcon variant="light" color="blue">
-            <IconDownload size={16} />
-          </ThemeIcon>
-          <Text fw={600}>3. Export data</Text>
-        </Group>
-
-        <Text size="sm" c="dimmed" mb="md">
-          Downloads are limited to 10,000 rows per request for performance.
-        </Text>
-
-        <Button
-          onClick={handleDownload}
-          loading={downloading}
-          fullWidth
-          size="md"
+    <Box style={{ minHeight: '100vh', backgroundColor: COLORS.birchDim }}>
+      <Container size="sm" py={{ base: 50, sm: 80 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
-          Download CSV
-        </Button>
-      </Card>
-    </Container>
+          <Stack align="center" gap={8} mb={36}>
+            <Group gap={10}>
+              <Box style={{ width: 24, height: 1, background: COLORS.spruce }} />
+              <Text
+                fw={1000}
+                style={{
+                  fontFamily: FONTS.mono,
+                  fontSize: 14,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: COLORS.spruce,
+                }}
+              >
+                Data Export
+              </Text>
+              <Box style={{ width: 24, height: 1, background: COLORS.spruce }} />
+            </Group>
+
+            <Group gap="sm" justify="center">
+              <Title
+                order={1}
+                ta="center"
+                style={{
+                  fontFamily: FONTS.display,
+                  color: COLORS.ink,
+                  fontSize: 'clamp(2rem, 5vw, 3rem)',
+                  lineHeight: 1.05,
+                }}
+              >
+                Download Vermont data
+              </Title>
+              <Badge
+                variant="light"
+                style={{
+                  backgroundColor: COLORS.birch,
+                  color: COLORS.spruce,
+                }}
+              >
+                Beta
+              </Badge>
+            </Group>
+
+            <Text size="sm" c="dimmed" maw={480} ta="center">
+              Download a clean and labeled CSV. Pick a dataset and an
+              area below to get started.
+            </Text>
+          </Stack>
+        </motion.div>
+
+        {/* ALERTS */}
+        <Stack gap="sm" mb="md">
+          {error && (
+            <Alert color="red" onClose={() => setError(null)} withCloseButton>
+              {error}
+            </Alert>
+          )}
+          {successMsg && (
+            <Alert
+              color="green"
+              onClose={() => setSuccessMsg(null)}
+              withCloseButton
+            >
+              {successMsg}
+            </Alert>
+          )}
+        </Stack>
+
+        {/* CENTERPIECE PANEL */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Card
+            radius="xl"
+            p={{ base: 'lg', sm: 40 }}
+            style={{
+              border: `1px solid ${COLORS.line}`,
+              background: COLORS.birch,
+              boxShadow: '0 24px 60px rgba(20, 35, 25, 0.10)',
+            }}
+          >
+            <Stack gap="lg">
+              {/* DATASET */}
+              <Box>
+                <Group gap={8} mb={10}>
+                  <IconDatabase size={16} style={{ color: COLORS.spruce }} />
+                  <Text
+                    size="md"
+                    fw={1000}
+                    style={{
+                      fontFamily: FONTS.mono,
+                      textTransform: 'uppercase',
+                      letterSpacing: '.06em',
+                      color: COLORS.slate,
+                    }}
+                  >
+                    Dataset
+                  </Text>
+                </Group>
+
+                {sourceSelectData.length === 0 ? (
+                  <Loader size="sm" />
+                ) : (
+                  <Select
+                    placeholder="Choose a dataset"
+                    data={sourceSelectData}
+                    value={selectedSource}
+                    onChange={setSelectedSource}
+                    searchable
+                    size="md"
+                    radius="md"
+                  />
+                )}
+
+                {currentSource && (
+                  <Box mt="sm">
+                    <Text size="sm" c="dimmed" style={{ lineHeight: 1.6 }}>
+                      {currentSource.description}
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={6}>
+                      Source:{' '}
+                      <a
+                        href={currentSource.primary_source}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        documentation
+                      </a>
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+
+              <Divider style={{ borderColor: COLORS.line }} />
+
+              {/* AREA */}
+              <Box>
+                <Group gap={8} mb={10}>
+                  <IconMap size={16} style={{ color: COLORS.spruce }} />
+                  <Text
+                    size="md"
+                    fw={1000}
+                    style={{
+                      fontFamily: FONTS.mono,
+                      textTransform: 'uppercase',
+                      letterSpacing: '.06em',
+                      color: COLORS.slate,
+                    }}
+                  >
+                    Area
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    — defaults to your profile, leave blank for statewide
+                  </Text>
+                </Group>
+
+                <Group grow gap="sm">
+                  <Select
+                    placeholder="All counties"
+                    data={locations.counties}
+                    value={selectedCounty}
+                    onChange={(v) => {
+                      setSelectedCounty(v);
+                      setSelectedTown(null);
+                    }}
+                    searchable
+                    clearable
+                    size="md"
+                    radius="md"
+                  />
+
+                  <Select
+                    placeholder="All towns"
+                    data={locations.towns}
+                    value={selectedTown}
+                    onChange={setSelectedTown}
+                    searchable
+                    clearable
+                    size="md"
+                    radius="md"
+                  />
+                </Group>
+              </Box>
+
+              <Divider style={{ borderColor: COLORS.line }} />
+
+              {/* SUMMARY + ACTION */}
+              <Group
+                justify="space-between"
+                align="center"
+                wrap="wrap"
+                gap="md"
+              >
+                <Box>
+                  <Text
+                    size="xs"
+                    style={{
+                      fontFamily: FONTS.mono,
+                      textTransform: 'uppercase',
+                      letterSpacing: '.06em',
+                      color: COLORS.slate,
+                    }}
+                  >
+                    Selected area
+                  </Text>
+                  <Text fw={600}>{areaLabel()}</Text>
+                </Box>
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  style={{ flex: '1 1 220px' }}
+                >
+                  <Button
+                    onClick={handleDownload}
+                    loading={downloading}
+                    fullWidth
+                    size="md"
+                    radius="md"
+                    leftSection={<IconDownload size={18} />}
+                    styles={{
+                      root: {
+                        backgroundColor: COLORS.amber,
+                        color: COLORS.spruceDeep,
+                        fontWeight: 600,
+                        '&:hover': { backgroundColor: COLORS.amberSoft },
+                      },
+                    }}
+                  >
+                    Download CSV
+                  </Button>
+                </motion.div>
+              </Group>
+
+              <Text size="xs" c="dimmed" ta="center">
+                Downloads are limited to 10,000 rows per request for
+                performance.
+              </Text>
+            </Stack>
+          </Card>
+        </motion.div>
+      </Container>
+    </Box>
   );
 }
