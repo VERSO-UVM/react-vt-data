@@ -18,6 +18,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { COLORS } from '@/app/theme';
 
 type Legend = {
   measures: [string, string];
@@ -31,6 +32,40 @@ type Point = {
 };
 
 const rgba = (c: number[]) => `rgba(${c[0]},${c[1]},${c[2]},${c[3] / 255})`;
+
+const POINT_RADIUS = 5;
+const ACTIVE_POINT_RADIUS = 8;
+
+/**
+ * Recharts 3.9's built-in Scatter symbol resolves to a zero-size path when no
+ * ZAxis/size dataKey is configured (the animation step interpolates size
+ * toward a value that never settles above 0), leaving every dot invisible.
+ * Drawing the circle directly sidesteps that symbol/animation pipeline.
+ */
+function makeScatterDot(activeId: string | null) {
+  return function ScatterDot(props: {
+    cx?: number;
+    cy?: number;
+    fill?: string;
+    tooltip?: Record<string, unknown>;
+  }) {
+    const { cx, cy, fill, tooltip } = props;
+    if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+    const isActive =
+      activeId != null && String(tooltip?.__title__ ?? '') === activeId;
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={isActive ? ACTIVE_POINT_RADIUS : POINT_RADIUS}
+        fill={fill}
+        fillOpacity={isActive ? 1 : 0.85}
+        stroke={isActive ? COLORS.ink : 'none'}
+        strokeWidth={isActive ? 2 : 0}
+      />
+    );
+  };
+}
 
 /** This will be the same card as the map hover tooltip, driven by `properties.tooltip`. */
 function PointTooltip({ content }: { content: Record<string, unknown> }) {
@@ -58,9 +93,15 @@ function PointTooltip({ content }: { content: Record<string, unknown> }) {
 export default function VariableScatter({
   geojson,
   legend,
+  activeId = null,
+  onPointHover,
 }: {
   geojson: FeatureCollection | null;
   legend: Legend | null;
+  /** Region to highlight, keyed by `tooltip.__title__` — drive this from the map's hover to link the two. */
+  activeId?: string | null;
+  /** Fires with the hovered point's `tooltip.__title__` (or null on unhover) — wire this back into the map's `highlightId` to link the two. */
+  onPointHover?: (id: string | null) => void;
 }) {
   if (!geojson || !legend) return null;
 
@@ -115,7 +156,16 @@ export default function VariableScatter({
               ) : null
             }
           />
-          <Scatter data={points} />
+          <Scatter
+            data={points}
+            shape={makeScatterDot(activeId)}
+            onMouseEnter={(data) =>
+              onPointHover?.(
+                String((data as unknown as Point).tooltip?.__title__ ?? ''),
+              )
+            }
+            onMouseLeave={() => onPointHover?.(null)}
+          />
         </ScatterChart>
       </ResponsiveContainer>
     </Box>
