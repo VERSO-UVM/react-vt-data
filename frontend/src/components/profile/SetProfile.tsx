@@ -231,7 +231,6 @@ export const ProfileModal: React.FC = () => {
 
   // Profile is not automatically opened each reload
   const [hydrated, setHydrated] = useState(
-
     () => typeof window !== 'undefined' && useProfile.persist.hasHydrated(),
   );
 

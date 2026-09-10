@@ -163,7 +163,9 @@ export default function DataExport() {
         >
           <Stack align="center" gap={8} mb={36}>
             <Group gap={10}>
-              <Box style={{ width: 24, height: 1, background: COLORS.spruce }} />
+              <Box
+                style={{ width: 24, height: 1, background: COLORS.spruce }}
+              />
               <Text
                 fw={1000}
                 style={{
@@ -176,7 +178,9 @@ export default function DataExport() {
               >
                 Data Export
               </Text>
-              <Box style={{ width: 24, height: 1, background: COLORS.spruce }} />
+              <Box
+                style={{ width: 24, height: 1, background: COLORS.spruce }}
+              />
             </Group>
 
             <Group gap="sm" justify="center">
@@ -204,8 +208,8 @@ export default function DataExport() {
             </Group>
 
             <Text size="sm" c="dimmed" maw={480} ta="center">
-              Download a clean and labeled CSV. Pick a dataset and an
-              area below to get started.
+              Download a clean and labeled CSV. Pick a dataset and an area below
+              to get started.
             </Text>
           </Stack>
         </motion.div>
