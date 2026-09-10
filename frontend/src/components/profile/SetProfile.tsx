@@ -229,10 +229,20 @@ export const ProfileModal: React.FC = () => {
 
   const opened = profileModalOpen;
 
-  // Open automatically after mount if the user hasn't saved a profile yet.
+  // Profile is not automatically opened each reload
+  const [hydrated, setHydrated] = useState(
+
+    () => typeof window !== 'undefined' && useProfile.persist.hasHydrated(),
+  );
+
   useEffect(() => {
-    if (!profileSet) openProfileModal();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return useProfile.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+
+  // Open automatically once hydrated if the user hasn't saved a profile yet.
+  useEffect(() => {
+    if (hydrated && !profileSet) openProfileModal();
+  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
   const [tempComparison, setTempComparison] = useState<Location>(comparison);
