@@ -13,6 +13,7 @@
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -32,6 +33,30 @@ MIN_COMPLETE_ROWS = 3  # fewest geographies a composite index can be fit from
 # Census ACS sentinel for a suppressed/not-applicable estimate (e.g. median age
 # in a town too small to estimate). Never a real value, so drop it up front.
 ACS_SENTINEL = -666666666
+# Vintages this recent aren't final yet (ACS5/CDC Places both lag ~2 years),
+# so the newest year at or before this is the one used per table.
+MAX_YEAR = datetime.now().year - 2
+
+
+def _latest_year(table: str) -> str:
+    """Most recent `year` in `table` at or before MAX_YEAR.
+
+    Every registered table is a long/tidy series with one row per
+    (geography, variable, year) -- left unfiltered, a single Variable pick
+    returns one row per year stacked on top of each other, which both
+    inflates the comparison map with duplicate geometries and defeats the
+    scatter's one-dot-per-geography expectation. `year` is stored as text
+    (matches the rest of this codebase's ACS5 columns), hence the cast.
+    """
+    row = DB.execute(
+        f'SELECT MAX(TRY_CAST("year" AS INTEGER)) '
+        f'FROM {table} WHERE TRY_CAST("year" AS INTEGER) <= ?',
+        [MAX_YEAR],
+    ).fetchone()
+    year = row[0] if row else None
+    if year is None:
+        raise ValueError(f"no data at or before {MAX_YEAR} in {table}")
+    return str(year)
 
 
 def _acs5_dataset(table: str, label: str) -> dict:
@@ -140,6 +165,7 @@ def _fetch(cfg: dict, extra_filters: dict | None = None) -> pd.DataFrame:
     filters = dict(extra_filters or {})
     if "geo_type" in cfg:
         filters["geo_type"] = [cfg["geo_type"]]
+    filters["year"] = [_latest_year(cfg["table"])]
 
     source = FilterSource(filter_table=cfg["table"], filters=filters)
     sql, params = sql_filter_block(cfg["sql"], [source])
@@ -166,17 +192,33 @@ def _bin3(series: pd.Series) -> tuple[pd.Series, list[float]]:
     return codes, list(edges)
 
 
-def _single_variable(dataset: str, level: str, var: str) -> pd.DataFrame:
+def _single_variable(
+    dataset: str, level: str, var: str, extra_filters: dict | None = None
+) -> pd.DataFrame:
     cfg = level_config(dataset, level)
-    df = _fetch(cfg, {cfg["var_col"]: [var]})
+    filters = dict(extra_filters or {})
+    filters[cfg["var_col"]] = [var]
+    df = _fetch(cfg, filters)
     sub = df[df["measure"] == var][["geoid", "geometry", "data_value", "name"]].copy()
+    # Rows whose Jurisdiction/geo-id failed to match a geometry (a handful of
+    # unparsed or non-geographic entries in the source tidy table) carry no
+    # geoid at all. Left in, two such rows from either side of a comparison
+    # collapse together on the shared NaN "geoid" during the merge below,
+    # producing a bogus cross product of geometry-less, name-less features.
+    sub = sub.dropna(subset=["geoid"])
     if sub.empty:
         raise ValueError(f"no data for {dataset}/{level}: {var!r}")
     return sub
 
 
 def compare_variables(
-    dataset1: str, level: str, var1: str, dataset2: str, var2: str
+    dataset1: str,
+    level: str,
+    var1: str,
+    dataset2: str,
+    var2: str,
+    filters1: dict | None = None,
+    filters2: dict | None = None,
 ) -> tuple[dict, dict]:
     """Bivariate comparison map: geojson in `data`, legend in `metadata`.
 
@@ -188,9 +230,14 @@ def compare_variables(
     `geoid`, which is stable across datasets because every county/town-level
     query joins through the same vt_county_lines_geom/vt_town_lines_geom
     tables.
+
+    `filters1`/`filters2` carry any *other* cascade picks alongside the
+    variable itself (e.g. CDC's Prevalence Measure sits one level below
+    Measure -- without it, "Any disability among adults" still matches both
+    its Crude and Age-adjusted rows, doubling every geography on the map).
     """
-    d1 = _single_variable(dataset1, level, var1)
-    d2 = _single_variable(dataset2, level, var2)[["geoid", "data_value"]]
+    d1 = _single_variable(dataset1, level, var1, filters1)
+    d2 = _single_variable(dataset2, level, var2, filters2)[["geoid", "data_value"]]
 
     d1["bin"], edges_x = _bin3(d1["data_value"])
     d2["bin"], edges_y = _bin3(d2["data_value"])

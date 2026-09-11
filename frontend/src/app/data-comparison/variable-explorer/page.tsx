@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';
-import { FONTS } from '@/app/theme';
+import { COLORS, FONTS } from '@/app/theme';
 import VTMap from '@/components/mapping';
 import VariableScatter from '@/components/Charts/MapCorrespondentScatter';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
@@ -16,9 +16,9 @@ import { ChartItem } from '@/types/cachedCharts';
 import { SamePerXBarChart } from '@/components/Charts';
 
 type Legend = {
-  grid: number[][][]; // [y][x] -> rgba, matches the map's fill colors
+  grid: number[][][];
   measures: [string, string];
-  edges_x: number[]; // bin edges incl. min/max; interior values are the cutpoints
+  edges_x: number[];
   edges_y: number[];
 };
 
@@ -36,27 +36,28 @@ const LEVEL_LABELS: Record<string, string> = {
   tract: 'Census Tract',
 };
 
-const CELL = 34; // px per legend cell
-const GAP = 2; // px gap between cells (surface shows through)
+const CELL = 34;
+const GAP = 2;
 const SIZE = 3 * CELL + 2 * GAP;
-// y offset (from grid top) / x offset (from grid left) of the two cell boundaries
 const CUTS = [1, 2].map((i) => i * CELL + (i - 0.5) * GAP);
 
 const rgba = (c: number[]) => `rgba(${c[0]},${c[1]},${c[2]},${c[3] / 255})`;
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
 
-/**
- * 3x3 bivariate legend. The grid colors come straight from the API response,
- * so they are exactly the colors on the map. Tick values sit at the cell
- * boundaries (they are the bin cutpoints, not cell centers).
- */
+// 3 X 3 bivariate legend.
 function BivariateLegend({ legend }: { legend: Legend }) {
   const { grid, measures, edges_x, edges_y } = legend;
   const cutX = edges_x.slice(1, -1);
   const cutY = edges_y.slice(1, -1);
 
   return (
-    <Paper withBorder p="sm" radius="md" mt="md">
+    <Paper
+      withBorder
+      p="sm"
+      radius="md"
+      mt="md"
+      style={{ borderColor: COLORS.line, backgroundColor: COLORS.birch }}
+    >
       <Text size="xs" c="dimmed" mb={8}>
         Regions are shaded by both variables at once — darker means higher on
         both.
@@ -65,7 +66,6 @@ function BivariateLegend({ legend }: { legend: Legend }) {
         ↑ {measures[1]}
       </Text>
       <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-        {/* y tick values, aligned to the cell boundaries */}
         <div style={{ position: 'relative', width: 26, height: SIZE }}>
           {cutY.map((v, i) => (
             <Text
@@ -75,7 +75,6 @@ function BivariateLegend({ legend }: { legend: Legend }) {
               style={{
                 position: 'absolute',
                 right: 0,
-                // y axis increases upward: first cutpoint is the LOWER boundary
                 top: SIZE - CUTS[i],
                 transform: 'translateY(-50%)',
               }}
@@ -86,7 +85,6 @@ function BivariateLegend({ legend }: { legend: Legend }) {
         </div>
 
         <div>
-          {/* the 3x3 grid; row y=2 (highest) rendered first */}
           <div
             style={{
               display: 'grid',
@@ -114,7 +112,6 @@ function BivariateLegend({ legend }: { legend: Legend }) {
             )}
           </div>
 
-          {/* x tick values at the cell boundaries */}
           <div style={{ position: 'relative', height: 14, width: SIZE }}>
             {cutX.map((v, i) => (
               <Text
@@ -156,7 +153,13 @@ function variableFilterDefs(table1: string, table2: string): filterDef[] {
 }
 
 const selectStyles = {
-  label: { fontFamily: FONTS.body, marginBottom: 6 },
+  label: {
+    fontFamily: FONTS.body,
+    marginBottom: 6,
+    color: COLORS.slate,
+    fontWeight: 600,
+  },
+  input: { borderRadius: 8 },
 };
 
 export default function VariableExplorer() {
@@ -170,12 +173,11 @@ export default function VariableExplorer() {
   const [indexChart, setIndexChart] = useState<ChartItem | null>(null);
   const [indexError, setIndexError] = useState<string | null>(null);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const bothCDC = dataset1 === 'cdc' && dataset2 === 'cdc';
 
-  // Load the dataset registry once; default both variables to its first entry
-  // (so the two pickers start on the same dataset, matching a same-dataset
-  // comparison until the user branches one of them out).
+  // Load the dataset registry once
   useEffect(() => {
     axios
       .get(`${BASE_API_URL}/load/mapping/compare/datasets`)
@@ -236,6 +238,7 @@ export default function VariableExplorer() {
     setApplyError(null);
     setIndexChart(null);
     setIndexError(null);
+    setHoveredId(null);
   };
 
   // Level options are the geography levels BOTH chosen datasets support —
@@ -302,7 +305,12 @@ export default function VariableExplorer() {
     [];
 
   const scatterTile = geojson && (
-    <VariableScatter geojson={geojson} legend={legend} />
+    <VariableScatter
+      geojson={geojson}
+      legend={legend}
+      activeId={hoveredId}
+      onPointHover={setHoveredId}
+    />
   );
   const indexTile = bothCDC && indexChart && (
     <div style={{ height: 360 }}>
@@ -321,40 +329,52 @@ export default function VariableExplorer() {
       sidebar={
         <>
           {!registry ? (
-            <Loader size="sm" my="md" />
+            <Loader size="sm" my="md" color="green" />
           ) : (
             <>
-              <Select
-                label="Variable 1 — Dataset"
-                data={datasetOptions}
-                value={dataset1}
-                onChange={handleSelectDataset1}
-                allowDeselect={false}
-                mb="sm"
-                styles={selectStyles}
-              />
-              <Select
-                label="Variable 2 — Dataset"
-                data={datasetOptions}
-                value={dataset2}
-                onChange={handleSelectDataset2}
-                allowDeselect={false}
+              <Paper
+                withBorder
+                radius="md"
+                p="sm"
                 mb="md"
-                styles={selectStyles}
-              />
-
-              {levelOptions.length > 1 && (
-                <SegmentedControl
-                  fullWidth
-                  mb="md"
-                  data={levelOptions.map((lvl) => ({
-                    label: LEVEL_LABELS[lvl] ?? lvl,
-                    value: lvl,
-                  }))}
-                  value={level ?? levelOptions[0]}
-                  onChange={handleSelectLevel}
+                style={{
+                  borderColor: COLORS.line,
+                  backgroundColor: COLORS.birch,
+                }}
+              >
+                <Select
+                  label="Variable 1 — Dataset"
+                  data={datasetOptions}
+                  value={dataset1}
+                  onChange={handleSelectDataset1}
+                  allowDeselect={false}
+                  mb="sm"
+                  styles={selectStyles}
                 />
-              )}
+                <Select
+                  label="Variable 2 — Dataset"
+                  data={datasetOptions}
+                  value={dataset2}
+                  onChange={handleSelectDataset2}
+                  allowDeselect={false}
+                  mb={levelOptions.length > 1 ? 'sm' : 0}
+                  styles={selectStyles}
+                />
+
+                {levelOptions.length > 1 && (
+                  <SegmentedControl
+                    fullWidth
+                    color="green"
+                    radius="md"
+                    data={levelOptions.map((lvl) => ({
+                      label: LEVEL_LABELS[lvl] ?? lvl,
+                      value: lvl,
+                    }))}
+                    value={level ?? levelOptions[0]}
+                    onChange={handleSelectLevel}
+                  />
+                )}
+              </Paper>
 
               {dataset1 && dataset2 && (
                 <FilterWrap
@@ -382,8 +402,9 @@ export default function VariableExplorer() {
         <VTMap
           geojson={geojson}
           showCountyLines={false}
-          controllerOn={false}
           initialZoom={8}
+          onFeatureHover={setHoveredId}
+          highlightId={hoveredId}
         />
       }
       tiles={[scatterTile, indexTile, indexErrorTile].filter(

@@ -165,6 +165,7 @@ export default function VariableComparison() {
     validDatasets['CDC, County Level'],
   );
   const [pcaChart, setPCAChart] = useState<ChartItem | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const handleSelectDataSet = (value: string | null): void => {
     if (value === null) return;
@@ -217,12 +218,20 @@ export default function VariableComparison() {
         <VTMap
           geojson={geojson}
           showCountyLines={false}
-          controllerOn={false}
           initialZoom={8}
+          onFeatureHover={setHoveredId}
+          highlightId={hoveredId}
         />
       }
       tiles={[
-        geojson && <VariableScatter geojson={geojson} legend={legend} />,
+        geojson && (
+          <VariableScatter
+            geojson={geojson}
+            legend={legend}
+            activeId={hoveredId}
+            onPointHover={setHoveredId}
+          />
+        ),
         pcaChart && (
           <div style={{ height: 360 }}>
             <SamePerXBarChart chart={pcaChart} />

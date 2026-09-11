@@ -1,14 +1,9 @@
-/**
- * @since 2026-07-03
- *
- * @description
- *   Shared scaffold for  pages where mapping is only *part* of the content (eg, not exploratory maps(map pages: a fixed-width scrollable sidebar (filters,
- *   legend, ...) next to a main column, in tiles.
- *
- */
 'use client';
 import { ReactNode } from 'react';
-import { Box, Paper, Stack, Title } from '@mantine/core';
+import { Paper, ScrollArea, Title, Divider, Stack, Text } from '@mantine/core';
+import { IconChartBar } from '@tabler/icons-react';
+import { COLORS, FONTS } from '@/app/theme';
+import classes from './QuadTileMapLayout.module.css';
 
 interface QuadMapLayoutProps {
   title: string;
@@ -17,12 +12,9 @@ interface QuadMapLayoutProps {
   tiles: ReactNode[];
 }
 
-const tileStyle = {
-  position: 'relative' as const,
-  borderRadius: 8,
-  overflow: 'hidden',
-  minHeight: 0,
-  minWidth: 0,
+const panelStyle = {
+  borderColor: COLORS.line,
+  backgroundColor: '#fff',
 };
 
 export default function QuadTileMapLayout({
@@ -31,59 +23,87 @@ export default function QuadTileMapLayout({
   map,
   tiles,
 }: QuadMapLayoutProps) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        gap: 16,
-        padding: 16,
-        height: 'calc(100vh - 80px)',
-      }}
-    >
-      <Paper
-        withBorder
-        p="md"
-        radius="md"
-        style={{ width: 340, flexShrink: 0, overflowY: 'auto' }}
-      >
-        <Title order={4} mb="sm">
-          {title}
-        </Title>
-        {sidebar}
-      </Paper>
+  const visibleTiles = tiles.filter(Boolean);
 
-      <Box
-        style={{ flex: 1, minWidth: 0, display: 'flex', gap: 16, minHeight: 0 }}
-      >
-        <Paper
-          withBorder
-          radius="md"
-          p="md"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            alignSelf: 'stretch',
-            position: 'relative',
-            overflow: 'hidden',
-            display: 'flex',
-          }}
-        >
-          {map}
-        </Paper>
-        <Stack gap="md" style={{ flex: 1, minWidth: 0, overflowY: 'auto' }}>
-          {tiles.map((tile, i) => (
-            <Paper
-              withBorder
-              p="md"
-              key={i}
-              radius="md"
-              style={{ flexShrink: 0, minHeight: 240 }}
-            >
-              {tile}
-            </Paper>
-          ))}
-        </Stack>
-      </Box>
+  return (
+    <div className={classes.wrapper}>
+      <div className={classes.grid}>
+        {/* Sidebar Column */}
+        <div className={classes.column}>
+          <Paper
+            withBorder
+            shadow="sm"
+            radius="lg"
+            p="md"
+            className={classes.panel}
+            style={panelStyle}
+          >
+            <ScrollArea h="100%" offsetScrollbars type="auto">
+              <Title
+                order={4}
+                mb={2}
+                style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
+              >
+                {title}
+              </Title>
+              <Divider mb="sm" color={COLORS.line} />
+              {sidebar}
+            </ScrollArea>
+          </Paper>
+        </div>
+
+        {/* Map Column */}
+        <div className={classes.column}>
+          <Paper
+            withBorder
+            shadow="sm"
+            radius="lg"
+            className={classes.mapPanel}
+            style={panelStyle}
+          >
+            {map}
+          </Paper>
+        </div>
+
+        {/* Chart / Side Content Column */}
+        <div className={classes.column}>
+          <Paper
+            withBorder
+            shadow="sm"
+            radius="lg"
+            p="md"
+            className={classes.panel}
+            style={panelStyle}
+          >
+            <ScrollArea h="100%" offsetScrollbars type="auto">
+              <Title
+                order={5}
+                mb={2}
+                style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
+              >
+                Insights
+              </Title>
+              <Divider mb="sm" color={COLORS.line} />
+              {visibleTiles.length > 0 ? (
+                <Stack gap="md">
+                  {visibleTiles.map((tile, i) => (
+                    <div key={i}>{tile}</div>
+                  ))}
+                </Stack>
+              ) : (
+                <div className={classes.emptyTiles}>
+                  <Stack gap={6} align="center">
+                    <IconChartBar size={28} color={COLORS.slate} />
+                    <Text size="sm" c="dimmed">
+                      Charts will appear here once data is loaded.
+                    </Text>
+                  </Stack>
+                </div>
+              )}
+            </ScrollArea>
+          </Paper>
+        </div>
+      </div>
     </div>
   );
 }

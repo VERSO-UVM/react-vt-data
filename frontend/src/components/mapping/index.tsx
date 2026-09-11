@@ -32,6 +32,10 @@ interface MyMapProps {
    * own `rgba_color` and `tooltip` properties, exactly like the main layer.
    */
   largeBorders?: boolean;
+  /** Fires with the hovered feature's `tooltip.__title__` (or null on unhover) — lets a sibling component (e.g. a scatterplot) highlight the matching point. */
+  onFeatureHover?: (id: string | null) => void;
+  /** Feature to visually emphasize, keyed by `tooltip.__title__` — set this from a sibling component's own hover to highlight the corresponding region here. */
+  highlightId?: string | null;
 }
 
 const BASE_STYLES = {
@@ -66,6 +70,8 @@ export default function VTMap({
   initialZoom = 7,
   targetBBox,
   largeBorders = false,
+  onFeatureHover,
+  highlightId = null,
 }: MyMapProps) {
   const mapRef = useRef<MapRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -167,8 +173,10 @@ export default function VTMap({
         y: info.y,
         content: info.object.properties.tooltip,
       });
+      onFeatureHover?.(String(info.object.properties.tooltip?.__title__ ?? ''));
     } else {
       setTooltip(null);
+      onFeatureHover?.(null);
     }
   };
 
@@ -193,6 +201,21 @@ export default function VTMap({
     properties?: { rgba_color?: [number, number, number, number] };
   }) => d.properties?.rgba_color ?? [0, 0, 0, 0];
 
+  const isHighlighted = (d: {
+    properties?: { tooltip?: Record<string, unknown> };
+  }) =>
+    highlightId != null &&
+    String(d.properties?.tooltip?.__title__ ?? '') === highlightId;
+
+  const getLineColor = (d: {
+    properties?: { tooltip?: Record<string, unknown> };
+  }): [number, number, number, number] =>
+    isHighlighted(d) ? [255, 209, 0, 255] : [255, 255, 255, 130];
+
+  const getLineWidth = (d: {
+    properties?: { tooltip?: Record<string, unknown> };
+  }) => (isHighlighted(d) ? 3 : 1);
+
   const deckLayers: LayersList = activeLayers
     .filter((layer) => layer.visible && layer.geojson)
     .map(
@@ -207,11 +230,15 @@ export default function VTMap({
           pointRadiusMaxPixels: 12,
           getFillColor,
           stroked: true,
-          getLineColor: [255, 255, 255, 130],
+          getLineColor,
           lineWidthUnits: 'pixels',
-          getLineWidth: 1,
+          getLineWidth,
           lineWidthMinPixels: 0.5,
-          lineWidthMaxPixels: 1,
+          lineWidthMaxPixels: 3,
+          updateTriggers: {
+            getLineColor: [highlightId],
+            getLineWidth: [highlightId],
+          },
           pickable: true,
           autoHighlight: true,
           highlightColor: [255, 255, 255, 180],

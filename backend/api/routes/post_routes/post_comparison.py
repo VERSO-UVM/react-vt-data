@@ -35,7 +35,7 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
         )
 
     sources = [spec_to_source(spec, "default") for spec in specs]
-    picks: list[tuple[str, str]] = []
+    picks: list[tuple[str, str, dict]] = []
     for src in sources:
         try:
             dataset = dataset_for_table(src.filter_table)
@@ -49,11 +49,18 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
                 status_code=400,
                 detail=f"expected exactly 1 variable for {dataset}, got: {values}",
             )
-        picks.append((dataset, values[0]))
+        # Any other cascade level picked alongside the variable itself (e.g.
+        # CDC's Prevalence Measure, one level below Measure) narrows the
+        # fetch the same way -- dropping it here would let unrelated rows
+        # for that variable (Crude vs. Age-adjusted prevalence, etc.) back in.
+        other_filters = {k: v for k, v in src.filters.items() if k != var_col}
+        picks.append((dataset, values[0], other_filters))
 
     try:
-        (dataset1, var1), (dataset2, var2) = picks
-        geojson, legend = compare_variables(dataset1, level, var1, dataset2, var2)
+        (dataset1, var1, filters1), (dataset2, var2, filters2) = picks
+        geojson, legend = compare_variables(
+            dataset1, level, var1, dataset2, var2, filters1, filters2
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
