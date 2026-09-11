@@ -568,7 +568,7 @@ function DatasetDrawer({
       opened={opened}
       onClose={onClose}
       position="bottom"
-      size="xl"
+      size="lg"
       radius="xl"
       title={
         dataset ? 'Dataset details' : `${category?.name ?? 'Category'} datasets`
@@ -684,6 +684,7 @@ function DatasetDrawer({
           <Box>
             <Title
               order={2}
+              mt="xl"
               style={{
                 color: COLORS.spruceDeep,
                 fontFamily: FONTS.display,
