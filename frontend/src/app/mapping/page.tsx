@@ -5,20 +5,21 @@ import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 import {
+  ActionIcon,
   Autocomplete,
+  Badge,
   Box,
+  Button,
+  Collapse,
+  Divider,
   Group,
   Paper,
+  Progress,
+  SimpleGrid,
   Stack,
   Switch,
-  Title,
   Text,
-  SimpleGrid,
-  Progress,
-  Divider,
-  ActionIcon,
-  Collapse,
-  Button,
+  Title,
   Tooltip,
   useMantineTheme,
 } from '@mantine/core';
@@ -45,7 +46,7 @@ import { computeBuildableOverlay } from './buildableOverlay';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
 import { getFeatureBBox } from './geoUtils';
-import { COLORS } from '@/app/theme';
+import { COLORS, FONTS } from '@/app/theme';
 
 const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   'buildable-areas': IconBuildingCommunity,
@@ -427,13 +428,22 @@ function MapExplorerContent() {
           }}
         >
           <Stack gap="xs" mb="xs">
-            <Group justify="space-between" align="center">
+            <Group gap="sm" align="center">
               <Title
                 order={3}
                 style={{ fontFamily: theme.headings?.fontFamily, fontSize: 18 }}
               >
                 Vermont Mapping
               </Title>
+              <Badge
+                style={{
+                  color: COLORS.birch,
+                  background: COLORS.amber,
+                  fontFamily: FONTS.mono,
+                }}
+              >
+                Beta
+              </Badge>
               <Text size="xs" c="dimmed" fw={600}>
                 {activeLayers.size} active
               </Text>
