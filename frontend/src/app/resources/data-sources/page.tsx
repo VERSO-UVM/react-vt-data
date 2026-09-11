@@ -36,15 +36,6 @@ import {
 
 import * as motion from 'motion/react-client';
 
-const COLOR = {
-  spruce: '#1B3A2F',
-  spruceDeep: '#122820',
-  slate: '#40525A',
-  birch: '#F6F5EF',
-  amberSoft: '#E7B563',
-  line: 'rgba(27, 58, 47, 0.14)',
-};
-
 import { COLORS, FONTS } from '@/app/theme';
 
 // -----------------------------------------------------------------------------
@@ -93,24 +84,6 @@ function DataSourcesHero() {
         }}
       />
 
-      {/* Large decorative mark */}
-      <Text
-        aria-hidden
-        style={{
-          position: 'absolute',
-          right: '-30px',
-          top: '-80px',
-          fontFamily: FONTS.display,
-          fontSize: 'clamp(14rem, 30vw, 28rem)',
-          lineHeight: 1,
-          color: 'rgba(255,255,255,.035)',
-          userSelect: 'none',
-          pointerEvents: 'none',
-        }}
-      >
-        ∞
-      </Text>
-
       <Container size="xl" style={{ position: 'relative' }}>
         <Group gap={10} mb={20}>
           <Box
@@ -131,6 +104,15 @@ function DataSourcesHero() {
           >
             DATA CATALOG
           </Text>
+          <Badge
+            style={{
+              color: COLORS.birchDim,
+              background: COLORS.amber,
+              fontFamily: FONTS.mono,
+            }}
+          >
+            Beta
+          </Badge>
         </Group>
 
         <Title
