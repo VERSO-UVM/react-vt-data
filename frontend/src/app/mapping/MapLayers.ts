@@ -12,6 +12,7 @@ import {
   treatment_facility_filtering,
   service_area_filtering,
   zoning_filtering,
+  ambulance_filtering,
 } from '@/components/FilterRedux/filterDefs';
 
 /**
@@ -110,6 +111,16 @@ export const MAP_LAYERS: MapLayerConfig[] = [
       filterTable: 'VersoZoning_info',
       label: 'Jurisdiction',
     },
+  },
+  {
+    id: 'ambulance',
+    title: 'Ambulance Service Areas',
+    dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+    method: 'POST',
+    filterList: ambulance_filtering,
+    legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
+    responseShape: 'direct',
+    color: '#fd7e14',
   },
 ];
 

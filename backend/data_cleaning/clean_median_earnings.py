@@ -10,21 +10,17 @@
 python -m data_cleaning.clean_median_earnings
 """
 
-from datetime import datetime
-
 import duckdb
 import numpy as np
 import pandas as pd
 
-INFLATION_YEAR = datetime.now().year - 2
-
 
 def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     raw_df = con.execute(
-        f"""--sql
+        """--sql
         SELECT year, NAME, Subcategory AS 'Variable', Value, geo_type
         FROM lake.RAW.acs5_economic
-        WHERE Category LIKE '%INCOME AND BENEFITS ' || chr(40) || 'IN {INFLATION_YEAR}%'
+        WHERE Category LIKE '%INCOME AND BENEFITS%'
         AND Subcategory IN (
             'Median earnings for male full-time, year-round workers (dollars)',
             'Median earnings for female full-time, year-round workers (dollars)',

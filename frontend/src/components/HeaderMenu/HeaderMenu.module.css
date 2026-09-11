@@ -1,3 +1,16 @@
+/*
+ * Nav accent colors — edit these to change the header's hover/active look.
+ * Declared on :global(:root) (not .header) so the Menu dropdown, which
+ * Mantine renders in a portal outside this component's DOM tree, still
+ * inherits them.
+ */
+:global(:root) {
+  --nav-accent: #dd9a2f; /* amber — active underline & active tint */
+  --nav-accent-soft: #e7b563; /* amberSoft — active underline gradient end */
+  --nav-accent-text: #1b3a2f; /* spruce — active link text color */
+  --nav-hover-bg: rgba(64, 82, 90, 0.08); /* slate-tinted link hover */
+}
+
 .header {
   position: sticky;
   top: 0;
@@ -14,7 +27,7 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(246, 245, 239, 0.86);
 }
 
 .hidden {
@@ -47,18 +60,18 @@
 }
 
 .link:hover {
-  background: rgba(25, 113, 194, 0.08);
+  background: var(--nav-hover-bg);
   transform: translateY(-1px);
 }
 
 .active {
   background: linear-gradient(
     135deg,
-    rgba(25, 113, 194, 0.15),
-    rgba(25, 113, 194, 0.08)
+    rgba(221, 154, 47, 0.16),
+    rgba(221, 154, 47, 0.07)
   );
 
-  color: var(--mantine-color-blue-7);
+  color: var(--nav-accent-text);
   font-weight: 600;
 }
 
@@ -73,11 +86,7 @@
   height: 3px;
   border-radius: 999px;
 
-  background: linear-gradient(
-    90deg,
-    var(--mantine-color-blue-6),
-    var(--mantine-color-cyan-5)
-  );
+  background: linear-gradient(90deg, var(--nav-accent), var(--nav-accent-soft));
 }
 
 .linkLabel {
@@ -89,9 +98,17 @@
 :global(.mantine-Menu-dropdown) {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(246, 245, 239, 0.95);
 
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(27, 58, 47, 0.08);
 
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+}
+
+:global(.mantine-Menu-label) {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--nav-accent);
 }
