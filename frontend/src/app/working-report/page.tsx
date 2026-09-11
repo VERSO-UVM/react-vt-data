@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
+  Badge,
+  Box,
+  Button,
   Container,
+  Divider,
+  Grid,
+  Group,
+  Stack,
   Text,
   Title,
-  Button,
-  Stack,
-  Group,
-  Divider,
-  Box,
-  Grid,
 } from '@mantine/core';
 import { ChartStack } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
@@ -84,17 +85,28 @@ function HeroSection({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Text
-                style={{
-                  fontFamily: FONTS.mono,
-                  fontSize: 12,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: COLORS.amberSoft,
-                }}
-              >
-                Working Report
-              </Text>
+              <Group>
+                <Text
+                  style={{
+                    fontFamily: FONTS.mono,
+                    fontSize: 12,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    color: COLORS.amberSoft,
+                  }}
+                >
+                  Working Report
+                </Text>
+                <Badge
+                  style={{
+                    color: COLORS.birchDim,
+                    background: COLORS.amber,
+                    fontFamily: FONTS.mono,
+                  }}
+                >
+                  Beta
+                </Badge>
+              </Group>
             </motion.div>
             <Title
               order={1}
