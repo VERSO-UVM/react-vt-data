@@ -1,6 +1,15 @@
 'use client';
 import { ReactNode } from 'react';
-import { Paper, ScrollArea, Title, Divider, Stack, Text } from '@mantine/core';
+import {
+  Badge,
+  Divider,
+  Group,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core';
 import { IconChartBar } from '@tabler/icons-react';
 import { COLORS, FONTS } from '@/app/theme';
 import classes from './QuadTileMapLayout.module.css';
@@ -39,13 +48,24 @@ export default function QuadTileMapLayout({
             style={panelStyle}
           >
             <ScrollArea h="100%" offsetScrollbars type="auto">
-              <Title
-                order={4}
-                mb={2}
-                style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
-              >
-                {title}
-              </Title>
+              <Group>
+                <Title
+                  order={4}
+                  mb={2}
+                  style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
+                >
+                  {title}
+                </Title>
+                <Badge
+                  style={{
+                    color: COLORS.birch,
+                    background: COLORS.amber,
+                    fontFamily: FONTS.mono,
+                  }}
+                >
+                  Beta
+                </Badge>
+              </Group>
               <Divider mb="sm" color={COLORS.line} />
               {sidebar}
             </ScrollArea>
