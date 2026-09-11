@@ -364,7 +364,8 @@ export default function VariableExplorer() {
                 {levelOptions.length > 1 && (
                   <SegmentedControl
                     fullWidth
-                    color="green"
+                    autoContrast
+                    color={COLORS.spruce}
                     radius="md"
                     data={levelOptions.map((lvl) => ({
                       label: LEVEL_LABELS[lvl] ?? lvl,
@@ -372,6 +373,9 @@ export default function VariableExplorer() {
                     }))}
                     value={level ?? levelOptions[0]}
                     onChange={handleSelectLevel}
+                    style={{
+                      fontFamily: FONTS.mono,
+                    }}
                   />
                 )}
               </Paper>
