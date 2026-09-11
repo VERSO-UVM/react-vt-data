@@ -4,10 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
   Alert,
+  Badge,
   Center,
   Container,
   Divider,
   Grid,
+  Group,
   Paper,
   Select,
   Stack,
@@ -20,7 +22,7 @@ import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
 import county_town_names from '@/data/county_town_names.json';
 import { DataRow } from '@/types/cachedCharts';
-
+import { COLORS, FONTS } from '@/app/theme';
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -401,7 +403,18 @@ export default function DPExplorerPage() {
   return (
     <>
       <Center pt="xl" mb="md">
-        <Title order={2}>Data Profile Comparison</Title>
+        <Group gap="md">
+          <Title order={2}>Data Profile Comparison</Title>
+          <Badge
+            style={{
+              color: COLORS.birch,
+              background: COLORS.amber,
+              fontFamily: FONTS.mono,
+            }}
+          >
+            Beta
+          </Badge>
+        </Group>
       </Center>
 
       <Container size="lg">
