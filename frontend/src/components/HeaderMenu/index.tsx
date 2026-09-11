@@ -2,19 +2,21 @@
 
 import { usePathname } from 'next/navigation';
 import {
-  UnstyledButton,
+  Anchor,
+  Badge,
   Burger,
   Container,
   Group,
-  Menu,
   Image,
-  Anchor,
+  Menu,
+  UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ProfileModal } from '../profile/SetProfile';
+import { COLORS, FONTS } from '@/app/theme';
 
 type SubLink = { link: string; label: string };
 type NavGroup = { label: string; links: SubLink[] };
@@ -237,6 +239,15 @@ export default function HeaderMenu() {
                 style={{ cursor: 'pointer' }}
               />
             </Anchor>
+            <Badge
+              style={{
+                color: COLORS.birch,
+                background: COLORS.amber,
+                fontFamily: FONTS.mono,
+              }}
+            >
+              Beta
+            </Badge>
           </Group>
 
           {/* Navigation items separated into their own wrapping group */}
