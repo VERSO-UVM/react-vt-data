@@ -21,7 +21,7 @@ const pages = [
   },
   {
     href: '/data-comparison/b-tables',
-    label: 'Detailed Table Comparison',
+    label: 'Automatic/Topic Reports',
     tag: 'B01001 · B15003 · B25 · B23 · B19',
     description:
       'A curated selection of detailed ACS B-series tables that offer more granular and age/sex-disaggregated breakdowns than the Data Profiles. Covers demographics, educational attainment, housing stock and value, labor force participation, and income. Good for comparing locations in a specific year and area.',
