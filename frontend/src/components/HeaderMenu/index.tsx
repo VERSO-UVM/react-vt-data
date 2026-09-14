@@ -17,8 +17,15 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ProfileModal } from '../profile/SetProfile';
 import { COLORS, FONTS } from '@/app/theme';
+import { GithubLogoIcon } from '@phosphor-icons/react';
 
-type SubLink = { link: string; label: string };
+type SubLink = {
+  link: string;
+  label: string;
+  icon?: React.ElementType;
+  external?: boolean;
+  disabled?: boolean;
+};
 type NavGroup = { label: string; links: SubLink[] };
 type NavItem = {
   link: string;
@@ -29,24 +36,21 @@ type NavItem = {
 
 const links: NavItem[] = [
   { link: '/', label: 'Home' },
-  {
-    link: '/mapping',
-    label: 'Map',
-    links: [
-      { link: '/mapping/zoning', label: 'Zoning' },
-      { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
-      {
-        link: '/mapping/treatment-facilities',
-        label: 'Wastewater Treatment Facilities',
-      },
-      {
-        link: '/mapping/service-areas',
-        label: 'Wastewater System Service Areas',
-      },
-      { link: '/mapping/flood-legal', label: 'Flood Insurance' },
-      { link: '/mapping/ambulance', label: 'Ambulance Service Areas' },
-    ],
-  },
+  { link: '/mapping', label: 'Map' },
+  //links: [
+  // { link: '/mapping/zoning', label: 'Zoning' },
+  // { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
+  // {
+  //   link: '/mapping/treatment-facilities',
+  //   label: 'Wastewater Treatment Facilities',
+  // },
+  // {
+  //   link: '/mapping/service-areas',
+  //   label: 'Wastewater System Service Areas',
+  // },
+  // { link: '/mapping/flood-legal', label: 'Flood Insurance' },
+  // { link: '/mapping/ambulance', label: 'Ambulance Service Areas' },
+  //],
   {
     link: '/data-viewer',
     label: 'Data',
@@ -79,7 +83,7 @@ const links: NavItem[] = [
         links: [
           {
             link: '/data-comparison/b-tables',
-            label: 'Automatic/Topic Reports',
+            label: 'Reports by Topic',
           },
           { link: '/working-report', label: 'Working Report' },
         ],
@@ -93,28 +97,81 @@ const links: NavItem[] = [
   {
     link: '/resources',
     label: 'Resources',
-
-    // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
       { link: '/resources/data-sources', label: 'Data Sources ' },
       { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
-      // { link: '/resources/github', label: 'GitHub' },
-      // { link: '/resources/tutorials', label: 'Tutorials' },
-      // { link: '/resources/announcements', label: 'Announcements' },
-      // { link: '/resources/white-papers', label: 'White Papers' },
+      { link: '/resources/white-papers', label: 'White Papers' },
+      { link: '/resources/announcements', label: 'Announcements' },
+      { link: '/resources/tutorials', label: 'Tutorials' },
+      {
+        link: 'https://github.com/VERSO-UVM/react-vt-data',
+        label: 'GitHub',
+        icon: GithubLogoIcon,
+        external: true,
+      },
     ],
   },
-  // Future sections of the "About" page outlined below
   {
     link: '/about',
     label: 'About',
     links: [
       { link: '/about/team', label: 'Our Team' },
-      // { link: '/about/faq', label: 'FAQs' },
-      // { link: '/about/contact', label: 'Contact Us' },
+      { link: '/about/contact', label: 'Contact Us' },
     ],
   },
 ];
+
+function SubLinkMenuItem({ item }: { item: SubLink }) {
+  const Icon = item.icon;
+
+  if (item.disabled) {
+    return (
+      <Menu.Item
+        disabled
+        rightSection={
+          <span
+            style={{
+              fontFamily: FONTS.mono,
+              fontSize: 10,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: COLORS.slate,
+            }}
+          >
+            Soon
+          </span>
+        }
+        leftSection={Icon ? <Icon size={16} /> : undefined}
+      >
+        {item.label}
+      </Menu.Item>
+    );
+  }
+
+  if (item.external) {
+    return (
+      <Menu.Item
+        component="a"
+        href={item.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        leftSection={Icon ? <Icon size={16} /> : undefined}
+      >
+        {item.label}
+      </Menu.Item>
+    );
+  }
+
+  return (
+    <Menu.Item
+      component={Link}
+      href={item.link}
+      leftSection={Icon ? <Icon size={16} /> : undefined}
+    >
+      {item.label}
+    </Menu.Item>
+  );
+}
 
 export default function HeaderMenu() {
   const pathname = usePathname(); /* Get the current pathname */
@@ -158,9 +215,7 @@ export default function HeaderMenu() {
       );
 
     const flatItems = link.links?.map((item) => (
-      <Menu.Item key={item.link} component={Link} href={item.link}>
-        {item.label}
-      </Menu.Item>
+      <SubLinkMenuItem key={item.link} item={item} />
     ));
 
     const groupedItems = link.groups?.flatMap((group, groupIndex) => {
@@ -169,9 +224,7 @@ export default function HeaderMenu() {
           {group.label}
         </Menu.Label>,
         ...group.links.map((item) => (
-          <Menu.Item key={item.link} component={Link} href={item.link}>
-            {item.label}
-          </Menu.Item>
+          <SubLinkMenuItem key={item.link} item={item} />
         )),
       ];
 
@@ -192,7 +245,7 @@ export default function HeaderMenu() {
           key={link.label}
           trigger="hover"
           shadow="xl"
-          radius="lg"
+          radius={0}
           offset={10}
           transitionProps={{
             transition: 'pop-top-left',

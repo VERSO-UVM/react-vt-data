@@ -1,14 +1,8 @@
-/*
- * Nav accent colors — edit these to change the header's hover/active look.
- * Declared on :global(:root) (not .header) so the Menu dropdown, which
- * Mantine renders in a portal outside this component's DOM tree, still
- * inherits them.
- */
 :global(:root) {
-  --nav-accent: #dd9a2f; /* amber — active underline & active tint */
-  --nav-accent-soft: #e7b563; /* amberSoft — active underline gradient end */
-  --nav-accent-text: #1b3a2f; /* spruce — active link text color */
-  --nav-hover-bg: rgba(64, 82, 90, 0.08); /* slate-tinted link hover */
+  --nav-accent: #dd9a2f;
+  --nav-accent-soft: #e7b563;
+  --nav-accent-text: #1b3a2f;
+  --nav-hover-bg: rgba(64, 82, 90, 0.08);
 }
 
 .header {
@@ -96,13 +90,19 @@
 }
 
 :global(.mantine-Menu-dropdown) {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(246, 245, 239, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(246, 245, 239, 0.86);
 
   border: 1px solid rgba(27, 58, 47, 0.08);
+  border-radius: 0 !important;
 
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+
+  z-index: 1001 !important;
+
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 :global(.mantine-Menu-label) {
@@ -111,4 +111,9 @@
   letter-spacing: 0.6px;
   text-transform: uppercase;
   color: var(--nav-accent);
+}
+
+:global(.mantine-Menu-item) {
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
