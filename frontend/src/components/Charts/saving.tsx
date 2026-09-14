@@ -13,15 +13,10 @@ interface ToggleProps {
   onToggle: () => void;
 }
 export function ToggleChart({ isIncluded, onToggle }: ToggleProps) {
-  
-  const button_color = isIncluded ? COLORS.red : COLORS.spruce
-  
+  const button_color = isIncluded ? COLORS.red : COLORS.spruce;
+
   return (
-    <Button
-      variant = "filled"
-      color = {button_color}
-      onClick={onToggle}
-    >
+    <Button variant="filled" color={button_color} onClick={onToggle}>
       {isIncluded ? 'Exclude from report' : 'Include in report'}
     </Button>
   );

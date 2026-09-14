@@ -177,11 +177,12 @@ const CompareDiffPerXBarChartSVG = ({
         includeCategories.includes(entry[chart.xField]),
       )
     : chart.data;
-  const filteredCompareData = includeCategories && chart.compareData
-    ? chart.compareData.filter((entry: any) =>
-        includeCategories.includes(entry[chart.xField]),
-      )
-    : (chart.compareData ?? []);
+  const filteredCompareData =
+    includeCategories && chart.compareData
+      ? chart.compareData.filter((entry: any) =>
+          includeCategories.includes(entry[chart.xField]),
+        )
+      : (chart.compareData ?? []);
 
   // Determine per-bar primary colors (same logic as Chart.js version)
   let colors: string[];
