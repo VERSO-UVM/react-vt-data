@@ -11,12 +11,8 @@ import {
   Title,
 } from '@mantine/core';
 import * as motion from 'motion/react-client';
-import {
-  BellRingingIcon,
-} from '@phosphor-icons/react';
+import { BellRingingIcon } from '@phosphor-icons/react';
 import { COLORS, FONTS } from '@/app/theme';
-
-
 
 // -----------------------------------------------------------------------------
 // Page

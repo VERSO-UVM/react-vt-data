@@ -39,8 +39,7 @@ type TutorialCard = {
 const TUTORIALS: TutorialCard[] = [
   {
     title: 'Getting Started',
-    description:
-      'A first guided tour of our platform.',
+    description: 'A first guided tour of our platform.',
     icon: CompassIcon,
     comingSoon: true,
   },

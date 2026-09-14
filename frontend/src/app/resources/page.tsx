@@ -38,38 +38,44 @@ const RESOURCES: Resource[] = [
   {
     href: '/resources/tutorials',
     label: 'Tutorials',
-    description: 'Step-by-step materials for exploring, analyzing, and exporting Vermont data.',
+    description:
+      'Step-by-step materials for exploring, analyzing, and exporting Vermont data.',
     icon: GraduationCapIcon,
   },
   {
     href: '/resources/white-papers',
     label: 'White Papers',
-    description: 'Research and writing from our team on data access, the technical work behind the platform, and rural Vermont.',
+    description:
+      'Research and writing from our team on data access, the technical work behind the platform, and rural Vermont.',
     icon: FileTextIcon,
   },
   {
     href: '/resources/data-sources',
     label: 'Data Sources',
-    description: 'Browse the datasets, sources, variable descriptions, and other metadata.',
+    description:
+      'Browse the datasets, sources, variable descriptions, and other metadata.',
     icon: DatabaseIcon,
   },
   {
     href: '/resources/announcements',
     label: 'Announcements',
-    description: 'New services, features, datasets, and updates to the Vermont Data Collaborative website.',
+    description:
+      'New services, features, datasets, and updates to the Vermont Data Collaborative website.',
     icon: BellIcon,
   },
   {
     href: 'https://github.com',
     label: 'GitHub',
-    description: 'View the source code, inspect how a number was calculated, or contribute to the platform.',
+    description:
+      'View the source code, inspect how a number was calculated, or contribute to the platform.',
     icon: GithubLogoIcon,
     external: true,
   },
   {
     href: '/resources/benefits-estimator',
     label: 'Vermont Benefits Estimator',
-    description: 'Estimate eligibility for Three Squares VT (SNAP), Medicaid, Dr. Dynasaur, and Child Care Financial Assistance based on household income and composition.',
+    description:
+      'Estimate eligibility for Three Squares VT (SNAP), Medicaid, Dr. Dynasaur, and Child Care Financial Assistance based on household income and composition.',
     icon: CalculatorIcon,
     badge: 'Beta',
   },
@@ -129,17 +135,18 @@ function ResourceCard({ resource }: { resource: Resource }) {
     color: 'inherit',
     borderColor: isHovered ? COLORS.spruce : COLORS.line,
     background: COLORS.birch,
-    transition: 'transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease',
+    transition:
+      'transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease',
     transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-    boxShadow: isHovered 
-      ? '0 10px 20px rgba(0, 0, 0, 0.05), 0 3px 6px rgba(0, 0, 0, 0.05)' 
+    boxShadow: isHovered
+      ? '0 10px 20px rgba(0, 0, 0, 0.05), 0 3px 6px rgba(0, 0, 0, 0.05)'
       : 'none',
   } as const;
 
   const commonProps = {
     withBorder: true,
-    radius: "md" as const,
-    p: "lg" as const,
+    radius: 'md' as const,
+    p: 'lg' as const,
     style: cardStyle,
     onMouseEnter: () => setIsHovered(true),
     onMouseLeave: () => setIsHovered(false),
