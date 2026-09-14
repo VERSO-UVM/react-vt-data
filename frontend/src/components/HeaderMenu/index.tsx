@@ -36,24 +36,21 @@ type NavItem = {
 
 const links: NavItem[] = [
   { link: '/', label: 'Home' },
-  {
-    link: '/mapping',
-    label: 'Map',
-    links: [
-      { link: '/mapping/zoning', label: 'Zoning' },
-      { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
-      {
-        link: '/mapping/treatment-facilities',
-        label: 'Wastewater Treatment Facilities',
-      },
-      {
-        link: '/mapping/service-areas',
-        label: 'Wastewater System Service Areas',
-      },
-      { link: '/mapping/flood-legal', label: 'Flood Insurance' },
-      { link: '/mapping/ambulance', label: 'Ambulance Service Areas' },
-    ],
-  },
+  { link: '/mapping', label: 'Map'},
+    //links: [
+      // { link: '/mapping/zoning', label: 'Zoning' },
+      // { link: '/mapping/soil-suitability', label: 'Soil Suitability' },
+      // {
+      //   link: '/mapping/treatment-facilities',
+      //   label: 'Wastewater Treatment Facilities',
+      // },
+      // {
+      //   link: '/mapping/service-areas',
+      //   label: 'Wastewater System Service Areas',
+      // },
+      // { link: '/mapping/flood-legal', label: 'Flood Insurance' },
+      // { link: '/mapping/ambulance', label: 'Ambulance Service Areas' },
+    //],
   {
     link: '/data-viewer',
     label: 'Data',
@@ -248,7 +245,7 @@ export default function HeaderMenu() {
           key={link.label}
           trigger="hover"
           shadow="xl"
-          radius="lg"
+          radius={0}
           offset={10}
           transitionProps={{
             transition: 'pop-top-left',
