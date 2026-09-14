@@ -47,13 +47,25 @@ import {
   Modal,
   Container,
   ScrollArea,
+  TextInput,
+  Textarea,
 } from '@mantine/core';
-import { CornersOutIcon, CornersInIcon } from '@phosphor-icons/react';
+import {
+  CornersOutIcon,
+  CornersInIcon,
+  PencilSimpleIcon,
+  DotsSixVerticalIcon,
+} from '@phosphor-icons/react';
 import * as motion from 'motion/react-client';
 import { AddChart, RemoveChart, ToggleChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 import { usePdfMode } from '@/contexts/PdfModeContext';
+import { useItems } from '@/components/ItemsProvider';
+import type {
+  DraggableAttributes,
+  DraggableSyntheticListeners,
+} from '@dnd-kit/core';
 
 // ChartCard
 interface ChartCardProps<TData extends DataRow> {
@@ -75,6 +87,10 @@ interface ChartCardProps<TData extends DataRow> {
   onToggle?: () => void;
   view?: 'gallery' | 'report';
   border?: boolean;
+  dragHandleProps?: {
+    attributes: DraggableAttributes;
+    listeners: DraggableSyntheticListeners;
+  };
 }
 export const ChartCard = <TData extends DataRow>({
   chart,
@@ -87,14 +103,35 @@ export const ChartCard = <TData extends DataRow>({
   onToggle,
   view = 'report',
   border = true,
+  dragHandleProps,
 }: ChartCardProps<TData>) => {
   const isPdfMode = usePdfMode();
   const isGallery = view === 'gallery';
   const showBorder = border === true;
   const [isHovered, setIsHovered] = useState(false);
 
+  // Stable across renders even though chart.id is a fresh UUID every render
+  // (auto-populated items are rebuilt from live data on each mount) — this is
+  // the only safe key for persisted per-chart customization.
+  const customizationId = defId ?? chart.id;
+  const { chartCustomizations, setChartView, setChartTitle, setChartNotes } =
+    useItems();
+  const customization = chartCustomizations[customizationId];
+
   const isTablePrimary = chart.subtype.startsWith('renderTable');
-  const [localView, setLocalView] = useState<'chart' | 'table'>('chart');
+  const [localView, setLocalViewState] = useState<'chart' | 'table'>(
+    () => customization?.view ?? 'chart',
+  );
+  const setLocalView = (v: 'chart' | 'table') => {
+    setLocalViewState(v);
+    if (defId) setChartView(defId, v);
+  };
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const displayTitle = customization?.title ?? chart.description;
+  const displayNotes = customization?.notes ?? chart.notes;
+  const canEdit = !isGallery && !isPdfMode && !!defId;
 
   const selfManagesViews = !!chart.chartParams?.noViewSwitch;
 
@@ -136,8 +173,15 @@ export const ChartCard = <TData extends DataRow>({
   const isHighlighted = matchedCategories.length > 0;
   const allCategories = chart.categories ?? [];
 
+  // Table-primary items showing their trend chart still need a definite
+  // height in PDF mode — the chart's ResponsiveContainer is height="100%",
+  // which collapses to 0 against an 'auto'-height ancestor. 'auto' is only
+  // safe when a native table (which sizes to its own content) is showing.
+  const showsTrendChart =
+    isTablePrimary && localView === 'chart' && !!TrendComponent;
+
   const chartBoxHeight = isPdfMode
-    ? isTablePrimary
+    ? isTablePrimary && !showsTrendChart
       ? 'auto'
       : 400
     : isGallery
@@ -153,7 +197,7 @@ export const ChartCard = <TData extends DataRow>({
         padding={isGallery ? 'sm' : 'lg'}
         radius="md"
         withBorder={showBorder}
-        data-chart-id={chart.id}
+        data-chart-id={customizationId}
         data-chart-subtype={chart.subtype}
         onMouseEnter={isGallery ? () => setIsHovered(true) : undefined}
         onMouseLeave={isGallery ? () => setIsHovered(false) : undefined}
@@ -183,9 +227,49 @@ export const ChartCard = <TData extends DataRow>({
       >
         <Box mb={isGallery ? 4 : 'xs'}>
           <Group gap={8} wrap="nowrap" mb={isGallery ? 4 : 8} w="100%">
-            <Title order={isGallery ? 5 : 2} fw={500} lineClamp={1}>
-              {chart.description}
-            </Title>
+            {dragHandleProps && !isPdfMode && (
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                style={{ cursor: 'grab', touchAction: 'none' }}
+                {...dragHandleProps.attributes}
+                {...dragHandleProps.listeners}
+              >
+                <DotsSixVerticalIcon size={16} />
+              </ActionIcon>
+            )}
+            {isEditingTitle ? (
+              <TextInput
+                autoFocus
+                size="sm"
+                defaultValue={displayTitle}
+                onBlur={(e) => {
+                  setChartTitle(defId!, e.currentTarget.value);
+                  setIsEditingTitle(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur();
+                  if (e.key === 'Escape') setIsEditingTitle(false);
+                }}
+                style={{ flex: '0 1 auto' }}
+              />
+            ) : (
+              <Title order={isGallery ? 5 : 2} fw={500} lineClamp={1}>
+                {displayTitle}
+              </Title>
+            )}
+            {canEdit && !isEditingTitle && (
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                onClick={() => setIsEditingTitle(true)}
+                aria-label="Edit chart title"
+              >
+                <PencilSimpleIcon size={14} />
+              </ActionIcon>
+            )}
             {!isGallery && (
               <>
                 <Title order={2} fw={200} c="dimmed">
@@ -241,6 +325,42 @@ export const ChartCard = <TData extends DataRow>({
               <ViewSwitch view={localView} setView={setLocalView} />
             )}
           </Group>
+
+          {canEdit ? (
+            isEditingNotes ? (
+              <Textarea
+                autoFocus
+                size="xs"
+                mb={8}
+                placeholder="Add a note for this chart…"
+                defaultValue={displayNotes ?? ''}
+                onBlur={(e) => {
+                  setChartNotes(defId!, e.currentTarget.value);
+                  setIsEditingNotes(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setIsEditingNotes(false);
+                }}
+              />
+            ) : (
+              <Text
+                size="xs"
+                c="dimmed"
+                fs={displayNotes ? undefined : 'italic'}
+                mb={8}
+                onClick={() => setIsEditingNotes(true)}
+                style={{ cursor: 'text' }}
+              >
+                {displayNotes || '+ Add note'}
+              </Text>
+            )
+          ) : (
+            displayNotes && (
+              <Text size="xs" c="dimmed" mb={8}>
+                {displayNotes}
+              </Text>
+            )
+          )}
         </Box>
 
         <Box w="100%">
@@ -322,6 +442,89 @@ export const ChartCard = <TData extends DataRow>({
   );
 };
 
+import * as allCharts from './index';
+
+interface ChartStackItemProps<TData extends DataRow> {
+  chart: ChartItem<TData>;
+  action?: 'add' | 'remove' | 'toggle';
+  view?: 'gallery' | 'report';
+  userInterests?: string[];
+  defId?: string;
+  isIncludedFn?: (defId: string) => boolean;
+  onToggle?: (defId: string) => void;
+  dragHandleProps?: ChartCardProps<TData>['dragHandleProps'];
+}
+
+/**
+ * Resolves a single ChartItem to its rendered form (ChartCard, note card, or
+ * "no data" placeholder). Extracted from ChartStack's map so the
+ * working-report page can render sortable chart cards one at a time (via
+ * @dnd-kit) while sharing the exact same resolution logic.
+ */
+export const ChartStackItem = <TData extends DataRow>({
+  chart,
+  action = 'add',
+  view,
+  userInterests = [],
+  defId,
+  isIncludedFn,
+  onToggle,
+  dragHandleProps,
+}: ChartStackItemProps<TData>) => {
+  const ChartComponent = allCharts[
+    chart.subtype as keyof typeof allCharts
+  ] as React.FC<{ chart: ChartItem<TData> }>;
+
+  const TrendComponent = chart.trendChart
+    ? (allCharts[chart.trendChart as keyof typeof allCharts] as React.FC<{
+        chart: ChartItem<TData>;
+      }>)
+    : undefined;
+
+  const matchedCategories =
+    userInterests.length > 0 && chart.categories
+      ? chart.categories.filter((cat) => userInterests.includes(cat))
+      : [];
+
+  const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
+  const handleToggle = defId && onToggle ? () => onToggle(defId) : undefined;
+
+  if (chart.subtype === 'noteCard')
+    return (
+      <Card shadow="sm" padding="sm" radius="md" withBorder>
+        <Text size="sm" c="dimmed">
+          {chart.notes}
+        </Text>
+      </Card>
+    );
+
+  if (!ChartComponent) return null;
+  if (!chart.data || chart.data.length === 0)
+    return (
+      <Card shadow="sm" padding="lg" radius="md" withBorder>
+        <Text>
+          No data available from {`${chart.title}`}
+          {chart.description ? ` for ${chart.description}` : ''}.
+        </Text>
+      </Card>
+    );
+
+  return (
+    <ChartCard
+      chart={chart}
+      action={action}
+      view={view}
+      ChartComponent={ChartComponent}
+      TrendComponent={TrendComponent}
+      matchedCategories={matchedCategories}
+      defId={defId}
+      isIncluded={included}
+      onToggle={handleToggle}
+      dragHandleProps={dragHandleProps}
+    />
+  );
+};
+
 interface ChartStackProps<TData extends DataRow> {
   charts: ChartItem<TData>[];
   action?: 'add' | 'remove' | 'toggle';
@@ -331,8 +534,6 @@ interface ChartStackProps<TData extends DataRow> {
   onToggle?: (defId: string) => void;
   isIncludedFn?: (defId: string) => boolean;
 }
-
-import * as allCharts from './index';
 
 export const ChartStack = <TData extends DataRow>({
   charts,
@@ -353,71 +554,17 @@ export const ChartStack = <TData extends DataRow>({
     <Box px="md" w="100%">
       <Wrapper {...wrapperProps} mt={5}>
         {charts.map((chart, i) => {
-          const ChartComponent = allCharts[
-            chart.subtype as keyof typeof allCharts
-          ] as React.FC<{ chart: ChartItem<TData> }>;
-
-          const TrendComponent = chart.trendChart
-            ? (allCharts[
-                chart.trendChart as keyof typeof allCharts
-              ] as React.FC<{
-                chart: ChartItem<TData>;
-              }>)
-            : undefined;
-
-          const matchedCategories =
-            userInterests.length > 0 && chart.categories
-              ? chart.categories.filter((cat) => userInterests.includes(cat))
-              : [];
-
           const defId = defIds?.[i];
-          const included = defId && isIncludedFn ? isIncludedFn(defId) : true;
-          const handleToggle =
-            defId && onToggle ? () => onToggle(defId) : undefined;
-
-          if (chart.subtype === 'noteCard')
-            return (
-              <Card
-                key={chart.id}
-                shadow="sm"
-                padding="sm"
-                radius="md"
-                withBorder
-              >
-                <Text size="sm" c="dimmed">
-                  {chart.notes}
-                </Text>
-              </Card>
-            );
-
-          if (!ChartComponent) return null;
-          if (!chart.data || chart.data.length === 0)
-            return (
-              <Card
-                key={chart.id}
-                shadow="sm"
-                padding="lg"
-                radius="md"
-                withBorder
-              >
-                <Text>
-                  No data available from {`${chart.title}`}
-                  {chart.description ? ` for ${chart.description}` : ''}.
-                </Text>
-              </Card>
-            );
           return (
-            <ChartCard
-              key={chart.id}
+            <ChartStackItem
+              key={defId ?? chart.id}
               chart={chart}
               action={action}
               view={view}
-              ChartComponent={ChartComponent}
-              TrendComponent={TrendComponent}
-              matchedCategories={matchedCategories}
+              userInterests={userInterests}
               defId={defId}
-              isIncluded={included}
-              onToggle={handleToggle}
+              isIncludedFn={isIncludedFn}
+              onToggle={onToggle}
             />
           );
         })}

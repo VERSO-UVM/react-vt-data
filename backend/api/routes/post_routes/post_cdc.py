@@ -2,9 +2,46 @@ from fastapi import APIRouter
 
 from api.core_functions import request_to_source, spec_to_source
 from api.models import APIResponse, FilterRequest, FilterSpec, make_response
-from query import dual_var_comparison, get_cdc_county_pca, single_var_geojson
+from query import (
+    dual_var_comparison,
+    get_cdc_county_pca,
+    get_cdc_export_table,
+    single_var_geojson,
+)
 
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# Export sources — merged into /export/sources by post_export.py. Adding a
+# new CDC PLACES table to the export tool only requires an entry here.
+# ---------------------------------------------------------------------------
+
+EXPORT_SOURCES: dict[str, dict] = {
+    "cdc_places_county": {
+        "label": "Health Measures by County (CDC PLACES)",
+        "group": "Health",
+        "description": (
+            "Model-based county-level estimates for chronic disease, "
+            "prevention, and health-related behaviors."
+        ),
+        "primary_source": "https://data.cdc.gov/resource/swc5-untb",
+        "loader": lambda: get_cdc_export_table(
+            "cdc_places_county", county_col="locationname"
+        ),
+    },
+    "cdc_places_tract": {
+        "label": "Health Measures by Census Tract (CDC PLACES)",
+        "group": "Health",
+        "description": (
+            "Model-based census-tract-level estimates for chronic disease, "
+            "prevention, and health-related behaviors."
+        ),
+        "primary_source": "https://data.cdc.gov/resource/cwsq-ngmh",
+        "loader": lambda: get_cdc_export_table(
+            "cdc_places_tract", county_col="countyname"
+        ),
+    },
+}
 
 
 @router.post("/load/mapping/cdc/places/single")

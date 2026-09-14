@@ -10,7 +10,7 @@ export const COLORS = {
   ink: '#1B211D',
   amber: '#dd9a2f',
   amberSoft: '#E7B563',
-  amberYellow: '#FFD100',
+  red: '#b13434',
   line: 'rgba(27, 58, 47, 0.14)',
 } as const;
 

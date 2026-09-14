@@ -80,17 +80,17 @@ class TestCheckRateLimit:
 
 class TestExportRequest:
     def test_source_only(self):
-        req = ExportRequest(source="census_housing")
-        assert req.source == "census_housing"
+        req = ExportRequest(source="acs5_housing")
+        assert req.source == "acs5_housing"
         assert req.county is None
         assert req.jurisdiction is None
 
     def test_county_filter(self):
-        req = ExportRequest(source="census_economic", county="Chittenden")
+        req = ExportRequest(source="acs5_economics", county="Chittenden")
         assert req.county == "Chittenden"
 
     def test_town_filter(self):
-        req = ExportRequest(source="census_demographic", jurisdiction="Burlington")
+        req = ExportRequest(source="acs5_demographics", jurisdiction="Burlington")
         assert req.jurisdiction == "Burlington"
 
 
@@ -102,13 +102,28 @@ MOCK_TIDY_DF = pd.DataFrame(
     {
         "Jurisdiction": ["Burlington", "South Burlington", "Montpelier"],
         "County": ["Chittenden", "Chittenden", "Washington"],
-        "Measure": ["Estimate", "Estimate", "Estimate"],
-        "Category": ["HOUSING OCCUPANCY"] * 3,
-        "Subcategory": ["Total housing units"] * 3,
-        "Variable": ["Total", "Total", "Total"],
+        "Section": ["Housing Occupancy"] * 3,
+        "Variable": ["Total housing units"] * 3,
         "Value": [19000, 8000, 4500],
     }
 )
+
+
+def _mock_sources(loader=lambda: MOCK_TIDY_DF.copy()) -> dict:
+    return {
+        "acs5_housing": {
+            "label": "Housing",
+            "group": "Census ACS 5-Year Estimates",
+            "description": "test",
+            "primary_source": "https://example.com",
+            "loader": loader,
+        }
+    }
+
+
+# ---------------------------------------------------------------------------
+# Registry: sources are merged in from each dataset's own router module.
+# ---------------------------------------------------------------------------
 
 
 class TestExportSourcesEndpoint:
@@ -116,10 +131,16 @@ class TestExportSourcesEndpoint:
         resp = client.get("/export/sources")
         assert resp.status_code == 200
         data = resp.json()
-        assert "census_housing" in data
-        assert "census_economic" in data
-        assert "ts_median_home_value" in data
-        assert "zoning" in data
+        # One representative key from each dataset's own EXPORT_SOURCES registry.
+        assert "acs5_housing" in data
+        assert "acs5_economics" in data
+        assert "acs5_ts_median_home_value" in data
+        assert "qcew_employment_by_sector" in data
+        assert "zoning_districts" in data
+        assert "zoning_bylaws" in data
+        assert "wastewater_service_areas" in data
+        assert "cdc_places_county" in data
+        assert "ambulance_service_areas" in data
 
     def test_sources_have_required_fields(self):
         resp = client.get("/export/sources")
@@ -139,8 +160,7 @@ class TestExportSourcesEndpoint:
 class TestExportLocationsEndpoint:
     def test_returns_counties_and_towns(self):
         with patch(
-            "api.routes.post_routes.post_export._load_tidy_census",
-            return_value=MOCK_TIDY_DF,
+            "api.routes.post_routes.post_export.EXPORT_SOURCES", _mock_sources()
         ):
             resp = client.get("/export/locations")
         assert resp.status_code == 200
@@ -155,38 +175,29 @@ class TestExportCsvEndpoint:
 
     def _post(self, body):
         with patch(
-            "api.routes.post_routes.post_export.EXPORT_SOURCES",
-            {
-                "census_housing": {
-                    "label": "Housing",
-                    "group": "Census ACS 2023 Snapshot",
-                    "description": "test",
-                    "primary_source": "https://example.com",
-                    "loader": lambda: MOCK_TIDY_DF.copy(),
-                }
-            },
+            "api.routes.post_routes.post_export.EXPORT_SOURCES", _mock_sources()
         ):
             return client.post("/export/csv", json=body)
 
     def test_statewide_download(self):
-        resp = self._post({"source": "census_housing"})
+        resp = self._post({"source": "acs5_housing"})
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("text/csv")
         df = pd.read_csv(StringIO(resp.text))
         assert len(df) == 3
         # Tidy columns should be present
         assert "Variable" in df.columns
-        assert "Category" in df.columns
+        assert "Section" in df.columns
 
     def test_county_filter(self):
-        resp = self._post({"source": "census_housing", "county": "Chittenden"})
+        resp = self._post({"source": "acs5_housing", "county": "Chittenden"})
         assert resp.status_code == 200
         df = pd.read_csv(StringIO(resp.text))
         assert len(df) == 2
         assert all(df["County"] == "Chittenden")
 
     def test_town_filter(self):
-        resp = self._post({"source": "census_housing", "jurisdiction": "Burlington"})
+        resp = self._post({"source": "acs5_housing", "jurisdiction": "Burlington"})
         assert resp.status_code == 200
         df = pd.read_csv(StringIO(resp.text))
         assert len(df) == 1
@@ -197,7 +208,7 @@ class TestExportCsvEndpoint:
         assert resp.status_code == 400
 
     def test_no_matching_rows_returns_404(self):
-        resp = self._post({"source": "census_housing", "county": "NoSuchCounty"})
+        resp = self._post({"source": "acs5_housing", "county": "NoSuchCounty"})
         assert resp.status_code == 404
 
     def test_row_cap_truncation(self):
@@ -211,24 +222,16 @@ class TestExportCsvEndpoint:
         )
         with patch(
             "api.routes.post_routes.post_export.EXPORT_SOURCES",
-            {
-                "census_housing": {
-                    "label": "Housing",
-                    "group": "test",
-                    "description": "test",
-                    "primary_source": "https://example.com",
-                    "loader": lambda: big_df.copy(),
-                }
-            },
+            _mock_sources(loader=lambda: big_df.copy()),
         ):
-            resp = client.post("/export/csv", json={"source": "census_housing"})
+            resp = client.post("/export/csv", json={"source": "acs5_housing"})
         assert resp.status_code == 200
         assert resp.headers.get("X-Truncated") == "true"
         df = pd.read_csv(StringIO(resp.text))
         assert len(df) == 10_000
 
     def test_filename_in_content_disposition(self):
-        resp = self._post({"source": "census_housing"})
+        resp = self._post({"source": "acs5_housing"})
         assert "attachment" in resp.headers.get("Content-Disposition", "")
         assert ".csv" in resp.headers.get("Content-Disposition", "")
 
@@ -238,15 +241,7 @@ class TestExportCsvEndpoint:
 
         with patch(
             "api.routes.post_routes.post_export.EXPORT_SOURCES",
-            {
-                "census_housing": {
-                    "label": "Housing",
-                    "group": "test",
-                    "description": "test",
-                    "primary_source": "https://example.com",
-                    "loader": bad_loader,
-                }
-            },
+            _mock_sources(loader=bad_loader),
         ):
-            resp = client.post("/export/csv", json={"source": "census_housing"})
+            resp = client.post("/export/csv", json={"source": "acs5_housing"})
         assert resp.status_code == 503

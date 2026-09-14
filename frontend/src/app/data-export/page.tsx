@@ -49,7 +49,7 @@ export default function DataExport() {
   });
 
   const [selectedSource, setSelectedSource] = useState<string | null>(
-    'census_housing',
+    'acs5_housing',
   );
   const [selectedCounty, setSelectedCounty] = useState<string | null>(
     myLocation.type !== 'state' ? (myLocation.county ?? null) : null,
@@ -194,7 +194,7 @@ export default function DataExport() {
                   lineHeight: 1.05,
                 }}
               >
-                Download Vermont data
+                Download Vermont Data
               </Title>
               <Badge
                 variant="light"
@@ -267,7 +267,7 @@ export default function DataExport() {
                 </Group>
 
                 {sourceSelectData.length === 0 ? (
-                  <Loader size="sm" />
+                  <Loader size="sm" c={COLORS.spruce} />
                 ) : (
                   <Select
                     placeholder="Choose a dataset"

@@ -7,10 +7,40 @@ from query.zoning import (
     get_unzoned_geojson,
     get_zoning_aggregated_acres,
     get_zoning_allowances,
+    get_zoning_export_table,
     get_zoning_geojson,
 )
 
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# Export sources — merged into /export/sources by post_export.py. Adding a
+# new zoning table to the export tool only requires an entry here.
+# ---------------------------------------------------------------------------
+
+EXPORT_SOURCES: dict[str, dict] = {
+    "zoning_districts": {
+        "label": "Zoning Districts",
+        "group": "Land Use",
+        "description": (
+            "Vermont zoning district boundaries with district name, type "
+            "(residential, mixed, nonresidential, overlay), and acreage. "
+            "Geometry is excluded; use the Exploratory Mapping tab for map views."
+        ),
+        "primary_source": "https://geodata.vermont.gov/datasets/VCGI::vt-zoning-areas/about",
+        "loader": lambda: get_zoning_export_table("VersoZoning_info"),
+    },
+    "zoning_bylaws": {
+        "label": "Zoning Bylaw Standards",
+        "group": "Land Use",
+        "description": (
+            "Dimensional and use standards (setbacks, density, lot size, "
+            "parking, and more) for each zoning district, by housing form."
+        ),
+        "primary_source": "https://geodata.vermont.gov/datasets/VCGI::vt-zoning-areas/about",
+        "loader": lambda: get_zoning_export_table("VersoZoning_wide"),
+    },
+}
 
 # TODO: currently these are using a little 'shim' to get around the fact that
 # the frontend isn't actually sending FilterSources.

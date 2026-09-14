@@ -1,9 +1,12 @@
 """
 Data export route — returns filtered Vermont data as CSV.
 
-Census ACS snapshot sources export tidy (long-format) data with human-readable
-column names (Measure, Category, Subcategory, Variable, Value) instead of raw
-census codes like DP04_0001E.
+Each exportable dataset registers itself in its own router module's
+`EXPORT_SOURCES` dict (see post_acs5_db.py, post_qcew.py, post_zoning.py),
+right next to the query functions that already know how to read it. This
+module only merges those registries and serves them, so adding a new dataset
+to the export tool means adding an `EXPORT_SOURCES` entry alongside that
+dataset's own router -- not editing this file.
 
 Rate limiting: max RATE_LIMIT_MAX downloads per IP per RATE_LIMIT_WINDOW_SECS.
 Row cap: MAX_ROWS_PER_EXPORT rows per download.
@@ -18,7 +21,16 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app_utils import data_loading, timeseries_db
+from api.routes.post_routes.post_acs5_db import EXPORT_SOURCES as ACS5_EXPORT_SOURCES
+from api.routes.post_routes.post_ambulance import (
+    EXPORT_SOURCES as AMBULANCE_EXPORT_SOURCES,
+)
+from api.routes.post_routes.post_cdc import EXPORT_SOURCES as CDC_EXPORT_SOURCES
+from api.routes.post_routes.post_qcew import EXPORT_SOURCES as QCEW_EXPORT_SOURCES
+from api.routes.post_routes.post_wastewater import (
+    EXPORT_SOURCES as WASTEWATER_EXPORT_SOURCES,
+)
+from api.routes.post_routes.post_zoning import EXPORT_SOURCES as ZONING_EXPORT_SOURCES
 
 router = APIRouter(prefix="/export", tags=["export"])
 
@@ -29,157 +41,23 @@ RATE_LIMIT_WINDOW_SECS = 3600
 _rate_store: dict[str, list[float]] = defaultdict(list)
 _rate_lock = threading.Lock()
 
-
 # ---------------------------------------------------------------------------
-# Internal loaders — each returns a DataFrame with geometry already dropped
+# Source registry — merged from each dataset's own router module. Each entry:
+# metadata (all str, serializable to frontend) + "loader" (callable returning
+# a DataFrame with geometry already dropped and county/town columns named
+# `County` / `Jurisdiction`). The "loader" key is stripped before sending to
+# the frontend.
 # ---------------------------------------------------------------------------
-
-
-def _load_tidy_census(cache_name: str, tidy_key: str):
-    """
-    Load a tidy (long-format) census DataFrame from the masterload cache.
-    Column names are human-readable: Measure, Category, Subcategory, Variable,
-    Value — not raw census codes.
-    """
-    df_dict = data_loading.masterload(cache_name)
-    df = df_dict[tidy_key].copy()
-    if "geometry" in df.columns:
-        df = df.drop(columns=["geometry"])
-    return df
-
-
-def _load_timeseries(table_name: str):
-    """Load a full timeseries table from DuckDB (all years, all geographies)."""
-    return timeseries_db.query_timeseries(table_name)
-
-
-def _load_zoning():
-    """
-    Load Vermont zoning districts, dropping map-only columns (geometry, colors,
-    tooltip HTML) so the result is clean tabular data.
-    """
-    gdf = data_loading.masterload("zoning")
-    drop_cols = ["geometry", "fill", "fill-opacity", "tooltip", "Acres_fmt"]
-    return gdf.drop(columns=[c for c in drop_cols if c in gdf.columns])
-
-
-# ---------------------------------------------------------------------------
-# Source registry
-# ---------------------------------------------------------------------------
-# Each entry: metadata (all str, serializable to frontend) + "loader" (callable).
-# The "loader" key is stripped before sending to the frontend.
 
 EXPORT_SOURCES: dict[str, dict] = {
-    # --- Census ACS 2023 Snapshot (tidy / human-readable) ---
-    "census_housing": {
-        "label": "Housing",
-        "group": "Census ACS 2023 Snapshot",
-        "description": (
-            "Housing occupancy, units, value, and cost characteristics. "
-            "Exported in tidy format with readable labels "
-            "(Category, Subcategory, Variable, Measure) rather than raw census codes."
-        ),
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
-        "loader": lambda: _load_tidy_census("census_housing", "housing_2023_tidy"),
-    },
-    "census_economic": {
-        "label": "Economic",
-        "group": "Census ACS 2023 Snapshot",
-        "description": (
-            "Employment, income, commute, and industry characteristics. "
-            "Exported with readable labels rather than raw census codes."
-        ),
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
-        "loader": lambda: _load_tidy_census("census_economics", "econ_2023_tidy"),
-    },
-    "census_demographic": {
-        "label": "Demographic",
-        "group": "Census ACS 2023 Snapshot",
-        "description": (
-            "Age, sex, race, and population characteristics. "
-            "Exported with readable labels rather than raw census codes."
-        ),
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP05",
-        "loader": lambda: _load_tidy_census("census_demographics", "demogs_2023_tidy"),
-    },
-    "census_social": {
-        "label": "Social",
-        "group": "Census ACS 2023 Snapshot",
-        "description": (
-            "Education, language, disability, and citizenship characteristics. "
-            "Exported with readable labels rather than raw census codes."
-        ),
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP02",
-        "loader": lambda: _load_tidy_census("census_social", "social_2023_tidy"),
-    },
-    # --- Historical Trends (time-series from DuckDB) ---
-    "ts_median_home_value": {
-        "label": "Median Home Value by Year",
-        "group": "Historical Trends",
-        "description": "Median owner-occupied home value by town and year (ACS 5-year).",
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
-        "loader": lambda: _load_timeseries("median_home_value"),
-    },
-    "ts_median_smoc": {
-        "label": "Median Monthly Owner Cost (SMOC) by Year",
-        "group": "Historical Trends",
-        "description": (
-            "Median selected monthly owner costs (with and without a mortgage) "
-            "by town and year (ACS 5-year)."
-        ),
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
-        "loader": lambda: _load_timeseries("median_smoc"),
-    },
-    "ts_unemployment_rate": {
-        "label": "Unemployment Rate by Year",
-        "group": "Historical Trends",
-        "description": "Annual unemployment rate by town and year (ACS 5-year).",
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
-        "loader": lambda: _load_timeseries("unemployment_rate"),
-    },
-    "ts_median_earnings": {
-        "label": "Median Earnings by Year",
-        "group": "Historical Trends",
-        "description": "Median earnings for full-time workers by town and year (ACS 5-year).",
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
-        "loader": lambda: _load_timeseries("median_earnings"),
-    },
-    "ts_commute_time": {
-        "label": "Commute Time by Year",
-        "group": "Historical Trends",
-        "description": "Mean travel time to work by town and year (ACS 5-year).",
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
-        "loader": lambda: _load_timeseries("commute_time"),
-    },
-    "ts_commute_habits": {
-        "label": "Commute Habits by Year",
-        "group": "Historical Trends",
-        "description": "Commute mode share (car, transit, WFH, etc.) by town and year (ACS 5-year).",
-        "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
-        "loader": lambda: _load_timeseries("commute_habits"),
-    },
-    "ts_historic_population": {
-        "label": "Historic Population by Year",
-        "group": "Historical Trends",
-        "description": "Vermont municipal population estimates by town and year.",
-        "primary_source": "https://www.census.gov/programs-surveys/decennial-census.html",
-        "loader": lambda: _load_timeseries("historic_population"),
-    },
-    # --- Land Use ---
-    "zoning": {
-        "label": "Zoning Districts",
-        "group": "Land Use",
-        "description": (
-            "Vermont zoning district boundaries with district name, type "
-            "(residential, mixed, nonresidential, overlay), and acreage. "
-            "Geometry is excluded; use the Exploratory Mapping tab for map views."
-        ),
-        "primary_source": "https://geodata.vermont.gov/datasets/VCGI::vt-zoning-areas/about",
-        "loader": _load_zoning,
-    },
+    **ACS5_EXPORT_SOURCES,
+    **QCEW_EXPORT_SOURCES,
+    **ZONING_EXPORT_SOURCES,
+    **WASTEWATER_EXPORT_SOURCES,
+    **CDC_EXPORT_SOURCES,
+    **AMBULANCE_EXPORT_SOURCES,
 }
 
-# Serializable subset sent to the frontend (excludes the internal "loader" key)
 _SOURCE_META_KEYS = {"label", "group", "description", "primary_source"}
 
 
@@ -241,10 +119,10 @@ async def list_export_sources():
 @router.get("/locations")
 async def list_locations():
     """
-    Return sorted lists of Vermont counties and towns derived from the housing
-    dataset (representative of all census datasets).
+    Return sorted lists of Vermont counties and towns, derived from the ACS5
+    housing export source (representative of every town-level dataset).
     """
-    df = _load_tidy_census("census_housing", "housing_2023_tidy")
+    df = EXPORT_SOURCES["acs5_housing"]["loader"]()
     counties = (
         sorted(df["County"].dropna().unique().tolist())
         if "County" in df.columns
@@ -268,7 +146,6 @@ async def export_csv(body: ExportRequest, request: Request):
       - jurisdiction: town/city name
 
     Row cap: 10,000 rows. Rate limit: 10 downloads per IP per hour.
-    Census ACS sources export human-readable variable labels rather than raw codes.
     """
     ip = _get_client_ip(request)
     _check_rate_limit(ip)
@@ -286,7 +163,7 @@ async def export_csv(body: ExportRequest, request: Request):
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Could not load dataset '{body.source}': {exc}",
+            detail="We're sorry, but we could not load that dataset. Please try a different dataset or change your filter criteria.",
         ) from exc
 
     # Drop geometry if present

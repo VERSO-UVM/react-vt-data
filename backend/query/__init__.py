@@ -1,8 +1,14 @@
 from query.ambulance import (
+    get_ambulance_export_table,
     get_ambulance_geojson,
     get_ambulance_legend,
 )
-from query.cdc import dual_var_comparison, get_cdc_county_pca, single_var_geojson
+from query.cdc import (
+    dual_var_comparison,
+    get_cdc_county_pca,
+    get_cdc_export_table,
+    single_var_geojson,
+)
 from query.comparison import compare_variables, composite_index, dataset_registry
 from query.core_functions import filter_options, filter_ranges, filter_tree
 from query.production_db import get_db
@@ -12,6 +18,7 @@ from query.wastewater import (
     get_waste_service_areas_geojson,
     get_waste_treatment_facility_geojson,
     get_waste_treatment_facility_permits,
+    get_wastewater_export_table,
 )
 from query.zoning import (
     get_zoning_aggregated_acres,

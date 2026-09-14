@@ -89,3 +89,33 @@ async def employment_by_sector(request: FilterRequest):
 
     metadata = {**get_metadata("qcew_employment"), "county": county}
     return make_response(data=ordered, metadata=metadata)
+
+
+# ---------------------------------------------------------------------------
+# Export sources — merged into /export/sources by post_export.py. Adding a
+# new QCEW table to the export tool only requires an entry here.
+# ---------------------------------------------------------------------------
+
+
+def _load_export_table() -> pd.DataFrame:
+    return DB.execute(
+        """--sql
+        SELECT year, quarter, quarter_label, County, sector, employment, employment_4qma
+        FROM qcew_sectorEmployment_timeseries
+        ORDER BY year, quarter, County, sector
+        """
+    ).df()
+
+
+EXPORT_SOURCES: dict[str, dict] = {
+    "qcew_employment_by_sector": {
+        "label": "Employment by Sector (QCEW)",
+        "group": "Historical Trends",
+        "description": (
+            "Quarterly employment by industry sector, by county and year "
+            "(BLS Quarterly Census of Employment and Wages, 4-quarter moving average)."
+        ),
+        "primary_source": "https://www.bls.gov/cew/",
+        "loader": _load_export_table,
+    },
+}
