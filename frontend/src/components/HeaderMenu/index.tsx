@@ -96,10 +96,12 @@ const links: NavItem[] = [
 
     // I outlined future sections of our "Resources" page below (formerly "Tools") -Ian
     links: [
-      { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
       { link: '/resources/data-sources', label: 'Data Sources ' },
+      { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
       // { link: '/resources/github', label: 'GitHub' },
-      // { link: '/resources/tutorial', label: 'Tutorial' },
+      // { link: '/resources/tutorials', label: 'Tutorials' },
+      // { link: '/resources/announcements', label: 'Announcements' },
+      // { link: '/resources/white-papers', label: 'White Papers' },
     ],
   },
   // Future sections of the "About" page outlined below
