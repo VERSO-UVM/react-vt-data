@@ -71,3 +71,16 @@ def get_soil_suit_legend():
         logger.error("color query returned no rows for the colors dataset")
         raise ValueError("no results for colors dataset")
     return result[0]
+
+
+def get_wastewater_export_table(table: str) -> pd.DataFrame:
+    """Load a full wastewater table for CSV export.
+
+    Drops geometry if present and renames `Municipal_Name` to `Jurisdiction`
+    so it lines up with the town-filter column name used by every other
+    export source.
+    """
+    df = DB.execute(f'SELECT * FROM "{table}"').df()
+    if "geometry" in df.columns:
+        df = df.drop(columns=["geometry"])
+    return df.rename(columns={"Municipal_Name": "Jurisdiction"})

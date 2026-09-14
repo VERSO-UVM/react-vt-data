@@ -9,9 +9,76 @@ from query import (
     get_waste_service_areas_geojson,
     get_waste_treatment_facility_geojson,
     get_waste_treatment_facility_permits,
+    get_wastewater_export_table,
 )
 
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# Export sources — merged into /export/sources by post_export.py. Adding a
+# new wastewater table to the export tool only requires an entry here.
+# ---------------------------------------------------------------------------
+
+_WIM_DOCS = "https://verso-uvm.github.io/Wastewater-Infrastructure-Mapping/data.html"
+
+EXPORT_SOURCES: dict[str, dict] = {
+    "wastewater_service_areas": {
+        "label": "Wastewater Service Areas",
+        "group": "Infrastructure",
+        "description": (
+            "Municipal wastewater service area boundaries with system name, "
+            "owner, and connected treatment facility. Geometry is excluded; "
+            "use the Exploratory Mapping tab for map views."
+        ),
+        "primary_source": _WIM_DOCS,
+        "loader": lambda: get_wastewater_export_table(
+            "VersoWastewater_serviceAreas_info"
+        ),
+    },
+    "wastewater_treatment_facilities": {
+        "label": "Wastewater Treatment Facilities",
+        "group": "Infrastructure",
+        "description": (
+            "Municipal and private wastewater treatment facilities with "
+            "design hydraulic capacity and septage acceptance."
+        ),
+        "primary_source": _WIM_DOCS,
+        "loader": lambda: get_wastewater_export_table(
+            "VersoWastewater_treatmentFacilities_info"
+        ),
+    },
+    "wastewater_treatment_facility_permits": {
+        "label": "Wastewater Treatment Facility Permits",
+        "group": "Infrastructure",
+        "description": "NPDES discharge permits for wastewater treatment facilities.",
+        "primary_source": _WIM_DOCS,
+        "loader": lambda: get_wastewater_export_table(
+            "VersoWastewater_treatmentFacilitiesPermits_info"
+        ),
+    },
+    "wastewater_soil_suitability": {
+        "label": "Septic Soil Suitability",
+        "group": "Infrastructure",
+        "description": (
+            "Soil-based suitability for on-site septic systems, by mapped "
+            "area and town. Geometry is excluded; use the Exploratory "
+            "Mapping tab for map views."
+        ),
+        "primary_source": "https://github.com/VERSO-UVM/Vermont-Livability-Map",
+        "loader": lambda: get_wastewater_export_table(
+            "VersoWastewater_soilSuitability_info"
+        ),
+    },
+    "wastewater_stormwater_management": {
+        "label": "Stormwater Management Areas",
+        "group": "Infrastructure",
+        "description": "Permitted stormwater management system locations and status, by town.",
+        "primary_source": _WIM_DOCS,
+        "loader": lambda: get_wastewater_export_table(
+            "VersoWastewater_stormwaterManagement_info"
+        ),
+    },
+}
 
 
 @router.post("/load/mapping/wastewater/service_area")

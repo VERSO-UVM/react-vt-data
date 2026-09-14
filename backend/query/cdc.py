@@ -168,3 +168,14 @@ def get_cdc_county_pca():
     df = df.sort_values(by="CountyName")
 
     return df[["CountyName", "Health Burden"]].to_dict(orient="records")
+
+
+def get_cdc_export_table(table: str, county_col: str) -> pd.DataFrame:
+    """Load a full CDC PLACES table for CSV export.
+
+    Renames `county_col` (the table's county-name column) to `County` so it
+    lines up with the county-filter column name used by every other export
+    source.
+    """
+    df = DB.execute(f'SELECT * FROM "{table}"').df()
+    return df.rename(columns={county_col: "County"})

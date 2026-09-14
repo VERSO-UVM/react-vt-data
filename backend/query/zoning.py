@@ -74,3 +74,16 @@ def get_zoning_allowances(
     table = DB.execute(*sql_filter_block(sql_dir / "rules_table.sql", sources)).df()
 
     return agg, table
+
+
+def get_zoning_export_table(table: str) -> pd.DataFrame:
+    """Load a full zoning table for CSV export.
+
+    Drops map-only columns (geometry, colors, tooltip HTML) and renames
+    `Municipal_Name` to `Jurisdiction` so it lines up with the town-filter
+    column name used by every other export source.
+    """
+    df = DB.execute(f'SELECT * FROM "{table}"').df()
+    drop_cols = ["geometry", "fill", "fill-opacity", "tooltip"]
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns])
+    return df.rename(columns={"Municipal_Name": "Jurisdiction"})
