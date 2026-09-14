@@ -22,11 +22,24 @@ import {
 } from '@phosphor-icons/react';
 import { COLORS, FONTS } from '@/app/theme';
 
-const CONTACT_METHODS = [
+
+type ContactMethod =
+  | {
+      icon: typeof EnvelopeSimpleIcon;
+      label: 'Email';
+      value: string[];
+    }
+  | {
+      icon: typeof MapPinIcon;
+      label: 'Address';
+      value: string;
+    };
+
+const CONTACT_METHODS: ContactMethod[] = [
   {
     icon: EnvelopeSimpleIcon,
     label: 'Email',
-    value: 'Emma.Spett@uvm.edu',
+    value: ['Emma.Spett@uvm.edu', 'Ian.Sargent@uvm.edu'],
   },
   {
     icon: MapPinIcon,
@@ -47,10 +60,6 @@ const SOCIAL_LINKS = [
     href: 'https://www.linkedin.com/company/uvm-leahy-institute-for-rural-partnerships',
   },
 ];
-
-// -----------------------------------------------------------------------------
-// Page
-// -----------------------------------------------------------------------------
 
 export default function ContactPage() {
   return (
@@ -157,18 +166,23 @@ export default function ContactPage() {
                   </Text>
 
                   {method.label === 'Email' ? (
-                    <a
-                      href={`mailto:${method.value}?subject=Vermont%20Data%20Collaborative%20Inquiry`}
-                      style={{
-                        display: 'inline-block',
-                        marginTop: 4,
-                        color: COLORS.ink,
-                        fontSize: 'var(--mantine-font-size-sm)',
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      {method.value}
-                    </a>
+                    <Stack gap={2}>
+                      {method.value.map((email) => (
+                        <a
+                          key={email}
+                          href={`mailto:${email}?subject=Vermont%20Data%20Collaborative%20Inquiry`}
+                          style={{
+                            display: 'inline-block',
+                            marginTop: 4,
+                            color: COLORS.ink,
+                            fontSize: 'var(--mantine-font-size-sm)',
+                            textDecoration: 'underline',
+                          }}
+                        >
+                          {email}
+                        </a>
+                      ))}
+                    </Stack>
                   ) : (
                     <a
                       href="https://www.google.com/maps/search/?api=1&query=105+Carrigan+Drive+Burlington+VT+05405"
