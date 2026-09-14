@@ -86,7 +86,7 @@ const links: NavItem[] = [
         links: [
           {
             link: '/data-comparison/b-tables',
-            label: 'Automatic/Topic Reports',
+            label: 'Reports by Topic',
           },
           { link: '/working-report', label: 'Working Report' },
         ],
