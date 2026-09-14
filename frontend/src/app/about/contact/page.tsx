@@ -22,7 +22,6 @@ import {
 } from '@phosphor-icons/react';
 import { COLORS, FONTS } from '@/app/theme';
 
-
 type ContactMethod =
   | {
       icon: typeof EnvelopeSimpleIcon;
@@ -109,11 +108,7 @@ export default function ContactPage() {
       </Box>
 
       <Container size="lg" py={{ base: 50, sm: 70 }}>
-        <SimpleGrid
-          cols={{ base: 1, sm: 2 }}
-          spacing="lg"
-          mb={40}
-        >
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" mb={40}>
           {CONTACT_METHODS.map((method, index) => {
             const Icon = method.icon;
 
