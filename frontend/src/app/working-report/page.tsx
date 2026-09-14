@@ -3,18 +3,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
+  ActionIcon,
   Badge,
   Box,
   Button,
+  Collapse,
   Container,
   Divider,
   Grid,
   Group,
+  SegmentedControl,
+  SimpleGrid,
   Stack,
   Text,
   Title,
 } from '@mantine/core';
-import { ChartStack } from '@/components/Charts';
+import { ChartStack, ChartStackItem } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
 import {
   useApplyFilters,
@@ -24,10 +28,31 @@ import { motion } from 'motion/react';
 import {
   PencilSimpleIcon,
   DownloadSimpleIcon,
+  DotsSixVerticalIcon,
+  CaretDownIcon,
+  CaretRightIcon,
   XIcon,
 } from '@phosphor-icons/react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
 import { ChartItem, ChartMetadata, DataRow } from '@/types/cachedCharts';
+import type { PdfSection } from '@/lib/pdfReport/types';
 import { COLORS, FONTS } from '@/app/theme';
 
 // one chart's backend payload, keyed by chart def id in state below
@@ -63,8 +88,6 @@ function HeroSection({
   handleClearReport: () => void;
 }) {
   return (
-    // Full-bleed: breaks out of the page's centered Container so the hero
-    // touches both edges of the viewport instead of floating as a card.
     <Box
       style={{
         position: 'relative',
@@ -143,9 +166,6 @@ function HeroSection({
               onClear={handleClearReport}
             />
           </Grid.Col>
-          {/* Profile panel — sits beside the title, always on the dark
-             background so the light text stays legible. Kept compact so
-             it doesn't compete with the location title. */}
           <Grid.Col span={{ base: 12, md: 4 }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -321,10 +341,93 @@ function ReportActions({
   );
 }
 
+function SortableSection({
+  id,
+  children,
+}: {
+  id: string;
+  children: (handleProps: {
+    attributes: DraggableAttributes;
+    listeners: DraggableSyntheticListeners;
+  }) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children({ attributes, listeners })}
+    </div>
+  );
+}
+
+function SortableChartItem({
+  id,
+  chart,
+  defId,
+  userInterests,
+  isIncludedFn,
+  onToggle,
+}: {
+  id: string;
+  chart: ChartItem<DataRow>;
+  defId: string;
+  userInterests: string[];
+  isIncludedFn: (defId: string) => boolean;
+  onToggle: (defId: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1 : undefined,
+    position: 'relative',
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ChartStackItem
+        chart={chart}
+        action="toggle"
+        view="report"
+        userInterests={userInterests}
+        defId={defId}
+        isIncludedFn={isIncludedFn}
+        onToggle={onToggle}
+        dragHandleProps={{ attributes, listeners }}
+      />
+    </div>
+  );
+}
+
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
   const [isPdfMode, setIsPdfMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    new Set(),
+  );
+  const toggleSectionCollapsed = (category: string) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
 
   const {
     myLocation,
@@ -332,56 +435,79 @@ export default function WorkingReport() {
     interests,
     yearMin,
     yearMax,
+    profileSet,
+    profileModalOpen,
     openProfileModal,
   } = useProfile();
   const {
     excludedIds,
     toggleExcluded,
-    clearExclusions,
     excludeById,
+    includeById,
     items: savedItems,
     clearItems,
     sessionInitialized,
     setSessionInitialized,
     pendingReset,
     setPendingReset,
+    chartCustomizations,
+    sectionOrder,
+    sectionChartOrder,
+    layoutStyle,
+    reorderSections,
+    reorderChartsInSection,
+    setLayoutStyle,
+    resetLayout,
   } = useItems();
 
-  // Apply auto-exclude based on interests: exclude any chart whose categories
-  // don't overlap with the user's interests (no-op if interests is empty).
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  );
+
+  // Set inclusion for every chart based on the user's interests: a chart is
+  // included only if it shares a category with an interest. With no
+  // interests selected, nothing matches, so the report starts empty.
   const applyInterestExclusions = (currentInterests: string[]) => {
-    if (currentInterests.length === 0) return;
     chartDefs.forEach((def) => {
-      const matches = def.categories?.some((cat) =>
-        currentInterests.includes(cat),
-      );
-      if (!matches) excludeById(def.id);
+      const matches =
+        currentInterests.length > 0 &&
+        !!def.categories?.some((cat) => currentInterests.includes(cat));
+      if (matches) includeById(def.id);
+      else excludeById(def.id);
     });
     savedItems.forEach((item) => {
-      const matches = (
-        'categories' in item ? item.categories : undefined
-      )?.some((cat: string) => currentInterests.includes(cat));
-      if (!matches) excludeById(item.id);
+      const matches =
+        currentInterests.length > 0 &&
+        !!('categories' in item ? item.categories : undefined)?.some(
+          (cat: string) => currentInterests.includes(cat),
+        );
+      if (matches) includeById(item.id);
+      else excludeById(item.id);
     });
   };
 
-  // On first load of a new browser session, reset inclusions based on profile
-  // interests. sessionStorage clears on tab close.
+  // Reset inclusions based on profile interests, both on first load of a new
+  // browser session (sessionStorage clears on tab close) and after a manual
+  // clear. A brand-new user hasn't saved a profile yet (profileSet is false)
+  // — wait for that first save rather than defaulting on the empty interests
+  // they start with. After that, a "Clear report" reopens the modal for
+  // picking new interests — wait for it to close before recomputing, so this
+  // doesn't fire on stale interests the instant the modal opens.
   useEffect(() => {
-    if (!sessionInitialized) {
-      clearExclusions();
-      applyInterestExclusions(interests);
-      setSessionInitialized(true);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // After a manual clear + profile save, re-apply exclusions with new interests.
-  useEffect(() => {
-    if (pendingReset) {
-      applyInterestExclusions(interests);
-      setPendingReset(false);
-    }
-  }, [interests, pendingReset]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (sessionInitialized && !pendingReset) return;
+    if (!profileSet) return;
+    if (profileModalOpen) return;
+    applyInterestExclusions(interests);
+    if (!sessionInitialized) setSessionInitialized(true);
+    if (pendingReset) setPendingReset(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    interests,
+    profileSet,
+    profileModalOpen,
+    sessionInitialized,
+    pendingReset,
+  ]);
 
   // ---------- data fetching (mirrors data-viewer) ----------
   const [chartData, setChartData] = useState<Record<string, ChartPayload>>({});
@@ -589,6 +715,67 @@ export default function WorkingReport() {
   const includedPairs = allPairs.filter((p) => isIncluded(p.defId));
   const excludedPairs = allPairs.filter((p) => !isIncluded(p.defId));
 
+  // ---------- report builder: sections + per-section chart order ----------
+  // Included charts grouped by their first category — this is the same
+  // grouping rule the PDF uses, so screen and PDF always agree on sections.
+  const categoryMap = new Map<string, typeof includedPairs>();
+  includedPairs.forEach((p) => {
+    const cat = p.item.categories?.[0] ?? 'Other';
+    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+    categoryMap.get(cat)!.push(p);
+  });
+
+  // User-ordered sections first (dropping any that no longer have charts),
+  // then any categories not yet ordered, ranked by the chartDefs-derived
+  // CATEGORY_ORDER as a sensible default.
+  const resolvedSectionOrder: string[] = [
+    ...sectionOrder.filter((cat) => categoryMap.has(cat)),
+    ...Array.from(categoryMap.keys())
+      .filter((cat) => !sectionOrder.includes(cat))
+      .sort((a, b) => categoryRank([a]) - categoryRank([b])),
+  ];
+
+  const resolveChartOrder = (category: string) => {
+    const pairs = categoryMap.get(category) ?? [];
+    const orderIds = sectionChartOrder[category] ?? [];
+    const byId = new Map(pairs.map((p) => [p.defId, p]));
+    const known = orderIds
+      .map((id) => byId.get(id))
+      .filter((p): p is (typeof pairs)[number] => !!p);
+    const knownIds = new Set(known.map((p) => p.defId));
+    const missing = pairs.filter((p) => !knownIds.has(p.defId));
+    return [...known, ...missing];
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    if (activeId.startsWith('section:')) {
+      if (!overId.startsWith('section:')) return;
+      const ids = resolvedSectionOrder.map((c) => `section:${c}`);
+      const oldIndex = ids.indexOf(activeId);
+      const newIndex = ids.indexOf(overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+      reorderSections(arrayMove(resolvedSectionOrder, oldIndex, newIndex));
+      return;
+    }
+
+    // Chart card drag — only reorder within the same section (categories
+    // are fixed; dropping on a card from a different section is a no-op).
+    const category =
+      includedPairs.find((p) => p.defId === activeId)?.item.categories?.[0] ??
+      'Other';
+    const ids = resolveChartOrder(category).map((p) => p.defId);
+    if (!ids.includes(overId)) return;
+    const oldIndex = ids.indexOf(activeId);
+    const newIndex = ids.indexOf(overId);
+    if (oldIndex === -1 || newIndex === -1) return;
+    reorderChartsInSection(category, arrayMove(ids, oldIndex, newIndex));
+  };
+
   // ---------- PDF ----------
   const handleDownloadPdf = async () => {
     if (!chartsRef.current) return;
@@ -596,12 +783,26 @@ export default function WorkingReport() {
     try {
       flushSync(() => setIsPdfMode(true));
       await new Promise((r) => setTimeout(r, 300));
+
+      const sections: PdfSection[] = resolvedSectionOrder.map((category) => ({
+        category,
+        items: resolveChartOrder(category).map(({ defId, item }) => {
+          const isTablePrimary = item.subtype.startsWith('renderTable');
+          const forcedTable = isTablePrimary && !item.trendChart;
+          const customization = chartCustomizations[defId];
+          const label = customization?.title ?? item.description;
+          return {
+            chart: item,
+            defId,
+            mode: forcedTable ? 'native-table' : 'image',
+            title: [label, item.title].filter(Boolean).join(' for '),
+            notes: customization?.notes ?? item.notes,
+          };
+        }),
+      }));
+
       const { generateReportPdf } = await import('@/lib/pdfReport/generatePdf');
-      await generateReportPdf(
-        includedPairs.map((p) => p.item),
-        chartsRef.current!,
-        myLocation.name,
-      );
+      await generateReportPdf(sections, chartsRef.current!, myLocation.name);
     } catch (err) {
       console.error('[WorkingReport] PDF generation failed:', err);
       alert('PDF generation failed — see the browser console for details.');
@@ -613,7 +814,8 @@ export default function WorkingReport() {
 
   const handleClearReport = () => {
     clearItems();
-    clearExclusions();
+    chartDefs.forEach((def) => excludeById(def.id));
+    resetLayout();
     setPendingReset(true);
     openProfileModal();
   };
@@ -632,16 +834,125 @@ export default function WorkingReport() {
           handleDownloadPdf={handleDownloadPdf}
           handleClearReport={handleClearReport}
         />
+        {!isPdfMode && includedPairs.length > 0 && (
+          <Group justify="flex-end" px="md">
+            <Text size="sm" c="dimmed">
+              Layout
+            </Text>
+            <SegmentedControl
+              size="xs"
+              value={layoutStyle}
+              onChange={(v) => setLayoutStyle(v as 'list' | 'grid')}
+              data={[
+                { label: 'List', value: 'list' },
+                { label: 'Grid', value: 'grid' },
+              ]}
+            />
+          </Group>
+        )}
+
         <PdfModeContext.Provider value={isPdfMode}>
           <div ref={chartsRef}>
-            <ChartStack
-              charts={includedPairs.map((p) => p.item)}
-              action="toggle"
-              userInterests={interests}
-              defIds={includedPairs.map((p) => p.defId)}
-              onToggle={toggleExcluded}
-              isIncludedFn={isIncluded}
-            />
+            <DndContext
+              id="working-report-dnd"
+              sensors={dndSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={resolvedSectionOrder.map((c) => `section:${c}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                <Stack gap="xl" px="md">
+                  {resolvedSectionOrder.map((category) => {
+                    const pairs = resolveChartOrder(category);
+                    const chartIds = pairs.map((p) => p.defId);
+                    const effectiveLayoutStyle = isPdfMode
+                      ? 'list'
+                      : layoutStyle;
+                    const ChartWrapper =
+                      effectiveLayoutStyle === 'grid' ? SimpleGrid : Stack;
+                    const chartWrapperProps =
+                      effectiveLayoutStyle === 'grid'
+                        ? {
+                            cols: { base: 1, md: 2 },
+                            spacing: 'md',
+                            verticalSpacing: 'md',
+                          }
+                        : {};
+                    const isCollapsed = collapsedSections.has(category);
+                    return (
+                      <SortableSection
+                        key={category}
+                        id={`section:${category}`}
+                      >
+                        {(handleProps) => (
+                          <Box>
+                            <Group mb="sm" gap={6} justify="space-between">
+                              <Group gap={6}>
+                                {!isPdfMode && (
+                                  <Box
+                                    style={{
+                                      cursor: 'grab',
+                                      touchAction: 'none',
+                                    }}
+                                    {...handleProps.attributes}
+                                    {...handleProps.listeners}
+                                  >
+                                    <DotsSixVerticalIcon size={18} />
+                                  </Box>
+                                )}
+                                <Title order={3}>{category}</Title>
+                              </Group>
+                              {!isPdfMode && (
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="gray"
+                                  onClick={() =>
+                                    toggleSectionCollapsed(category)
+                                  }
+                                  aria-label={
+                                    isCollapsed
+                                      ? `Expand ${category}`
+                                      : `Collapse ${category}`
+                                  }
+                                >
+                                  {isCollapsed ? (
+                                    <CaretRightIcon size={18} />
+                                  ) : (
+                                    <CaretDownIcon size={18} />
+                                  )}
+                                </ActionIcon>
+                              )}
+                            </Group>
+                            <Collapse expanded={isPdfMode || !isCollapsed}>
+                              <SortableContext
+                                items={chartIds}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                <ChartWrapper {...chartWrapperProps}>
+                                  {pairs.map(({ defId, item }) => (
+                                    <SortableChartItem
+                                      key={defId}
+                                      id={defId}
+                                      chart={item}
+                                      defId={defId}
+                                      userInterests={interests}
+                                      isIncludedFn={isIncluded}
+                                      onToggle={toggleExcluded}
+                                    />
+                                  ))}
+                                </ChartWrapper>
+                              </SortableContext>
+                            </Collapse>
+                          </Box>
+                        )}
+                      </SortableSection>
+                    );
+                  })}
+                </Stack>
+              </SortableContext>
+            </DndContext>
           </div>
         </PdfModeContext.Provider>
 

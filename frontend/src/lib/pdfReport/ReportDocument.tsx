@@ -2,11 +2,15 @@
 /**
  * @react-pdf/renderer document for the working report.
  *
- * Tables are rendered as proper PDF text (selectable). Charts are embedded
- * as raster PNG images captured from the DOM before this document is built.
+ * Section/chart order, titles and notes are all resolved by the
+ * working-report page from the same state that drives the on-screen builder
+ * — this document just lays out what it's given, so the PDF is a mirror of
+ * whatever the user arranged on screen (WYSIWYG), not an independent
+ * re-derivation.
  *
- * Section order is driven by INTEREST_OPTIONS in profileStore — one source
- * of truth for the category list.
+ * Table-mode entries are rendered as proper PDF text (selectable) via
+ * PdfTableSection. Image-mode entries are embedded as raster PNGs captured
+ * from the DOM before this document is built (see generatePdf.ts).
  */
 
 import {
@@ -18,35 +22,7 @@ import {
   StyleSheet,
 } from '@react-pdf/renderer';
 import { ChartItem } from '@/types/cachedCharts';
-import { INTEREST_OPTIONS } from '@/components/profile/profileStore';
-
-// ---------------------------------------------------------------------------
-// Section grouping (order follows INTEREST_OPTIONS)
-// ---------------------------------------------------------------------------
-
-function groupByCategory(
-  charts: ChartItem<any>[],
-): { category: string; items: ChartItem<any>[] }[] {
-  const groupMap = new Map<string, ChartItem<any>[]>();
-  for (const chart of charts) {
-    const cat = chart.categories?.[0] ?? 'Other';
-    if (!groupMap.has(cat)) groupMap.set(cat, []);
-    groupMap.get(cat)!.push(chart);
-  }
-
-  const ordered: { category: string; items: ChartItem<any>[] }[] = [];
-  for (const cat of INTEREST_OPTIONS) {
-    if (groupMap.has(cat)) {
-      ordered.push({ category: cat, items: groupMap.get(cat)! });
-      groupMap.delete(cat);
-    }
-  }
-  // Remaining categories (e.g. 'Other', any future additions) come last
-  for (const [cat, items] of groupMap) {
-    ordered.push({ category: cat, items });
-  }
-  return ordered;
-}
+import { PdfChartEntry, PdfSection } from './types';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -159,6 +135,12 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Helvetica-Bold',
     marginBottom: 4,
+  },
+  captionNote: {
+    fontSize: 8,
+    fontFamily: 'Helvetica-Oblique',
+    color: '#666',
+    marginBottom: 6,
   },
   source: {
     fontSize: 7,
@@ -315,31 +297,33 @@ const PdfTableSection = ({ chart }: { chart: ChartItem<any> }) => {
 // ---------------------------------------------------------------------------
 
 const PdfCardContent = ({
-  chart,
+  entry,
   imageUrl,
 }: {
-  chart: ChartItem<any>;
+  entry: PdfChartEntry;
   imageUrl?: string;
 }) => {
-  const isTable = chart.subtype.startsWith('renderTable');
-  const title = [chart.description, chart.title].filter(Boolean).join(' for ');
+  const { chart, mode, title, notes } = entry;
+  const isNativeTable = mode === 'native-table';
 
   if (chart.subtype === 'noteCard') {
     return (
       <View style={s.noteCard} wrap={false}>
-        <Text style={s.noteText}>{chart.notes ?? ''}</Text>
+        <Text style={s.noteText}>{notes ?? ''}</Text>
       </View>
     );
   }
 
-  // Tables may exceed a page so they must remain wrappable (wrap=true/default).
-  // Charts have a fixed ~200px image height — force them onto a single page
-  // fragment with wrap={false} so the title never strands above the image.
+  // Native tables may exceed a page so they must remain wrappable
+  // (wrap=true/default). Images have a fixed ~200px height — force them onto
+  // a single page fragment with wrap={false} so the title never strands
+  // above the image.
   return (
-    <View style={s.card} wrap={isTable}>
+    <View style={s.card} wrap={isNativeTable}>
       <Text style={s.cardTitle}>{title}</Text>
+      {notes && <Text style={s.captionNote}>{notes}</Text>}
 
-      {isTable ? (
+      {isNativeTable ? (
         <PdfTableSection chart={chart} />
       ) : imageUrl ? (
         <Image src={imageUrl} style={s.chartImage} />
@@ -382,21 +366,20 @@ const TitlePage = ({
 // ---------------------------------------------------------------------------
 
 export interface ReportDocumentProps {
-  charts: ChartItem<any>[];
-  chartImages: Record<string, string>; // chart.id → PNG data URL
+  sections: PdfSection[];
+  chartImages: Record<string, string>; // defId → PNG data URL
   reportTitle?: string;
   location?: string;
   generatedAt?: string;
 }
 
 export const ReportDocument = ({
-  charts,
+  sections,
   chartImages,
   reportTitle = 'Vermont Data Report',
   location,
   generatedAt = '',
 }: ReportDocumentProps) => {
-  const sections = groupByCategory(charts);
   const headerLabel = location ? `${reportTitle} — ${location}` : reportTitle;
 
   return (
@@ -420,25 +403,25 @@ export const ReportDocument = ({
              */}
             <View
               style={s.sectionHeaderAndFirstCard}
-              wrap={items[0]?.subtype.startsWith('renderTable')}
+              wrap={items[0]?.mode === 'native-table'}
             >
               <View style={s.sectionHeader}>
                 <Text style={s.sectionTitle}>{category}</Text>
               </View>
               {items[0] && (
                 <PdfCardContent
-                  chart={items[0]}
-                  imageUrl={chartImages[items[0].id]}
+                  entry={items[0]}
+                  imageUrl={chartImages[items[0].defId]}
                 />
               )}
             </View>
 
             {/* Remaining cards in this section */}
-            {items.slice(1).map((chart) => (
+            {items.slice(1).map((entry) => (
               <PdfCardContent
-                key={chart.id}
-                chart={chart}
-                imageUrl={chartImages[chart.id]}
+                key={entry.defId}
+                entry={entry}
+                imageUrl={chartImages[entry.defId]}
               />
             ))}
           </View>

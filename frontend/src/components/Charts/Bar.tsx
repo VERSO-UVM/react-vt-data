@@ -171,23 +171,35 @@ const CompareDiffPerXBarChartSVG = ({
     `${chart.yField} (compare)`,
   ];
 
+  const includeCategories = chart.chartParams?.includeCategories;
+  const filteredData = includeCategories
+    ? chart.data.filter((entry: any) =>
+        includeCategories.includes(entry[chart.xField]),
+      )
+    : chart.data;
+  const filteredCompareData = includeCategories && chart.compareData
+    ? chart.compareData.filter((entry: any) =>
+        includeCategories.includes(entry[chart.xField]),
+      )
+    : (chart.compareData ?? []);
+
   // Determine per-bar primary colors (same logic as Chart.js version)
   let colors: string[];
-  if (chart.chartParams?.color && chart.data[0]?.[chart.chartParams.color]) {
-    colors = chart.data.map(
+  if (chart.chartParams?.color && filteredData[0]?.[chart.chartParams.color]) {
+    colors = filteredData.map(
       (entry) => entry[chart.chartParams.color!] as string,
     );
   } else {
     const schemeName = chart.chartParams?.colorScheme ?? 'schemeCategory10';
     const colorScale = d3.scaleOrdinal<string, string>(d3Schemes[schemeName]);
-    colors = chart.data.map((_, i) => colorScale(i.toString()));
+    colors = filteredData.map((_, i) => colorScale(i.toString()));
   }
 
   // Merge primary + compare into one array for grouped bars
-  const merged = chart.data.map((entry, i) => ({
+  const merged = filteredData.map((entry, i) => ({
     [chart.xField]: entry[chart.xField],
     primary: entry[chart.yField],
-    compare: chart.compareData?.[i]?.[chart.yField] ?? null,
+    compare: filteredCompareData[i]?.[chart.yField] ?? null,
   }));
 
   return (

@@ -4,6 +4,7 @@ import { useProfile } from '@/components/profile/profileStore';
 import { Button, Transition } from '@mantine/core';
 import { CheckIcon, XIcon } from '@phosphor-icons/react';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { COLORS } from '@/app/theme';
 
 // Toggle include/exclude for auto-populated working report charts
 interface ToggleProps {
@@ -12,10 +13,13 @@ interface ToggleProps {
   onToggle: () => void;
 }
 export function ToggleChart({ isIncluded, onToggle }: ToggleProps) {
+  
+  const button_color = isIncluded ? COLORS.red : COLORS.spruce
+  
   return (
     <Button
-      variant={isIncluded ? 'light' : 'filled'}
-      color={isIncluded ? 'red' : 'green'}
+      variant = "filled"
+      color = {button_color}
       onClick={onToggle}
     >
       {isIncluded ? 'Exclude from report' : 'Include in report'}

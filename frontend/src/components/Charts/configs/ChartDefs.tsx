@@ -43,7 +43,6 @@ export const chartDefs: ChartDef[] = [
     chartParams: { color: 'hex_color', legendLabels: ['Main', 'Compare'] },
     url: `${BASE_API_URL}/load/data/zoning/aggregated`,
     filterKey: 'aggregated_acres',
-    notes: 'Acreage is defined as a good time.',
     showCols: [
       { key: 'County' },
       { key: 'Jurisdiction District Name' },
@@ -65,8 +64,6 @@ export const chartDefs: ChartDef[] = [
     },
     url: `${BASE_API_URL}/load/data/zoning/allowances`,
     filterKey: '',
-    notes:
-      'Acreage distribution by family allowance (Residential + Mixed use).',
     showCols: [
       { key: 'use_type', label: 'Residential Type' },
       { key: 'val', label: 'Zoning Outcome' },

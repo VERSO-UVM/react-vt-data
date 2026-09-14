@@ -286,7 +286,7 @@ async def export_csv(body: ExportRequest, request: Request):
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Could not load dataset '{body.source}': {exc}",
+            detail="We're sorry, but we could not load that dataset. Please try a different dataset or change your filter criteria.",
         ) from exc
 
     # Drop geometry if present
