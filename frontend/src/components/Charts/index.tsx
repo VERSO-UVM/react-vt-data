@@ -62,6 +62,7 @@ import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 import { useItems } from '@/components/ItemsProvider';
+import classes from './ChartCard.module.css';
 import type {
   DraggableAttributes,
   DraggableSyntheticListeners,
@@ -366,6 +367,7 @@ export const ChartCard = <TData extends DataRow>({
         <Box w="100%">
           <Box
             data-chart-box
+            className={classes.chartBox}
             style={{
               height: chartBoxHeight,
               overflow: isGallery ? 'hidden' : 'visible',
