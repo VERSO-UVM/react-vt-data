@@ -124,8 +124,8 @@ function FeedbackForm() {
 
           <Text size="sm" c="dimmed" mt={4}>
             We&apos;re early in development and want your input. Tell us
-            what&apos;s working, what&apos;s confusing, or what you&apos;d like
-            to see &mdash; it goes straight to our team.
+            what&apos;s working, what&apos;s confusing, or anything you&apos;d like
+            to see.
           </Text>
         </Box>
 
