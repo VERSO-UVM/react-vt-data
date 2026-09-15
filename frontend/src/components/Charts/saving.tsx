@@ -32,7 +32,8 @@ interface AddChartProps {
 }
 
 export function AddChart({ chart, defId }: AddChartProps) {
-  const { addItem, removeItem, items } = useItems();
+  const { addItem, removeItem, items, excludedIds, toggleExcluded } =
+    useItems();
   const { interests } = useProfile();
 
   const stableId =
@@ -54,13 +55,24 @@ export function AddChart({ chart, defId }: AddChartProps) {
     interests.length === 0 || // If no interests set, default to showing/including
     chartCategories.some((category) => interests.includes(category));
 
-  // Auto-exclude initial state check based on interests if needed,
-  // or track state relative to items in report:
-  const inReport = items.some((item) => item.id === stableId);
+  // Charts backed by a chartDefs id (defId set) are already auto-populated
+  // on the working report — their inclusion is governed by excludedIds, not
+  // by presence in `items`. So "Add"/"Remove" here just toggles exclusion,
+  // matching the working-report page's own inclusion check. Only charts
+  // built ad hoc on other pages (no defId — no chartDefs counterpart) get
+  // stored as a standalone copy in `items`.
+  const inReport = defId
+    ? !excludedIds.includes(defId)
+    : items.some((item) => item.id === stableId);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     // Prevent parent elements (like ChartCard or Modal triggers) from catching the click
     e.stopPropagation();
+
+    if (defId) {
+      toggleExcluded(defId);
+      return;
+    }
 
     if (inReport) {
       removeItem(stableId);

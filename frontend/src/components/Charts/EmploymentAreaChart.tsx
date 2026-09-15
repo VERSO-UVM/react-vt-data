@@ -230,6 +230,7 @@ export const EmploymentAreaChart = ({
                 fillOpacity={0.85}
                 dot={false}
                 activeDot={false}
+                isAnimationActive={!isPdfMode}
                 hide={hidden.has(s)}
               />
             ))}

@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { usePdfMode } from '@/contexts/PdfModeContext';
 
 // tidy ACS-style row consumed by the trend charts
 interface TrendRow extends DataRow {
@@ -123,6 +124,7 @@ export const SingleSeriesTrendChart = <TData,>({
   onPlotData?: (rows: DataRow[]) => void;
 }) => {
   const isGallery = view === 'gallery';
+  const isPdfMode = usePdfMode();
   const {
     seriesKey,
     valueField,
@@ -222,6 +224,7 @@ export const SingleSeriesTrendChart = <TData,>({
             strokeWidth={lineWidth}
             dot={false}
             animationBegin={0}
+            isAnimationActive={!isGallery && !isPdfMode}
             animationDuration={!isGallery ? 1500 : 0}
             hide={hidden.has(seriesName)}
           />
@@ -234,6 +237,7 @@ export const SingleSeriesTrendChart = <TData,>({
               strokeWidth={lineWidth}
               dot={false}
               animationBegin={0}
+              isAnimationActive={!isGallery && !isPdfMode}
               animationDuration={!isGallery ? 1500 : 0}
               hide={hidden.has(`${seriesName} (cmp)`)}
             />
@@ -278,6 +282,7 @@ export const MultiSeriesTrendChart = <TData,>({
   onPlotData?: (rows: DataRow[]) => void;
 }) => {
   const isGallery = view === 'gallery';
+  const isPdfMode = usePdfMode();
   const {
     series,
     valueField,
@@ -386,6 +391,7 @@ export const MultiSeriesTrendChart = <TData,>({
               stroke={s.color}
               strokeWidth={2}
               dot={false}
+              isAnimationActive={!isGallery && !isPdfMode}
               animationDuration={!isGallery ? 1500 : 0}
               hide={hidden.has(s.key)}
             />
@@ -404,6 +410,7 @@ export const MultiSeriesTrendChart = <TData,>({
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
                 legendType="none"
+                isAnimationActive={!isGallery && !isPdfMode}
                 animationDuration={!isGallery ? 1500 : 0}
                 dot={false}
                 hide={hidden.has(s.key)}
