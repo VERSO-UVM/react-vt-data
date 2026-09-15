@@ -124,8 +124,8 @@ function FeedbackForm() {
 
           <Text size="sm" c="dimmed" mt={4}>
             We&apos;re early in development and want your input. Tell us
-            what&apos;s working, what&apos;s confusing, or anything you&apos;d like
-            to see.
+            what&apos;s working, what&apos;s confusing, or anything you&apos;d
+            like to see.
           </Text>
         </Box>
 
@@ -139,9 +139,9 @@ function FeedbackForm() {
                 {...form.getInputProps('name')}
                 styles={{
                   input: {
-                    borderColor: COLORS.line
-                }
-              }}
+                    borderColor: COLORS.line,
+                  },
+                }}
               />
 
               <TextInput
@@ -151,9 +151,9 @@ function FeedbackForm() {
                 {...form.getInputProps('email')}
                 styles={{
                   input: {
-                    borderColor: COLORS.line
-                }
-              }}
+                    borderColor: COLORS.line,
+                  },
+                }}
               />
             </SimpleGrid>
 
@@ -165,8 +165,8 @@ function FeedbackForm() {
               {...form.getInputProps('feedbackType')}
               styles={{
                 input: {
-                  borderColor: COLORS.line
-                }
+                  borderColor: COLORS.line,
+                },
               }}
             />
 
@@ -179,8 +179,8 @@ function FeedbackForm() {
               {...form.getInputProps('message')}
               styles={{
                 input: {
-                  borderColor: COLORS.line
-                }
+                  borderColor: COLORS.line,
+                },
               }}
             />
 
@@ -208,11 +208,11 @@ function FeedbackForm() {
             )}
 
             <Group justify="flex-end">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 variant="filled"
                 color={COLORS.spruce}
-                loading={submitting} 
+                loading={submitting}
               >
                 Send feedback
               </Button>
