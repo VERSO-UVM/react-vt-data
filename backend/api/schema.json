@@ -51,7 +51,8 @@
         "Population Health Indicator": "SME_Highlight",
         "Category": "Category",
         "Measure": "Measure",
-        "Prevalence Measure": "Data_Value_Type"
+        "Prevalence Measure": "Data_Value_Type",
+        "County": "LocationName"
       }
     },
     "acs5_demographics_tidy": {

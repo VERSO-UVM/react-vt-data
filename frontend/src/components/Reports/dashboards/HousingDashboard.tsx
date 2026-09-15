@@ -5,6 +5,8 @@ import {
   TotalHousingUnitsCard,
   OccupancyDistributionChart,
   VacancyDistributionChart,
+  MedianHomeValueHistoryChart,
+  TotalHousingUnitsHistoryChart,
 } from '@/components/Reports/housing';
 
 export interface DashboardData {
@@ -19,6 +21,9 @@ export interface DashboardData {
     current: DataRow[];
     history: DataRow[];
   };
+  // Additional time-series tables, keyed by the SECTIONS.timeseries config
+  // key in reports-by-topic/page.tsx (e.g. "medianHomeValue").
+  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
 }
 
 export interface DashboardProps {
@@ -26,7 +31,7 @@ export interface DashboardProps {
 }
 
 export default function HousingDashboard({ data }: DashboardProps) {
-  const { primary, comparison } = data;
+  const { primary, comparison, timeseries } = data;
 
   return (
     <Grid gap="lg">
@@ -62,6 +67,26 @@ export default function HousingDashboard({ data }: DashboardProps) {
           comparisonName={comparison.name}
         />
       </Grid.Col>
+      {timeseries?.medianHomeValue && (
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <MedianHomeValueHistoryChart
+            primary={timeseries.medianHomeValue.primary}
+            comparison={timeseries.medianHomeValue.comparison}
+            primaryName={primary.name}
+            comparisonName={comparison.name}
+          />
+        </Grid.Col>
+      )}
+      {timeseries?.totalUnits && (
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <TotalHousingUnitsHistoryChart
+            primary={timeseries.totalUnits.primary}
+            comparison={timeseries.totalUnits.comparison}
+            primaryName={primary.name}
+            comparisonName={comparison.name}
+          />
+        </Grid.Col>
+      )}
     </Grid>
   );
 }

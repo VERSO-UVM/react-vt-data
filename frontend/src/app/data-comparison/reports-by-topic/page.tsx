@@ -15,13 +15,13 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { useProfile } from '@/components/profile/profileStore';
+import { useProfile, Location } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import {
   DemographicsDashboard,
   LandUseDashboard,
   HousingDashboard,
-  EducationDashboard,
+  //EducationDashboard,
   HealthDashboard,
   EconomicDashboard,
 } from '@/components/Reports/dashboards';
@@ -37,12 +37,36 @@ import { exportReport } from '@/utils/exportReport';
 
 type YField = 'Percent' | 'Value';
 
+// Additional named endpoints a topic can pull in alongside its primary `url`
+// — e.g. dedicated time-series tables for trend charts. Fetched for both the
+// primary and comparison locations and handed to the topic's Dashboard
+// component as `data.timeseries[key]`.
+interface TimeseriesEndpoint {
+  url: string;
+}
+
 interface SectionConfig {
   url: string;
   yField: YField;
   unit: string;
   yearMin: number;
   yearMax: number;
+  timeseries?: Record<string, TimeseriesEndpoint>;
+  // Filter label sent as the location key (defaults to "Location", which
+  // matches the ACS5 routes' NAME column). Zoning/wastewater tables have no
+  // "Location" column in their filter schema — they use "Jurisdiction"
+  // (Municipal_Name) instead, so requests sent with the default key
+  // silently return unfiltered, statewide results.
+  locationFilterKey?: string;
+  // False for datasets with no `year` column (e.g. zoning is a current-
+  // snapshot dataset) — skips the year slice below, which would otherwise
+  // filter every row out since `String(undefined) !== yearStr`. Defaults to
+  // true.
+  hasYearDimension?: boolean;
+  // True for datasets only published at county grain (e.g. CDC PLACES has
+  // no town-level rows) — always filters by location.county, even for a
+  // town-type selection, instead of trying (and failing) to filter by town.
+  countyOnly?: boolean;
 }
 
 const SECTIONS: Record<string, SectionConfig> = {
@@ -52,20 +76,36 @@ const SECTIONS: Record<string, SectionConfig> = {
     unit: '%',
     yearMin: 2010,
     yearMax: 2024,
+    timeseries: {
+      historicPopulation: {
+        url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/historic-population`,
+      },
+      medianAge: {
+        url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/median-age`,
+      },
+    },
   },
-  Education: {
-    url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
-    yField: 'Percent',
-    unit: '%',
-    yearMin: 2012,
-    yearMax: 2024,
-  },
+  // Education: {
+  //   url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
+  //   yField: 'Percent',
+  //   unit: '%',
+  //   yearMin: 2012,
+  //   yearMax: 2024,
+  // },
   Housing: {
     url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
     yField: 'Value',
     unit: '',
     yearMin: 2010,
     yearMax: 2024,
+    timeseries: {
+      medianHomeValue: {
+        url: `${BASE_API_URL}/load/acs5-db/timeseries/housing/median-home-value`,
+      },
+      totalUnits: {
+        url: `${BASE_API_URL}/load/acs5-db/timeseries/housing/total-units`,
+      },
+    },
   },
   'Labor & Economy': {
     url: `${BASE_API_URL}/load/acs5-db/tidy/economics`,
@@ -73,6 +113,14 @@ const SECTIONS: Record<string, SectionConfig> = {
     unit: '',
     yearMin: 2010,
     yearMax: 2024,
+    timeseries: {
+      householdIncome: {
+        url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/median-hh-income`,
+      },
+      perCapitaIncome: {
+        url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/per-capita-income`,
+      },
+    },
   },
   'Land Use': {
     url: `${BASE_API_URL}/load/data/zoning/aggregated`,
@@ -80,15 +128,82 @@ const SECTIONS: Record<string, SectionConfig> = {
     unit: '',
     yearMin: 2024,
     yearMax: 2024,
+    locationFilterKey: 'Jurisdiction',
+    hasYearDimension: false,
+    timeseries: {
+      allowances: {
+        url: `${BASE_API_URL}/load/data/zoning/allowances`,
+      },
+      wastewaterPermits: {
+        url: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility/permits`,
+      },
+    },
   },
   'Community Health': {
-    url: `${BASE_API_URL}/load/mapping/cdc/places/single`,
+    url: `${BASE_API_URL}/load/data/cdc/places`,
     yField: 'Value',
-    unit: '',
+    unit: '%',
     yearMin: 2024,
     yearMax: 2024,
+    locationFilterKey: 'County',
+    countyOnly: true,
+    hasYearDimension: false,
   },
 };
+
+// county_town_names.json (the profile's town picker) stores Census-style
+// subdivision names, not bare municipality names — e.g. location.town is
+// "Burlington city" or "Addison town", never "Burlington"/"Addison". Most
+// zoning Municipal_Name values are bare with no suffix at all, BUT a few
+// towns have a same-named City and Town in the same county (Rutland City /
+// West Rutland, Barre City / Barre Town, Saint Albans City / Saint Albans
+// Town) and keep the suffix, title-cased, to disambiguate. So try both the
+// stripped and title-cased-suffix forms — whichever one exists matches,
+// the other matches nothing.
+const TOWN_SUFFIX_RE = /\s+(town|city|gore|grant)$/i;
+const bareTownName = (town: string) => town.replace(TOWN_SUFFIX_RE, '');
+const titledTownName = (town: string) =>
+  town.replace(
+    /(town|city|gore|grant)$/i,
+    (s) => s[0].toUpperCase() + s.slice(1).toLowerCase(),
+  );
+
+// Builds the location portion of a filter request for a section. ACS-style
+// sections (no locationFilterKey) send the profile's full display name,
+// which matches the ACS NAME column at any grain (town/county/state) — this
+// is the pre-existing behavior. Zoning/wastewater sections have separate
+// Town/County columns instead of one combined name string, so the display
+// name (e.g. "Burlington city, Chittenden County, Vermont") never matches;
+// filter by whichever grain the selected location actually is instead, and
+// send no filter for state/national (no statewide-equivalent column to
+// filter to — this naturally falls back to the full dataset). A town pick
+// filters BOTH Jurisdiction and County — Vermont has same-named towns in
+// different counties, so Jurisdiction alone can be ambiguous.
+function buildLocationFilters(
+  cfg: SectionConfig,
+  location: Location,
+): Record<string, string[]> {
+  if (!cfg.locationFilterKey) {
+    return { Location: [location.name] };
+  }
+  if (cfg.countyOnly) {
+    return location.county ? { County: [location.county] } : {};
+  }
+  if (location.type === 'town' && location.town) {
+    const candidates = Array.from(
+      new Set([bareTownName(location.town), titledTownName(location.town)]),
+    );
+    const filters: Record<string, string[]> = {
+      [cfg.locationFilterKey]: candidates,
+    };
+    if (location.county) filters.County = [location.county];
+    return filters;
+  }
+  if (location.type === 'county' && location.county) {
+    return { County: [location.county] };
+  }
+  return {};
+}
 
 function HeroSection({
   section,
@@ -147,9 +262,8 @@ function HeroSection({
                   color: 'rgba(246,245,239,0.78)',
                 }}
               >
-                Explore the complete American Community Survey with detailed
-                demographic, education, housing, employment, and income tables
-                for every Vermont community.
+                Curated dashboards by data topic. Select a category to get
+                started.
               </Text>
             </Stack>
           </Grid.Col>
@@ -295,24 +409,31 @@ function ExplorerControls({
 // Page
 // ---------------------------------------------------------------------------
 
-export default function DataComparisonPage() {
+export default function ReportsByTopicPage() {
   const { myLocation, comparison, yearMax: profileYearMax } = useProfile();
   type DashboardSection =
     | 'Demographics'
     | 'Housing'
-    | 'Education'
+    //| 'Education'
     | 'Labor & Economy'
     | 'Land Use'
     | 'Community Health';
   const [section, setSection] = useState<DashboardSection>('Demographics');
   const [primaryData, setPrimaryData] = useState<DataRow[]>([]);
   const [compareData, setCompareData] = useState<DataRow[]>([]);
+  const [timeseriesData, setTimeseriesData] = useState<
+    Record<string, { primary: DataRow[]; comparison: DataRow[] }>
+  >({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   // ---------------------------------------------------------------------------
-  // Fetch both locations whenever section or location names change
+  // Fetch both locations whenever section or location names change — plus,
+  // for every endpoint the section declares under `timeseries`, the same two
+  // locations again. A single failed timeseries endpoint (e.g. no data for a
+  // given town) falls back to an empty series instead of failing the whole
+  // section, since it's supplementary to the primary table.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const cfg = SECTIONS[section];
@@ -320,11 +441,11 @@ export default function DataComparisonPage() {
     setLoading(true);
     setError(null);
 
-    const fetchOne = (name: string) =>
+    const fetchFrom = (url: string, location: Location) =>
       axios
-        .post(cfg.url, {
+        .post(url, {
           filters: {
-            Location: [name],
+            ...buildLocationFilters(cfg, location),
             year: {
               min: cfg.yearMin,
               max: cfg.yearMax,
@@ -332,19 +453,45 @@ export default function DataComparisonPage() {
           },
           include: [],
         })
-        .then((r) => r.data);
+        .then((r) => r.data)
+        .catch(() => ({ data: [] }));
 
-    Promise.all([fetchOne(myLocation.name), fetchOne(comparison.name)])
-      .then(([primary, comp]) => {
-        console.log('PRIMARY RESPONSE', primary);
-        console.log('COMPARE RESPONSE', comp);
+    const timeseriesKeys = Object.keys(cfg.timeseries ?? {});
 
+    Promise.all([
+      fetchFrom(cfg.url, myLocation),
+      fetchFrom(cfg.url, comparison),
+      ...timeseriesKeys.map((key) =>
+        fetchFrom(cfg.timeseries![key].url, myLocation),
+      ),
+      ...timeseriesKeys.map((key) =>
+        fetchFrom(cfg.timeseries![key].url, comparison),
+      ),
+    ])
+      .then(([primary, comp, ...tsResults]) => {
         setPrimaryData(Array.isArray(primary.data) ? primary.data : []);
         setCompareData(Array.isArray(comp.data) ? comp.data : []);
+
+        const nextTimeseries: Record<
+          string,
+          { primary: DataRow[]; comparison: DataRow[] }
+        > = {};
+        timeseriesKeys.forEach((key, i) => {
+          const primaryRes = tsResults[i];
+          const compareRes = tsResults[timeseriesKeys.length + i];
+          nextTimeseries[key] = {
+            primary: Array.isArray(primaryRes?.data) ? primaryRes.data : [],
+            comparison: Array.isArray(compareRes?.data) ? compareRes.data : [],
+          };
+        });
+        setTimeseriesData(nextTimeseries);
       })
       .catch(() => setError('Failed to load data. Is the API running?'))
       .finally(() => setLoading(false));
-  }, [section, myLocation.name, comparison.name]);
+    // .name changes whenever type/county/town does (it's derived from them),
+    // so it's a reliable proxy for "the location changed" without needing
+    // the whole objects in the dependency array.
+  }, [section, myLocation.name, comparison.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Derive available years from fetched data; default to profile yearMax
@@ -376,8 +523,14 @@ export default function DataComparisonPage() {
   // ---------------------------------------------------------------------------
   const yearStr = String(year);
   const cfg = SECTIONS[section];
-  const primaryForYear = primaryData.filter((r) => String(r.year) === yearStr);
-  const compareForYear = compareData.filter((r) => String(r.year) === yearStr);
+  const primaryForYear =
+    cfg.hasYearDimension === false
+      ? primaryData
+      : primaryData.filter((r) => String(r.year) === yearStr);
+  const compareForYear =
+    cfg.hasYearDimension === false
+      ? compareData
+      : compareData.filter((r) => String(r.year) === yearStr);
 
   const dashboardData = useMemo(
     () => ({
@@ -394,6 +547,8 @@ export default function DataComparisonPage() {
         history: compareData,
         name: comparison.name,
       },
+
+      timeseries: timeseriesData,
     }),
     [
       year,
@@ -401,6 +556,7 @@ export default function DataComparisonPage() {
       compareForYear,
       primaryData,
       compareData,
+      timeseriesData,
       myLocation.name,
       comparison.name,
     ],
@@ -418,6 +574,7 @@ export default function DataComparisonPage() {
       current: DataRow[];
       history: DataRow[];
     };
+    timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
   }
 
   interface DashboardProps {
@@ -429,7 +586,7 @@ export default function DataComparisonPage() {
   > = {
     Demographics: DemographicsDashboard,
     Housing: HousingDashboard,
-    Education: EducationDashboard,
+    //Education: EducationDashboard, //Temporarily down until more education data gathered
     'Labor & Economy': EconomicDashboard,
     'Land Use': LandUseDashboard,
     'Community Health': HealthDashboard,
@@ -471,7 +628,7 @@ export default function DataComparisonPage() {
           <Paper radius="lg" p={60} withBorder>
             <Stack align="center">
               <Loader color="#dd9a2f" type="dots" />
-              <Text c="dimmed">Loading Census data...</Text>
+              <Text c="dimmed">Loading data...</Text>
             </Stack>
           </Paper>
         ) : (

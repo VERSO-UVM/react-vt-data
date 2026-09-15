@@ -72,6 +72,7 @@ const links: NavItem[] = [
             link: '/data-comparison/dp-explorer',
             label: 'Census Variable Comparison',
           },
+          // Legacy page (CDC only version of the variable relationship map)
           // {
           //   link: '/data-comparison/variable-comparison',
           //   label: 'CDC Health Map',
@@ -82,7 +83,7 @@ const links: NavItem[] = [
         label: 'Reports',
         links: [
           {
-            link: '/data-comparison/b-tables',
+            link: '/data-comparison/reports-by-topic',
             label: 'Reports by Topic',
           },
           { link: '/working-report', label: 'Working Report' },

@@ -4,6 +4,8 @@ import {
   UnemploymentRateCard,
   MedianHouseholdIncomeCard,
   PerCapitaIncomeCard,
+  MedianHouseholdIncomeHistoryChart,
+  PerCapitaIncomeHistoryChart,
 } from '@/components/Reports/economic';
 
 export interface DashboardData {
@@ -18,6 +20,9 @@ export interface DashboardData {
     current: DataRow[];
     history: DataRow[];
   };
+  // Additional time-series tables, keyed by the SECTIONS.timeseries config
+  // key in reports-by-topic/page.tsx (e.g. "householdIncome").
+  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
 }
 
 export interface DashboardProps {
@@ -25,7 +30,7 @@ export interface DashboardProps {
 }
 
 export default function EconomicDashboard({ data }: DashboardProps) {
-  const { primary, comparison } = data;
+  const { primary, comparison, timeseries } = data;
 
   return (
     <Grid gap="lg">
@@ -53,6 +58,26 @@ export default function EconomicDashboard({ data }: DashboardProps) {
           comparisonName={comparison.name}
         />
       </Grid.Col>
+      {timeseries?.householdIncome && (
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <MedianHouseholdIncomeHistoryChart
+            primary={timeseries.householdIncome.primary}
+            comparison={timeseries.householdIncome.comparison}
+            primaryName={primary.name}
+            comparisonName={comparison.name}
+          />
+        </Grid.Col>
+      )}
+      {timeseries?.perCapitaIncome && (
+        <Grid.Col span={{ base: 12, md: 6 }}>
+          <PerCapitaIncomeHistoryChart
+            primary={timeseries.perCapitaIncome.primary}
+            comparison={timeseries.perCapitaIncome.comparison}
+            primaryName={primary.name}
+            comparisonName={comparison.name}
+          />
+        </Grid.Col>
+      )}
     </Grid>
   );
 }

@@ -1,15 +1,16 @@
 import { Card, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconSmoking } from '@tabler/icons-react';
+import { IconShieldOff } from '@tabler/icons-react';
 import { DataRow } from '@/types/cachedCharts';
 
-interface SmokingRateCardProps {
+interface UninsuredRateCardProps {
   primary: DataRow[];
   comparison: DataRow[];
   primaryName?: string;
   comparisonName?: string;
 }
 
-const MEASURE = 'Current cigarette smoking among adults';
+const MEASURE =
+  'Current lack of health insurance among adults aged 18-64 years';
 
 function getMeasureValue(data: DataRow[], measure: string): number | null {
   const row = data.find((d) => d.Measure === measure);
@@ -18,12 +19,12 @@ function getMeasureValue(data: DataRow[], measure: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export default function SmokingRateCard({
+export default function UninsuredRateCard({
   primary,
   comparison,
   primaryName,
   comparisonName,
-}: SmokingRateCardProps) {
+}: UninsuredRateCardProps) {
   const primaryValue = getMeasureValue(primary, MEASURE);
   const comparisonValue = getMeasureValue(comparison, MEASURE);
 
@@ -46,7 +47,7 @@ export default function SmokingRateCard({
       <Group justify="space-between" mb="md">
         <Stack gap={2}>
           <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-            Smoking Prevalence
+            Uninsured Rate (18–64)
           </Text>
 
           <Title order={3}>
@@ -54,8 +55,8 @@ export default function SmokingRateCard({
           </Title>
         </Stack>
 
-        <ThemeIcon size={48} radius="xl" variant="light" color="red">
-          <IconSmoking size={24} />
+        <ThemeIcon size={48} radius="xl" variant="light" color="orange">
+          <IconShieldOff size={24} />
         </ThemeIcon>
       </Group>
 
@@ -92,18 +93,18 @@ export default function SmokingRateCard({
             ''
           ) : difference > 0 ? (
             <>
-              <span style={{ color: '#c0392b' }}>{primaryName}</span> has higher
-              smoking prevalence than <span>{comparisonName}</span>
+              <span style={{ color: '#c0392b' }}>{primaryName}</span> has a
+              higher uninsured rate than <span>{comparisonName}</span>
             </>
           ) : difference < 0 ? (
             <>
-              <span style={{ color: '#c0392b' }}>{primaryName}</span> has lower
-              smoking prevalence than <span>{comparisonName}</span>
+              <span style={{ color: '#c0392b' }}>{primaryName}</span> has a
+              lower uninsured rate than <span>{comparisonName}</span>
             </>
           ) : (
             <>
               <span style={{ color: '#c0392b' }}>{primaryName}</span> and{' '}
-              <span>{comparisonName}</span> have the same smoking prevalence
+              <span>{comparisonName}</span> have the same uninsured rate
             </>
           )}
         </Text>

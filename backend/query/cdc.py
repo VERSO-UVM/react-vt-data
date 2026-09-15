@@ -151,6 +151,29 @@ def dual_var_comparison(
     return geojson, legend
 
 
+def get_cdc_places_tidy(sources: list[FilterSource]) -> pd.DataFrame:
+    """Tidy CDC PLACES rows (one per measure) for the given county filter.
+
+    Pinned to age-adjusted prevalence — CDC PLACES publishes both crude and
+    age-adjusted estimates per measure, and mixing them would double every
+    row and isn't comparable across counties with different age structures.
+    """
+    for source in sources:
+        source.filters = {
+            **source.filters,
+            "Data_Value_Type": ["Age-adjusted prevalence"],
+        }
+
+    sql, params = sql_filter_block(sql_dir / "places_tidy.sql", sources)
+    result = DB.execute(sql, params).df()
+
+    if result.empty:
+        logger.error("CDC PLACES tidy query returned no rows for filters: %s", sources)
+        raise ValueError(f"no results for filters: {sources}")
+
+    return result
+
+
 def get_cdc_county_pca():
     df = DB.execute(
         """--sql

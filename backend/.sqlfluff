@@ -10,6 +10,10 @@
 dialect = duckdb
 templater = jinja
 max_line_length = 88
+# AL09: some source tables (e.g. CDC PLACES) store lowercase columns; a
+#   same-name alias in a different case (e.g. measure AS Measure) is how we
+#   normalize that to Title Case for the frontend — DuckDB preserves the
+#   alias's case, so it isn't a true no-op self-alias despite the same text.
 # CP02/CP03: identifiers/functions keep their source casing (mixed-case dataset
 #   columns like District_Type).
 # RF04/RF05: column names like NAME/geometry and display aliases with spaces
@@ -17,7 +21,7 @@ max_line_length = 88
 # ST06: SELECT column order is part of the API response shape.
 # ST07: USING joins are idiomatic DuckDB and what the filter compiler
 #   (sql_render.py) generates.
-exclude_rules = CP02, CP03, RF04, RF05, ST06, ST07
+exclude_rules = AL09, CP02, CP03, RF04, RF05, ST06, ST07
 
 # DuckDB preserves identifier case, so quoted aliases that only change case
 # (e.g. variable AS "Variable") are meaningful, not redundant.
