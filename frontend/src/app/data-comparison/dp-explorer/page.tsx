@@ -5,17 +5,31 @@ import axios from 'axios';
 import {
   Alert,
   Badge,
+  Box,
+  Button,
   Center,
   Container,
-  Divider,
   Grid,
   Group,
+  Loader,
   Paper,
   Select,
   Stack,
+  Stepper,
   Text,
+  ThemeIcon,
   Title,
 } from '@mantine/core';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChartLineIcon,
+  CheckIcon,
+  InfoIcon,
+  MapPinIcon,
+  MinusIcon,
+  WarningIcon,
+} from '@phosphor-icons/react';
 import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
@@ -23,6 +37,7 @@ import { createChartItem } from '@/utils/itemFactory';
 import county_town_names from '@/data/county_town_names.json';
 import { DataRow } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -56,6 +71,25 @@ const TABLE_LABELS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Shared styling
+// ---------------------------------------------------------------------------
+
+const panelStyle = {
+  borderColor: COLORS.line,
+  backgroundColor: '#fff',
+};
+
+const selectStyles = {
+  label: {
+    fontFamily: FONTS.body,
+    marginBottom: 6,
+    color: COLORS.slate,
+    fontWeight: 600,
+  },
+  input: { borderRadius: 8 },
+};
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -78,11 +112,13 @@ const makeLabel = (side: SideState) =>
 
 const SideSelector = ({
   title,
+  accent,
   side,
   setSide,
   availableYears,
 }: {
   title: string;
+  accent: string;
   side: SideState;
   setSide: (s: SideState) => void;
   availableYears: number[];
@@ -92,7 +128,16 @@ const SideSelector = ({
 
   return (
     <Stack gap="xs">
-      <Text fw={600} size="sm">
+      <Text
+        size="xs"
+        fw={700}
+        tt="uppercase"
+        style={{
+          fontFamily: FONTS.mono,
+          letterSpacing: '0.08em',
+          color: accent,
+        }}
+      >
         {title}
       </Text>
       <Select
@@ -103,7 +148,8 @@ const SideSelector = ({
         }
         data={counties.map((c) => ({ value: c, label: c }))}
         searchable
-        size="xs"
+        size="sm"
+        styles={selectStyles}
       />
       <Select
         label="Town (optional)"
@@ -121,7 +167,8 @@ const SideSelector = ({
         ]}
         searchable
         clearable
-        size="xs"
+        size="sm"
+        styles={selectStyles}
       />
       <Select
         label="Year"
@@ -131,12 +178,141 @@ const SideSelector = ({
           value: String(y),
           label: String(y),
         }))}
-        size="xs"
+        size="sm"
         disabled={availableYears.length === 0}
+        styles={selectStyles}
       />
+      <Text size="xs" c="dimmed" mt={2} style={{ fontFamily: FONTS.mono }}>
+        {makeName(side)}
+      </Text>
     </Stack>
   );
 };
+
+// ---------------------------------------------------------------------------
+// Sub-component: point-in-time value card
+// ---------------------------------------------------------------------------
+
+function ValueCard({
+  label,
+  location,
+  value,
+  accent,
+}: {
+  label: string;
+  location: string;
+  value: string;
+  accent: string;
+}) {
+  return (
+    <Paper
+      withBorder
+      radius="lg"
+      p="lg"
+      style={{ ...panelStyle, height: '100%' }}
+    >
+      <Text
+        size="xs"
+        fw={700}
+        tt="uppercase"
+        style={{
+          fontFamily: FONTS.mono,
+          letterSpacing: '0.08em',
+          color: accent,
+        }}
+      >
+        {label}
+      </Text>
+      <Text size="sm" c="dimmed" mt={2} mb={12} lineClamp={1}>
+        {location}
+      </Text>
+      <Text
+        style={{
+          fontFamily: FONTS.display,
+          fontSize: 34,
+          fontWeight: 700,
+          color: COLORS.ink,
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </Text>
+    </Paper>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-component: A vs B difference indicator
+// ---------------------------------------------------------------------------
+
+function DeltaBadge({
+  diff,
+  isPercent,
+}: {
+  diff: number | null;
+  isPercent: boolean;
+}) {
+  if (diff == null || Number.isNaN(diff)) {
+    return (
+      <Text size="xs" c="dimmed" ta="center">
+        —
+      </Text>
+    );
+  }
+
+  const Icon = diff > 0 ? ArrowUpIcon : diff < 0 ? ArrowDownIcon : MinusIcon;
+  const magnitude = Math.abs(diff);
+  const display = isPercent
+    ? `${magnitude.toFixed(1)} pts`
+    : magnitude.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+  return (
+    <Stack align="center" gap={4}>
+      <ThemeIcon size={40} radius="xl" variant="light" color="green">
+        <Icon size={18} weight="bold" />
+      </ThemeIcon>
+      <Text fw={700} size="sm" style={{ color: COLORS.spruce }}>
+        {display}
+      </Text>
+      <Text
+        c="dimmed"
+        tt="uppercase"
+        style={{
+          fontFamily: FONTS.mono,
+          fontSize: 10,
+          letterSpacing: '0.06em',
+        }}
+      >
+        difference
+      </Text>
+    </Stack>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sub-component: centered placeholder / status panel
+// ---------------------------------------------------------------------------
+
+function StatusPanel({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Paper withBorder radius="lg" p="xl" style={panelStyle}>
+      <Stack align="center" gap={8}>
+        <ThemeIcon size={44} radius="xl" variant="light" color="gray">
+          {icon}
+        </ThemeIcon>
+        <Text c="dimmed" size="sm" ta="center" maw={420}>
+          {children}
+        </Text>
+      </Stack>
+    </Paper>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Page
@@ -216,27 +392,40 @@ export default function DPExplorerPage() {
   const [variable, setVariable] = useState<string | null>(null);
   const [measure, setMeasure] = useState<string | null>(null);
 
+  // Which step the stepper is showing — null means "follow the cascade
+  // automatically"; set explicitly when the user clicks back to a completed
+  // step to revise an earlier choice.
+  const [manualStep, setManualStep] = useState<number | null>(null);
+
   const handleTable = (v: string | null) => {
     setTable(v);
     setCategory(null);
     setSubcategory(null);
     setVariable(null);
     setMeasure(null);
+    setManualStep(null);
   };
   const handleCategory = (v: string | null) => {
     setCategory(v);
     setSubcategory(null);
     setVariable(null);
     setMeasure(null);
+    setManualStep(null);
   };
   const handleSubcategory = (v: string | null) => {
     setSubcategory(v);
     setVariable(null);
     setMeasure(null);
+    setManualStep(null);
   };
   const handleVariable = (v: string | null) => {
     setVariable(v);
     setMeasure(null);
+    setManualStep(null);
+  };
+  const handleMeasure = (v: string | null) => {
+    setMeasure(v);
+    setManualStep(null);
   };
 
   // Derived options — each level filtered by all selections above it
@@ -290,6 +479,21 @@ export default function DPExplorerPage() {
     () => (variable ? unique(filtered, 'Measure') : []),
     [filtered, variable],
   );
+
+  // Step the cascade has actually completed up to — drives the stepper's
+  // active step whenever the user isn't manually revisiting an earlier one.
+  const computedStep = !table
+    ? 0
+    : !category
+      ? 1
+      : !subcategory
+        ? 2
+        : !variable
+          ? 3
+          : !measure
+            ? 4
+            : 5;
+  const activeStep = manualStep ?? computedStep;
 
   // ---------------------------------------------------------------------------
   // Series fetch — triggered when cascade is complete
@@ -393,36 +597,106 @@ export default function DPExplorerPage() {
   // Selected-year point values
   const pointA = sideAData.find((r) => r.year === sideA.year);
   const pointB = sideBData.find((r) => r.year === sideB.year);
-  const isPercent = measure?.toLowerCase().includes('percent');
+  const isPercent = !!measure?.toLowerCase().includes('percent');
   const fmtVal = (v: number | null) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
+
+  const valueA = (pointA?.Value as number | undefined) ?? null;
+  const valueB = (pointB?.Value as number | undefined) ?? null;
+  const diff = valueA != null && valueB != null ? valueA - valueB : null;
 
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <>
-      <Center pt="xl" mb="md">
-        <Group gap="md">
-          <Title order={2}>Census Variable Comparison</Title>
-          <Badge
-            style={{
-              color: COLORS.birch,
-              background: COLORS.amber,
-              fontFamily: FONTS.mono,
-            }}
-          >
-            Beta
-          </Badge>
-        </Group>
-      </Center>
+    <Box style={{ backgroundColor: COLORS.birch, minHeight: '100vh' }}>
+      {/* Compact themed header */}
+      <Box
+        pt={{ base: 44, sm: 56 }}
+        pb={{ base: 28, sm: 36 }}
+        style={{ borderBottom: `1px solid ${COLORS.line}` }}
+      >
+        <Container size="md">
+          <Stack gap={8} align="center">
+            <Text
+              style={{
+                fontFamily: FONTS.mono,
+                fontSize: 12,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: COLORS.slate,
+              }}
+            >
+              Compare · Census Data Profiles
+            </Text>
+            <Group gap="sm" justify="center">
+              <Title
+                order={2}
+                style={{
+                  fontFamily: FONTS.display,
+                  fontWeight: 600,
+                  color: COLORS.spruce,
+                }}
+              >
+                Census Variable Comparison
+              </Title>
+              <Badge
+                style={{
+                  color: COLORS.birch,
+                  background: COLORS.amber,
+                  fontFamily: FONTS.mono,
+                }}
+              >
+                Beta
+              </Badge>
+            </Group>
+            <Text c="dimmed" size="sm" maw={560} ta="center">
+              Pick any American Community Survey Data Profile variable, then
+              compare it side by side between two Vermont locations across the
+              years it&apos;s been tracked.
+            </Text>
+          </Stack>
+        </Container>
+      </Box>
 
-      <Container size="lg">
-        <Stack>
-          {/* Cascade filter */}
-          <Paper withBorder p="md" radius="md">
-            <Grid gap="sm">
-              <Grid.Col span={{ base: 12, sm: 'auto' }}>
+      <Container size="lg" py={{ base: 32, sm: 44 }}>
+        <Stack gap="xl">
+          {/* Guided variable picker */}
+          <Paper withBorder radius="lg" p="lg" style={panelStyle}>
+            <Group justify="space-between" align="center" mb="md">
+              <Text
+                fw={700}
+                style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
+              >
+                Choose a Variable
+              </Text>
+              {manualStep !== null && (
+                <Button
+                  variant="subtle"
+                  color="gray"
+                  size="xs"
+                  onClick={() => setManualStep(null)}
+                >
+                  Back to current selection
+                </Button>
+              )}
+            </Group>
+
+            <Stepper
+              active={activeStep}
+              onStepClick={(step) => {
+                if (step < computedStep) setManualStep(step);
+              }}
+              allowNextStepsSelect={false}
+              color="green"
+              size="sm"
+            >
+              <Stepper.Step
+                label="Table"
+                description={
+                  table ? (TABLE_LABELS[table] ?? table) : 'Data Profile'
+                }
+              >
                 <Select
                   label="Table"
                   value={table}
@@ -433,82 +707,167 @@ export default function DPExplorerPage() {
                   }))}
                   placeholder="Pick table…"
                   searchable
+                  size="md"
+                  styles={selectStyles}
+                  mt="sm"
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 'auto' }}>
+              </Stepper.Step>
+              <Stepper.Step
+                label="Category"
+                description={category ?? 'Broad topic'}
+              >
                 <Select
                   label="Category"
                   value={category}
                   onChange={handleCategory}
                   data={categories}
                   placeholder="Pick category…"
-                  disabled={!table}
                   searchable
+                  size="md"
+                  styles={selectStyles}
+                  mt="sm"
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 'auto' }}>
+              </Stepper.Step>
+              <Stepper.Step
+                label="Subcategory"
+                description={subcategory ?? 'Narrower grouping'}
+              >
                 <Select
                   label="Subcategory"
                   value={subcategory}
                   onChange={handleSubcategory}
                   data={subcategories}
                   placeholder="Pick subcategory…"
-                  disabled={!category}
                   searchable
+                  size="md"
+                  styles={selectStyles}
+                  mt="sm"
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 'auto' }}>
+              </Stepper.Step>
+              <Stepper.Step
+                label="Variable"
+                description={variable ?? 'Specific measure'}
+              >
                 <Select
                   label="Variable"
                   value={variable}
                   onChange={handleVariable}
                   data={variables}
                   placeholder="Pick variable…"
-                  disabled={!subcategory}
                   searchable
+                  size="md"
+                  styles={selectStyles}
+                  mt="sm"
                 />
-              </Grid.Col>
-              <Grid.Col span={{ base: 12, sm: 'auto' }}>
+              </Stepper.Step>
+              <Stepper.Step
+                label="Measure"
+                description={measure ?? 'Count, percent, etc.'}
+              >
                 <Select
                   label="Measure"
                   value={measure}
-                  onChange={setMeasure}
+                  onChange={handleMeasure}
                   data={measures}
                   placeholder="Pick measure…"
-                  disabled={!variable}
+                  size="md"
+                  styles={selectStyles}
+                  mt="sm"
                 />
-              </Grid.Col>
-            </Grid>
+              </Stepper.Step>
+              <Stepper.Completed>
+                <Stack align="center" gap={6} py="md">
+                  <ThemeIcon
+                    size={44}
+                    radius="xl"
+                    variant="light"
+                    color="green"
+                  >
+                    <CheckIcon size={22} weight="bold" />
+                  </ThemeIcon>
+                  <Text size="sm" c="dimmed" ta="center" maw={420}>
+                    Comparing{' '}
+                    <Text span fw={700} c={COLORS.spruce}>
+                      {variable}
+                    </Text>{' '}
+                    ({measure}) from{' '}
+                    <Text span fw={600} c={COLORS.slate}>
+                      {table ? (TABLE_LABELS[table] ?? table) : ''}
+                    </Text>
+                  </Text>
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    size="xs"
+                    onClick={() => handleTable(null)}
+                  >
+                    Start over
+                  </Button>
+                </Stack>
+              </Stepper.Completed>
+            </Stepper>
           </Paper>
 
           {/* Census vintage note */}
-          <Alert variant="light" color="yellow" radius="md">
-            <Text size="xs">
-              <strong>Note on year coverage:</strong> Census Data Profile
-              variable labels (categories, subcategories, variable names) change
-              between ACS vintages. A selection may only cover a subset of years
-              if its label was introduced, renamed, or restructured in a
-              particular release. Variables with broad year coverage (e.g.
-              racial composition totals, median age) are <em> generally </em>
-              labeled consistently; highly specific sub-groups may only appear
-              in one or two vintages.
+          <Alert
+            variant="light"
+            color="yellow"
+            radius="md"
+            icon={<InfoIcon size={18} weight="fill" />}
+            title="Note on year coverage"
+            styles={{
+              title: { fontFamily: FONTS.display, color: COLORS.ink },
+            }}
+          >
+            <Text size="xs" c={COLORS.slate}>
+              Census Data Profile variable labels (categories, subcategories,
+              variable names) change between ACS vintages. A selection may only
+              cover a subset of years if its label was introduced, renamed, or
+              restructured in a particular release. Variables with broad year
+              coverage (e.g. racial composition totals, median age) are{' '}
+              <em>generally</em> labeled consistently; highly specific
+              sub-groups may only appear in one or two vintages.
             </Text>
           </Alert>
 
           {/* Side selectors */}
-          <Paper withBorder p="md" radius="md">
-            <Grid>
-              <Grid.Col span={6}>
+          <Paper withBorder radius="lg" p="lg" style={panelStyle}>
+            <Group gap={8} mb="md">
+              <MapPinIcon size={18} color={COLORS.spruce} weight="duotone" />
+              <Text
+                fw={700}
+                style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
+              >
+                Locations to Compare
+              </Text>
+            </Group>
+            <Grid align="start" gap="lg">
+              <Grid.Col span={{ base: 12, sm: 5 }}>
                 <SideSelector
-                  title="Side A"
+                  title="Location A"
+                  accent={COLORS.spruce}
                   side={sideA}
                   setSide={setSideA}
                   availableYears={availableYears}
                 />
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 2 }}>
+                <Center h="100%" py={{ base: 4, sm: 0 }}>
+                  <Badge
+                    variant="light"
+                    color="green"
+                    radius="xl"
+                    size="lg"
+                    style={{ fontFamily: FONTS.mono }}
+                  >
+                    VS
+                  </Badge>
+                </Center>
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, sm: 5 }}>
                 <SideSelector
-                  title="Side B"
+                  title="Location B"
+                  accent={COLORS.amber}
                   side={sideB}
                   setSide={setSideB}
                   availableYears={availableYears}
@@ -517,56 +876,75 @@ export default function DPExplorerPage() {
             </Grid>
           </Paper>
 
-          {error && <Text c="red">{error}</Text>}
+          {error && (
+            <Alert variant="light" color="red" radius="md">
+              {error}
+            </Alert>
+          )}
 
-          {!isComplete && (
-            <Text c="dimmed" ta="center" py="xl">
+          {!isComplete && !error && (
+            <StatusPanel icon={<ChartLineIcon size={22} />}>
               Select a table, category, subcategory, variable, and measure above
               to load data.
-            </Text>
+            </StatusPanel>
           )}
 
           {isComplete && loading && (
-            <Text c="dimmed" ta="center" py="xl">
-              Loading…
-            </Text>
+            <Center py="xl">
+              <Stack align="center" gap={8}>
+                <Loader size="sm" color="green" />
+                <Text c="dimmed" size="sm">
+                  Loading…
+                </Text>
+              </Stack>
+            </Center>
           )}
 
           {isComplete && !loading && sideAData.length === 0 && !error && (
-            <Text c="dimmed" ta="center" py="xl">
+            <StatusPanel icon={<WarningIcon size={22} />}>
               No data found for {makeName(sideA)} — try a county instead of a
               town, or check the API.
-            </Text>
+            </StatusPanel>
           )}
 
           {isComplete && !loading && sideAData.length > 0 && (
             <>
-              {/* Point-in-time summary */}
-              <Paper withBorder p="md" radius="md">
-                <Grid>
-                  <Grid.Col span={6}>
-                    <Text size="xs" c="dimmed">
-                      {makeLabel(sideA)}
-                    </Text>
-                    <Text fw={700} size="xl">
-                      {fmtVal((pointA?.Value as number | undefined) ?? null)}
-                    </Text>
-                  </Grid.Col>
-                  <Grid.Col span={6}>
-                    <Text size="xs" c="dimmed">
-                      {makeLabel(sideB)}
-                    </Text>
-                    <Text fw={700} size="xl">
-                      {fmtVal((pointB?.Value as number | undefined) ?? null)}
-                    </Text>
-                  </Grid.Col>
-                </Grid>
-                <Divider my="xs" />
-                <Text size="xs" c="dimmed">
+              {/* Point-in-time comparison */}
+              <Grid align="center" gap="md">
+                <Grid.Col span={{ base: 12, sm: 5 }}>
+                  <ValueCard
+                    label="Location A"
+                    location={makeLabel(sideA)}
+                    value={fmtVal(valueA)}
+                    accent={COLORS.spruce}
+                  />
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 2 }}>
+                  <Center>
+                    <DeltaBadge diff={diff} isPercent={isPercent} />
+                  </Center>
+                </Grid.Col>
+                <Grid.Col span={{ base: 12, sm: 5 }}>
+                  <ValueCard
+                    label="Location B"
+                    location={makeLabel(sideB)}
+                    value={fmtVal(valueB)}
+                    accent={COLORS.amber}
+                  />
+                </Grid.Col>
+              </Grid>
+
+              <Stack gap={4} align="center">
+                <Text
+                  size="xs"
+                  c="dimmed"
+                  ta="center"
+                  style={{ fontFamily: FONTS.mono }}
+                >
                   {table} › {category} › {subcategory} › {variable} › {measure}
                 </Text>
                 {availableYears.length > 0 && availableYears.length < 10 && (
-                  <Text size="xs" c="orange.7" mt={4}>
+                  <Text size="xs" c="orange.7" ta="center">
                     Data available for {availableYears.length} year
                     {availableYears.length === 1 ? '' : 's'} only (
                     {availableYears[0]}
@@ -576,14 +954,29 @@ export default function DPExplorerPage() {
                     ). This variable&apos;s label changed in other ACS vintages.
                   </Text>
                 )}
-              </Paper>
+              </Stack>
 
               {/* Trend chart via ChartStack (includes Add to Report) */}
-              <ChartStack charts={[chartItem]} action="add" />
+              <Paper withBorder radius="lg" p="lg" style={panelStyle}>
+                <Group gap={8} mb="sm">
+                  <ChartLineIcon
+                    size={18}
+                    color={COLORS.spruce}
+                    weight="duotone"
+                  />
+                  <Text
+                    fw={700}
+                    style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
+                  >
+                    Trend Over Time
+                  </Text>
+                </Group>
+                <ChartStack charts={[chartItem]} action="add" />
+              </Paper>
             </>
           )}
         </Stack>
       </Container>
-    </>
+    </Box>
   );
 }
