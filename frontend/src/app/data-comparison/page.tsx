@@ -14,13 +14,13 @@ import Link from 'next/link';
 const pages = [
   {
     href: '/data-comparison/dp-explorer',
-    label: 'Data Profile Comparison',
+    label: 'Census Variable Comparison',
     tag: 'DP02 · DP03 · DP04 · DP05',
     description:
       'Comprehensive, high-level timeseries summary across all four Census Data Profile tables. Every published demographic, economic, housing, and social characteristic is browsable through a cascading filter (table → category → subcategory → variable → measure). Good for broad longitudinal exploration and cross-topic comparisons.',
   },
   {
-    href: '/data-comparison/b-tables',
+    href: '/data-comparison/reports-by-topic',
     label: 'Topic Reports',
     tag: 'B01001 · B15003 · B25 · B23 · B19',
     description:

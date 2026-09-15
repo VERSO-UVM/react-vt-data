@@ -20,6 +20,8 @@ import {
   SexDistributionChart,
   AgeDistributionChart,
   RaceDistributionChart,
+  PopulationHistoryChart,
+  MedianAgeHistoryChart,
 } from '@/components/Reports/demographics';
 import { exportReport } from '@/utils/exportReport';
 
@@ -35,6 +37,10 @@ export interface DashboardData {
     current: DataRow[];
     history: DataRow[];
   };
+  // Additional time-series tables, keyed by the SECTIONS.timeseries config
+  // key (e.g. "medianAge", "historicPopulation") — populated only for
+  // topics that declare extra endpoints in reports-by-topic/page.tsx.
+  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
 }
 
 export interface DashboardProps {
@@ -48,7 +54,7 @@ export default function DemographicsDashboard({
   onRefresh,
   onExport,
 }: DashboardProps) {
-  const { year, primary, comparison } = data;
+  const { year, primary, comparison, timeseries } = data;
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -204,6 +210,34 @@ export default function DemographicsDashboard({
               comparisonName={comparison.name}
             />
           </div>
+
+          {/* Row 4: Historic trend charts, from timeseries tables */}
+          {timeseries && (
+            <div className="pdf-export-block">
+              <Grid gap="lg">
+                {timeseries.historicPopulation && (
+                  <Grid.Col span={{ base: 12, md: 6 }}>
+                    <PopulationHistoryChart
+                      primary={timeseries.historicPopulation.primary}
+                      comparison={timeseries.historicPopulation.comparison}
+                      primaryName={primary.name}
+                      comparisonName={comparison.name}
+                    />
+                  </Grid.Col>
+                )}
+                {timeseries.medianAge && (
+                  <Grid.Col span={{ base: 12, md: 6 }}>
+                    <MedianAgeHistoryChart
+                      primary={timeseries.medianAge.primary}
+                      comparison={timeseries.medianAge.comparison}
+                      primaryName={primary.name}
+                      comparisonName={comparison.name}
+                    />
+                  </Grid.Col>
+                )}
+              </Grid>
+            </div>
+          )}
         </Stack>
       </div>
     </Stack>

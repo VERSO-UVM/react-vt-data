@@ -535,12 +535,12 @@ function CapabilityFlow() {
       body: 'Download clean, analysis-ready datasets with readable variable names.',
       href: '/data-export',
     },
-    {
-      icon: HandHeartIcon,
-      title: 'Benefits Estimator',
-      body: 'Check eligibility for Vermont assistance programs with a few questions.',
-      href: '/tools/benefits-estimator',
-    },
+    // {
+    //   icon: HandHeartIcon,
+    //   title: 'Benefits Estimator',
+    //   body: 'Check eligibility for Vermont assistance programs with a few questions.',
+    //   href: '/tools/benefits-estimator',
+    // },
   ];
 
   return (
@@ -574,7 +574,7 @@ function CapabilityFlow() {
           }}
           visibleFrom="sm"
         />
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing={40}>
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing={40}>
           {items.map((item, i) => {
             const Icon = item.icon;
             return (

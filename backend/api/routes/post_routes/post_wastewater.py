@@ -99,9 +99,11 @@ async def wastewater_facility_geojson(request: FilterRequest):
 
 @router.post("/load/mapping/wastewater/treatment_facility/permits")
 async def wastewater_facility_permits(request: FilterRequest):
-    # TODO: the json table might be wrong, check later
+    # Filter against the facilities table (has Town/County/Jurisdiction/RPC
+    # columns and the Facility_ID join key); the permits table itself has
+    # neither and can't be filtered directly.
     source = request_to_source(
-        request, "VersoWastewater_treatmentFacilitiesPermits_info", "default"
+        request, "VersoWastewater_treatmentFacilities_info", "default"
     )
     table = get_waste_treatment_facility_permits([source])
     return make_response(data=table, metadata=get_metadata("zoning"))

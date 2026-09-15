@@ -204,7 +204,7 @@ export default function VariableComparison() {
 
   return (
     <QuadTileMapLayout
-      title="Community Health Indicators"
+      title="CDC Health Map"
       sidebar={
         <>
           <DataSetSelector handleSelect={handleSelectDataSet} />

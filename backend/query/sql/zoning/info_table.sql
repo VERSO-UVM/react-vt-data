@@ -1,6 +1,7 @@
 {{ cte_filter_block }}
 SELECT
     i.County,
+    i.Municipal_Name AS Jurisdiction,
     i.Municipal_Name || ' ' || i.District_Name AS "Jurisdiction District Name",
     i.District_Type AS "District Type",
     ROUND(i.Acres, 2) AS Acres,

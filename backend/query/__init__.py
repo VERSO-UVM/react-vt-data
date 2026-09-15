@@ -7,6 +7,7 @@ from query.cdc import (
     dual_var_comparison,
     get_cdc_county_pca,
     get_cdc_export_table,
+    get_cdc_places_tidy,
     single_var_geojson,
 )
 from query.comparison import compare_variables, composite_index, dataset_registry

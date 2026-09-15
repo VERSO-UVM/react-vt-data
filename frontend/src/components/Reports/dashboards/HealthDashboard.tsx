@@ -1,6 +1,12 @@
-import { Table, ScrollArea, Paper, Text, Stack, Grid } from '@mantine/core';
+import { Grid } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
-import { SmokingRateCard } from '@/components/Reports/health';
+import {
+  SmokingRateCard,
+  UninsuredRateCard,
+  ChronicDiseaseChart,
+  DisabilityChart,
+  HealthStatusChart,
+} from '@/components/Reports/health';
 
 export interface DashboardData {
   year: number;
@@ -29,6 +35,40 @@ export default function HealthDashboard({ data }: DashboardProps) {
         <SmokingRateCard
           primary={primary.current}
           comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
+        />
+      </Grid.Col>
+      <Grid.Col span={{ base: 12, md: 6 }}>
+        <UninsuredRateCard
+          primary={primary.current}
+          comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
+        />
+      </Grid.Col>
+      <Grid.Col span={12}>
+        <ChronicDiseaseChart
+          primary={primary.current}
+          comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
+        />
+      </Grid.Col>
+      <Grid.Col span={12}>
+        <DisabilityChart
+          primary={primary.current}
+          comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
+        />
+      </Grid.Col>
+      <Grid.Col span={12}>
+        <HealthStatusChart
+          primary={primary.current}
+          comparison={comparison.current}
+          primaryName={primary.name}
+          comparisonName={comparison.name}
         />
       </Grid.Col>
     </Grid>

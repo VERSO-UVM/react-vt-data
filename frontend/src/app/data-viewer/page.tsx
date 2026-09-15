@@ -35,8 +35,6 @@ import { useEffect, useState } from 'react';
 
 // within data viewer imports
 import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
-import { DataRow, ChartMetadata } from '@/types/cachedCharts';
-import { ChartPayload } from '@/app/working-report/page';
 import { COLORS, FONTS } from '../theme';
 import { FieldLabel } from './FieldLabel';
 import { MetricsPanel } from './MetricsPanels';
@@ -171,7 +169,7 @@ function HeroSection({
                   color: COLORS.amberSoft,
                 }}
               >
-                Data Viewer
+                Data Gallery
               </Text>
             </motion.div>
             <Title
@@ -460,11 +458,14 @@ export default function DataViewerPage() {
           col: 'year',
           selected: [yearMin, yearMax],
         }),
-        onData: (data) =>
+        onData: (data, metadata) =>
           siblings.forEach((d) =>
             setChartData((prev) => ({
               ...prev,
-              [d.id]: { data: data as DataRow[] },
+              [d.id]: {
+                data: data as DataRow[],
+                metadata: metadata as ChartMetadata,
+              },
             })),
           ),
       });

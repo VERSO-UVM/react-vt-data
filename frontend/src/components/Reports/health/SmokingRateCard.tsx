@@ -5,10 +5,14 @@ import { DataRow } from '@/types/cachedCharts';
 interface SmokingRateCardProps {
   primary: DataRow[];
   comparison: DataRow[];
+  primaryName?: string;
+  comparisonName?: string;
 }
 
-function getVariableValue(data: DataRow[], variable: string): number | null {
-  const row = data.find((d) => d.Variable === variable);
+const MEASURE = 'Current cigarette smoking among adults';
+
+function getMeasureValue(data: DataRow[], measure: string): number | null {
+  const row = data.find((d) => d.Measure === measure);
   if (!row) return null;
   const value = Number(row.Value);
   return Number.isFinite(value) ? value : null;
@@ -17,9 +21,11 @@ function getVariableValue(data: DataRow[], variable: string): number | null {
 export default function SmokingRateCard({
   primary,
   comparison,
+  primaryName,
+  comparisonName,
 }: SmokingRateCardProps) {
-  const primaryValue = getVariableValue(primary, 'Smoking Prevalance');
-  const comparisonValue = getVariableValue(comparison, 'Smoking Prevalance');
+  const primaryValue = getMeasureValue(primary, MEASURE);
+  const comparisonValue = getMeasureValue(comparison, MEASURE);
 
   const difference =
     primaryValue !== null && comparisonValue !== null
@@ -40,11 +46,11 @@ export default function SmokingRateCard({
       <Group justify="space-between" mb="md">
         <Stack gap={2}>
           <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-            Smoking Prevalance
+            Smoking Prevalence
           </Text>
 
           <Title order={3}>
-            {primaryValue !== null ? `${primaryValue.toLocaleString()}` : '—'}
+            {primaryValue !== null ? `${primaryValue.toFixed(1)}%` : '—'}
           </Title>
         </Stack>
 
@@ -56,13 +62,11 @@ export default function SmokingRateCard({
       <Stack gap={5}>
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
-            Comparison
+            {comparisonName ?? 'Comparison'}
           </Text>
 
           <Text fw={600}>
-            {comparisonValue !== null
-              ? `$${comparisonValue.toLocaleString()}`
-              : '—'}
+            {comparisonValue !== null ? `${comparisonValue.toFixed(1)}%` : '—'}
           </Text>
         </Group>
 
@@ -74,23 +78,34 @@ export default function SmokingRateCard({
           <Text
             fw={700}
             c={
-              difference === null ? undefined : difference > 0 ? 'green' : 'red'
+              difference === null ? undefined : difference > 0 ? 'red' : 'green'
             }
           >
             {difference === null
               ? '—'
-              : `${difference > 0 ? '+' : ''}${difference.toLocaleString()}`}
+              : `${difference > 0 ? '+' : ''}${difference.toFixed(1)}pp`}
           </Text>
         </Group>
 
         <Text size="xs" c="dimmed" mt="xs">
-          {difference === null
-            ? ''
-            : difference > 0
-              ? 'Higher smoking prevalance'
-              : difference < 0
-                ? 'Lower smoking prevalance'
-                : 'Same smoking prevalance'}
+          {difference === null ? (
+            ''
+          ) : difference > 0 ? (
+            <>
+              <span style={{ color: '#c0392b' }}>{primaryName}</span> has higher
+              smoking prevalence than <span>{comparisonName}</span>
+            </>
+          ) : difference < 0 ? (
+            <>
+              <span style={{ color: '#c0392b' }}>{primaryName}</span> has lower
+              smoking prevalence than <span>{comparisonName}</span>
+            </>
+          ) : (
+            <>
+              <span style={{ color: '#c0392b' }}>{primaryName}</span> and{' '}
+              <span>{comparisonName}</span> have the same smoking prevalence
+            </>
+          )}
         </Text>
       </Stack>
     </Card>

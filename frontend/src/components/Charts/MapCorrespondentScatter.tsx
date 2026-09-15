@@ -60,8 +60,11 @@ function makeScatterDot(activeId: string | null) {
         r={isActive ? ACTIVE_POINT_RADIUS : POINT_RADIUS}
         fill={fill}
         fillOpacity={isActive ? 1 : 0.85}
-        stroke={isActive ? COLORS.ink : 'none'}
-        strokeWidth={isActive ? 2 : 0}
+        // Every dot gets a hairline stroke, not just the active one — the
+        // low/low bivariate cell renders as a near-white fill that would
+        // otherwise vanish against the chart's white background.
+        stroke={isActive ? COLORS.ink : 'rgba(0,0,0,0.35)'}
+        strokeWidth={isActive ? 2 : 1}
       />
     );
   };

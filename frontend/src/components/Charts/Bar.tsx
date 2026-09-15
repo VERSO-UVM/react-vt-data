@@ -66,7 +66,12 @@ const SamePerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => (
           <XAxis
             dataKey={chart.xField}
             interval={chart.chartParams?.xInterval ?? 0}
-            angle={chart.chartParams?.xAngle ?? -45}
+            tickFormatter={(value) =>
+              String(value)
+                .toLowerCase()
+                .replace(/\b\w/g, (char) => char.toUpperCase())
+            }
+            angle={chart.chartParams?.xAngle ?? -40}
             textAnchor={chart.chartParams?.xAngle ? 'end' : 'middle'}
             height={chart.chartParams?.xHeight ?? 70}
           />

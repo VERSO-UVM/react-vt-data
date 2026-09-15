@@ -1,6 +1,31 @@
 'use client';
-import { Select, Paper, Text, SegmentedControl, Loader } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import {
+  Select,
+  Center,
+  Paper,
+  Text,
+  SegmentedControl,
+  Loader,
+  Box,
+  ActionIcon,
+  Tooltip as MantineTooltip,
+  Group,
+  Stack,
+  Title,
+  Collapse,
+  Button,
+  SimpleGrid,
+  useMantineTheme,
+} from '@mantine/core';
+import {
+  IconChevronLeft,
+  IconChevronDown,
+  IconChevronUp,
+  IconChartScatter,
+  IconAdjustments,
+  IconInfoCircle,
+} from '@tabler/icons-react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';
@@ -11,8 +36,7 @@ import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 import { assemble } from '@/components/FilterRedux/apiHelpers';
 import { postRequest } from '@/components/FilterRedux/filterRequest';
 import { FilterSpec, filterDef } from '@/components/FilterRedux/filterTypes';
-import QuadTileMapLayout from '@/components/QuadTileMapLayout';
-import { ChartItem } from '@/types/cachedCharts';
+import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { SamePerXBarChart } from '@/components/Charts';
 
 type Legend = {
@@ -41,8 +65,124 @@ const GAP = 2;
 const SIZE = 3 * CELL + 2 * GAP;
 const CUTS = [1, 2].map((i) => i * CELL + (i - 0.5) * GAP);
 
+const CROWDED_ROW_THRESHOLD = 10;
+
 const rgba = (c: number[]) => `rgba(${c[0]},${c[1]},${c[2]},${c[3] / 255})`;
 const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
+
+type Point = { x: number; y: number };
+
+function computePairStats(points: Point[]) {
+  const n = points.length;
+  const mx = points.reduce((s, p) => s + p.x, 0) / n;
+  const my = points.reduce((s, p) => s + p.y, 0) / n;
+  let num = 0;
+  let denX = 0;
+  let denY = 0;
+  for (const p of points) {
+    const dx = p.x - mx;
+    const dy = p.y - my;
+    num += dx * dy;
+    denX += dx * dx;
+    denY += dy * dy;
+  }
+  const denom = Math.sqrt(denX * denY);
+  const r = denom === 0 ? 0 : num / denom;
+  return { n, r, r2: r * r };
+}
+
+function computeDistribution(values: number[]) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+  const mean = values.reduce((s, v) => s + v, 0) / n;
+  const median =
+    n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[(n - 1) / 2];
+  return { mean, median, min: sorted[0], max: sorted[n - 1] };
+}
+
+function StatCard({
+  label,
+  rows,
+}: {
+  label: string;
+  rows: { k: string; v: string }[];
+}) {
+  return (
+    <Paper
+      withBorder
+      p="md"
+      radius="sm"
+      style={{ backgroundColor: COLORS.birch, borderColor: COLORS.line }}
+    >
+      <Center>
+        <Text size="sm" fw={700} c="dimmed" tt="uppercase" mb={4} lineClamp={1}>
+          {label}
+        </Text>
+      </Center>
+      <Stack gap={2} mt={10}>
+        {rows.map((r) => (
+          <Group key={r.k} justify="space-between" gap={4} wrap="nowrap">
+            <Text size="sm" c="dimmed">
+              {r.k}
+            </Text>
+            <Text size="md" fw={600}>
+              {r.v}
+            </Text>
+          </Group>
+        ))}
+      </Stack>
+    </Paper>
+  );
+}
+
+function BigStat({
+  label,
+  value,
+  description,
+}: {
+  label: string;
+  value: string;
+  description: string;
+}) {
+  return (
+    <Paper
+      withBorder
+      p="md"
+      radius="sm"
+      style={{
+        backgroundColor: COLORS.birch,
+        borderColor: COLORS.line,
+        textAlign: 'center',
+        position: 'relative',
+      }}
+    >
+      <MantineTooltip label={description} multiline w={240}>
+        <ActionIcon
+          variant="transparent"
+          size="md"
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            color: COLORS.slate,
+          }}
+        >
+          <IconInfoCircle size={20} stroke={1.5} />
+        </ActionIcon>
+      </MantineTooltip>
+      <Text size="sm" fw={700} c="dimmed" tt="uppercase" mb={4}>
+        {label}
+      </Text>
+      <Text
+        size="28px"
+        fw={700}
+        style={{ color: COLORS.spruce, fontFamily: FONTS.mono }}
+      >
+        {value}
+      </Text>
+    </Paper>
+  );
+}
 
 // 3 X 3 bivariate legend.
 function BivariateLegend({ legend }: { legend: Legend }) {
@@ -103,8 +243,6 @@ function BivariateLegend({ legend }: { legend: Legend }) {
                     width: CELL,
                     height: CELL,
                     backgroundColor: rgba(grid[y][x]),
-                    // hairline ring so the lightest (low/low) cell still reads
-                    // as a swatch against the panel background
                     boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)',
                   }}
                 />
@@ -163,6 +301,11 @@ const selectStyles = {
 };
 
 export default function VariableExplorer() {
+  const theme = useMantineTheme();
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [analyticsOpen, setAnalyticsOpen] = useState(true);
+
   const [registry, setRegistry] = useState<DatasetRegistry | null>(null);
   const [dataset1, setDataset1] = useState<string | null>(null);
   const [dataset2, setDataset2] = useState<string | null>(null);
@@ -206,17 +349,31 @@ export default function VariableExplorer() {
       .post(url, [])
       .then((r) => {
         if (cancelled) return;
+        const rows: DataRow[] = r.data.data;
+        const sorted = [...rows].sort(
+          (a, b) => Number(b['Composite Index']) - Number(a['Composite Index']),
+        );
+        const wasSliced = sorted.length > CROWDED_ROW_THRESHOLD;
+        const data = wasSliced
+          ? [...sorted.slice(0, 5), ...sorted.slice(-5)]
+          : sorted;
+        const direction =
+          'A higher score means a higher health burden (worse outcomes ' +
+          'on most measures); a lower or negative score means a lower ' +
+          'burden (better outcomes).';
         setIndexChart({
           id: `cdc-${level}-composite`,
-          title: 'Community Health Composite Index',
+          title:
+            'Community Health Composite Index (Higher = Higher Health Burden)',
           type: 'chart',
           subtype: 'bar',
           xField: 'Name',
           yField: 'Composite Index',
           chartParams: { datakeys: [['Composite Index', '#3b7dd8']] },
-          data: r.data.data,
-          description:
-            'The Composite Index summarizes every CDC Places measure into a single score using Principal Component Analysis (PCA), standardized against the Vermont average for this geography level. Positive means above the Vermont average across most measures; negative means below.',
+          data,
+          description: wasSliced
+            ? `The Composite Index summarizes every CDC Places measure into a single score using Principal Component Analysis (PCA), standardized against the Vermont average for this geography level. ${direction} Showing only the 5 highest- and 5 lowest-burden regions.`
+            : `The Composite Index summarizes every CDC Places measure into a single score using Principal Component Analysis (PCA), standardized against the Vermont average for this geography level. ${direction}`,
         });
         setIndexError(null);
       })
@@ -304,6 +461,32 @@ export default function VariableExplorer() {
       sharedLevels(dataset1, dataset2, registry)) ||
     [];
 
+  // Shared {x, y} extraction for the relationship/distribution stat cards —
+  // mirrors what VariableScatter derives internally from the same geojson.
+  const points: Point[] = useMemo(() => {
+    if (!geojson || !legend) return [];
+    const [mx, my] = legend.measures;
+    return geojson.features
+      .map((f) => {
+        const t = (f.properties?.tooltip ?? {}) as Record<string, unknown>;
+        return { x: Number(t[mx]), y: Number(t[my]) };
+      })
+      .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
+  }, [geojson, legend]);
+
+  const pairStats = useMemo(
+    () => (points.length > 1 ? computePairStats(points) : null),
+    [points],
+  );
+  const xStats = useMemo(
+    () => (points.length ? computeDistribution(points.map((p) => p.x)) : null),
+    [points],
+  );
+  const yStats = useMemo(
+    () => (points.length ? computeDistribution(points.map((p) => p.y)) : null),
+    [points],
+  );
+
   const scatterTile = geojson && (
     <VariableScatter
       geojson={geojson}
@@ -313,7 +496,7 @@ export default function VariableExplorer() {
     />
   );
   const indexTile = bothCDC && indexChart && (
-    <div style={{ height: 360 }}>
+    <div style={{ height: 320 }}>
       <SamePerXBarChart chart={indexChart} />
     </div>
   );
@@ -324,85 +507,17 @@ export default function VariableExplorer() {
   );
 
   return (
-    <QuadTileMapLayout
-      title="Variable Explorer"
-      sidebar={
-        <>
-          {!registry ? (
-            <Loader size="sm" my="md" color="green" />
-          ) : (
-            <>
-              <Paper
-                withBorder
-                radius="md"
-                p="sm"
-                mb="md"
-                style={{
-                  borderColor: COLORS.line,
-                  backgroundColor: COLORS.birch,
-                }}
-              >
-                <Select
-                  label="Variable 1 — Dataset"
-                  data={datasetOptions}
-                  value={dataset1}
-                  onChange={handleSelectDataset1}
-                  allowDeselect={false}
-                  mb="sm"
-                  styles={selectStyles}
-                />
-                <Select
-                  label="Variable 2 — Dataset"
-                  data={datasetOptions}
-                  value={dataset2}
-                  onChange={handleSelectDataset2}
-                  allowDeselect={false}
-                  mb={levelOptions.length > 1 ? 'sm' : 0}
-                  styles={selectStyles}
-                />
-
-                {levelOptions.length > 1 && (
-                  <SegmentedControl
-                    fullWidth
-                    autoContrast
-                    color={COLORS.spruce}
-                    radius="md"
-                    data={levelOptions.map((lvl) => ({
-                      label: LEVEL_LABELS[lvl] ?? lvl,
-                      value: lvl,
-                    }))}
-                    value={level ?? levelOptions[0]}
-                    onChange={handleSelectLevel}
-                    style={{
-                      fontFamily: FONTS.mono,
-                    }}
-                  />
-                )}
-              </Paper>
-
-              {dataset1 && dataset2 && (
-                <FilterWrap
-                  key={`${dataset1}-${dataset2}`}
-                  handleApply={handleApply}
-                  filterList={variableFilterDefs(
-                    registry[dataset1].filter_table,
-                    registry[dataset2].filter_table,
-                  )}
-                />
-              )}
-
-              {applyError && (
-                <Text size="xs" c="red" mt="sm">
-                  {applyError}
-                </Text>
-              )}
-
-              {legend && <BivariateLegend legend={legend} />}
-            </>
-          )}
-        </>
-      }
-      map={
+    <Box
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: 'calc(100vh - 80px)',
+        overflow: 'hidden',
+        backgroundColor: 'var(--mantine-color-body)',
+        fontFamily: theme.fontFamily,
+      }}
+    >
+      <Box style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
         <VTMap
           geojson={geojson}
           showCountyLines={false}
@@ -410,10 +525,294 @@ export default function VariableExplorer() {
           onFeatureHover={setHoveredId}
           highlightId={hoveredId}
         />
-      }
-      tiles={[scatterTile, indexTile, indexErrorTile].filter(
-        (tile): tile is NonNullable<typeof tile> => Boolean(tile),
-      )}
-    />
+      </Box>
+
+      {/* Floating sidebar */}
+      <Box
+        style={{
+          position: 'absolute',
+          top: 16,
+          left: 16,
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 0,
+        }}
+      >
+        <Paper
+          shadow="md"
+          radius="md"
+          p="md"
+          withBorder
+          style={{
+            width: sidebarOpen ? 340 : 0,
+            opacity: sidebarOpen ? 1 : 0,
+            overflow: 'hidden',
+            pointerEvents: sidebarOpen ? 'all' : 'none',
+            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            maxHeight: 'calc(100vh - 160px)',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <Title
+            order={3}
+            mb="xs"
+            style={{ fontFamily: theme.headings?.fontFamily, fontSize: 18 }}
+          >
+            Variable Relationship Map
+          </Title>
+
+          <Box style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
+            {!registry ? (
+              <Loader size="sm" my="md" color="green" />
+            ) : (
+              <>
+                <Paper
+                  withBorder
+                  radius="md"
+                  p="sm"
+                  mb="md"
+                  style={{
+                    borderColor: COLORS.line,
+                    backgroundColor: COLORS.birch,
+                  }}
+                >
+                  <Select
+                    label="Variable 1 — Dataset"
+                    data={datasetOptions}
+                    value={dataset1}
+                    onChange={handleSelectDataset1}
+                    allowDeselect={false}
+                    mb="sm"
+                    styles={selectStyles}
+                  />
+                  <Select
+                    label="Variable 2 — Dataset"
+                    data={datasetOptions}
+                    value={dataset2}
+                    onChange={handleSelectDataset2}
+                    allowDeselect={false}
+                    mb={levelOptions.length > 1 ? 'sm' : 0}
+                    styles={selectStyles}
+                  />
+
+                  {levelOptions.length > 1 && (
+                    <SegmentedControl
+                      fullWidth
+                      autoContrast
+                      color={COLORS.spruce}
+                      radius="md"
+                      data={levelOptions.map((lvl) => ({
+                        label: LEVEL_LABELS[lvl] ?? lvl,
+                        value: lvl,
+                      }))}
+                      value={level ?? levelOptions[0]}
+                      onChange={handleSelectLevel}
+                      style={{
+                        fontFamily: FONTS.mono,
+                      }}
+                    />
+                  )}
+                </Paper>
+
+                {dataset1 && dataset2 && (
+                  <FilterWrap
+                    key={`${dataset1}-${dataset2}`}
+                    handleApply={handleApply}
+                    filterList={variableFilterDefs(
+                      registry[dataset1].filter_table,
+                      registry[dataset2].filter_table,
+                    )}
+                  />
+                )}
+
+                {applyError && (
+                  <Text size="xs" c="red" mt="sm">
+                    {applyError}
+                  </Text>
+                )}
+
+                {legend && <BivariateLegend legend={legend} />}
+              </>
+            )}
+          </Box>
+        </Paper>
+
+        <Paper
+          shadow="md"
+          radius="md"
+          style={{
+            borderTopLeftRadius: sidebarOpen ? 0 : undefined,
+            borderBottomLeftRadius: sidebarOpen ? 0 : undefined,
+            marginLeft: sidebarOpen ? -1 : 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="xl"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle sidebar"
+            px={sidebarOpen ? 'xs' : 'md'}
+            style={{
+              minWidth: sidebarOpen ? 40 : 110,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {sidebarOpen ? (
+              <IconChevronLeft size={18} />
+            ) : (
+              <Group gap={6} align="center" wrap="nowrap">
+                <Text size="sm" fw={600}>
+                  Filters
+                </Text>
+                <IconAdjustments size={22} stroke={1.5} />
+              </Group>
+            )}
+          </ActionIcon>
+        </Paper>
+      </Box>
+
+      {/* Floating analytics panel */}
+      <Paper
+        shadow="lg"
+        withBorder
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: sidebarOpen ? 370 : 16,
+          right: 16,
+          zIndex: 10,
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
+          transition: 'left 0.3s ease',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        <Group
+          justify="space-between"
+          px="md"
+          py="xs"
+          onClick={() => setAnalyticsOpen(!analyticsOpen)}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+        >
+          <Group gap="xs">
+            <IconChartScatter size={16} color={COLORS.spruce} />
+            <Text
+              size="xs"
+              fw={700}
+              style={{ fontFamily: theme.headings?.fontFamily }}
+            >
+              RELATIONSHIP ANALYTICS
+            </Text>
+            {pairStats && (
+              <Group gap="xs">
+                <Text size="md" c="dimmed" ml="sm">
+                  N={pairStats.n}
+                </Text>
+                <Text size="md" c="dimmed" ml="sm">
+                  |
+                </Text>
+                <Text size="md" c="dimmed" ml="sm">
+                  R={pairStats.r.toFixed(2)}
+                </Text>
+              </Group>
+            )}
+          </Group>
+
+          <Button
+            variant="subtle"
+            size="compact-xs"
+            color="gray"
+            rightSection={
+              analyticsOpen ? (
+                <IconChevronDown size={14} />
+              ) : (
+                <IconChevronUp size={14} />
+              )
+            }
+          >
+            {analyticsOpen ? 'Collapse' : 'Expand Insights'}
+          </Button>
+        </Group>
+
+        <Collapse expanded={analyticsOpen}>
+          <Box p="md" style={{ maxHeight: '45vh', overflowY: 'auto' }}>
+            {!geojson ? (
+              <Text size="sm" c="dimmed" ta="center" my="xl">
+                Apply Variable 1 and Variable 2 in the sidebar to see the
+                relationship analysis.
+              </Text>
+            ) : (
+              <Stack gap="md">
+                <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
+                  <Paper
+                    withBorder
+                    p="sm"
+                    radius="sm"
+                    style={{ borderColor: COLORS.line }}
+                  >
+                    {scatterTile}
+                  </Paper>
+
+                  <Stack gap="md">
+                    {pairStats && (
+                      <SimpleGrid cols={2} spacing="md">
+                        <BigStat
+                          label="Pearson's R"
+                          value={pairStats.r.toFixed(2)}
+                          description="Pearson's correlation coefficient measures the overall strenth and direction between both variables."
+                        />
+                        <BigStat
+                          label="R²"
+                          value={pairStats.r2.toFixed(2)}
+                          description="R² describes the extent to which the variation seen in a variable can be attributed to the change of the other variable."
+                        />
+                      </SimpleGrid>
+                    )}
+
+                    {legend && (xStats || yStats) && (
+                      <SimpleGrid cols={2} spacing="md">
+                        {xStats && (
+                          <StatCard
+                            label={legend.measures[0]}
+                            rows={[
+                              { k: 'Mean', v: fmt(xStats.mean) },
+                              { k: 'Median', v: fmt(xStats.median) },
+                              { k: 'Min', v: fmt(xStats.min) },
+                              { k: 'Max', v: fmt(xStats.max) },
+                            ]}
+                          />
+                        )}
+                        {yStats && (
+                          <StatCard
+                            label={legend.measures[1]}
+                            rows={[
+                              { k: 'Mean', v: fmt(yStats.mean) },
+                              { k: 'Median', v: fmt(yStats.median) },
+                              { k: 'Min', v: fmt(yStats.min) },
+                              { k: 'Max', v: fmt(yStats.max) },
+                            ]}
+                          />
+                        )}
+                      </SimpleGrid>
+                    )}
+                  </Stack>
+                </SimpleGrid>
+
+                {indexTile}
+                {indexErrorTile}
+              </Stack>
+            )}
+          </Box>
+        </Collapse>
+      </Paper>
+    </Box>
   );
 }

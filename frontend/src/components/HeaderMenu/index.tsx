@@ -58,10 +58,10 @@ const links: NavItem[] = [
       {
         label: 'Explore',
         links: [
-          { link: '/data-viewer', label: 'Data Viewer' },
+          { link: '/data-viewer', label: 'Data Gallery' },
           {
             link: '/data-comparison/variable-explorer',
-            label: 'Variable Explorer',
+            label: 'Variable Relationship Map',
           },
         ],
       },
@@ -70,19 +70,20 @@ const links: NavItem[] = [
         links: [
           {
             link: '/data-comparison/dp-explorer',
-            label: 'Data Profile Comparison',
+            label: 'Census Variable Comparison',
           },
-          {
-            link: '/data-comparison/variable-comparison',
-            label: 'Variable Comparison',
-          },
+          // Legacy page (CDC only version of the variable relationship map)
+          // {
+          //   link: '/data-comparison/variable-comparison',
+          //   label: 'CDC Health Map',
+          // },
         ],
       },
       {
         label: 'Reports',
         links: [
           {
-            link: '/data-comparison/b-tables',
+            link: '/data-comparison/reports-by-topic',
             label: 'Reports by Topic',
           },
           { link: '/working-report', label: 'Working Report' },
@@ -99,7 +100,7 @@ const links: NavItem[] = [
     label: 'Resources',
     links: [
       { link: '/resources/data-sources', label: 'Data Sources ' },
-      { link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
+      //{ link: '/resources/benefits-estimator', label: 'Benefits Estimator' },
       { link: '/resources/white-papers', label: 'White Papers' },
       { link: '/resources/announcements', label: 'Announcements' },
       { link: '/resources/tutorials', label: 'Tutorials' },

@@ -6,6 +6,7 @@ import {
   Card,
   Container,
   Group,
+  Image,
   SimpleGrid,
   Text,
   ThemeIcon,
@@ -13,34 +14,9 @@ import {
 } from '@mantine/core';
 import * as motion from 'motion/react-client';
 import { FileTextIcon } from '@phosphor-icons/react';
+
 import { COLORS, FONTS } from '@/app/theme';
-
-// -----------------------------------------------------------------------------
-// White papers — add each paper here as it's written. Set `href` to the PDF
-// or article URL and flip `published` to true once it's ready to link out to.
-// -----------------------------------------------------------------------------
-
-type WhitePaper = {
-  title: string;
-  summary: string;
-  href?: string;
-  published: boolean;
-};
-
-const WHITE_PAPERS: WhitePaper[] = [
-  {
-    title: 'The Challenge of Rural Data',
-    summary:
-      'Why rural communities are chronically underrepresented in public data, and what that means for planning and policy.',
-    published: false,
-  },
-  {
-    title: 'Rural Data Infrastructure',
-    summary:
-      'How the Vermont Data Collaborative collects, standardizes, and connects public datasets across the state.',
-    published: false,
-  },
-];
+import { WHITE_PAPERS, WhitePaper } from './articles';
 
 // -----------------------------------------------------------------------------
 // Paper card
@@ -69,13 +45,16 @@ function PaperCard({ paper, index }: { paper: WhitePaper; index: number }) {
           style={
             paper.published
               ? {
-                  backgroundColor: 'rgba(221, 154, 47, 0.15)',
-                  color: COLORS.amber,
+                  backgroundColor: COLORS.birchDim,
+                  color: COLORS.slate,
                 }
-              : { backgroundColor: COLORS.birchDim, color: COLORS.slate }
+              : {
+                  backgroundColor: COLORS.birchDim,
+                  color: COLORS.slate,
+                }
           }
         >
-          {paper.published ? 'Read paper' : 'Coming Soon'}
+          {paper.published ? paper.date : 'Coming Soon'}
         </Badge>
       </Group>
 
@@ -103,12 +82,37 @@ function PaperCard({ paper, index }: { paper: WhitePaper; index: number }) {
         {paper.title}
       </Title>
 
+      <Group gap="xs">
+        <Image
+          src={paper.author.image}
+          alt={paper.author.name}
+          radius="xl"
+          h={25}
+          w={25}
+          fit="cover"
+          fallbackSrc="https://placehold.co/400x400?text=No+Image"
+          style={{ backgroundColor: '#f1f3f5' }}
+        />
+
+        <Text
+          size="sm"
+          mt={8}
+          style={{
+            lineHeight: 1.5,
+            color: COLORS.slate,
+            opacity: paper.published ? 1 : 0.85,
+          }}
+        >
+          {paper.author.name}
+        </Text>
+      </Group>
+
       <Text
         size="sm"
         mt={8}
         style={{
           lineHeight: 1.65,
-          color: paper.published ? COLORS.slate : COLORS.slate,
+          color: COLORS.slate,
           opacity: paper.published ? 1 : 0.85,
         }}
       >
@@ -117,6 +121,7 @@ function PaperCard({ paper, index }: { paper: WhitePaper; index: number }) {
     </>
   );
 
+  // Coming soon papers aren't clickable
   if (!paper.published) {
     return (
       <Box
@@ -133,6 +138,7 @@ function PaperCard({ paper, index }: { paper: WhitePaper; index: number }) {
     );
   }
 
+  // Published papers link to the dynamic article page
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -141,9 +147,7 @@ function PaperCard({ paper, index }: { paper: WhitePaper; index: number }) {
     >
       <Card
         component="a"
-        href={paper.href}
-        target="_blank"
-        rel="noopener noreferrer"
+        href={`/resources/white-papers/${paper.slug}`}
         withBorder
         radius="lg"
         p="xl"
@@ -167,10 +171,20 @@ function PaperCard({ paper, index }: { paper: WhitePaper; index: number }) {
 
 export default function WhitePapersPage() {
   return (
-    <Box style={{ backgroundColor: COLORS.birch, minHeight: '100vh' }}>
+    <Box
+      style={{
+        backgroundColor: COLORS.birch,
+        minHeight: '100vh',
+      }}
+    >
+      {/* Hero */}
       <Box
         style={{
-          background: `linear-gradient(145deg, ${COLORS.spruceDeep} 0%, ${COLORS.spruce} 100%)`,
+          background: `linear-gradient(
+            145deg,
+            ${COLORS.spruceDeep} 0%,
+            ${COLORS.spruce} 100%
+          )`,
         }}
         pt={{ base: 55, sm: 75 }}
         pb={{ base: 45, sm: 60 }}
@@ -178,8 +192,13 @@ export default function WhitePapersPage() {
         <Container size="xl">
           <Group gap={10} mb={20}>
             <Box
-              style={{ width: 28, height: 1, background: COLORS.amberSoft }}
+              style={{
+                width: 28,
+                height: 1,
+                background: COLORS.amberSoft,
+              }}
             />
+
             <Text
               style={{
                 fontFamily: FONTS.mono,
@@ -220,10 +239,11 @@ export default function WhitePapersPage() {
         </Container>
       </Box>
 
+      {/* Papers */}
       <Container size="xl" py={{ base: 50, sm: 70 }}>
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
           {WHITE_PAPERS.map((paper, index) => (
-            <PaperCard key={paper.title} paper={paper} index={index} />
+            <PaperCard key={paper.slug} paper={paper} index={index} />
           ))}
         </SimpleGrid>
       </Container>

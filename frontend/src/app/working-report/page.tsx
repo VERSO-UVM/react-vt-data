@@ -603,11 +603,14 @@ export default function WorkingReport() {
           col: 'year',
           selected: [yearMin, yearMax],
         }),
-        onData: (data) =>
+        onData: (data, metadata) =>
           siblings.forEach((d) =>
             setChartData((prev) => ({
               ...prev,
-              [d.id]: { data: data as DataRow[] },
+              [d.id]: {
+                data: data as DataRow[],
+                metadata: metadata as ChartMetadata,
+              },
             })),
           ),
       });

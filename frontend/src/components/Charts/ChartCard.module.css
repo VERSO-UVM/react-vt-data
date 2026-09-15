@@ -1,0 +1,14 @@
+/* Recharts' ResponsiveContainer is height:100% of the box regardless of
+   sibling helper text above it, so it (and its bottom Legend) overflows
+   past the box and collides with the source line below — worst with
+   multi-series legends. flex-basis 0 makes it fill only the space left
+   after those siblings instead of the box's full height. */
+.chartBox {
+  display: flex;
+  flex-direction: column;
+}
+
+.chartBox :global(.recharts-responsive-container) {
+  flex: 1 1 0;
+  min-height: 0;
+}
