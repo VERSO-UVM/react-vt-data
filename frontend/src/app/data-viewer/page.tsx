@@ -171,7 +171,7 @@ function HeroSection({
                   color: COLORS.amberSoft,
                 }}
               >
-                Data Viewer
+                Location Chart Gallery
               </Text>
             </motion.div>
             <Title

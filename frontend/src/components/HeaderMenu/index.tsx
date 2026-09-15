@@ -58,10 +58,10 @@ const links: NavItem[] = [
       {
         label: 'Explore',
         links: [
-          { link: '/data-viewer', label: 'Data Viewer' },
+          { link: '/data-viewer', label: 'Location Chart Gallery' },
           {
             link: '/data-comparison/variable-explorer',
-            label: 'Variable Explorer',
+            label: 'Variable Relationship Map',
           },
         ],
       },
@@ -70,11 +70,11 @@ const links: NavItem[] = [
         links: [
           {
             link: '/data-comparison/dp-explorer',
-            label: 'Data Profile Comparison',
+            label: 'Census Variable Comparison',
           },
           {
             link: '/data-comparison/variable-comparison',
-            label: 'Variable Comparison',
+            label: 'CDC Health Map',
           },
         ],
       },

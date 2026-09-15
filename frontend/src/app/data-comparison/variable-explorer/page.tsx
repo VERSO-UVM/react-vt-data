@@ -325,7 +325,7 @@ export default function VariableExplorer() {
 
   return (
     <QuadTileMapLayout
-      title="Variable Explorer"
+      title="Variable Relationship Map"
       sidebar={
         <>
           {!registry ? (

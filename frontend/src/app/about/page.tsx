@@ -759,7 +759,7 @@ function FAQSection() {
           </Link>
           , analyze key community indicators in the{' '}
           <Link href="/data-viewer" style={{ color: COLORS.spruceDeep }}>
-            Data Viewer
+            Location Chart Gallery
           </Link>
           , compare communities, and explore the underlying datasets.
         </>

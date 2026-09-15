@@ -404,7 +404,7 @@ export default function DPExplorerPage() {
     <>
       <Center pt="xl" mb="md">
         <Group gap="md">
-          <Title order={2}>Data Profile Comparison</Title>
+          <Title order={2}>Census Variable Comparison</Title>
           <Badge
             style={{
               color: COLORS.birch,

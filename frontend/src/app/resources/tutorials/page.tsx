@@ -51,7 +51,7 @@ const TUTORIALS: TutorialCard[] = [
     comingSoon: true,
   },
   {
-    title: 'Using the Data Viewer',
+    title: 'Using the Location Chart Gallery',
     description:
       'Curate descriptive charts and tables from various data sources.',
     icon: ChartBarIcon,
