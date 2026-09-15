@@ -268,7 +268,7 @@ function DeltaBadge({
 
   return (
     <Stack align="center" gap={4}>
-      <ThemeIcon size={40} radius="xl" variant="light" color="green">
+      <ThemeIcon size={40} radius="xl" variant="light" color={COLORS.spruce}>
         <Icon size={18} weight="bold" />
       </ThemeIcon>
       <Text fw={700} size="sm" style={{ color: COLORS.spruce }}>
@@ -688,7 +688,7 @@ export default function DPExplorerPage() {
                 if (step < computedStep) setManualStep(step);
               }}
               allowNextStepsSelect={false}
-              color="green"
+              color={COLORS.spruce}
               size="sm"
             >
               <Stepper.Step
@@ -781,9 +781,13 @@ export default function DPExplorerPage() {
                     size={44}
                     radius="xl"
                     variant="light"
-                    color="green"
+                    color={COLORS.amberSoft}
                   >
-                    <CheckIcon size={22} weight="bold" />
+                    <CheckIcon
+                      size={22}
+                      weight="bold"
+                      color={COLORS.amberSoft}
+                    />
                   </ThemeIcon>
                   <Text size="sm" c="dimmed" ta="center" maw={420}>
                     Comparing{' '}
@@ -855,7 +859,7 @@ export default function DPExplorerPage() {
                 <Center h="100%" py={{ base: 4, sm: 0 }}>
                   <Badge
                     variant="light"
-                    color="green"
+                    color={COLORS.amberSoft}
                     radius="xl"
                     size="lg"
                     style={{ fontFamily: FONTS.mono }}
@@ -892,7 +896,7 @@ export default function DPExplorerPage() {
           {isComplete && loading && (
             <Center py="xl">
               <Stack align="center" gap={8}>
-                <Loader size="sm" color="green" />
+                <Loader size="sm" color={COLORS.spruce} />
                 <Text c="dimmed" size="sm">
                   Loading…
                 </Text>
