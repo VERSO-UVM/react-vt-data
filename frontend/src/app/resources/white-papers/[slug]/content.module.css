@@ -1,0 +1,39 @@
+.content :global(p) {
+  margin: 0 0 1.1em;
+}
+
+.content :global(h1),
+.content :global(h2),
+.content :global(h3),
+.content :global(h4) {
+  font-family: 'Satoshi', sans-serif;
+  margin: 1.6em 0 0.6em;
+  line-height: 1.25;
+}
+
+.content :global(h1):first-child,
+.content :global(h2):first-child,
+.content :global(h3):first-child,
+.content :global(h4):first-child {
+  margin-top: 0;
+}
+
+.content :global(a) {
+  color: rgb(64, 107, 224);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.content :global(ul),
+.content :global(ol) {
+  margin: 0 0 1.1em;
+  padding-left: 1.4em;
+}
+
+.content :global(li) {
+  margin-bottom: 0.4em;
+}
+
+.content :global(strong) {
+  font-weight: 600;
+}
