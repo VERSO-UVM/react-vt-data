@@ -58,7 +58,7 @@ const links: NavItem[] = [
       {
         label: 'Explore',
         links: [
-          { link: '/data-viewer', label: 'Location Chart Gallery' },
+          { link: '/data-viewer', label: 'Data Gallery' },
           {
             link: '/data-comparison/variable-explorer',
             label: 'Variable Relationship Map',
@@ -72,10 +72,10 @@ const links: NavItem[] = [
             link: '/data-comparison/dp-explorer',
             label: 'Census Variable Comparison',
           },
-          {
-            link: '/data-comparison/variable-comparison',
-            label: 'CDC Health Map',
-          },
+          // {
+          //   link: '/data-comparison/variable-comparison',
+          //   label: 'CDC Health Map',
+          // },
         ],
       },
       {
