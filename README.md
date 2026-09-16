@@ -16,7 +16,7 @@ Install these before you start. Every one of them is used by the standard workfl
 | [Node + npm](https://nodejs.org/)             | Frontend dependencies and the Next.js dev server.                                             |
 | [podman](https://podman.io/docs/installation) | Builds and runs the containerized stack.                                                      |
 
-> **Note:** podman is required even for the non-containerized workflow, because the `local-*` recipes call `just down` first to make sure a running container isn't already holding the ports.
+> **Note:** the non-containerized recipes do not stop existing containers. Stop a container yourself if it is already using the required port.
 
 ---
 
@@ -56,7 +56,7 @@ Install these before you start. Every one of them is used by the standard workfl
    Then open `.env` and fill in the values. See [Environment variables](#environment-variables) below for what each one is and where to get it.
 
    - `.env` is gitignored — it holds secrets and should never be committed. `.env.example` is the committed template; if you add a new variable, add a blank entry there too so the next person knows it exists.
-   - You only need this for the ETL pipeline. Running the website locally (either option below) works without a `.env`.
+   - The website and unauthenticated local MCP work without a `.env`; ETL credentials and deployed MCP settings belong here.
 
 5. **Install** the git pre-commit hooks (from the project root):
 
@@ -112,7 +112,7 @@ just down       # stop the pod
 just reset-pod  # delete and recreate the pod (if it gets into a bad state)
 ```
 
-The backend container reads its datasets from `/data`, which the run recipe bind-mounts read-only from the repo's `Data/` directory.
+The backend container reads `warehouse.duckdb` from `/data`, which the run recipe bind-mounts read-only from `backend/Data/` (or an absolute `DATA_DIR` override). The warehouse must already exist; it is not included in the image.
 
 To build or check a single side:
 
@@ -123,7 +123,23 @@ just run-check-api   # run the API in the foreground with full error output
 just check-frontend  # typescript check (npx tsc --noEmit)
 ```
 
-> **Note:** the container and local workflows both bind `:3000` and `:6767`, so only one can be up at a time. That's why the `local-*` and `dev` recipes call `just down` first.
+> **Note:** the container and local website workflows both bind `:3000` and `:6767`, so only one can be up at a time. `just dev` recreates the pod; the `local-*` recipes do not stop it automatically.
+
+## MCP for agents
+
+The backend exposes nine shared data tools through a Streamable HTTP MCP server.
+Start a separate local server without authentication:
+
+```sh
+just mcp
+```
+
+It listens at `http://127.0.0.1:6768/api/mcp` and reads the existing warehouse.
+`just mcp-dev-auth` enables the documented development bearer token;
+`just test-mcp` runs fixture-based tests without production data.
+
+See [the MCP guide](docs/mcp.md) for Claude Code setup, all tools, multiple bearer
+tokens, internal-agent reuse, configuration, deployment, and acceptance checks.
 
 ---
 
@@ -135,18 +151,24 @@ Configuration lives in a `.env` file in the project root. Create it by copying t
 cp .env.example .env
 ```
 
-The justfile loads this file automatically (`set dotenv-filename := ".env"`), so every recipe sees these values without you exporting anything by hand. `.env` is gitignored; `.env.example` is the committed template and should always list every variable with a blank value.
+The justfile loads this file automatically (`set dotenv-filename := ".env"`), so every recipe sees these values without you exporting anything by hand. `.env` is gitignored; `.env.example` is the committed template and documents optional values as commented examples.
 
 | Variable         | Required for                    | Notes                                                                                                                                                                                   |
 | ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CENSUS_API_KEY` | `just get-data`, `just run-etl` | Census Bureau API key for the ACS-5 scrapers. Free and instant from [the signup page](https://api.census.gov/data/key_signup.html).                                                     |
-| `DATA_DIR`       | optional                        | Overrides where the DuckLake catalog and `warehouse.duckdb` live. The justfile and the ETL containers already set this; only override it if you're running the python scripts directly. |
+| `DATA_DIR`       | optional                        | Absolute host data directory; defaults to `backend/Data`. API and ETL containers mount this at `/data`. |
+| `MCP_ENABLED` | deployed MCP | Set `true` to mount `/api/mcp` in the API. Disabled by default; standalone `just mcp` does not need it. |
+| `MCP_AUTH_MODE` | MCP authentication | `none`, `development`, or `bearer`. The existing API mount requires bearer mode. |
+| `MCP_BEARER_TOKENS` | bearer mode | Comma-separated tokens, one per consumer. Generate each with `just mcp-token`. |
+| `MCP_ALLOWED_HOSTS`, `MCP_ALLOWED_ORIGINS` | deployed MCP | Explicit hostname and origin allowlists for the deployed endpoint. |
+| `MCP_HOST`, `MCP_PORT` | optional standalone MCP | Default `127.0.0.1:6768`; local no-auth/development modes require loopback. |
+| `MCP_MAX_ROWS`, `MCP_MAX_BYTES`, `MCP_QUERY_TIMEOUT`, `MCP_MAX_CONCURRENCY`, `MCP_RATE_LIMIT`, `MCP_MAX_REQUEST_BYTES` | optional MCP limits | Response, query, concurrency, and HTTP limits; see [MCP configuration](docs/mcp.md#configuration). |
 
 Notes:
 
-- **You don't need a `.env` to run the website.** Both `just local-dev` and `just dev` set their own variables (`NEXT_PUBLIC_API_URL`, `ALLOW_DEV_CORS`) and read pre-built data. The `.env` only matters for the ETL pipeline, which re-collects data from external APIs.
+- **You don't need a `.env` to run the website or the standalone no-auth MCP.** The website reads pre-built data. Use `.env` for ETL credentials and for enabling authenticated MCP in the API container.
 - **Without `CENSUS_API_KEY` set, the scrapers don't fail loudly** — the Census API just rate-limits you to roughly 500 requests/day, and a full multi-year run makes far more than that. The failures come back as `SKIP` lines and you end up with a mostly-empty lake. If a collection run looks suspiciously fast or sparse, check this first.
-- **Adding a new variable?** Add it to `.env.example` with a blank value and a comment, and add a row to the table above. That's the only way the next person finds out it exists.
+- **Adding a new variable?** Document it in `.env.example` and the relevant configuration guide without committing secrets.
 
 ---
 
@@ -169,9 +191,18 @@ This project is open-source under the **MIT License**.
 
 ---
 
-# VM Deployment
+## VM Deployment
 
-1. sudo su - appuser0
+The API and MCP run in the existing rootless Podman stack on the VM, using a
+read-only warehouse volume. The application account has historically been
+`appuser0`. The GitHub Pages workflow only publishes the static frontend; it does
+not deploy the backend or MCP.
+
+Use the [MCP deployment runbook](docs/mcp.md#deployment-in-this-repository) for the
+environment configuration, image build and rollout procedure, HTTPS proxy
+requirements, smoke checks, and rollback. The
+[containerization checklist](design/current/containerization.md) covers the
+existing website stack as well.
 
 ## Credits
 

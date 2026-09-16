@@ -36,3 +36,10 @@ for r in all_get_routers:
 
 for r in all_post_routers:
     app.include_router(r, prefix="/api")
+
+# MCP is opt-in and isolated from the existing application routes. Mounted mode
+# requires production bearer tokens; the standalone runner supports local testing.
+if os.environ.get("MCP_ENABLED", "").lower() in {"1", "true", "yes"}:
+    from mcp_server.server import attach_mcp
+
+    attach_mcp(app)
