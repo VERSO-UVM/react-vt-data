@@ -22,6 +22,7 @@ import duckdb
 
 from . import catalog
 from .models import TOOL_MODELS, QueryData
+from .query_diagnostics import empty_filter_hints, filter_clause
 
 
 class DataToolError(ValueError):
@@ -170,7 +171,13 @@ class DataToolService:
             if tool_name == "list_datasets":
                 result = {"datasets": catalog.list_datasets(conn, request.query)}
             elif tool_name == "describe_dataset":
-                result = catalog.describe_dataset(conn, request.dataset_id)
+                result = catalog.describe_dataset(
+                    conn,
+                    request.dataset_id,
+                    value_column=request.value_column,
+                    value_filters=request.value_filters,
+                    value_limit=request.value_limit,
+                )
             elif tool_name == "search_variables":
                 result = {
                     "dataset_id": request.dataset_id,
@@ -245,19 +252,22 @@ class DataToolService:
         data = request.model_dump(exclude={"cursor"})
         return hashlib.sha256(json_bytes({"tool": tool, "args": data})).hexdigest()
 
-    def _columns(self, conn, ds):
+    def _schema(self, conn, ds):
         try:
             fields = conn.execute(f"DESCRIBE {quote(ds.table)}").fetchall()
         except duckdb.CatalogException as exc:
             raise DataToolError(
                 f"Dataset {ds.id} is unavailable in this warehouse"
             ) from exc
-        return [
-            row[0]
+        return {
+            row[0]: row[1]
             for row in fields
             if row[1] not in ("GEOMETRY", "BLOB")
             and row[0].lower() not in ("geometry", "geom", "rgba_color", "geolocation")
-        ]
+        }
+
+    def _columns(self, conn, ds):
+        return list(self._schema(conn, ds))
 
     def _locations(self, conn, ids):
         all_places = catalog.build_locations(conn)
@@ -302,10 +312,10 @@ class DataToolService:
         col = quote(ds.geo_type_column)
         return f"CASE WHEN {col} IN ('town', 'municipality') THEN 'county_subdivision' ELSE {col} END"
 
-    def _where(self, ds, request, locations):
+    def _where(self, ds, request, locations, column_types=None, location_clause=None):
         clauses, params = [], []
         if locations:
-            clause, values = self._location_clause(ds, locations)
+            clause, values = location_clause or self._location_clause(ds, locations)
             clauses.append(clause)
             params.extend(values)
         if request.geo_type:
@@ -348,8 +358,15 @@ class DataToolService:
                 raise DataToolError(
                     f"Unsupported filter {field!r}. Allowed fields: {', '.join(ds.filter_columns)}"
                 )
-            clauses.append(f"{quote(field)} IN ({','.join('?' for _ in values)})")
-            params.extend(values)
+            if column_types is not None and field not in column_types:
+                raise DataToolError(
+                    f"Filter {field!r} is not available in this warehouse"
+                )
+            clause, filter_values = filter_clause(
+                field, values, (column_types or {}).get(field, "VARCHAR")
+            )
+            clauses.append(clause)
+            params.extend(filter_values)
         variable_parts, selected_columns = [], []
         for variable_id in request.variable_ids:
             selector = catalog.decode_variable_id(ds, variable_id)
@@ -384,7 +401,8 @@ class DataToolService:
 
     def _query(self, conn, request, tool, version):
         ds = catalog.get_dataset(request.dataset_id)
-        columns = self._columns(conn, ds)
+        column_types = self._schema(conn, ds)
+        source_columns = list(column_types)
         locations = (
             self._locations(conn, request.location_ids) if request.location_ids else []
         )
@@ -402,67 +420,237 @@ class DataToolService:
                 raise DataToolError(
                     "Comparisons require locations at one geography level"
                 )
-            comparison = self._comparison_year(conn, ds, request, locations)
+            comparison = self._comparison_year(
+                conn, ds, request, locations, column_types
+            )
             request = QueryData.model_validate(
                 request.model_dump(exclude={"year_policy"}) | {"years": [comparison]}
             )
-        where, params, measures = self._where(ds, request, locations)
-        selected = [
-            col for col in columns if col not in ds.value_columns or col in measures
-        ]
-        if not selected:
-            raise DataToolError("No tabular columns available")
-        order = (
-            [f"TRY_CAST({quote(ds.year_column)} AS INTEGER)"] if ds.year_column else []
-        ) + [quote(col) for col in selected]
-        limit = min(request.limit, self.max_rows)
-        sql = f"SELECT {', '.join(quote(col) for col in selected)} FROM {quote(ds.table)} WHERE {where} ORDER BY {', '.join(order)} LIMIT ? OFFSET ?"
-        raw_rows = conn.execute(sql, params + [limit + 1, offset]).fetchall()
-        has_more = len(raw_rows) > limit
+
         result_locations = locations
         if not result_locations and (ds.name_column or ds.id_column):
             result_locations = catalog.build_locations(conn)
-        rows = [
+        location_diagnostics = None
+        location_clause = None
+        if ds.id in ("zoning_districts", "zoning_bylaws"):
+            from .zoning import resolve_zoning_locations
+
+            predicate, parameters, location_diagnostics = resolve_zoning_locations(
+                conn,
+                locations
+                or [
+                    p for p in result_locations if p["geo_type"] == "county_subdivision"
+                ],
+                table=ds.table,
+            )
+            if locations:
+                location_clause = (predicate, parameters)
+
+        where, params, measures = self._where(
+            ds, request, locations, column_types, location_clause
+        )
+        available = [
+            col
+            for col in source_columns
+            if col not in ds.value_columns or col in measures
+        ]
+        computed = []
+        if ds.name_column or ds.id_column:
+            computed.append("_location_id")
+        if ds.kind in ("tidy", "dp"):
+            computed.append("_units")
+        if request.columns is not None:
+            unknown = set(request.columns) - set(available + computed)
+            if unknown:
+                raise DataToolError(
+                    "Unsupported output columns: "
+                    + ", ".join(sorted(unknown))
+                    + ". Use describe_dataset; numeric columns must also be included in measures when measures is specified."
+                )
+            output_columns = list(dict.fromkeys(request.columns))
+        else:
+            output_columns = available + [
+                field
+                for field in computed
+                if field != "_units" or request.include_row_units
+            ]
+        if not output_columns:
+            raise DataToolError("No tabular columns available")
+        # Fetch the small set of hidden identity/unit fields needed to interpret a
+        # projection. Sort by the complete source row so paging is deterministic
+        # even when callers select only a non-unique column.
+        required = {
+            ds.year_column,
+            ds.name_column,
+            ds.id_column,
+            ds.geo_type_column,
+            *ds.variable_columns,
+        }
+        if "_units" in output_columns:
+            required.update(measures)
+        selected = [
+            col for col in source_columns if col in output_columns or col in required
+        ]
+        if not selected:
+            selected = source_columns[:1]
+        order = (
+            [f"TRY_CAST({quote(ds.year_column)} AS INTEGER)"] if ds.year_column else []
+        ) + [quote(col) for col in source_columns]
+        limit = min(request.limit, self.max_rows)
+        sql = f"SELECT {', '.join(quote(col) for col in selected)} FROM {quote(ds.table)} WHERE {where} ORDER BY {', '.join(order)} LIMIT ? OFFSET ?"
+        raw_rows = conn.execute(sql, params + [limit + 1, offset]).fetchall()
+        normalized = [
             self._normalize_row(
                 dict(zip(selected, row)), ds, measures, result_locations
             )
             for row in raw_rows[:limit]
         ]
-        extra_fields = [
-            field
-            for field in ("_location_id", "_units")
-            if any(field in row for row in rows)
-        ]
+        if location_diagnostics is not None:
+            from .zoning import zoning_location_id
+
+            for row in normalized:
+                row["_location_id"] = zoning_location_id(row, location_diagnostics)
+        rows = [{col: row.get(col) for col in output_columns} for row in normalized]
         result = {
             "dataset_id": ds.id,
-            "columns": selected + extra_fields,
-            "units": {key: ds.value_columns[key] for key in measures},
+            "columns": output_columns,
+            "units": {
+                key: ds.value_columns[key] for key in measures if key in output_columns
+            },
             "rows": rows,
             "provenance": self._provenance(ds),
             "applied_query": request.model_dump(exclude={"cursor"}),
             **version,
         }
+        if "_units" in computed and "_units" not in output_columns:
+            result["unit_note"] = (
+                "Selected variables can have different units. Include _units in columns for row-specific units; source labels and provenance remain authoritative."
+            )
+        if location_diagnostics is not None:
+            result["location_diagnostics"] = {
+                key: value
+                for key, value in location_diagnostics.items()
+                if key != "municipality_location_ids"
+            }
+        suspect_units = sum(bool(row.get("_unit_issue")) for row in normalized)
+        if suspect_units:
+            result["warnings"] = [
+                {
+                    "code": "unverified_profile_units",
+                    "message": "Some percent-labelled profile rows contain totals or values outside 0–100. Their source values are preserved, but units are marked unverified; do not interpret them as percentages.",
+                }
+            ]
         if comparison is not None:
             result["comparison_year"] = comparison
             result["year_policy"] = (
                 "common observation year; no aggregation across places"
             )
             result["requested_locations"] = locations
+        if tool == "get_timeseries" or (not rows and ds.year_column):
+            coverage, hints = self._query_coverage(
+                conn, ds, request, locations, column_types
+            )
+            result["coverage"] = coverage
+            if hints:
+                result["hints"] = hints
+        if not rows and offset == 0:
+            result.setdefault("hints", []).extend(
+                empty_filter_hints(conn, ds, request.filters, column_types)
+            )
         return self._bound_rows(
             result,
             rows,
-            has_more,
+            len(raw_rows) > limit,
             offset,
             fingerprint,
             version,
             export=tool == "export_data",
         )
 
+    def _query_coverage(self, conn, ds, request, locations, column_types):
+        base = QueryData.model_validate(
+            request.model_dump()
+            | {
+                "years": [],
+                "year_min": None,
+                "year_max": None,
+                "cursor": None,
+                "filters": {
+                    key: values
+                    for key, values in request.filters.items()
+                    if key != ds.year_column
+                },
+            }
+        )
+        where, params, _ = self._where(ds, base, locations, column_types)
+        year = f"TRY_CAST({quote(ds.year_column)} AS INTEGER)"
+
+        def years_for(condition, values):
+            return [
+                row[0]
+                for row in conn.execute(
+                    f"SELECT DISTINCT {year} FROM {quote(ds.table)} WHERE ({condition}) AND {year} BETWEEN 1700 AND 2200 ORDER BY 1",
+                    values,
+                ).fetchall()
+            ]
+
+        selected_years = years_for(where, params)
+        dataset_years = years_for("TRUE", [])
+        requested = list(request.years)
+        if not requested and (
+            request.year_min is not None or request.year_max is not None
+        ):
+            low = (
+                request.year_min
+                if request.year_min is not None
+                else min(dataset_years, default=1700)
+            )
+            high = (
+                request.year_max
+                if request.year_max is not None
+                else max(dataset_years, default=2200)
+            )
+            # Retain an explicit bound when an open-ended range is entirely
+            # outside observed years; an empty range would lose the constraint.
+            if request.year_max is None:
+                high = max(low, high)
+            if request.year_min is None:
+                low = min(low, high)
+            requested = list(range(low, high + 1))
+        if not requested and ds.year_column in request.filters:
+            requested = [
+                int(value)
+                for value in request.filters[ds.year_column]
+                if str(value).isdigit()
+            ]
+        expected = requested or dataset_years
+        missing = sorted(set(expected) - set(selected_years))
+        coverage = {
+            "selector_years_available": selected_years,
+            "dataset_years_available": dataset_years,
+            "requested_years": sorted(set(requested)) if requested else None,
+            "requested_year_min": request.year_min,
+            "requested_year_max": request.year_max,
+            "years_without_matching_observations": missing,
+            "note": "Coverage is the union of years with source rows for these exact selectors and locations before year constraints, including unavailable values. It does not guarantee every variable/place pair is present. Other labels or geographies may cover different years; no automatic crosswalk or interpolation is applied.",
+        }
+        hints = []
+        if missing:
+            hints.append(
+                {
+                    "code": "selector_year_coverage",
+                    "years": missing,
+                    "message": "These years have no observations for the selected variables/places. Search variable variants and inspect describe_dataset coverage before concluding the logical series is unavailable.",
+                }
+            )
+        return coverage, hints
+
     @staticmethod
     def _provenance(ds):
         return {
             "source_name": ds.source_name,
             "source_url": ds.source_url,
+            **catalog.provenance_metadata(ds),
             "caveats": list(ds.caveats),
             "missing_values": "null means unavailable, suppressed, invalid or missing; it is not zero. Census sentinel values are normalized to null.",
             "warehouse_timestamp_note": "Warehouse modification time is not the source publication date.",
@@ -487,6 +675,15 @@ class DataToolService:
                 for field, unit in catalog.variable_units(ds, selectors).items()
                 if field in measures
             }
+            value = row.get("Value")
+            if ds.kind == "dp" and "percent" in str(row.get("Measure", "")).lower():
+                if isinstance(value, (float, int)) and not 0 <= value <= 100:
+                    row["_units"]["Value"] = "source value; unit not verified"
+                    row["_unit_issue"] = True
+                elif value is not None and "not verified" in row["_units"].get(
+                    "Value", ""
+                ):
+                    row["_unit_issue"] = True
         if locations:
             matches = []
             for place in locations:
@@ -518,7 +715,7 @@ class DataToolService:
                 row["_location_id"] = None
         return row
 
-    def _comparison_year(self, conn, ds, request, locations):
+    def _comparison_year(self, conn, ds, request, locations, column_types):
         common = None
         for place in locations:
             for variable in request.variable_ids:
@@ -530,7 +727,7 @@ class DataToolService:
                         "measures": [],
                     }
                 )
-                where, values, _ = self._where(ds, per_place, [place])
+                where, values, _ = self._where(ds, per_place, [place], column_types)
                 year = f"TRY_CAST({quote(ds.year_column)} AS INTEGER)"
                 available = {
                     row[0]
@@ -598,57 +795,32 @@ class DataToolService:
         return value
 
     def _zoning(self, conn, request, version):
+        from .zoning import zoning_summary
+
         ds = catalog.get_dataset("zoning_districts")
-        columns = self._columns(conn, ds)
-        clauses, values = [], []
-        for field, value in (
-            ("Municipal_Name", request.municipality),
-            ("County", request.county),
-        ):
-            if value:
-                clauses.append(f"lower({quote(field)}) = lower(?)")
-                values.append(value)
-        if not request.include_overlays:
-            if "Overlay_District" not in columns:
-                raise DataToolError(
-                    "This warehouse cannot distinguish overlay districts"
-                )
-            clauses.append(
-                "lower(trim(COALESCE(Overlay_District, ''))) NOT IN ('yes', 'y', 'true', '1')"
-            )
+        self._columns(conn, ds)
         fingerprint = self._fingerprint("get_zoning_summary", request)
         offset = self._offset(request.cursor, fingerprint, version)
         limit = min(request.limit, self.max_rows)
-        fields = [
-            "County",
-            "Municipal_Name",
-            "District_Type",
-            "district_count",
-            "recorded_acres",
-            "districts_missing_acres",
-        ]
-        sql = f"""SELECT County, Municipal_Name, District_Type,
-            COUNT(*) AS district_count, SUM(Acres) AS recorded_acres,
-            COUNT(*) FILTER (WHERE Acres IS NULL) AS districts_missing_acres
-            FROM {quote(ds.table)} WHERE {" AND ".join(clauses) or "TRUE"}
-            GROUP BY County, Municipal_Name, District_Type
-            ORDER BY County, Municipal_Name, District_Type LIMIT ? OFFSET ?"""
-        raw = conn.execute(sql, values + [limit + 1, offset]).fetchall()
+        result = zoning_summary(conn, request, limit, offset)
         rows = [
-            {key: clean_value(value) for key, value in zip(fields, row)}
-            for row in raw[:limit]
+            {key: clean_value(value) for key, value in row.items()}
+            for row in result.pop("rows")
         ]
-        result = {
-            "dataset_id": ds.id,
-            "columns": fields,
-            "rows": rows,
-            "units": {"recorded_acres": "acres", "district_count": "district records"},
-            "includes_overlays": request.include_overlays,
-            "methodology": "Counts and acreage sums of recorded districts. Overlapping districts may double-count land. This is not a dissolved geographic area or a legal determination of permitted uses.",
-            "provenance": self._provenance(ds),
-            "applied_query": request.model_dump(exclude={"cursor"}),
+        has_more = result.pop("has_more")
+        diagnostics = result.get("location_diagnostics", {})
+        diagnostics.pop("municipality_location_ids", None)
+        result.update(
+            dataset_id=ds.id,
+            provenance=self._provenance(ds),
+            applied_query=request.model_dump(exclude={"cursor"}),
             **version,
-        }
-        return self._bound_rows(
-            result, rows, len(raw) > limit, offset, fingerprint, version
         )
+        if not rows and offset == 0:
+            result.setdefault("hints", []).append(
+                {
+                    "code": "no_matching_zoning_districts",
+                    "message": "No districts match this scope and overlay policy. Check excluded_overlays, inspect municipality values with describe_dataset(value_column='Municipal_Name'), or use a canonical location_id.",
+                }
+            )
+        return self._bound_rows(result, rows, has_more, offset, fingerprint, version)

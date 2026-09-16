@@ -30,6 +30,8 @@ def output_schema(name: str) -> dict:
                 "columns": {"type": "array", "items": {"type": "object"}},
                 "source": {"type": "object"},
                 "caveats": {"type": "array", "items": {"type": "string"}},
+                "filter_values": {"type": "object"},
+                "filter_values_by_column": {"type": "object"},
             }
         )
         required += ["dataset_id", "available", "columns", "source", "caveats"]
@@ -42,6 +44,10 @@ def output_schema(name: str) -> dict:
                 "has_more": {"type": "boolean"},
                 "next_cursor": {"type": ["string", "null"]},
                 "provenance": {"type": "object"},
+                "coverage": {"type": "object"},
+                "hints": {"type": "array", "items": {"type": "object"}},
+                "warnings": {"type": "array", "items": {"type": "object"}},
+                "location_diagnostics": {"type": "object"},
             }
         )
         required += [
@@ -68,6 +74,8 @@ def output_schema(name: str) -> dict:
         if name == "compare_places":
             properties["comparison_year"] = {"type": "integer"}
             required.append("comparison_year")
+        if name == "get_zoning_summary":
+            properties["excluded_overlays"] = {"type": "object"}
     return {
         "type": "object",
         "properties": properties,

@@ -14,6 +14,7 @@ from data_tools.catalog import (
     encode_variable_id,
     get_dataset,
     list_datasets,
+    provenance_metadata,
     search_locations,
     search_variables,
     variable_units,
@@ -331,3 +332,205 @@ def test_units_preserve_percentages_and_source_specific_estimates():
 def test_location_index_requires_no_observation_tables():
     with duckdb.connect(":memory:") as conn:
         assert {row["id"] for row in build_locations(conn)} == {"US", "50"}
+
+
+@pytest.fixture
+def profile_warehouse(warehouse):
+    warehouse.execute("""
+        CREATE TABLE acs5_dp_combined_tidy (
+            NAME VARCHAR, "table" VARCHAR, Category VARCHAR, Subcategory VARCHAR,
+            Variable VARCHAR, Measure VARCHAR, year INTEGER, Value VARCHAR
+        );
+        INSERT INTO acs5_dp_combined_tidy VALUES
+            ('Burlington city, Chittenden County, Vermont', 'DP04', 'Estimate',
+             'GROSS RENT', 'Occupied units paying rent: Median (dollars)', 'Number', 2009, '900'),
+            ('Chittenden County, Vermont', 'DP04', 'GROSS RENT', 'Median (dollars)',
+             'Total', 'Estimate', 2010, '950'),
+            ('Burlington city, Chittenden County, Vermont', 'DP04', 'GROSS RENT',
+             'Median (dollars)', 'Total', 'Estimate', 2011, '1000'),
+            ('Burlington city, Chittenden County, Vermont', 'DP04', 'GROSS RENT',
+             'Occupied units paying rent', 'Median (dollars)', 'Estimate', 2013, '1100'),
+            ('Burlington city, Chittenden County, Vermont', 'DP04', 'GROSS RENT',
+             'Occupied units paying rent', 'Median (dollars)', 'Estimate', 2014, '1200'),
+            ('Burlington city, Chittenden County, Vermont', 'DP04',
+             'GROSS RENT AS A PERCENTAGE OF HOUSEHOLD INCOME (GRAPI)',
+             '35.0 percent or more', 'Total', 'Percent', 2011, '24.5'),
+            ('Burlington city, Chittenden County, Vermont', 'DP04',
+             'GROSS RENT AS A PERCENTAGE OF HOUSEHOLD INCOME (GRAPI)',
+             'Occupied units paying rent', '35.0 percent or more', 'Percent Estimate', 2017, '22.5'),
+            ('Burlington city, Chittenden County, Vermont', 'DP04', 'GROSS RENT',
+             'Occupied units paying rent', 'Total', 'Percent Estimate', 2017, '4047'),
+            ('United States', 'DP04', 'GROSS RENT',
+             'Median (dollars)', 'Total', 'Estimate', 2010, '900'),
+            ('Vermont', 'DP04', 'GROSS RENT',
+             'Median (dollars)', 'Total', 'Estimate', 2010, '900');
+    """)
+    return warehouse
+
+
+def test_multiword_variable_search_matches_across_dimensions_and_punctuation(
+    profile_warehouse,
+):
+    query = "GROSS RENT Median (dollars)"
+    rows = search_variables(profile_warehouse, "acs5_dp", query)
+    assert len(rows) == 3
+    assert {row["variable_id"] for row in rows} == {
+        row["variable_id"]
+        for row in search_variables(
+            profile_warehouse, "acs5_dp", "gross, RENT! median--DOLLARS"
+        )
+    }
+    assert rows == search_variables(profile_warehouse, "acs5_dp", query)
+    assert (
+        search_variables(profile_warehouse, "acs5_dp", "gross rent nonexistent") == []
+    )
+    assert (
+        search_variables(profile_warehouse, "acs5_dp", "'); DROP TABLE users; --") == []
+    )
+    brackets = search_variables(
+        profile_warehouse, "acs5_dp", "GRAPI 35.0 percent or more"
+    )
+    assert len(brackets) == 2
+    assert {row["selectors"]["Measure"] for row in brackets} == {
+        "Percent",
+        "Percent Estimate",
+    }
+
+
+def test_selector_variants_report_their_actual_distinct_years(profile_warehouse):
+    rows = search_variables(profile_warehouse, "acs5_dp", "gross rent median dollars")
+    variants = {
+        row["selectors"]["Measure"] + ":" + row["selectors"]["Variable"]: row
+        for row in rows
+    }
+    assert variants["Number:Occupied units paying rent: Median (dollars)"][
+        "years_available"
+    ] == [2009]
+    assert variants["Estimate:Total"]["years_available"] == [2010, 2011]
+    assert variants["Estimate:Median (dollars)"]["years_available"] == [2013, 2014]
+    assert all("not a harmonized" in row["coverage_note"] for row in rows)
+    assert all(
+        decode_variable_id(get_dataset("acs5_dp"), row["variable_id"])
+        == row["selectors"]
+        for row in rows
+    )
+
+
+def test_profile_coverage_discloses_geography_specific_gaps(profile_warehouse):
+    description = describe_dataset(profile_warehouse, "acs5_dp")
+    assert description["years_available"] == [2009, 2010, 2011, 2013, 2014, 2017]
+    assert 2010 not in description["gaps"]
+    towns = description["coverage_by_geo_type"]["county_subdivision"]
+    assert 2010 in towns["gaps"]
+    assert towns["years_available"] == [2009, 2011, 2013, 2014, 2017]
+    assert towns["geography_count_by_year"]["2011"] == 1
+    assert description["coverage_by_geo_type"]["county"]["years_available"] == [2010]
+    assert description["geo_types"] == [
+        "county",
+        "county_subdivision",
+        "national",
+        "state",
+    ]
+    assert "does not guarantee" in description["coverage_note"]
+
+
+def test_default_and_filtered_distinct_value_discovery(profile_warehouse):
+    description = describe_dataset(profile_warehouse, "acs5_dp")
+    assert description["filter_values_by_column"]["Measure"]["values"] == [
+        "Estimate",
+        "Number",
+        "Percent",
+        "Percent Estimate",
+    ]
+    filtered = describe_dataset(
+        profile_warehouse,
+        "acs5_dp",
+        value_column="Measure",
+        value_filters={"table": [" dp04 "], "year": [2017]},
+        value_limit=20,
+    )["filter_values"]
+    assert filtered["values"] == ["Percent Estimate"]
+    assert filtered["has_more"] is False
+    assert filtered["applied_filters"] == {"table": [" dp04 "], "year": [2017]}
+    truncated = describe_dataset(
+        profile_warehouse,
+        "acs5_dp",
+        value_column="Measure",
+        value_limit=2,
+    )["filter_values"]
+    assert truncated["values"] == ["Estimate", "Number"]
+    assert truncated["has_more"] is True
+
+
+def test_distinct_values_trim_and_deduplicate_text_without_ignoring_bad_filters(
+    profile_warehouse,
+):
+    profile_warehouse.execute("""
+        INSERT INTO acs5_dp_combined_tidy VALUES
+            ('Vermont', 'DP04 ', 'GROSS RENT ', 'Median (dollars)', 'Total', 'Estimate ', 2010, '900');
+    """)
+    result = describe_dataset(
+        profile_warehouse,
+        "acs5_dp",
+        value_column="Category",
+        value_filters={"table": ["dp04"], "Measure": [" ESTIMATE "]},
+    )
+    assert result["filter_values"]["values"] == ["GROSS RENT"]
+    for kwargs in (
+        {"value_column": "Value"},
+        {"value_column": "Measure; DROP TABLE x"},
+        {"value_column": "Measure", "value_filters": {"unknown": ["x"]}},
+        {"value_column": "Measure", "value_filters": {"table": []}},
+        {"value_column": "Measure", "value_filters": {"table": [float("inf")]}},
+        {"value_filters": {"table": ["DP04"]}},
+    ):
+        with pytest.raises(ValueError):
+            describe_dataset(profile_warehouse, "acs5_dp", **kwargs)
+    injected = describe_dataset(
+        profile_warehouse,
+        "acs5_dp",
+        value_column="Measure",
+        value_filters={"table": ["DP04' OR TRUE --"]},
+    )
+    assert injected["filter_values"]["values"] == []
+
+
+def test_provenance_identifies_the_current_served_pipeline_without_guessing_codes():
+    income = provenance_metadata(get_dataset("acs5_ts_household_income"))
+    assert income["warehouse_table"] == "acs5Economics_medianHouseholdIncome_timeseries"
+    assert income["source_columns"]["Median_Household_Income"]["census_codes"] == [
+        "B19013_001E"
+    ]
+    assert "backend/data_collection/economic.py" in income["transformations"]
+    home = provenance_metadata(get_dataset("acs5_ts_median_home_value"))
+    assert home["source_columns"]["Median_Home_Value"]["census_codes"] == [
+        "B25077_001E"
+    ]
+    assert "older build/acs5.py" in home["source_code_note"]
+    assert "not a certificate" in home["source_code_note"]
+    burden = provenance_metadata(get_dataset("acs5_ts_income_burden"))
+    assert burden["source_columns"]["pct_housing_burden"]["census_codes"] == []
+    assert "Percent Estimate" in burden["source_code_note"]
+    assert (
+        "backend/data_cleaning/clean_housing_cost_burden.py"
+        in burden["transformations"]
+    )
+
+
+def test_percent_total_units_are_conservative_but_true_percent_brackets_survive():
+    dataset = get_dataset("acs5_dp")
+    suspicious = {
+        "Variable": " Total ",
+        "Measure": "Percent Estimate",
+        "Subcategory": "Occupied units paying rent",
+    }
+    assert "unit not verified" in variable_units(dataset, suspicious)["Value"]
+    genuine_bracket = suspicious | {"Subcategory": "35.0 percent or more"}
+    assert variable_units(dataset, genuine_bracket)["Value"] == "percent"
+    assert (
+        variable_units(
+            dataset, genuine_bracket | {"Subcategory": "Less than 20.0 percent"}
+        )["Value"]
+        == "percent"
+    )
+    assert any("contain totals" in caveat for caveat in dataset.caveats)

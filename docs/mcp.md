@@ -172,13 +172,13 @@ client variable; the server reads `MCP_BEARER_TOKENS` instead.
 | Tool | Purpose and important inputs |
 | --- | --- |
 | `list_datasets` | Discover registered datasets, actual availability, coverage, and source information. Optional `query` searches the catalog. |
-| `describe_dataset` | Inspect one `dataset_id`, including permitted filter fields, measures, units, and interpretation caveats. |
-| `search_variables` | Resolve a variable name within a `dataset_id`; returns stable `variable_ids`. Accepts `query` and `limit`. |
+| `describe_dataset` | Inspect one `dataset_id`, including fields, measures, units, lineage, and coverage by geography. Use `value_column`, optional `value_filters`, and `value_limit` to discover distinct filter values. |
+| `search_variables` | Search words across source selector fields within a `dataset_id`; returns stable `variable_ids` and each variant's actual years. Accepts `query` and `limit`. |
 | `search_locations` | Resolve a place name into canonical geography IDs, with optional `geo_type`. Town, city, and county candidates remain distinct. |
-| `query_data` | Fetch one bounded page from a `dataset_id`. Supports `location_ids`, `geo_type`, `variable_ids`, `measures`, advertised exact-match `filters`, and either `years` or `year_min`/`year_max`. |
+| `query_data` | Fetch one bounded page from a `dataset_id`. Supports `location_ids`, `geo_type`, `variable_ids`, `measures`, `columns`, advertised `filters`, and either `years` or `year_min`/`year_max`. Text filters ignore case and surrounding whitespace. |
 | `get_timeseries` | Retrieve temporal observations with the same selectors, ordered by year. Missing years remain missing; values are not interpolated. |
 | `compare_places` | Compare selected `variable_ids` for 2–20 locations at a common geography level and year. Default `year_policy="latest_common"`; use `year_policy="explicit"` with `years=[2023]` to request a particular year. |
-| `get_zoning_summary` | Summarize district counts and recorded acreage by municipality and district type. Optional `municipality` and `county`; overlays are excluded unless `include_overlays=true`. |
+| `get_zoning_summary` | Summarize district counts and recorded acreage by municipality and district type. Select `municipality` or canonical `location_id`, with optional `county`. Overlays are excluded unless `include_overlays=true`; `excluded_overlays` reconciles their counts and acres. |
 | `export_data` | Return a bounded CSV page inline using the `query_data` selectors, with provenance and a continuation cursor. Spreadsheet formula cells are escaped. |
 
 `query_data`, `get_timeseries`, `compare_places`, `get_zoning_summary`, and
@@ -194,9 +194,11 @@ warehouse, or sending the next page to a different worker. Restart pagination
 from the first page in those cases; the initial deployment uses one worker.
 
 Rows retain the source's column names. Response metadata describes column units;
-mixed-measure rows also include `_units`. `warehouse_modified_at` describes the
-warehouse file, not the date every source was refreshed. Use the returned source
-and year information when citing a result.
+mixed-measure rows also include `_units`. Source values are preserved except for
+documented numeric/missing-value conversion; text matching does not rewrite the
+returned source text. `warehouse_modified_at` describes the warehouse file, not
+the date every source was refreshed. Use the returned source and year information
+when citing a result.
 
 Call `describe_dataset` before adding `filters`. Unknown datasets, columns,
 variables, invalid filter shapes, and unsupported operations return explicit
@@ -204,6 +206,85 @@ errors instead of silently dropping constraints. There is no raw SQL tool,
 arbitrary file access, write operation, or geometry export. The query layer uses
 server-owned dataset identifiers and parameterized values with read-only DuckDB
 connections.
+
+### Compact queries and filter discovery
+
+Use `columns` to request exactly the output fields needed by a report. It is
+available on `query_data`, `get_timeseries`, `compare_places`, and `export_data`.
+For example, this avoids fetching long notes and every housing-form standard:
+
+```json
+{
+  "dataset_id": "zoning_bylaws",
+  "location_ids": ["5002161225"],
+  "columns": ["OBJECT_ID", "Municipal_Name", "District_Name", "Base_Density", "GEO_ID", "_location_id"],
+  "limit": 100
+}
+```
+
+Projection does not change row selection, ordering, or pagination. Empty results
+return the same `columns` as populated results. `measures` selects the eligible
+numeric measures; if provided, it must include numeric fields requested in
+`columns`. Computed `_location_id` and `_units` can be selected explicitly.
+With no `columns`, `include_row_units=false` omits repeated row-unit dictionaries.
+For mixed Census variables, keep `_units` unless the report has obtained and
+retained each variable's units separately: top-level units may say “varies.”
+
+To inspect valid values, call `describe_dataset` with an advertised filter field:
+
+```json
+{
+  "dataset_id": "acs5_dp",
+  "value_column": "Measure",
+  "value_filters": {"table": ["DP04"], "year": [2017, 2018]},
+  "value_limit": 50
+}
+```
+
+The bounded `filter_values` result includes `values` and `has_more`. Narrow
+`value_filters` when there are more values; this discovery list is not paginated.
+Without `value_column`, `filter_values_by_column` supplies bounded examples for
+low-cardinality fields. Unknown fields are rejected. Text filters match complete
+values, ignoring case and outer whitespace; they do not perform substring or
+fuzzy matching. Empty queries include `hints` with independent filter-match counts
+and nearby source values. Hints never substitute a suggested value into a query.
+
+### Historical coverage and source defects
+
+`search_variables` matches all query words across selector fields, so
+`GROSS RENT Median (dollars)` finds historical label variants. Each result reports
+`years_available` and gaps. A `variable_id` still identifies exact source labels;
+it does not merge different historical definitions into one logical series.
+`get_timeseries.coverage` reports the selected variables/places' available years
+before year constraints, the dataset's overall years, and years without matching
+observations. Multi-variable/place coverage is their union, not a guarantee that
+every combination is present. `describe_dataset.coverage_by_geo_type` exposes
+geography-specific gaps such as absent 2010 town profiles. No missing years are
+interpolated.
+
+Detailed-profile total cells sometimes carry a percentage label while containing
+counts. The tools preserve these numbers, use conservative unverified units, and
+emit a warning instead of asserting they are percentages. Underlying duplicate
+selector rows are also preserved; do not sum or arbitrarily deduplicate them.
+Provenance includes the warehouse table and verified current collection/cleaning
+references. Source-code notes distinguish current pipeline mappings from a full
+historical, row-level code crosswalk.
+
+Zoning `location_ids` are matched through unambiguous canonical municipality
+names. This prevents a city's districts from leaking into its same-named town
+when the source GEOID is wrong, and supports unambiguous names with missing source
+IDs. Returned `GEO_ID` remains the raw source value; `_location_id` is the resolved
+canonical subdivision. `location_diagnostics` reports conflicts, missing IDs,
+and unresolved names with bounded previews. An ambiguous summary request such as
+`municipality="Rutland"` returns an error listing city/town choices; select an
+explicit name or `location_id`. Composite/village names are not automatically
+split or assigned to a guessed subdivision.
+
+`excluded_overlays` covers the full summary selection, independently of its
+page size, and includes a bounded district preview. Source overlay flags control
+exclusion even when a classification is disputed. Review the underlying follow-up
+items in [the 2026-09-16 data issues](2026-09-16-issues.md); MCP safeguards do not
+repair those warehouse records.
 
 ### Report interpretation
 

@@ -5,7 +5,11 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Text = Annotated[str, Field(min_length=1, max_length=500)]
-Scalar = str | int | float | bool
+Scalar = Annotated[str, Field(max_length=500)] | int | float | bool
+FilterMap = Annotated[
+    dict[Text, Annotated[list[Scalar], Field(min_length=1, max_length=50)]],
+    Field(max_length=20),
+]
 GeoType = Literal["national", "state", "county", "county_subdivision", "tract"]
 
 
@@ -17,11 +21,20 @@ class ListDatasets(Request):
     query: str = Field(default="", max_length=200)
 
 
-class DescribeDataset(Request):
+class DatasetRequest(Request):
     dataset_id: Text
 
 
-class SearchVariables(DescribeDataset):
+class DescribeDataset(DatasetRequest):
+    value_column: Text | None = Field(
+        default=None,
+        description="An advertised filter column whose distinct values to discover.",
+    )
+    value_filters: FilterMap = Field(default_factory=dict)
+    value_limit: int = Field(default=50, ge=1, le=100)
+
+
+class SearchVariables(DatasetRequest):
     query: str = Field(default="", max_length=200)
     limit: int = Field(default=50, ge=1, le=100)
 
@@ -32,19 +45,27 @@ class SearchLocations(Request):
     limit: int = Field(default=50, ge=1, le=100)
 
 
-class QueryData(DescribeDataset):
+class QueryData(DatasetRequest):
     location_ids: list[Text] = Field(default_factory=list, max_length=50)
     geo_type: GeoType | None = None
     variable_ids: list[Annotated[str, Field(max_length=4096)]] = Field(
         default_factory=list, max_length=50
     )
     measures: list[Text] = Field(default_factory=list, max_length=20)
-    filters: dict[Text, Annotated[list[Scalar], Field(min_length=1, max_length=50)]] = (
-        Field(
-            default_factory=dict,
-            max_length=20,
-            description="Exact matches on fields advertised by describe_dataset. Unknown fields are errors.",
-        )
+    columns: list[Text] | None = Field(
+        default=None,
+        min_length=1,
+        max_length=64,
+        description="Exact output fields, including optional _location_id and _units. Omit for all fields; use a narrow selection for wide zoning tables.",
+    )
+    include_row_units: bool = Field(
+        default=True,
+        description="Include per-row units in the default projection. Mixed-variable queries may have different units; explicit columns override the default projection.",
+    )
+    filters: FilterMap = Field(
+        default_factory=dict,
+        max_length=20,
+        description="Exact matches on advertised fields. Text matches ignore case and surrounding whitespace. Unknown fields are errors.",
     )
     years: list[int] = Field(default_factory=list, max_length=100)
     year_min: int | None = Field(default=None, ge=1700, le=2200)
@@ -102,10 +123,20 @@ class ComparePlaces(QueryData):
 
 class GetZoningSummary(Request):
     municipality: Text | None = None
+    location_id: Text | None = Field(
+        default=None,
+        description="Canonical county-subdivision ID from search_locations; unambiguous alternative to municipality.",
+    )
     county: Text | None = None
     include_overlays: bool = False
     limit: int = Field(default=100, ge=1, le=1000)
     cursor: str | None = Field(default=None, max_length=2048)
+
+    @model_validator(mode="after")
+    def one_location_selector(self):
+        if self.municipality and self.location_id:
+            raise ValueError("Use municipality or location_id, not both")
+        return self
 
 
 class ExportData(QueryData):
@@ -126,12 +157,12 @@ TOOL_MODELS = {
 
 TOOL_DESCRIPTIONS = {
     "list_datasets": "Discover available Vermont datasets, sources, actual year coverage and unavailable tables. Start here.",
-    "describe_dataset": "Inspect one dataset's fields, permitted filters, measures, units and interpretation caveats before querying.",
-    "search_variables": "Find stable variable IDs and exact selectors in one dataset. Use returned IDs in query_data, get_timeseries and compare_places.",
+    "describe_dataset": "Inspect fields, units, provenance, and actual year coverage including gaps. Discover distinct filter values with value_column, optional value_filters, and value_limit.",
+    "search_variables": "Find variable IDs using words across selector fields, with each variant's actual year coverage. IDs select exact source labels; differently labelled historical variants have separate IDs.",
     "search_locations": "Resolve a place name to canonical geography IDs. Returns distinct town/city/county candidates; never guesses an ambiguous place.",
-    "query_data": "Read a bounded page of source observations using exact validated filters, variables, locations and years. Values and percentages stay separate. Follow next_cursor with identical arguments.",
+    "query_data": "Read a bounded page using validated filters, variables, locations and years. Select columns for compact output; text filters ignore case and surrounding whitespace. Empty results include hints. Follow next_cursor with identical arguments.",
     "get_timeseries": "Read year-ordered source observations over a year range; preserves gaps, units and provenance. Does not interpolate, aggregate medians, or inflation-adjust dollars.",
     "compare_places": "Compare selected variables for two or more places at one geography level and a common year (latest_common or explicit). Returns source observations without averaging places or mixing years.",
-    "get_zoning_summary": "Summarize district counts and recorded acres by municipality and district type. Overlays excluded by default; acreage is a sum of source records, not a dissolved land-area calculation.",
+    "get_zoning_summary": "Summarize district counts and recorded acres using a municipality name or canonical location_id. Ambiguous city/town names require clarification. Reports excluded overlays and source geography defects; acreage is a sum, not dissolved land area.",
     "export_data": "Export a bounded CSV page inline with source provenance and a continuation cursor. Save csv locally and follow next_cursor for more. Spreadsheet formula cells are escaped; full geometries are excluded.",
 }

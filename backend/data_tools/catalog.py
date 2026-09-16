@@ -9,6 +9,8 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import math
+import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -61,6 +63,16 @@ ZONING_CAVEATS = (
     (
         "Overlay districts can overlap base districts. Acreage sums are not "
         "unique land area; some districts have missing geographic identifiers."
+    ),
+    (
+        "GEO_ID can be missing or conflict with the municipality name. Canonical "
+        "location selection uses unambiguous names and reports the discrepancy; "
+        "source IDs are preserved. Notes are inventory commentary, not ordinance text."
+    ),
+    (
+        "District_Type differs between tables: info maps Primarily Residential to "
+        "Residential, Mixed with Residential to Mixed, and Overlay not Affecting Use "
+        "to Overlay; wide retains source labels. Join districts on OBJECT_ID."
     ),
     "Geometry is intentionally excluded from tool results.",
 )
@@ -449,6 +461,17 @@ _DATASET_LIST = [
                 "Estimate and percentage labels vary across source years. "
                 "Discover Measure values before selecting a series."
             ),
+            (
+                "Some source rows labelled Percent or Percent Estimate contain totals "
+                "rather than percentages. Total-line units are unverified; do not "
+                "interpret or aggregate them as percentages."
+            ),
+            (
+                "Some profile rows share identical selectors but represent different "
+                "source observations, notably historical mortgage/non-mortgage costs. "
+                "Rows are preserved; do not arbitrarily deduplicate or sum them. "
+                "The warehouse lacks the source codes needed to resolve every collision."
+            ),
         ),
         "dp",
         "year",
@@ -778,18 +801,277 @@ def _metadata(dataset: Dataset) -> dict[str, Any]:
         "variable_columns": list(dataset.variable_columns),
         "value_columns": dataset.value_columns,
         "filter_columns": list(dataset.filter_columns),
+        **dataset_lineage(dataset),
     }
+
+
+def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
+    """Verified current code path, distinct from unavailable per-row ETL history."""
+    simple_series = {
+        "acs5_ts_median_age": (
+            "demographics",
+            "Median Age",
+            "Median_Age",
+            "B01002_001E",
+        ),
+        "acs5_ts_household_income": (
+            "economic",
+            "Median Household Income",
+            "Median_Household_Income",
+            "B19013_001E",
+        ),
+        "acs5_ts_per_capita_income": (
+            "economic",
+            "Per Capita Income",
+            "Per_Capita_Income",
+            "B19301_001E",
+        ),
+        "acs5_ts_median_home_value": (
+            "housing",
+            "Median Home Value",
+            "Median_Home_Value",
+            "B25077_001E",
+        ),
+        "acs5_ts_housing_units": (
+            "housing",
+            "Total Housing Units",
+            "Total_Housing_Units",
+            "B25001_001E",
+        ),
+    }
+    cleaners = {
+        "acs5_demographics": "demographics",
+        "acs5_economics": "economic",
+        "acs5_housing": "housing",
+        "acs5_education": "education",
+        "acs5_snapshot": "snapshot",
+        "acs5_dp": "acs5",
+        "acs5_ts_age_dependency_ratio": "dependency_ratio",
+        "acs5_ts_population_change": "population_change",
+        "acs5_ts_historic_population": "historic_population",
+        "acs5_ts_historic_population_change": "historic_population_change",
+        "acs5_ts_median_earnings": "median_earnings",
+        "acs5_ts_health_insurance": "health_insurance_coverage",
+        "acs5_ts_income_burden": "housing_cost_burden",
+        "acs5_ts_vacancy_rates": "derived_time_series",
+        "qcew_employment_by_sector": "qcew",
+        "ambulance_service_areas": "ambulance",
+        "flood_hazard": "flood",
+    }
+    cleaner = cleaners.get(dataset.id)
+    if dataset.id in simple_series:
+        cleaner = "derived_time_series"
+    elif dataset.id.startswith("wastewater_"):
+        cleaner = "wastewater"
+    elif dataset.id.startswith("zoning_"):
+        cleaner = "zoning"
+    elif dataset.id.startswith("cdc_places_"):
+        cleaner = "cdc"
+    result: dict[str, Any] = {
+        "warehouse_table": dataset.table,
+        "transformations": [f"backend/data_cleaning/clean_{cleaner}.py"]
+        if cleaner
+        else [],
+        "source_columns": {},
+        "source_code_note": (
+            "References describe the current repository pipeline. The warehouse does not "
+            "retain per-row source files or Census codes, so this is not a certificate "
+            "of historical lineage. Source-year labels and codes can change."
+        ),
+    }
+    if dataset.id in simple_series:
+        source, variable, output, code = simple_series[dataset.id]
+        result["source_columns"] = {
+            output: {
+                "raw_table": f"RAW.{source}",
+                "raw_column": "Value",
+                "selectors": {"Variable": variable},
+                "census_codes": [code],
+                "code_reference": f"backend/data_collection/{source}.py",
+            }
+        }
+        result["transformations"].insert(0, f"backend/data_collection/{source}.py")
+        if dataset.id == "acs5_ts_median_home_value":
+            result["source_code_note"] += (
+                " The served table is built by clean_derived_time_series.py; the older "
+                "build/acs5.py median-home-value CSV path is not this declared pipeline."
+            )
+    elif dataset.id == "acs5_ts_income_burden":
+        result["source_columns"] = {
+            "pct_housing_burden": {
+                "raw_table": "RAW.acs5_housing",
+                "raw_column": "Value",
+                "aggregation": "SUM(TRY_CAST(Value AS DOUBLE))",
+                "selectors": {
+                    "Category_contains": "SELECTED MONTHLY OWNER COSTS AS A PERCENTAGE OF HOUSEHOLD INCOME",
+                    "Subcategory": "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)",
+                    "Variable": ["30.0 to 34.9 percent", "35.0 percent or more"],
+                    "Measure": "Percent",
+                },
+                "census_codes": [],
+            }
+        }
+        result["source_code_note"] += (
+            " The current cleaner matches Measure='Percent'; source years labelled "
+            "'Percent Estimate' are excluded. See observed year coverage."
+        )
+    elif dataset.kind == "dp":
+        result["source_columns"] = {
+            "Value": {
+                "raw_tables": [
+                    "RAW.acs5_social",
+                    "RAW.acs5_economic",
+                    "RAW.acs5_housing",
+                    "RAW.acs5_demographic",
+                ],
+                "raw_column": "Value",
+                "census_codes": [],
+                "selector_columns": list(dataset.variable_columns),
+            }
+        }
+    return result
+
+
+provenance_metadata = dataset_lineage
+
+
+def _year_metadata(
+    years: list[int], *, bounds: tuple[int, int] | None = None
+) -> dict[str, Any]:
+    years = sorted({year for year in years if year is not None})
+    low, high = (years[0], years[-1]) if years else (None, None)
+    span = bounds or ((low, high) if years else None)
+    gaps = []
+    if span and span[1] - span[0] <= 500:
+        gaps = sorted(set(range(span[0], span[1] + 1)) - set(years))
+    return {"years_available": years, "year_min": low, "year_max": high, "gaps": gaps}
 
 
 def _coverage(conn: Any, dataset: Dataset) -> dict[str, Any]:
     if dataset.year_column:
         year = quote_identifier(dataset.year_column)
-        low, high = conn.execute(
-            f"SELECT MIN(TRY_CAST({year} AS INTEGER)), "
-            f"MAX(TRY_CAST({year} AS INTEGER)) FROM {quote_identifier(dataset.table)}"
-        ).fetchone()
-        return {"year_min": low, "year_max": high}
-    return {"year_min": None, "year_max": None}
+        rows = conn.execute(
+            f"SELECT DISTINCT TRY_CAST({year} AS INTEGER) FROM {quote_identifier(dataset.table)}"
+        ).fetchall()
+        return _year_metadata([row[0] for row in rows])
+    return _year_metadata([])
+
+
+def _geography_expression(dataset: Dataset) -> str | None:
+    if dataset.geo_type_column:
+        column = quote_identifier(dataset.geo_type_column)
+        return f"CASE WHEN {column} IN ('town', 'municipality') THEN 'county_subdivision' ELSE {column} END"
+    if dataset.fixed_geo_type:
+        return "'" + dataset.fixed_geo_type + "'"
+    if dataset.kind == "dp":
+        name = f"lower(trim({quote_identifier(dataset.name_column)}))"
+        return f"""CASE
+            WHEN {name} = 'united states' THEN 'national'
+            WHEN {name} = 'vermont' THEN 'state'
+            WHEN regexp_full_match({name}, '[^,]+ county, vermont') THEN 'county'
+            WHEN regexp_full_match({name}, 'census tract [^,]+, [^,]+ county, vermont') THEN 'tract'
+            WHEN regexp_full_match({name}, '[^,]+, [^,]+ county, vermont') THEN 'county_subdivision'
+            ELSE 'unknown' END"""
+    return None
+
+
+def _geography_coverage(
+    conn: Any, dataset: Dataset, years: list[int]
+) -> dict[str, Any]:
+    geography = _geography_expression(dataset)
+    if geography is None:
+        return {}
+    if not dataset.year_column:
+        return {
+            str(row[0]): _year_metadata([])
+            for row in conn.execute(
+                f"SELECT DISTINCT {geography} FROM {quote_identifier(dataset.table)}"
+            ).fetchall()
+            if row[0] is not None
+        }
+    year = f"TRY_CAST({quote_identifier(dataset.year_column)} AS INTEGER)"
+    name = quote_identifier(dataset.name_column) if dataset.name_column else "NULL"
+    rows = conn.execute(
+        f"SELECT {geography}, {year}, COUNT(DISTINCT {name}) "
+        f"FROM {quote_identifier(dataset.table)} GROUP BY 1, 2 ORDER BY 1, 2"
+    ).fetchall()
+    grouped: dict[str, dict[int, int]] = {}
+    for geo_type, year, count in rows:
+        if geo_type is not None and year is not None:
+            grouped.setdefault(str(geo_type), {})[year] = count
+    bounds = (min(years), max(years)) if years else None
+    return {
+        geo_type: _year_metadata(list(counts), bounds=bounds)
+        | {
+            "geography_count_by_year": {
+                str(year): count for year, count in counts.items()
+            }
+        }
+        for geo_type, counts in grouped.items()
+    }
+
+
+def _filter_values(
+    conn: Any, dataset: Dataset, column: str, filters: dict[str, list[Any]], limit: int
+) -> dict[str, Any]:
+    if not 1 <= limit <= 200:
+        raise ValueError("value_limit must be between 1 and 200.")
+    if column not in dataset.filter_columns:
+        raise ValueError(f"Unknown filter column: {column}.")
+    types = dict(_columns(conn, dataset.table))
+    if column not in types:
+        raise ValueError(f"Filter column {column} is unavailable in this warehouse.")
+    clauses, params = [], []
+    if len(filters) > 20:
+        raise ValueError("At most 20 value filters are supported.")
+    for field, values in filters.items():
+        if field not in dataset.filter_columns or field not in types:
+            raise ValueError(f"Unknown filter column: {field}.")
+        if not isinstance(values, list) or not 1 <= len(values) <= 50:
+            raise ValueError(
+                "Each value filter must be a nonempty list of at most 50 values."
+            )
+        if any(
+            not isinstance(value, (str, int, float, bool))
+            or (isinstance(value, str) and len(value) > 500)
+            or (isinstance(value, float) and not math.isfinite(value))
+            for value in values
+        ):
+            raise ValueError("Invalid filter value.")
+        expression = quote_identifier(field)
+        if types[field] == "VARCHAR":
+            expression = f"lower(trim({expression}))"
+            values = [str(value).strip().lower() for value in values]
+        clauses.append(f"{expression} IN ({','.join('?' for _ in values)})")
+        params.extend(values)
+    expression = quote_identifier(column)
+    if types[column] == "VARCHAR":
+        expression = f"trim({expression})"
+        sql = (
+            f"SELECT MIN({expression}) AS __filter_value FROM {quote_identifier(dataset.table)} "
+            f"WHERE {' AND '.join(clauses) or 'TRUE'} GROUP BY lower({expression}) "
+            "ORDER BY lower(__filter_value) NULLS LAST, __filter_value LIMIT ?"
+        )
+    else:
+        sql = (
+            f"SELECT DISTINCT {expression} AS __filter_value FROM {quote_identifier(dataset.table)} "
+            f"WHERE {' AND '.join(clauses) or 'TRUE'} ORDER BY __filter_value NULLS LAST LIMIT ?"
+        )
+    rows = conn.execute(sql, params + [limit + 1]).fetchall()
+    values = []
+    for (value,) in rows[:limit]:
+        if hasattr(value, "isoformat"):
+            value = value.isoformat()
+        elif isinstance(value, float) and not math.isfinite(value):
+            value = None
+        values.append(value)
+    return {
+        "column": column,
+        "values": values,
+        "has_more": len(rows) > limit,
+        "limit": limit,
+        "applied_filters": filters,
+    }
 
 
 def list_datasets(conn: Any, query: str | None = None) -> list[dict[str, Any]]:
@@ -818,7 +1100,16 @@ def list_datasets(conn: Any, query: str | None = None) -> list[dict[str, Any]]:
     return results
 
 
-def describe_dataset(conn: Any, dataset_id: str) -> dict[str, Any]:
+def describe_dataset(
+    conn: Any,
+    dataset_id: str,
+    *,
+    value_column: str | None = None,
+    value_filters: dict[str, list[Any]] | None = None,
+    value_limit: int = 50,
+) -> dict[str, Any]:
+    if value_filters and value_column is None:
+        raise ValueError("value_column is required when using value_filters.")
     dataset = get_dataset(dataset_id)
     available = dataset.table in _tables(conn)
     result = _metadata(dataset) | {"available": available}
@@ -827,6 +1118,9 @@ def describe_dataset(conn: Any, dataset_id: str) -> dict[str, Any]:
             "columns": [],
             "year_min": None,
             "year_max": None,
+            "years_available": [],
+            "gaps": [],
+            "coverage_by_geo_type": {},
             "unavailable_reason": "Dataset table is absent from this warehouse.",
         }
     allowed = set(dataset.filter_columns) | set(dataset.value_columns or {})
@@ -848,22 +1142,36 @@ def describe_dataset(conn: Any, dataset_id: str) -> dict[str, Any]:
         if name in allowed
     ]
     result |= _coverage(conn, dataset)
-    if dataset.geo_type_column:
-        rows = conn.execute(
-            f"SELECT DISTINCT {quote_identifier(dataset.geo_type_column)} "
-            f"FROM {quote_identifier(dataset.table)} ORDER BY 1 LIMIT 30"
-        ).fetchall()
-        result["geo_types"] = sorted(
-            {
-                "county_subdivision" if row[0] == "town" else row[0]
-                for row in rows
-                if row[0] is not None
-            }
+    result["coverage_by_geo_type"] = _geography_coverage(
+        conn, dataset, result["years_available"]
+    )
+    result["geo_types"] = sorted(result["coverage_by_geo_type"])
+    result["coverage_note"] = (
+        "Coverage counts source rows, including unavailable values, across all variables. "
+        "It does not guarantee every place or variable exists in every listed year. "
+        "Gaps are calendar years without rows within the dataset span; historic census "
+        "series are not annual. search_variables reports coverage for each exact selector."
+    )
+    filters = value_filters or {}
+    if value_column is not None:
+        result["filter_values"] = _filter_values(
+            conn, dataset, value_column, filters, value_limit
         )
     else:
-        result["geo_types"] = [dataset.fixed_geo_type] if dataset.fixed_geo_type else []
-        if dataset.kind == "dp":
-            result["geo_types"] = ["national", "state", "county", "county_subdivision"]
+        column_names = {column["name"] for column in result["columns"]}
+        suggested = (
+            "table",
+            "Category",
+            "Measure",
+            "Section",
+            "District_Type",
+            "Overlay_District",
+        )
+        result["filter_values_by_column"] = {
+            column: _filter_values(conn, dataset, column, filters, 25)
+            for column in suggested
+            if column in dataset.filter_columns and column in column_names
+        }
     return result
 
 
@@ -984,7 +1292,18 @@ def variable_units(dataset: Dataset, selectors: dict[str, Any]) -> dict[str, str
         units["Value"] = value_units.get(variable, "source-defined; unit unavailable")
     if dataset.kind == "dp":
         measure = str(selectors.get("Measure", "")).casefold()
-        if "percent" in measure:
+        subcategory = str(selectors.get("Subcategory", "")).strip().casefold()
+        percentage_bracket = re.fullmatch(
+            r"(?:less than )?\d+(?:\.\d+)?(?: to \d+(?:\.\d+)?)? percent(?: or more)?",
+            subcategory,
+        )
+        if (
+            "percent" in measure
+            and variable.strip().casefold() == "total"
+            and not percentage_bracket
+        ):
+            units["Value"] = "source-defined total; unit not verified"
+        elif "percent" in measure:
             units["Value"] = "percent"
         else:
             units["Value"] = "source-defined estimate; inspect variable label"
@@ -999,28 +1318,55 @@ def search_variables(
         raise ValueError("limit must be between 1 and 200.")
     if dataset.table not in _tables(conn):
         raise ValueError("Dataset is not available in this warehouse.")
+    tokens = list(dict.fromkeys(re.findall(r"[a-z0-9]+", query.casefold())))
+    phrase = " ".join(tokens)
+    if query.strip() and not tokens:
+        return []
     if dataset.variable_columns:
         columns = ", ".join(
             quote_identifier(column) for column in dataset.variable_columns
         )
-        condition = " OR ".join(
-            f"contains(lower(COALESCE(CAST({quote_identifier(column)} AS VARCHAR), '')), ?)"
+        text_columns = ", ".join(
+            f"COALESCE(CAST({quote_identifier(column)} AS VARCHAR), '')"
             for column in dataset.variable_columns
         )
+        searchable = f"trim(regexp_replace(lower(concat_ws(' ', {text_columns})), '[^a-z0-9]+', ' ', 'g'))"
+        condition = " AND ".join("contains(search_text, ?)" for _ in tokens) or "TRUE"
+        year = (
+            f"TRY_CAST({quote_identifier(dataset.year_column)} AS INTEGER)"
+            if dataset.year_column
+            else "NULL::INTEGER"
+        )
+        # Group first: normalization runs once per selector, not once per
+        # observation in the multi-million-row profile table.
         rows = conn.execute(
-            f"SELECT DISTINCT {columns} FROM {quote_identifier(dataset.table)} "
-            f"WHERE ({condition}) ORDER BY {columns} LIMIT ?",
-            [query.lower()] * len(dataset.variable_columns) + [limit],
+            f"""WITH variables AS MATERIALIZED (
+                SELECT {columns}, list_sort(list(DISTINCT {year}) FILTER (WHERE {year} IS NOT NULL)) AS observed_years
+                FROM {quote_identifier(dataset.table)} GROUP BY {columns}
+            ), searchable AS (
+                SELECT *, {searchable} AS search_text FROM variables
+            )
+            SELECT {columns}, observed_years FROM searchable WHERE {condition}
+            ORDER BY CASE WHEN search_text = ? THEN 0
+                WHEN contains(search_text, ?) THEN 1 ELSE 2 END,
+                length(search_text), {columns} LIMIT ?""",
+            tokens + [phrase, phrase, limit],
         ).fetchall()
-        selectors_list = [
-            dict(zip(dataset.variable_columns, row, strict=True)) for row in rows
+        selected = [
+            (dict(zip(dataset.variable_columns, row[:-1], strict=True)), row[-1] or [])
+            for row in rows
         ]
     else:
         selectors_list = [
             {"$column": column}
             for column in dataset.value_columns
-            if query.casefold() in column.casefold()
+            if all(
+                token in " ".join(re.findall(r"[a-z0-9]+", column.casefold()))
+                for token in tokens
+            )
         ][:limit]
+        years = _coverage(conn, dataset)["years_available"]
+        selected = [(selectors, years) for selectors in selectors_list]
     return [
         {
             "variable_id": encode_variable_id(dataset, selectors),
@@ -1028,13 +1374,20 @@ def search_variables(
                 str(value) for value in selectors.values() if value is not None
             ),
             "selectors": selectors,
+            **_year_metadata(years),
+            "coverage_note": (
+                "This variable_id identifies this exact selector tuple, not a harmonized "
+                "cross-year series. Other labels or Measure values can represent the "
+                "same concept in other years. Search those variants separately. Years "
+                "include source rows with unavailable values and do not guarantee every place."
+            ),
             "value_columns": variable_units(dataset, selectors),
             "measures": [
                 {"name": name, "unit": unit}
                 for name, unit in variable_units(dataset, selectors).items()
             ],
         }
-        for selectors in selectors_list
+        for selectors, years in selected
     ]
 
 
