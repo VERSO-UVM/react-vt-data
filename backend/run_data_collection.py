@@ -1,5 +1,5 @@
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from data_collection import (
     acs5,
@@ -37,7 +37,8 @@ STATIC_SCRAPERS = [
     zoning,
 ]
 
-MAX_YEAR = datetime.now().year - 1
+eastern_std_time = timezone(timedelta(hours=5))
+MAX_YEAR = datetime.now(eastern_std_time).year - 1
 
 
 def run_scraper(
@@ -87,7 +88,7 @@ def run_master_scrape(
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=True, years=years)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 failed.append(name)
                 print(f"FAILED {name}: {e}")
 
@@ -95,7 +96,7 @@ def run_master_scrape(
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=False)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 failed.append(name)
                 print(f"FAILED {name}: {e}")
 
