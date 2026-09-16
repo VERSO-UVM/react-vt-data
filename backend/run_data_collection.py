@@ -2,41 +2,43 @@ import argparse
 from datetime import datetime, timedelta, timezone
 
 from data_collection import (
-    # acs5,
-    # ambulance,
-    # cdc,
-    # demographics,
-    # economic,
-    # education,
-    # fips,
+    acs5,
+    ambulance,
+    building_footprints,
+    cdc,
+    demographics,
+    economic,
+    education,
+    fips,
     flood,
-    # historic_population,
-    # housing,
+    historic_population,
+    housing,
     parcels,
-    # qcew,
-    # wastewater,
-    # zoning,
+    qcew,
+    wastewater,
+    zoning,
 )
 from lake_build import get_connection, insert_year, replace_table
 
-YEARLY_SCRAPERS = []
-#     acs5,
-#     demographics,
-#     economic,
-#     education,
-#     housing,
-#     qcew,
-# ]
+YEARLY_SCRAPERS = [
+    acs5,
+    demographics,
+    economic,
+    education,
+    housing,
+    qcew,
+]
 
 STATIC_SCRAPERS = [
-    # ambulance,
-    # cdc,
-    # fips,
+    ambulance,
+    building_footprints,
+    cdc,
+    fips,
     flood,
-    # historic_population,
+    historic_population,
     parcels,
-    # wastewater,
-    # zoning,
+    wastewater,
+    zoning,
 ]
 
 eastern_std_time = timezone(timedelta(hours=5))

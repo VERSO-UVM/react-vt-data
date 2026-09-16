@@ -42,6 +42,18 @@
         "Value": "val"
       }
     },
+    "VCGI_buildingFootprints_geom": {
+      "join_key": "object_id",
+      "join_type": "inner",
+      "columns": {
+        "County": "county",
+        "Jurisdiction": "town",
+        "Building Type": "building_type"
+      },
+      "range": {
+        "Height (ft)": "height_ft"
+      }
+    },
     "cdc_places_county": {
       "join_key": "LocationID",
       "join_type": "inner",
