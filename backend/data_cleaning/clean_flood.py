@@ -24,7 +24,7 @@ def build_flood(con: duckdb.DuckDBPyConnection) -> None:
             FLD_ZONE AS flood_zone_type,
             COALESCE(ZONE_SUBTY, 'None') AS zone_subtype,
             CASE -- Base flood elevation
-                WHEN STATIC_BFE = -9999 THEN 'N/A'
+                WHEN STATIC_BFE = -9999 THEN NULL
                 ELSE CAST(STATIC_BFE AS VARCHAR)
             END AS base_flood_elevation,
             CASE FLD_ZONE -- Flood zone color column (rgb)
@@ -42,7 +42,7 @@ def build_flood(con: duckdb.DuckDBPyConnection) -> None:
                 WHEN FLD_ZONE = 'X' AND ZONE_SUBTY LIKE '%0.2 PCT%' THEN 'Moderate'
                 WHEN FLD_ZONE = 'X' THEN 'Minimal'
                 WHEN FLD_ZONE = 'D' THEN 'Undetermined'
-                ELSE 'N/A'
+                ELSE NULL
             END AS flood_risk,
             CAST(SFHA_TF AS BOOLEAN) AS special_flood_hazard_zone
         FROM lake.RAW.flood

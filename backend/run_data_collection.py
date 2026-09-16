@@ -2,39 +2,39 @@ import argparse
 from datetime import datetime, timedelta, timezone
 
 from data_collection import (
-    acs5,
-    ambulance,
-    cdc,
-    demographics,
-    economic,
-    education,
-    fips,
+    # acs5,
+    # ambulance,
+    # cdc,
+    # demographics,
+    # economic,
+    # education,
+    # fips,
     flood,
-    historic_population,
-    housing,
-    qcew,
-    wastewater,
-    zoning,
+    # historic_population,
+    # housing,
+    # qcew,
+    # wastewater,
+    # zoning,
 )
 from lake_build import get_connection, insert_year, replace_table
 
-YEARLY_SCRAPERS = [
-    acs5,
-    demographics,
-    economic,
-    education,
-    housing,
-    qcew,
-]
+YEARLY_SCRAPERS = []
+#     acs5,
+#     demographics,
+#     economic,
+#     education,
+#     housing,
+#     qcew,
+# ]
 
 STATIC_SCRAPERS = [
-    ambulance,
-    cdc,
-    fips,
+    # ambulance,
+    # cdc,
+    # fips,
     flood,
-    historic_population,
-    wastewater,
-    zoning,
+    # historic_population,
+    # wastewater,
+    # zoning,
 ]
 
 eastern_std_time = timezone(timedelta(hours=5))
@@ -50,7 +50,7 @@ def run_scraper(
     """Run a scraper and write its output to DuckLake."""
     name = scraper.__name__.split(".")[-1]
 
-    print(f"Running {name}...")
+    print(f"Collecting \033[1m{name}\033[0m data ...")
 
     if yearly:
         if years is None:
