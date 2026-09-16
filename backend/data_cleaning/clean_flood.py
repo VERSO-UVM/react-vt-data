@@ -39,7 +39,7 @@ def build_flood(con: duckdb.DuckDBPyConnection) -> None:
             END AS rgba_color,
             CASE FLD_ZONE -- 'Flood risk' column (in english)
                 WHEN FLD_ZONE IN ('A', 'AE', 'AH', 'AO') THEN 'High'
-                WHEN FLD_ZONE = 'X' AND ZONE_SUBTY LIKE '%0.2%%' THEN 'Moderate'
+                WHEN FLD_ZONE = 'X' AND ZONE_SUBTY LIKE '%0.2 PCT%' THEN 'Moderate'
                 WHEN FLD_ZONE = 'X' THEN 'Minimal'
                 WHEN FLD_ZONE = 'D' THEN 'Undetermined'
                 ELSE 'N/A'
