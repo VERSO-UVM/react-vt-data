@@ -10,6 +10,8 @@
         https://verso-uvm.github.io/Wastewater-Infrastructure-Mapping/data.html
 """
 
+import warnings
+
 import pandas as pd
 from pyogrio import read_dataframe
 
@@ -37,17 +39,33 @@ RPCs = [
 # ---------------------------------------------------------------------------
 
 
+def _read_geojson(url: str) -> pd.DataFrame:
+    """
+    Wrap pyogrio's read_dataframe, silencing its "Could not parse column
+    as JSON" warning: some upstream WIM GeoJSON fields (e.g. PermitLink)
+    are tagged as JSON-typed in the source but hold plain strings/URLs,
+    so pyogrio already falls back to leaving them as strings.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r"Could not parse column '.*' as JSON; leaving as string",
+            category=UserWarning,
+        )
+        return read_dataframe(url)
+
+
 # Fetch wastewater data from github repo (geojson files)
 def fetch_treatment_facilities() -> pd.DataFrame:
-    return read_dataframe(WWTF_URL)
+    return _read_geojson(WWTF_URL)
 
 
 def fetch_service_areas() -> pd.DataFrame:
-    return read_dataframe(SERVICE_AREA_URL)
+    return _read_geojson(SERVICE_AREA_URL)
 
 
 def fetch_water_features() -> pd.DataFrame:
-    return read_dataframe(WATER_FEATURES_URL)
+    return _read_geojson(WATER_FEATURES_URL)
 
 
 def fetch_soil_septic_single(rpc: str) -> pd.DataFrame:
@@ -56,7 +74,7 @@ def fetch_soil_septic_single(rpc: str) -> pd.DataFrame:
     """
     url = SOIL_SUITABILITY_URL.format(rpc=rpc)
     try:
-        return read_dataframe(url)
+        return _read_geojson(url)
     except Exception as e:
         raise FileNotFoundError(
             f"No soil suitability data found for RPC '{rpc}'."

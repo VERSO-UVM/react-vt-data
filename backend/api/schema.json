@@ -42,6 +42,28 @@
         "Value": "val"
       }
     },
+    "VCGIParcels_info": {
+      "join_key": "OBJECTID",
+      "join_type": "inner",
+      "columns": {
+        "County": "COUNTY",
+        "Jurisdiction": "TOWN",
+        "Category": "CATEGORY",
+        "Vacant Land": "VACANTLAND"
+      },
+      "range": {
+        "Parcel Size (ac)": "ACRESGL"
+      }
+    },
+    "VCGIParcels_tax": {
+      "join_key": "OBJECTID",
+      "join_type": "inner",
+      "columns": {},
+      "range": {
+        "Assessed Value": "REAL_FLV",
+        "Value Per Acre": "ACREVALUE"
+      }
+    },
     "VCGI_buildingFootprints_geom": {
       "join_key": "object_id",
       "join_type": "inner",

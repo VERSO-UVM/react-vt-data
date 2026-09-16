@@ -14,11 +14,17 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from api.routes.get_routes import all_get_routers
 from api.routes.post_routes import all_post_routers
 
 app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")
+
+# Map/GeoJSON responses (parcels, zoning, wastewater) run several MB
+# uncompressed — nginx gzips these in the containers, but `uvicorn --reload`
+# local dev has nothing else in front of it, so compress here too.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Only needed for `next dev`, which bypasses the nginx proxy.
 # In the containers everything is same-origin and this does nothing.

@@ -67,3 +67,30 @@ export const ambulance_filtering: filterDef[] = [
     cols: ['Cert_Level'],
   },
 ];
+
+export const parcels_filtering: filterDef[] = [
+  {
+    filter_table: 'VCGIParcels_info',
+    filter_style: 'Checkbox',
+    label: 'Category',
+    cols: ['Category'],
+  },
+  {
+    filter_table: 'VCGIParcels_info',
+    filter_style: 'Checkbox',
+    label: 'Vacant Land',
+    cols: ['Vacant Land'],
+  },
+  {
+    filter_table: 'VCGIParcels_info',
+    filter_style: 'Range',
+    label: 'Parcel Size',
+    cols: ['Parcel Size (ac)'],
+  },
+  {
+    filter_table: 'VCGIParcels_tax',
+    filter_style: 'Range',
+    label: 'Price',
+    cols: ['Assessed Value', 'Value Per Acre'],
+  },
+];

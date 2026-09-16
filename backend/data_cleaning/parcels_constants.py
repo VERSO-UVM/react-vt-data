@@ -27,6 +27,8 @@ info_cols = [
     "CITYGL",
     "STGL",
     "ADDRESS",
+    "OWNER1",
+    "OWNER2",
     "SOURCENAME",
     "MATCHSTAT",
     "TNAME",

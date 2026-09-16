@@ -169,6 +169,8 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
             p.CITYGL,
             p.stgl_final AS STGL,
             p.E911ADDR AS ADDRESS,
+            p.OWNER1,
+            p.OWNER2,
             CASE
                 WHEN p.SOURCENAME IN ('CITY', 'TOWN', 'City of Burlington')
                     THEN 'LOCAL DEPARTMENT'

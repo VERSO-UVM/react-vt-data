@@ -13,6 +13,7 @@ import {
   service_area_filtering,
   zoning_filtering,
   ambulance_filtering,
+  parcels_filtering,
 } from '@/components/FilterRedux/filterDefs';
 
 /**
@@ -121,6 +122,19 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
     responseShape: 'direct',
     color: '#fd7e14',
+  },
+  {
+    id: 'parcels',
+    title: 'Parcels',
+    dataURL: `${BASE_API_URL}/load/mapping/parcels/standard`,
+    method: 'POST',
+    filterList: parcels_filtering,
+    responseShape: 'direct',
+    color: '#0ea5a5',
+    jurisdiction: {
+      filterTable: 'VCGIParcels_info',
+      label: 'Jurisdiction',
+    },
   },
 ];
 
