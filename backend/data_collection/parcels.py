@@ -282,7 +282,7 @@ BASE_URL = BASE = (
 
 
 # will figure this out later
-STORAGE_LOCATION = "Data/parcels"
+STORAGE_LOCATION = "backend/Data/parcels"
 
 # ---------------------------------------------------------------------------
 # VERMONT PARCELS API fetch
@@ -298,7 +298,7 @@ def fetch_town(town: str):
     if shp.exists():
         return
     # getting the info from the api
-    r = requests.get(f"{BASE_URL}VTPARCELS_{town}.zip", timeout=60)
+    r = requests.get(f"{BASE_URL}VTPARCELS_{town}.zip", timeout=300)
     # throwing an exception if the https request fails
     r.raise_for_status()
     # extracting the data
@@ -319,12 +319,8 @@ def standardize_town(shp_path: Path) -> gpd.GeoDataFrame:
 
 # need to add a failsafe - all towns might not work
 def collect():
-    # failed = []
-    # trying each town
-    # we collecdt each failure and add it to the failedd list, also citing it's failure essage
     for town in VT_TOWNS:
         fetch_town(town)
-
     gdfs = [
         standardize_town(
             Path(f"{STORAGE_LOCATION}/backfill/{town}") / f"VTPARCELS_{town}.shp"
@@ -340,24 +336,6 @@ def collect():
     backfill["OBJECTID"] = 1_000_000 + backfill.index
     # returning
     return backfill
-
-
-# def combine(towns_list) -> gpd.GeoDataFrame:
-#     # running the loop for each town in town list: we standardize the town after having grabbed it from sotrage
-#     gdfs = [
-#         standardize_town(
-#             Path(f"{STORAGE_LOCATION}/backfill/{town}") / f"VTPARCELS_{town}.shp"
-#         )
-#         for town in towns_list
-#     ]
-#     # concatenating what we just grabbed to backfill gpd
-#     backfill = pd.concat(gdfs, ignore_index=True)
-#     # changing the geometry
-#     backfill = gpd.GeoDataFrame(backfill, geometry="geometry", crs=4326)
-#     # contriving a stable join key
-#     backfill["OBJECTID"] = 1_000_000 + backfill.index
-#     # returning
-#     return backfill
 
 
 if __name__ == "__main__":

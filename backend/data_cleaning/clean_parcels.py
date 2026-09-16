@@ -4,422 +4,257 @@
 **Created**:
     2026-8-24
 **Description**:
-    Data cleaning script for the raw `parcels` table in the DuckLake
-    Run with:
-python -m ETL.data_cleaning.clean_parcels
+    Data cleaning script for the raw `parcels` table in the DuckLake.
+
+    Standardizes TOWN/COUNTY naming and attaches the canonical Census/VCGI
+    GEOID (via `lake.RAW.vt_town_lines`, the same crosswalk `clean_fips.py`
+    builds `vt_town_lines` from) so parcels can be joined to other mapped
+    layers (zoning, wastewater, flood hazard) for the buildable-areas layer.
+
+    The TOWN -> COUNTY dict below (COUNTY_TOWNS) has been hand-verified
+    against that same GEOID crosswalk: every VT town/city/gore/grant in the
+    parcels dataset resolves to the correct county with zero mismatches.
+**Run with**:
+    python -m data_cleaning.clean_parcels
 """
 
-from pathlib import Path
-
-import geopandas as gpd
-import numpy as np
+import duckdb
 import pandas as pd
-from datastore.lake_build import con
-from shapely.geometry import MultiPolygon
 
+geom_cols = ["OBJECTID", "GEOID", "TOWN", "COUNTY", "geometry"]
+info_cols = [
+    "OBJECTID",
+    "GEOID",
+    "TOWN",
+    "COUNTY",
+    "SPAN",
+    "PROPTYPE",
+    "CAT",
+    "CATEGORY",
+    "PURPOSE",
+    "DESCPROP",
+    "RESCODE",
+    "ACRESGL",
+    "AREAACRESGEOM",
+    "CITYGL",
+    "STGL",
+    "ADDRESS",
+    "SOURCENAME",
+    "MATCHSTAT",
+    "TNAME",
+    "INVESTMENTPROP",
+    "VACANTLAND",
+    "OOSOWNER",
+    "EDITOR",
+    "EDITDATE",
+]
+tax_cols = [
+    "OBJECTID",
+    "GEOID",
+    "TOWN",
+    "REAL_FLV",
+    "HSTED_FLV",
+    "NRES_FLV",
+    "LAND_LV",
+    "IMPRV_LV",
+    "EQUIPVAL",
+    "EQUIPCODE",
+    "INVENVAL",
+    "HSDECL",
+    "VETEXAMT",
+    "EXPDESC",
+    "STATUTE",
+    "EXEMPT",
+    "EXAMT_HS",
+    "EXAMT_NR",
+    "UVREDUC_HS",
+    "UVREDUC_NR",
+    "GLVAL_HS",
+    "GLVAL_NR",
+    "ACREVALUE",
+]
 
-## LOAD SPATIAL EXTENSION FUNCTION --------------------
-def _load_spatial() -> None:
-    """
-    Load the spatial extension, installing it first if necessary.
-    """
-    try:
-        con.execute("""--sql LOAD spatial""")
-    except Exception:
-        con.execute("""--sql INSTALL spatial""")
-        con.execute("""--sql LOAD spatial""")
+STATUTE_MAP = {
+    "3848:3849": "Business Inventory & Equipment",
+    "3848:38:00": "Business Inventory & Equipment",
+    "3840": "Charitable, Fraternal, or Rescue",
+    "3840;5405a(a)(4)": "Charitable/Rescue (inc. Education Tax)",
+    "3840;54": "Charitable/Rescue (inc. Education Tax)",
+    "2741": "Tax Stabilization Contract",
+    "24/2741": "Tax Stabilization Contract",
+    "3832": "Public, Pious, or Charitable",
+    "3832(1)": "Out-of-Town Municipal Property",
+    "3832(7)": "Health or Recreational Property",
+    "3832(7)(B)": "Non-profit Ice Skating Rink",
+    "3832(7B": "Non-profit Ice Skating Rink",
+    "5401": "Statewide Education Tax Exception",
+    "3752(7)": "Agricultural / Current Use",
+}
 
+EXPDESC_MAP = {
+    "Statutory": "State Law Exemption",
+    "Solar Plant": "Solar Energy Facility",
+    "Non-Approved (Voted)": "Local Town-Voted Exemption",
+    "Qualified Housing Units": "Affordable / Qualified Housing",
+    "Grandfathered": "Pre-existing Historical Exemption",
+    "Partial-Statutory": "Partial State Law Exemption",
+    "Municipal Contract (Owner Pays)": "Payment in Lieu of Taxes (PILOT)",
+    "Ski Lifts / Snow Making Equip": "Ski Resort Equipment",
+    "Court Ordered": "Judicially Mandated Exemption",
+    "Wind Plant": "Wind Energy Facility",
+}
 
-def make_tables(parcels):
-    out = Path("Data/parcels/tables")
-    out.mkdir(parents=True, exist_ok=True)
+RESCODE_MAP = {
+    "T": "TOWN RESIDENT",
+    "NS": "OUT OF STATE RESIDENT",
+    "S": "VERMONT RESIDENT",
+    "C": "CORPORATION/ENTITY",
+    "c": "CORPORATION/ENTITY",
+}
 
-    def present(cols):
-        return [c for c in cols if c in parcels.columns]
+CAT_MAP = {
+    "R1": "Residential I (Under 6 Acres)",
+    "R2": "Residential II (6 Acres or More)",
+    "M": "Miscellaneous",
+    "O": "Other",
+    "C": "Commercial",
+    "MHL": "Mobile Home Landed (With Land)",
+    "S1": "Seasonal I (Under 6 Acres)",
+    "MHU": "Mobile Home Unlanded (Without Land)",
+    "W": "Woodland",
+    "S2": "Seasonal II (6 Acres or More)",
+    "F": "Farm",
+    "CA": "Commercial Apartments",
+    "I": "Industrial",
+    "UE": "Utility Electric",
+    "UO": "Utility Other",
+}
 
-    geom_cols = present(["OBJECTID", "TOWN", "COUNTY", "geometry"])
-    info_cols = present(
+PURPOSE_MAP = {
+    "R1": "PRIMARY RESIDENCE",
+    "R2": "PRIMARY RESIDENCE",
+    "MHL": "PRIMARY RESIDENCE",
+    "MHU": "PRIMARY RESIDENCE",
+    "S1": "SEASONAL PROPERTY",
+    "S2": "SEASONAL PROPERTY",
+    "W": "WOODLAND",
+    "F": "FARM",
+    "CA": "COMMERCIAL APARTMENTS",
+    "M": "NOT LISTED",
+    "O": "NOT LISTED",
+    "C": "COMMERCIAL/INDUSTRIAL/UTILITY",
+    "I": "COMMERCIAL/INDUSTRIAL/UTILITY",
+    "UE": "COMMERCIAL/INDUSTRIAL/UTILITY",
+    "UO": "COMMERCIAL/INDUSTRIAL/UTILITY",
+}
+
+EQUIPCODE_MAP = {"E": "ELECTRIC UTILITY", "C": "CABLE UTILITY"}
+
+STATES = [
+    "AL",
+    "AK",
+    "AZ",
+    "AR",
+    "CA",
+    "CO",
+    "CT",
+    "DE",
+    "FL",
+    "GA",
+    "HI",
+    "ID",
+    "IL",
+    "IN",
+    "IA",
+    "KS",
+    "KY",
+    "LA",
+    "ME",
+    "MD",
+    "MA",
+    "MI",
+    "MN",
+    "MS",
+    "MO",
+    "MT",
+    "NE",
+    "NV",
+    "NH",
+    "NJ",
+    "NM",
+    "NY",
+    "NC",
+    "ND",
+    "OH",
+    "OK",
+    "OR",
+    "PA",
+    "RI",
+    "SC",
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VA",
+    "WA",
+    "WV",
+    "WI",
+    "WY",
+    "VT",
+    "DC",
+]
+
+OOS_MAP = {"VERMONT": "VT"}
+OOS_MAP.update(
+    dict.fromkeys(
+        ["QC", "QC CANADA", "PQ", "QUEBEC", "ON", "ONTARIO", "QUE", "BC", "ONT", "CAN"],
+        "CANADA",
+    )
+)
+OOS_MAP.update(dict.fromkeys(["MASS", "MA."], "MA"))
+OOS_MAP.update(dict.fromkeys(["MICHIGAN"], "MI"))
+OOS_MAP.update(dict.fromkeys(["OHIO"], "OH"))
+OOS_MAP.update(dict.fromkeys(["CT."], "CT"))
+OOS_MAP.update(dict.fromkeys(["R.I."], "RI"))
+OOS_MAP.update(dict.fromkeys(["W VA"], "WV"))
+OOS_MAP.update(dict.fromkeys(["MARYLAND"], "MD"))
+OOS_MAP.update(dict.fromkeys(["N CAROLINA"], "NC"))
+OOS_MAP.update(dict.fromkeys(["NEW YORK", "N.Y.", "12513", "N Y"], "NY"))
+OOS_MAP.update(dict.fromkeys(["FLORIDA", "FLA"], "FL"))
+OOS_MAP.update(
+    dict.fromkeys(
         [
-            "OBJECTID",
-            "TOWN",
-            "COUNTY",
-            "SPAN",
-            "PROPTYPE",
-            "CAT",
-            "CATEGORY",
-            "PURPOSE",
-            "DESCPROP",
-            "RESCODE",
-            "ACRESGL",
-            "AREAACRESGEOM",
-            "CITYGL",
-            "STGL",
-            "ADDRESS",
-            "SOURCENAME",
-            "MATCHSTAT",
-            "TNAME",
-            "INVESTMENTPROP",
-            "VACANTLAND",
-            "OOSOWNER",
-            "data_origin",
-            "EDITOR",
-            "EDITDATE",
-        ]
+            "ENGLAND",
+            "AE",
+            "UNK",
+            "BERMUDA",
+            "UK",
+            "VY",
+            "FRANCE",
+            "IND",
+            "ARUBA",
+            "GERMANY",
+            "IRELAND",
+            "SWITZERLAN",
+            "QLD AUS",
+            "LIN",
+            "0R",
+            "BERLIN",
+            "AUSTRALIA",
+            "NS",
+            "FWI",
+            "BAHAMAS",
+        ],
+        "FOREIGN",
     )
-    tax_cols = present(
-        [
-            "OBJECTID",
-            "TOWN",
-            "REAL_FLV",
-            "HSTED_FLV",
-            "NRES_FLV",
-            "LAND_LV",
-            "IMPRV_LV",
-            "IMPR_SHARE",
-            "EQUIPVAL",
-            "EQUIPCODE",
-            "INVENVAL",
-            "HSDECL",
-            "VETEXAMT",
-            "EXPDESC",
-            "STATUTE",
-            "EXEMPT",
-            "EXAMT_HS",
-            "EXAMT_NR",
-            "UVREDUC_HS",
-            "UVREDUC_NR",
-            "GLVAL_HS",
-            "GLVAL_NR",
-        ]
-    )
+)
+OOS_MAP.update(dict.fromkeys(["VI", "PR", "GUAM"], "US TERRITORY"))
 
-    geom = parcels[geom_cols].copy()
-    info = parcels[info_cols].copy()
-    tax = parcels[tax_cols].copy()
-
-    geom.to_parquet(out / "parcels_geom.parquet")
-    info.to_parquet(out / "parcels_info.parquet")
-    tax.to_parquet(out / "parcels_tax.parquet")
-    # edit this for later - where should I store them
-    g = gpd.read_parquet(out / "parcels_geom.parquet")
-    i = pd.read_parquet(out / "parcels_info.parquet")
-    t = pd.read_parquet(out / "parcels_tax.parquet")
-
-
-def register_parcels(gdf):
-    df = pd.DataFrame(
-        gdf.to_crs(4326).assign(geometry=gdf.to_crs(4326).geometry.to_wkb())
-    )
-    con.register("parcels_raw", df)
-    # returning the gdf for the make tables
-
-
-def build_parcels():
-    con.execute("""--sql
-            CREATE OR REPLACE VIEW parcels AS
-            SELECT ST_GeomFromWKB(geometry) AS geometry, OBJECTID, TOWN, COUNTY, SPAN, PROPTYPE, CAT, CATEGORY, PURPOSE, DESCPROP, RESCODE, ACRESGL, AREAACRESGEOM, CITYGL, STGL, ADDRESS, SOURCENAME, MATCHSTAT, TNAME, INVESTMENTPROP, VACANTLAND, OOSOWNER, data_origin, EDITOR, EDITDATE, REAL_FLV, HSTED_FLV, NRES_FLV, LAND_LV, IMPRV_LV, IMPR_SHARE, EQUIPVAL, EQUIPCODE, INVENVAL, HSDECL, VETEXAMT, EXPDESC, STATUTE, EXEMPT, EXAMT_HS, EXAMT_NR, UVREDUC_HS, UVREDUC_NR, GLVAL_HS, GLVAL_NR
-            FROM parcels_raw
-        """)
-
-
-def add_to_lake():
-    con.execute(
-        """--sql
-        CREATE OR REPLACE TABLE lake.CLEANED.cleaned_geom AS
-        SELECT *
-        FROM geom
-        """
-    )
-    con.execute(
-        """--sql
-            CREATE OR REPLACE TABLE lake.CLEANED.cleaned_info AS
-            SELECT *
-            FROM info
-            """
-    )
-    con.execute(
-        """--sql
-            CREATE OR REPLACE TABLE lake.CLEANED.cleaned_tax AS
-            SELECT *
-            FROM tax
-            """
-    )
-
-
-def clean():
-    _load_spatial()
-    gdf = load_helper_and_clean()
-    register_parcels(gdf)
-    build_parcels()
-    return gdf
-
-
-def main():
-    make_tables(clean())
-    add_to_lake()
-
-
-def load_helper_and_clean(backfill):
-    vermont_towns_from_parcels = [
-        "Addison",
-        "Albany",
-        "Alburgh",
-        "Andover",
-        "Arlington",
-        "Athens",
-        "Averill",
-        "Averys Gore",
-        "Bakersfield",
-        "Baltimore",
-        "Barnard",
-        "Barnet",
-        "Barre City",
-        "Barre Town",
-        "Barton",
-        "Belvidere",
-        "Bennington",
-        "Benson",
-        "Berkshire",
-        "Berlin",
-        "Bethel",
-        "Bloomfield",
-        "Bolton",
-        "Bradford",
-        "Braintree",
-        "Brandon",
-        "Brattleboro",
-        "Bridgewater",
-        "Bridport",
-        "Brighton",
-        "Bristol",
-        "Brookfield",
-        "Brookline",
-        "Brownington",
-        "Brunswick",
-        "Buels Gore",
-        "Burke",
-        "Burlington",
-        "Cabot",
-        "Calais",
-        "Cambridge",
-        "Canaan",
-        "Castleton",
-        "Cavendish",
-        "Charleston",
-        "Charlotte",
-        "Chelsea",
-        "Chester",
-        "Chittenden",
-        "Clarendon",
-        "Colchester",
-        "Concord",
-        "Corinth",
-        "Cornwall",
-        "Coventry",
-        "Craftsbury",
-        "Danby",
-        "Danville",
-        "Derby",
-        "Dorset",
-        "Dover",
-        "Dummerston",
-        "Duxbury",
-        "East Haven",
-        "East Montpelier",
-        "Eden",
-        "Elmore",
-        "Enosburgh",
-        "Essex Junction",
-        "Essex",
-        "Fair Haven",
-        "Fairfax",
-        "Fairfield",
-        "Fairlee",
-        "Fayston",
-        "Ferdinand",
-        "Ferrisburgh",
-        "Fletcher",
-        "Franklin",
-        "Georgia",
-        "Glastenbury",
-        "Glover",
-        "Goshen",
-        "Grafton",
-        "Granby",
-        "Grand Isle",
-        "Granville",
-        "Greensboro",
-        "Groton",
-        "Guildhall",
-        "Guilford",
-        "Halifax",
-        "Hancock",
-        "Hardwick",
-        "Hartford",
-        "Hartland",
-        "Highgate",
-        "Hinesburg",
-        "Holland",
-        "Hubbardton",
-        "Huntington",
-        "Hyde Park",
-        "Ira",
-        "Irasburg",
-        "Isle La Motte",
-        "Jamaica",
-        "Jay",
-        "Jericho",
-        "Johnson",
-        "Killington",
-        "Kirby",
-        "Landgrove",
-        "Leicester",
-        "Lemington",
-        "Lewis",
-        "Lincoln",
-        "Londonderry",
-        "Lowell",
-        "Ludlow",
-        "Lunenburg",
-        "Lyndon",
-        "Maidstone",
-        "Manchester",
-        "Marlboro",
-        "Marshfield",
-        "Mendon",
-        "Middlebury",
-        "Middlesex",
-        "Middletown Springs",
-        "Milton",
-        "Monkton",
-        "Montgomery",
-        "Montpelier",
-        "Moretown",
-        "Morgan",
-        "Morristown",
-        "Mount Holly",
-        "Mount Tabor",
-        "New Haven",
-        "Newark",
-        "Newbury",
-        "Newfane",
-        "Newport City",
-        "Newport Town",
-        "North Hero",
-        "Northfield",
-        "Norton",
-        "Norwich",
-        "Orange",
-        "Orwell",
-        "Panton",
-        "Pawlet",
-        "Peacham",
-        "Peru",
-        "Pittsfield",
-        "Pittsford",
-        "Plainfield",
-        "Plymouth",
-        "Pomfret",
-        "Poultney",
-        "Pownal",
-        "Proctor",
-        "Putney",
-        "Randolph",
-        "Reading",
-        "Readsboro",
-        "Richford",
-        "Richmond",
-        "Ripton",
-        "Rochester",
-        "Rockingham",
-        "Roxbury",
-        "Royalton",
-        "Rupert",
-        "Rutland City",
-        "Rutland Town",
-        "Ryegate",
-        "Saint Albans City",
-        "Saint Albans Town",
-        "Saint George",
-        "Saint Johnsbury",
-        "Salisbury",
-        "Sandgate",
-        "Searsburg",
-        "Shaftsbury",
-        "Sharon",
-        "Sheffield",
-        "Shelburne",
-        "Sheldon",
-        "Shoreham",
-        "Shrewsbury",
-        "Somerset",
-        "South Burlington",
-        "South Hero",
-        "Springfield",
-        "Stamford",
-        "Stannard",
-        "Starksboro",
-        "Stockbridge",
-        "Stowe",
-        "Strafford",
-        "Stratton",
-        "Sudbury",
-        "Sunderland",
-        "Sutton",
-        "Swanton",
-        "Thetford",
-        "Tinmouth",
-        "Topsham",
-        "Townshend",
-        "Troy",
-        "Tunbridge",
-        "Underhill",
-        "Vergennes",
-        "Vernon",
-        "Vershire",
-        "Victory",
-        "Waitsfield",
-        "Walden",
-        "Wallingford",
-        "Waltham",
-        "Wardsboro",
-        "Warners Grant",
-        "Warren Gore",
-        "Warren",
-        "Washington",
-        "Waterbury",
-        "Waterford",
-        "Waterville",
-        "Weathersfield",
-        "Wells",
-        "West Fairlee",
-        "West Haven",
-        "West Rutland",
-        "West Windsor",
-        "Westfield",
-        "Westford",
-        "Westminster",
-        "Westmore",
-        "Weston",
-        "Weybridge",
-        "Wheelock",
-        "Whiting",
-        "Whitingham",
-        "Williamstown",
-        "Williston",
-        "Wilmington",
-        "Windham",
-        "Windsor",
-        "Winhall",
-        "Winooski",
-        "Wolcott",
-        "Woodbury",
-        "Woodford",
-        "Woodstock",
-        "Worcester",
-    ]
-
-    ADDISON = [
+# VCGI/Census county assignments for every VT town, city, gore, and grant
+# that appears in the parcels TOWN column. Hand-verified against the
+# canonical GEOID crosswalk in lake.RAW.vt_town_lines: 0 mismatches.
+COUNTY_TOWNS = {
+    "ADDISON": [
         "ADDISON",
         "BRIDPORT",
         "BRISTOL",
@@ -443,8 +278,8 @@ def load_helper_and_clean(backfill):
         "WEYBRIDGE",
         "WHITING",
         "VERGENNES",
-    ]
-    BENNINGTON = [
+    ],
+    "BENNINGTON": [
         "ARLINGTON",
         "BENNINGTON",
         "DORSET",
@@ -462,8 +297,8 @@ def load_helper_and_clean(backfill):
         "SUNDERLAND",
         "WINHALL",
         "WOODFORD",
-    ]
-    CALEDONIA = [
+    ],
+    "CALEDONIA": [
         "BARNET",
         "BURKE",
         "DANVILLE",
@@ -481,8 +316,8 @@ def load_helper_and_clean(backfill):
         "WALDEN",
         "WATERFORD",
         "WHEELOCK",
-    ]
-    CHITTENDEN = [
+    ],
+    "CHITTENDEN": [
         "BOLTON",
         "CHARLOTTE",
         "COLCHESTER",
@@ -502,8 +337,8 @@ def load_helper_and_clean(backfill):
         "WINOOSKI",
         "BUELS GORE",
         "SOUTH BURLINGTON",
-    ]
-    ESSEX = [
+    ],
+    "ESSEX": [
         "AVERILL",
         "BLOOMFIELD",
         "BRIGHTON",
@@ -523,8 +358,8 @@ def load_helper_and_clean(backfill):
         "AVERYS GORE",
         "WARNERS GRANT",
         "WARREN GORE",
-    ]
-    FRANKLIN = [
+    ],
+    "FRANKLIN": [
         "BAKERSFIELD",
         "BERKSHIRE",
         "ENOSBURGH",
@@ -540,9 +375,15 @@ def load_helper_and_clean(backfill):
         "SAINT ALBANS TOWN",
         "SHELDON",
         "SWANTON",
-    ]
-    GRAND_ISLE = ["ALBURGH", "GRAND ISLE", "ISLE LA MOTTE", "NORTH HERO", "SOUTH HERO"]
-    LAMOILLE = [
+    ],
+    "GRAND_ISLE": [
+        "ALBURGH",
+        "GRAND ISLE",
+        "ISLE LA MOTTE",
+        "NORTH HERO",
+        "SOUTH HERO",
+    ],
+    "LAMOILLE": [
         "BELVIDERE",
         "CAMBRIDGE",
         "EDEN",
@@ -553,8 +394,8 @@ def load_helper_and_clean(backfill):
         "STOWE",
         "WATERVILLE",
         "WOLCOTT",
-    ]
-    ORANGE = [
+    ],
+    "ORANGE": [
         "BRADFORD",
         "BRAINTREE",
         "BROOKFIELD",
@@ -572,8 +413,8 @@ def load_helper_and_clean(backfill):
         "WASHINGTON",
         "WEST FAIRLEE",
         "WILLIAMSTOWN",
-    ]
-    ORLEANS = [
+    ],
+    "ORLEANS": [
         "ALBANY",
         "BARTON",
         "BROWNINGTON",
@@ -593,8 +434,8 @@ def load_helper_and_clean(backfill):
         "TROY",
         "WESTFIELD",
         "WESTMORE",
-    ]
-    RUTLAND = [
+    ],
+    "RUTLAND": [
         "BENSON",
         "BRANDON",
         "CASTLETON",
@@ -623,8 +464,8 @@ def load_helper_and_clean(backfill):
         "WELLS",
         "WEST HAVEN",
         "WEST RUTLAND",
-    ]
-    WASHINGTON = [
+    ],
+    "WASHINGTON": [
         "BARRE TOWN",
         "BERLIN",
         "CABOT",
@@ -645,8 +486,8 @@ def load_helper_and_clean(backfill):
         "WORCESTER",
         "BARRE CITY",
         "MONTPELIER",
-    ]
-    WINDHAM = [
+    ],
+    "WINDHAM": [
         "ATHENS",
         "BRATTLEBORO",
         "BROOKLINE",
@@ -670,8 +511,8 @@ def load_helper_and_clean(backfill):
         "WHITINGHAM",
         "WILMINGTON",
         "WINDHAM",
-    ]
-    WINDSOR = [
+    ],
+    "WINDSOR": [
         "ANDOVER",
         "BALTIMORE",
         "BARNARD",
@@ -696,352 +537,255 @@ def load_helper_and_clean(backfill):
         "WESTON",
         "WINDSOR",
         "WOODSTOCK",
-    ]
-    counties_key = [
-        ADDISON,
-        BENNINGTON,
-        CALEDONIA,
-        CHITTENDEN,
-        ESSEX,
-        FRANKLIN,
-        GRAND_ISLE,
-        LAMOILLE,
-        ORANGE,
-        ORLEANS,
-        RUTLAND,
-        WASHINGTON,
-        WINDHAM,
-        WINDSOR,
-    ]
-    names_key = [
-        "ADDISON",
-        "BENNINGTON",
-        "CALEDONIA",
-        "CHITTENDEN",
-        "ESSEX",
-        "FRANKLIN",
-        "GRAND_ISLE",
-        "LAMOILLE",
-        "ORANGE",
-        "ORLEANS",
-        "RUTLAND",
-        "WASHINGTON",
-        "WINDHAM",
-        "WINDSOR",
-    ]
+    ],
+}
 
-    statutes_dict = {
-        "3848:3849": "Business Inventory & Equipment",
-        "3848:38:00": "Business Inventory & Equipment",
-        "3840": "Charitable, Fraternal, or Rescue",
-        "3840;5405a(a)(4)": "Charitable/Rescue (inc. Education Tax)",
-        "3840;54": "Charitable/Rescue (inc. Education Tax)",
-        "2741": "Tax Stabilization Contract",
-        "24/2741": "Tax Stabilization Contract",
-        "3832": "Public, Pious, or Charitable",
-        "3832(1)": "Out-of-Town Municipal Property",
-        "3832(7)": "Health or Recreational Property",
-        "3832(7)(B)": "Non-profit Ice Skating Rink",
-        "3832(7B": "Non-profit Ice Skating Rink",
-        "5401": "Statewide Education Tax Exception",
-        "3752(7)": "Agricultural / Current Use",
-    }
+TOWN_COUNTY_MAP = {
+    town: county.replace("_", " ")
+    for county, towns in COUNTY_TOWNS.items()
+    for town in towns
+}
 
-    expdesc_dict = {
-        "Statutory": "State Law Exemption",
-        "Solar Plant": "Solar Energy Facility",
-        "Non-Approved (Voted)": "Local Town-Voted Exemption",
-        "Qualified Housing Units": "Affordable / Qualified Housing",
-        "Grandfathered": "Pre-existing Historical Exemption",
-        "Partial-Statutory": "Partial State Law Exemption",
-        "Municipal Contract (Owner Pays)": "Payment in Lieu of Taxes (PILOT)",
-        "Ski Lifts / Snow Making Equip": "Ski Resort Equipment",
-        "Court Ordered": "Judicially Mandated Exemption",
-        "Wind Plant": "Wind Energy Facility",
-    }
+_STATES_SQL = ", ".join(f"'{s}'" for s in STATES)
 
-    rescode_dict = {
-        "T": "TOWN RESIDENT",
-        "NS": "OUT OF STATE RESIDENT",
-        "S": "VERMONT RESIDENT",
-        "C": "CORPORATION/ENTITY",
-        "c": "CORPORATION/ENTITY",
-    }
 
-    cat_dict = {
-        "R1": "Residential I (Under 6 Acres)",
-        "R2": "Residential II (6 Acres or More)",
-        "M": "Miscellaneous",
-        "O": "Other",
-        "C": "Commercial",
-        "MHL": "Mobile Home Landed (With Land)",
-        "S1": "Seasonal I (Under 6 Acres)",
-        "MHU": "Mobile Home Unlanded (Without Land)",
-        "W": "Woodland",
-        "S2": "Seasonal II (6 Acres or More)",
-        "F": "Farm",
-        "CA": "Commercial Apartments",
-        "I": "Industrial",
-        "UE": "Utility Electric",
-        "UO": "Utility Other",
-    }
+def _register_map(
+    con: duckdb.DuckDBPyConnection, view_name: str, mapping: dict
+) -> None:
+    df = pd.DataFrame(mapping.items(), columns=["key", "value"])
+    con.register(view_name, df)
 
-    purpose_dict = {
-        "R1": "PRIMARY RESIDENCE",
-        "R2": "PRIMARY RESIDENCE",
-        "MHL": "PRIMARY RESIDENCE",
-        "MHU": "PRIMARY RESIDENCE",
-        "S1": "SEASONAL PROPERTY",
-        "S2": "SEASONAL PROPERTY",
-        "W": "WOODLAND",
-        "F": "FARM",
-        "CA": "COMMERCIAL APARTMENTS",
-        "M": "NOT LISTED",
-        "O": "NOT LISTED",
-        "C": "COMMERCIAL/INDUSTRIAL/UTILITY",
-        "I": "COMMERCIAL/INDUSTRIAL/UTILITY",
-        "UE": "COMMERCIAL/INDUSTRIAL/UTILITY",
-        "UO": "COMMERCIAL/INDUSTRIAL/UTILITY",
-    }
 
-    states = [
-        "AL",
-        "AK",
-        "AZ",
-        "AR",
-        "CA",
-        "CO",
-        "CT",
-        "DE",
-        "FL",
-        "GA",
-        "HI",
-        "ID",
-        "IL",
-        "IN",
-        "IA",
-        "KS",
-        "KY",
-        "LA",
-        "ME",
-        "MD",
-        "MA",
-        "MI",
-        "MN",
-        "MS",
-        "MO",
-        "MT",
-        "NE",
-        "NV",
-        "NH",
-        "NJ",
-        "NM",
-        "NY",
-        "NC",
-        "ND",
-        "OH",
-        "OK",
-        "OR",
-        "PA",
-        "RI",
-        "SC",
-        "SD",
-        "TN",
-        "TX",
-        "UT",
-        "VA",
-        "WA",
-        "WV",
-        "WI",
-        "WY",
-        "VT",
-        "DC",
-    ]
+def build_lookup_maps(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Register the hand-maintained VCGI recode dictionaries as joinable
+    lookup tables.
+    """
+    _register_map(con, "county_map", TOWN_COUNTY_MAP)
+    _register_map(con, "rescode_map", RESCODE_MAP)
+    _register_map(con, "cat_map", CAT_MAP)
+    _register_map(con, "purpose_map", PURPOSE_MAP)
+    _register_map(con, "statute_map", STATUTE_MAP)
+    _register_map(con, "expdesc_map", EXPDESC_MAP)
+    _register_map(con, "equipcode_map", EQUIPCODE_MAP)
+    _register_map(con, "oos_map", OOS_MAP)
 
-    oos_dict = {
-        "VERMONT": "VT",
-    }
-    oos_dict.update(
-        dict.fromkeys(
-            [
-                "QC",
-                "QC CANADA",
-                "PQ",
-                "QUEBEC",
-                "ON",
-                "ONTARIO",
-                "QUE",
-                "BC",
-                "ONT",
-                "CAN",
-            ],
-            "CANADA",
+
+def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Build a TOWN -> GEOID crosswalk from the canonical Census/VCGI town
+    boundary layer (lake.RAW.vt_town_lines, the same source clean_fips.py
+    standardizes into vt_town_lines), normalized to the all-caps
+    town/city/gore/grant spelling used by the parcels TOWN column.
+    """
+    con.execute(
+        r"""--sql
+        CREATE OR REPLACE TEMP VIEW town_geoid AS
+        WITH parsed AS (
+            SELECT DISTINCT
+                GEOID,
+                regexp_extract(NAME, '^(.*?)\s+(town|city|gore|grant),', 1) AS base,
+                regexp_extract(NAME, '^(.*?)\s+(town|city|gore|grant),', 2) AS suffix
+            FROM lake.RAW.vt_town_lines
+        ),
+        counted AS (
+            SELECT *, COUNT(*) OVER (PARTITION BY base) AS base_count
+            FROM parsed
+        ),
+        normalized AS (
+            SELECT
+                GEOID,
+                -- Only keep the town/city/gore/grant suffix where it disambiguates
+                -- two entities sharing a base name (Barre, Newport, Rutland,
+                -- Saint Albans) or where it's part of the proper name (gores/grants).
+                REPLACE(
+                    REPLACE(
+                        UPPER(
+                            CASE
+                                WHEN suffix IN ('gore', 'grant') OR base_count > 1
+                                    THEN base || ' ' || suffix
+                                ELSE base
+                            END
+                        ),
+                        'ST.', 'SAINT'
+                    ),
+                    '''', ''
+                ) AS town_key
+            FROM counted
         )
+        SELECT
+            GEOID,
+            -- VT's official name for this gore omits the possessive that the
+            -- Census/TIGER source uses ("Warren's Gore" -> parcels' "WARREN GORE").
+            CASE WHEN town_key = 'WARRENS GORE' THEN 'WARREN GORE' ELSE town_key END
+                AS TOWN_KEY
+        FROM normalized
+        """
     )
-    oos_dict.update(dict.fromkeys(["MASS", "MA."], "MA"))
-    oos_dict.update(dict.fromkeys(["MICHIGAN"], "MI"))
-    oos_dict.update(dict.fromkeys(["OHIO"], "OH"))
-    oos_dict.update(dict.fromkeys(["CT."], "CT"))
-    oos_dict.update(dict.fromkeys(["R.I."], "RI"))
-    oos_dict.update(dict.fromkeys(["W VA"], "WV"))
-    oos_dict.update(dict.fromkeys(["MARYLAND"], "MD"))
-    oos_dict.update(dict.fromkeys(["N CAROLINA"], "NC"))
-    oos_dict.update(dict.fromkeys(["NEW YORK", "N.Y.", "12513", "N Y"], "NY"))
-    oos_dict.update(dict.fromkeys(["FLORIDA", "FLA"], "FL"))
-    oos_dict.update(
-        dict.fromkeys(
-            [
-                "ENGLAND",
-                "AE",
-                "UNK",
-                "BERMUDA",
-                "UK",
-                "VY",
-                "FRANCE",
-                "IND",
-                "ARUBA",
-                "GERMANY",
-                "IRELAND",
-                "SWITZERLAN",
-                "QLD AUS",
-                "LIN",
-                "0R",
-                "BERLIN",
-                "AUSTRALIA",
-                "NS",
-                "FWI",
-                "BAHAMAS",
-            ],
-            "FOREIGN",
+
+
+def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        f"""--sql
+        CREATE OR REPLACE TEMP VIEW parcels_full AS
+        WITH state_norm AS (
+            SELECT
+                *,
+                CASE
+                    WHEN STGL ILIKE 'VT%' OR STGL ILIKE '05%'
+                        OR STGL ILIKE '%VT%' OR STGL ILIKE '%V T%'
+                        THEN 'VERMONT'
+                    WHEN STGL ILIKE '%CANADA%' OR STGL ILIKE '%QC%'
+                        THEN 'CANADA'
+                    ELSE STGL
+                END AS stgl_1
+            FROM lake.RAW.parcels
+        ),
+        state_oos AS (
+            SELECT s.*, COALESCE(oos_map.value, s.stgl_1) AS stgl_2
+            FROM state_norm s
+            LEFT JOIN oos_map ON s.stgl_1 = oos_map.key
+        ),
+        staged AS (
+            SELECT
+                *,
+                CASE
+                    WHEN stgl_2 IS NOT NULL
+                        AND stgl_2 NOT IN ('CANADA', 'FOREIGN', 'US TERRITORY')
+                        AND stgl_2 NOT IN ({_STATES_SQL})
+                        THEN 'UNNAMED AMERICA'
+                    ELSE stgl_2
+                END AS stgl_final,
+                ST_Area(
+                    ST_Transform(ST_GeomFromWKB(geometry), 'EPSG:4326', 'EPSG:32145', true)
+                ) / 4046.8564224 AS area_acres
+            FROM state_oos
         )
-    )
-    oos_dict.update(dict.fromkeys(["VI", "PR", "GUAM"], "US TERRITORY"))
-
-    counties_dict = {}
-    unknown = []
-    for town in backfill["TOWN"].unique():
-        for item in counties_key:
-            if town in item:
-                counties_dict[town] = names_key[(counties_key.index(item))]
-    # adding in sourcename as city and town
-    city_town_dict = {}
-
-    city_source = backfill[
-        (backfill["SOURCENAME"] == "CITY") | (backfill["SOURCENAME"] == "TOWN")
-    ]
-
-    # finding if the parcel was found from a local department or not
-    backfill["SOURCENAME"] = np.where(
-        backfill["SOURCENAME"].isin(["CITY", "TOWN", "City of Burlington"]),
-        "LOCAL DEPARTMENT",
-        "NOT LOCAL DEPARTMENT",
-    )
-
-    # this code aids in the creation of a column that sees if the primary people live there, or if it is an investment property.
-    residential_codes = ["R1", "R2", "MHL", "MHU"]
-
-    is_residential = backfill["CAT"].isin(residential_codes)
-    is_not_homestead = backfill["HSDECL"].isna() | (backfill["HSDECL"] == "N")
-
-    vt_mask = (
-        backfill["STGL"].str.startswith("VT", na=False)
-        | backfill["STGL"].str.startswith("Vt", na=False)
-        | backfill["STGL"].str.startswith("05", na=False)
-        | backfill["STGL"].str.contains("VT", na=False)
-        | backfill["STGL"].str.contains("V T", na=False)
-        | backfill["STGL"].str.startswith("vt", na=False)
-    )
-    backfill.loc[vt_mask, "STGL"] = "VERMONT"
-    canada_mask = (
-        backfill["STGL"].str.contains("CANADA", na=False)
-        | backfill["STGL"].str.contains("Canada", na=False)
-        | backfill["STGL"].str.contains("QC", na=False)
-    )
-    backfill.loc[canada_mask, "STGL"] = "CANADA"
-
-    # mapping new items in columns
-    backfill["INVESTMENTPROP"] = is_residential & is_not_homestead
-
-    backfill["VACANTLAND"] = (backfill["LAND_LV"] > 0) & (
-        backfill["IMPRV_LV"].fillna(0) == 0
-    )
-    equipcode_dict = {"E": "ELECTRIC UTILITY", "C": "CABLE UTILITY"}
-    backfill["EXEMPT"] = backfill["STATUTE"].notna().map({True: "YES", False: "NO"})
-    backfill["STATUTE"] = backfill["STATUTE"].map(statutes_dict).fillna("No Exemption")
-    backfill["EXPDESC"] = backfill["EXPDESC"].map(expdesc_dict).fillna("None")
-    backfill["EQUIPCODE"] = (
-        backfill["EQUIPCODE"].map(equipcode_dict).fillna("NOT A UTILITY")
-    )
-    # creating a foreign ownerpship column
-
-    backfill["COUNTY"] = backfill["TOWN"].map(counties_dict)
-    backfill["RESCODE"] = backfill["RESCODE"].map(rescode_dict)
-    backfill["CATEGORY"] = backfill["CAT"].map(cat_dict)
-    backfill["PURPOSE"] = backfill["CAT"].map(purpose_dict)
-    # adding state abbreivaitions and owner lcoations
-    backfill["STGL"] = backfill["STGL"].replace(oos_dict)
-    catch_all_mask = (
-        ~backfill["STGL"].isin(["CANADA", "FOREIGN", "US TERRITORY"])
-        & backfill["STGL"].notna()
-        & ~backfill["STGL"].isin(states)
-    )
-    backfill.loc[catch_all_mask, "STGL"] = "UNNAMED AMERICA"
-    backfill["OOSOWNER"] = backfill["STGL"].fillna("VT") != "VT"
-
-    backfill["ADDRESS"] = backfill["E911ADDR"]
-
-    # adding an area in acres to geometry column, a
-    if "AREAACRESGEOM" not in backfill:
-        backfill["AREAACRESGEOM"] = backfill.to_crs(32145).geometry.area / 4046.8564224
-    backfill["ACREVALUE"] = np.where(
-        (backfill.REAL_FLV > 0) & (backfill.AREAACRESGEOM > 0),
-        backfill.REAL_FLV / backfill.AREAACRESGEOM,
-        np.nan,
+        SELECT
+            p.OBJECTID,
+            p.TOWN,
+            county_map.value AS COUNTY,
+            town_geoid.GEOID,
+            p.SPAN,
+            p.PROPTYPE,
+            p.CAT,
+            cat_map.value AS CATEGORY,
+            purpose_map.value AS PURPOSE,
+            p.DESCPROP,
+            rescode_map.value AS RESCODE,
+            p.ACRESGL,
+            p.area_acres AS AREAACRESGEOM,
+            p.CITYGL,
+            p.stgl_final AS STGL,
+            p.E911ADDR AS ADDRESS,
+            CASE
+                WHEN p.SOURCENAME IN ('CITY', 'TOWN', 'City of Burlington')
+                    THEN 'LOCAL DEPARTMENT'
+                ELSE 'NOT LOCAL DEPARTMENT'
+            END AS SOURCENAME,
+            p.MATCHSTAT,
+            p.TNAME,
+            (
+                p.CAT IN ('R1', 'R2', 'MHL', 'MHU')
+                AND (p.HSDECL IS NULL OR p.HSDECL = 'N')
+            ) AS INVESTMENTPROP,
+            ((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) AS VACANTLAND,
+            (COALESCE(p.stgl_final, 'VT') <> 'VT') AS OOSOWNER,
+            p.EDITOR,
+            p.EDITDATE,
+            p.REAL_FLV,
+            p.HSTED_FLV,
+            p.NRES_FLV,
+            p.LAND_LV,
+            p.IMPRV_LV,
+            p.EQUIPVAL,
+            COALESCE(equipcode_map.value, 'NOT A UTILITY') AS EQUIPCODE,
+            p.INVENVAL,
+            p.HSDECL,
+            p.VETEXAMT,
+            COALESCE(expdesc_map.value, 'None') AS EXPDESC,
+            (CASE WHEN p.STATUTE IS NOT NULL THEN 'YES' ELSE 'NO' END) AS EXEMPT,
+            COALESCE(statute_map.value, 'No Exemption') AS STATUTE,
+            p.EXAMT_HS,
+            p.EXAMT_NR,
+            p.UVREDUC_HS,
+            p.UVREDUC_NR,
+            p.GLVAL_HS,
+            p.GLVAL_NR,
+            CASE
+                WHEN p.REAL_FLV > 0 AND p.area_acres > 0
+                    THEN p.REAL_FLV / p.area_acres
+                ELSE NULL
+            END AS ACREVALUE,
+            ST_Multi(ST_GeomFromWKB(p.geometry)) AS geometry
+        FROM staged p
+        LEFT JOIN county_map ON p.TOWN = county_map.key
+        LEFT JOIN town_geoid ON p.TOWN = town_geoid.TOWN_KEY
+        LEFT JOIN cat_map ON p.CAT = cat_map.key
+        LEFT JOIN purpose_map ON p.CAT = purpose_map.key
+        LEFT JOIN rescode_map ON p.RESCODE = rescode_map.key
+        LEFT JOIN equipcode_map ON p.EQUIPCODE = equipcode_map.key
+        LEFT JOIN expdesc_map ON p.EXPDESC = expdesc_map.key
+        LEFT JOIN statute_map ON p.STATUTE = statute_map.key
+        WHERE p.geometry IS NOT NULL
+            AND NOT ST_IsEmpty(ST_GeomFromWKB(p.geometry))
+        """
     )
 
-    residential_codes = ["R1", "R2", "MH"]
-    is_residential = backfill["PROPTYPE"].isin(residential_codes)
-    is_not_homestead = backfill["HSDECL"].isna() | (backfill["HSDECL"] == "0")
 
-    backfill = backfill.drop(
-        columns=[
-            "LOCAPROP",
-            "ADDRGL2",
-            "ENDDATE",
-            "OWNER1",
-            "OWNER2",
-            "EDITNOTE",
-            "MAPID",
-            "YEAR",
-            "GLYEAR",
-            "SOURCETYPE",
-            "SOURCEDATE",
-            "EDITMETHOD",
-            "SHAPE_STAr",
-            "SHAPE_STLe",
-            "GLIST_SPAN",
-            "PARCID",
-            "CRHOUSPCT",
-            "MUNGL1PCT",
-            "AOEGL_HS",
-            "AOEGL_NR",
-            "HSITEVAL",
-            "E911ADDR",
-            "ADDRGL1",
-            "ZIPGL",
-        ]
+def build_geom(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        f"""--sql
+        CREATE OR REPLACE TEMP VIEW geom AS
+        SELECT {", ".join(geom_cols)}
+        FROM parcels_full
+        """
     )
 
-    bad_geom = backfill.geometry.isna() | backfill.geometry.is_empty
-    gdf = backfill.loc[~bad_geom].copy()
 
-    assert gdf.geom_type.isin(["Polygon", "MultiPolygon"]).all(), (
-        gdf.geom_type.value_counts()
+def build_info(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        f"""--sql
+        CREATE OR REPLACE TEMP VIEW info AS
+        SELECT {", ".join(info_cols)}
+        FROM parcels_full
+        """
     )
-    gdf["geometry"] = gdf.geometry.apply(
-        lambda g: MultiPolygon([g]) if g.geom_type == "Polygon" else g
+
+
+def build_tax(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        f"""--sql
+        CREATE OR REPLACE TEMP VIEW tax AS
+        SELECT {", ".join(tax_cols)}
+        FROM parcels_full
+        """
     )
-    return gdf
+
+
+def clean(con: duckdb.DuckDBPyConnection) -> None:
+    build_lookup_maps(con)
+    build_town_geoid(con)
+    build_parcels_full(con)
+    build_geom(con)
+    build_info(con)
+    build_tax(con)
+
+
+def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
+    tables = ["geom", "info", "tax"]
+    for name in tables:
+        con.execute(
+            f"""--sql
+            CREATE OR REPLACE TABLE lake.CLEANED.VCGIParcels_{name} AS
+            SELECT * FROM {name}
+            """
+        )
+
+
+def main(con: duckdb.DuckDBPyConnection) -> None:
+    clean(con)
+    add_to_lake(con)
 
 
 if __name__ == "__main__":
