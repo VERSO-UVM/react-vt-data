@@ -12,7 +12,7 @@ from data_collection import (
     flood,
     # historic_population,
     # housing,
-    # parcels,
+    parcels,
     # qcew,
     # wastewater,
     # zoning,
@@ -34,7 +34,7 @@ STATIC_SCRAPERS = [
     # fips,
     flood,
     # historic_population,
-    # parcels,
+    parcels,
     # wastewater,
     # zoning,
 ]

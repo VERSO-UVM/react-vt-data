@@ -320,6 +320,7 @@ def standardize_town(shp_path: Path) -> gpd.GeoDataFrame:
 # need to add a failsafe - all towns might not work
 def collect():
     for town in VT_TOWNS:
+        print(f"{town} ...")
         fetch_town(town)
     gdfs = [
         standardize_town(

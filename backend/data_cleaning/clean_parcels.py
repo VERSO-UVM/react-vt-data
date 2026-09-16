@@ -30,6 +30,7 @@ from data_cleaning.parcels_constants import (
     STATES,
     STATUTE_MAP,
     TOWN_COUNTY_MAP,
+    TOWN_DISPLAY_MAP,
     geom_cols,
     info_cols,
     tax_cols,
@@ -51,6 +52,7 @@ def build_lookup_maps(con: duckdb.DuckDBPyConnection) -> None:
     lookup tables.
     """
     _register_map(con, "county_map", TOWN_COUNTY_MAP)
+    _register_map(con, "town_map", TOWN_DISPLAY_MAP)
     _register_map(con, "rescode_map", RESCODE_MAP)
     _register_map(con, "cat_map", CAT_MAP)
     _register_map(con, "purpose_map", PURPOSE_MAP)
@@ -152,7 +154,7 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
         )
         SELECT
             p.OBJECTID,
-            p.TOWN,
+            COALESCE(town_map.value, p.TOWN) AS TOWN,
             county_map.value AS COUNTY,
             town_geoid.GEOID,
             p.SPAN,
@@ -209,6 +211,7 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
             ST_Multi(ST_GeomFromWKB(p.geometry)) AS geometry
         FROM staged p
         LEFT JOIN county_map ON p.TOWN = county_map.key
+        LEFT JOIN town_map ON p.TOWN = town_map.key
         LEFT JOIN town_geoid ON p.TOWN = town_geoid.TOWN_KEY
         LEFT JOIN cat_map ON p.CAT = cat_map.key
         LEFT JOIN purpose_map ON p.CAT = purpose_map.key
@@ -270,6 +273,12 @@ def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
             SELECT * FROM {name}
             """
         )
+        # These are SQL-created TEMP VIEWs, not Python-registered relations,
+        # so con.unregister() is a silent no-op here and leaves the view
+        # behind in the shared connection — colliding with same-named views
+        # (e.g. "info") that other cleaners in run_data_cleaning.py register
+        # later on the same connection.
+        con.execute(f"DROP VIEW IF EXISTS {name}")
 
 
 def main(con: duckdb.DuckDBPyConnection) -> None:

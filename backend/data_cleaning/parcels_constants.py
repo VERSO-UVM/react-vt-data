@@ -529,7 +529,14 @@ COUNTY_TOWNS = {
 }
 
 TOWN_COUNTY_MAP = {
-    town: county.replace("_", " ")
+    town: county.replace("_", " ").title()
     for county, towns in COUNTY_TOWNS.items()
     for town in towns
+}
+
+# Display-cased TOWN, keyed by the raw ALL-CAPS VCGI TOWN value, matching the
+# Title Case convention other cleaned datasets (zoning, wastewater) use for
+# town names.
+TOWN_DISPLAY_MAP = {
+    town: town.title() for towns in COUNTY_TOWNS.values() for town in towns
 }
