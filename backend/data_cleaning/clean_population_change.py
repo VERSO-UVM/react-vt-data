@@ -12,6 +12,8 @@
     geography:
     (Population_t - Population_t-1) / Population_t-1 * 100
 
+    Also merges in "geoid", "county_fips", and "county" identifiers.
+
 **Run with**:
 python -m data_cleaning.clean_population_change
 """
@@ -32,6 +34,10 @@ def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
             year,
             NAME,
             geo_type,
+            Jurisdiction,
+            county,
+            County_1,
+            state,
             CAST(Value AS DOUBLE) AS Population
         FROM lake.RAW.demographics
         WHERE Variable = 'Population (ACS)'
@@ -70,11 +76,103 @@ def calculate_pct_change(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=["Pct_Population_Change"])
 
 
+def clean_geo_type(df: pd.DataFrame) -> pd.DataFrame:
+    df["geo_type"] = df["geo_type"].replace("county_subdivision", "town")
+    return df
+
+
+def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df.rename(
+        columns={
+            "Jurisdiction": "town",
+            "county": "county_fips",
+            "County_1": "county",
+            "state": "state_fips",
+        },
+        inplace=True,
+    )
+
+    df["county_fips"] = df["state_fips"].astype("string") + df["county_fips"].astype(
+        "string"
+    )
+    df.drop(columns=["state_fips"], inplace=True)
+
+    return df
+
+
+def add_geoid(con: duckdb.DuckDBPyConnection, df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Attach a `geoid` (town GEOID, county FIPS, or state FIPS depending
+    on `geo_type`) and resolved `county` name.
+    """
+    df_with_geoid = con.execute(
+        """--sql
+        SELECT
+            df.*,
+            town_geoids.GEOID AS GEOID,
+            county_names.CNTYNAME AS county_name
+        FROM df
+        LEFT JOIN lake.RAW.vt_town_lines AS town_geoids
+        ON df.town = TRIM(SPLIT_PART(town_geoids.NAME, ',', 1))
+        LEFT JOIN lake.RAW.vt_county_lines AS county_names
+        ON df.county_fips = county_names.CNTYGEOID
+        """
+    ).df()
+
+    df_with_geoid["GEOID"] = df_with_geoid["GEOID"].case_when(
+        [
+            (
+                (df_with_geoid["geo_type"] == "county")
+                & (df_with_geoid["GEOID"].isna()),
+                df_with_geoid["county_fips"],
+            ),
+            (
+                (df_with_geoid["geo_type"] == "state")
+                & (df_with_geoid["GEOID"].isna()),
+                "50",
+            ),
+        ]
+    )
+
+    df_with_geoid["county"] = df_with_geoid["county"].case_when(
+        [
+            (
+                (df_with_geoid["geo_type"] == "county")
+                & (df_with_geoid["county"].isna()),
+                df_with_geoid["county_name"],
+            ),
+        ]
+    )
+
+    df_with_geoid["county"] = df_with_geoid["county"].str.title()
+
+    df_with_geoid.rename(columns={"GEOID": "geoid"}, inplace=True)
+    df_with_geoid.rename(columns={"NAME": "name"}, inplace=True)
+    df_with_geoid.drop(columns=["county_name", "town"], inplace=True)
+
+    return df_with_geoid
+
+
 def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     raw_df = read_raw_data(con)
     df = replace_unavailable_data(raw_df)
     df = calculate_pct_change(df)
-    return df[["year", "NAME", "Population", "Pct_Population_Change", "geo_type"]]
+    df = clean_geo_type(df)
+    df = rename_columns(df)
+    df = add_geoid(con, df)
+
+    return df[
+        [
+            "year",
+            "name",
+            "geoid",
+            "county_fips",
+            "county",
+            "Population",
+            "Pct_Population_Change",
+            "geo_type",
+        ]
+    ]
 
 
 def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame) -> None:

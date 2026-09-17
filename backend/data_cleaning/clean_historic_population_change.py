@@ -47,9 +47,11 @@ def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     long_df = clean_historic_population(con)
     df = calculate_pct_change(long_df)
     column_order = [
-        "geoid",
-        "NAME",
         "year",
+        "name",
+        "geoid",
+        "county_fips",
+        "county",
         "Population",
         "Pct_Population_Change",
         "geo_type",

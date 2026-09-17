@@ -4,12 +4,15 @@
 **Created**:
     2026-07-13
 **Description**:
-    Data cleaning script for the raw `historic_population` table in the DuckLake
+    Data cleaning script for the raw `historic_population` table in the DuckLake.
+
+    Also merges in "county_fips" and standardizes "geoid" and "name" naming.
 **Run with**:
 python -m data_cleaning.clean_historic_population
 """
 
 import duckdb
+import numpy as np
 import pandas as pd
 
 
@@ -91,6 +94,7 @@ def add_population_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     )
     county_df["NAME"] = county_df["county"] + " County, Vermont"
     county_df["geo_type"] = "county"
+    county_df["county_fips"] = county_df["county_geoid"]
     county_df = county_df.rename(columns={"county_geoid": "geoid"})
 
     # State-level aggregation
@@ -98,15 +102,21 @@ def add_population_aggregations(df: pd.DataFrame) -> pd.DataFrame:
     state_df["NAME"] = "Vermont"
     state_df["geoid"] = "50"  # Vermont's state FIPS code
     state_df["geo_type"] = "state"
+    state_df["county_fips"] = np.nan
+    state_df["county"] = np.nan
+
+    # Town-level rows already carry their FIPS-derived county_geoid
+    df = df.rename(columns={"county_geoid": "county_fips"})
 
     # Align columns before concatenating
-    cols = ["geoid", "NAME", "year", "Population", "geo_type"]
+    cols = ["geoid", "county_fips", "county", "NAME", "year", "Population", "geo_type"]
 
     town_df = df[cols]
     county_df = county_df[cols]
     state_df = state_df[cols]
 
     combined = pd.concat([town_df, county_df, state_df], ignore_index=True)
+    combined = combined.rename(columns={"NAME": "name"})
 
     return combined
 
@@ -126,7 +136,9 @@ def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     # Append county + state aggregations (total sum)
     df = add_population_aggregations(df)
 
-    return df
+    return df[
+        ["year", "name", "geoid", "county_fips", "county", "Population", "geo_type"]
+    ]
 
 
 def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame) -> None:
