@@ -95,6 +95,11 @@ def proxy(tmp_path_factory):
     (directory / "mime.types").write_text("types { text/html html; }\n")
     upstream_port, proxy_port = unused_port(), unused_port()
     configuration = (BACKEND.parent / "frontend" / "nginx.conf").read_text()
+    # Distro builds can default to an absolute access-log path, which nginx's
+    # -p flag does not relocate. Keep this test log in the writable fixture dir.
+    configuration = configuration.replace(
+        "http {", f'http {{\n    access_log "{directory}/nginx-access.log";', 1
+    )
     replacements = {
         "/etc/nginx/mime.types": directory / "mime.types",
         "/var/log/nginx/error.log": directory / "nginx-error.log",
