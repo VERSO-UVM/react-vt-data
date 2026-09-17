@@ -51,6 +51,8 @@ def read_raw_data(con: duckdb.DuckDBPyConnection, subcategory: str) -> pd.DataFr
             year,
             NAME,
             geo_type,
+            state,
+            county,
             SUM(TRY_CAST(Value AS DOUBLE)) AS pct_housing_burden
         FROM lake.RAW.acs5_housing
         WHERE Category LIKE '%SELECTED MONTHLY OWNER COSTS AS A PERCENTAGE OF HOUSEHOLD INCOME%'
@@ -63,7 +65,9 @@ def read_raw_data(con: duckdb.DuckDBPyConnection, subcategory: str) -> pd.DataFr
         GROUP BY
             year,
             NAME,
-            geo_type
+            geo_type,
+            state,
+            county
         ORDER BY year;
         """,
         [subcategory],
@@ -90,14 +94,56 @@ def replace_unavailable_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def clean_geo_type(df: pd.DataFrame) -> pd.DataFrame:
+    df["geo_type"] = df["geo_type"].replace("county_subdivision", "town")
+    return df
+
+
+def add_geoid(con: duckdb.DuckDBPyConnection, df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Attach `geoid` (town GEOID, county FIPS, or state FIPS depending on
+    `geo_type`) and `county_fips`
+    """
+    df_with_geoid = con.execute(
+        """--sql
+        SELECT
+            g.* EXCLUDE (geoid),
+            CASE
+                WHEN g.geo_type IN ('county', 'town') THEN LEFT(g.geoid, 5)
+            END AS county_fips,
+            g.geoid
+        FROM (
+            SELECT
+                df.* EXCLUDE (state, county),
+                CASE
+                    WHEN df.geo_type = 'town' THEN town_geoids.GEOID
+                    WHEN df.geo_type = 'county' THEN CONCAT(df.state, df.county)
+                    WHEN df.geo_type = 'state' THEN '50'
+                END AS geoid
+            FROM df
+            LEFT JOIN lake.RAW.vt_town_lines AS town_geoids
+            ON df.NAME = town_geoids.NAME
+        ) AS g
+        """
+    ).df()
+
+    df_with_geoid.rename(columns={"NAME": "name"}, inplace=True)
+
+    return df_with_geoid
+
+
 def clean(
     con: duckdb.DuckDBPyConnection,
 ) -> pd.DataFrame:
     raw_df = read_raw_data(con, MORTGAGE_SUBCATEGORY)
     df = change_dtype(raw_df)
     df = replace_unavailable_data(df)
+    df = clean_geo_type(df)
+    df = add_geoid(con, df)
 
-    return df
+    return df[
+        ["year", "name", "geoid", "county_fips", "pct_housing_burden", "geo_type"]
+    ]
 
 
 def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame):

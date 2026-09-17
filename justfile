@@ -226,13 +226,13 @@ get-data start_year end_year: build-collection
         localhost/vdc-collection {{ start_year }} {{ end_year }}
 
 # --------- 2. Data Cleaning (T) ---------------------
-[doc("Run each RAW table through it's data cleaning script")]
+[doc("Run each RAW table through it's data cleaning script (optionally pass a single script name to run only that one)")]
 [group("ETL Pipeline")]
 [working-directory("backend")]
-transform-data:
+transform-data script_name="":
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
     podman run --rm {{ podman_flags }} \
-     -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
+     -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning {{ script_name }}
 
 # --------- 3. Data Loading (L) ---------------------
 [doc("Load the lake.CLEANED tables into a DuckDB database")]

@@ -1,3 +1,4 @@
+import argparse
 import pkgutil
 from importlib import import_module
 
@@ -5,9 +6,11 @@ import data_cleaning as cleaning
 from lake_build import get_connection
 
 
-def get_cleaners():
+def get_cleaners(script_name: str | None = None):
     """
-    Return all cleaning scripts in the backend/data_cleaning folder.
+    Return cleaning scripts in the backend/data_cleaning folder.
+
+    If `script_name` is given, only the matching module is returned.
     """
     cleaners = []
 
@@ -19,6 +22,9 @@ def get_cleaners():
         if module_name == "run_cleaning":
             continue
 
+        if script_name and module_name != script_name:
+            continue
+
         module = import_module(f"data_cleaning.{module_name}")
 
         if hasattr(module, "main"):
@@ -27,13 +33,19 @@ def get_cleaners():
     return cleaners
 
 
-def run_master_clean():
+def run_master_clean(script_name: str | None = None):
     failed = []
 
     con = get_connection()
 
     try:
-        for cleaner in get_cleaners():
+        cleaners = get_cleaners(script_name)
+
+        if script_name and not cleaners:
+            print(f"No cleaner found matching '{script_name}'")
+            return
+
+        for cleaner in cleaners:
             name = cleaner.__name__.split(".")[-1]
             print(f"Running {name}...")
 
@@ -57,7 +69,17 @@ def run_master_clean():
 
 
 def main():
-    run_master_clean()
+    parser = argparse.ArgumentParser(description="Run data cleaning scripts.")
+    parser.add_argument(
+        "script_name",
+        nargs="?",
+        default=None,
+        help="Name of a single data_cleaning module to run (e.g. "
+        "clean_housing_cost_burden). Omit to run all.",
+    )
+    args = parser.parse_args()
+
+    run_master_clean(args.script_name)
 
 
 if __name__ == "__main__":
