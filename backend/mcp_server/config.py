@@ -54,6 +54,7 @@ class MCPSettings:
     max_concurrency: int = 4
     rate_limit: int = 120
     max_request_bytes: int = 65_536
+    request_body_timeout: float = 10.0
 
     def __post_init__(self) -> None:
         if self.auth_mode not in {"none", "development", "bearer"}:
@@ -88,6 +89,7 @@ class MCPSettings:
             ("MCP_MAX_CONCURRENCY", self.max_concurrency, 1, 32),
             ("MCP_RATE_LIMIT", self.rate_limit, 1, 100_000),
             ("MCP_MAX_REQUEST_BYTES", self.max_request_bytes, 1024, 1_000_000),
+            ("MCP_REQUEST_BODY_TIMEOUT", self.request_body_timeout, 0.1, 120),
         ):
             if not minimum <= value <= maximum:
                 raise ValueError(f"{name} must be between {minimum} and {maximum}")
@@ -131,6 +133,7 @@ class MCPSettings:
                 max_concurrency=int(env.get("MCP_MAX_CONCURRENCY", "4")),
                 rate_limit=int(env.get("MCP_RATE_LIMIT", "120")),
                 max_request_bytes=int(env.get("MCP_MAX_REQUEST_BYTES", "65536")),
+                request_body_timeout=float(env.get("MCP_REQUEST_BODY_TIMEOUT", "10")),
             )
         except (TypeError, ValueError) as exc:
             # Numeric parse failures must not echo environment contents (secrets).

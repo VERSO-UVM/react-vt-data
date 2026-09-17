@@ -357,6 +357,14 @@ environment variables. See the committed [`.env.example`](../.env.example).
 | `MCP_MAX_CONCURRENCY` | `4` | Maximum concurrent HTTP requests and data-service calls per process. |
 | `MCP_RATE_LIMIT` | `120` | HTTP requests per minute per client, per process. |
 | `MCP_MAX_REQUEST_BYTES` | `65536` | Maximum HTTP request-body size, checked before tool execution. |
+| `MCP_REQUEST_BODY_TIMEOUT` | `10` | Total seconds allowed to receive an HTTP request body (0.1–120), before tool execution. |
+
+Incomplete HTTP request bodies receive `408 Request Timeout` after the body-read
+deadline and release their concurrency slot. Receiving another chunk does not
+restart the timer. HTTP/1.x timeout responses close the connection, so clients
+should retry on a new connection. This limit covers body receipt only;
+`MCP_QUERY_TIMEOUT` separately bounds database queries. It applies to both the
+standalone HTTP server and the shared API mount, and does not affect stdio.
 
 The hardcoded development token is never a fallback for missing production
 configuration. An invalid bearer configuration fails closed.

@@ -7,6 +7,7 @@ import hmac
 import time
 from collections import OrderedDict
 
+import anyio
 from starlette._utils import get_route_path
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
@@ -134,16 +135,34 @@ class SecurityMiddleware:
                     return
             # Bound actual bytes as well as declared length, including chunked bodies.
             body = bytearray()
-            while True:
-                message = await receive()
-                if message["type"] == "http.disconnect":
-                    return
-                body.extend(message.get("body", b""))
-                if len(body) > self.settings.max_request_bytes:
-                    await reject(413, "MCP request is too large")
-                    return
-                if not message.get("more_body", False):
-                    break
+            try:
+                # One deadline for the entire upload: trickling chunks must not
+                # renew it. Tool execution starts only after this scope exits.
+                with anyio.fail_after(self.settings.request_body_timeout):
+                    while True:
+                        message = await receive()
+                        if message["type"] == "http.disconnect":
+                            return
+                        body.extend(message.get("body", b""))
+                        if len(body) > self.settings.max_request_bytes:
+                            break
+                        if not message.get("more_body", False):
+                            break
+            except TimeoutError:
+                # HTTP/1.x cannot reuse a connection with an unread request body.
+                # Connection headers are forbidden on HTTP/2 and HTTP/3.
+                extra = (
+                    {"Connection": "close"}
+                    if scope.get("http_version", "1.1") in {"1.0", "1.1"}
+                    else None
+                )
+                await reject(
+                    408, "MCP request body timed out; retry the request", extra
+                )
+                return
+            if len(body) > self.settings.max_request_bytes:
+                await reject(413, "MCP request is too large")
+                return
             delivered = False
 
             async def bounded_receive():
