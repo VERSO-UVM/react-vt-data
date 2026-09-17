@@ -13,7 +13,8 @@
     2. Rename "county_subdivision" to "town"
     3. Enforce numeric data type
     4. Fix missing values
-    5. Write table to lake.CLEANED schema
+    5. Merge in "geoid", "county_fips", and "county" identifiers
+    6. Write table to lake.CLEANED schema
 
 **Run ALL datasets**:
 python -m data_cleaning.clean_derived_time_series
@@ -58,7 +59,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="demographics",
         variables=["Median Age"],
         value_source_col="Value",
-        output_value_col="Median_Age",
+        output_value_col="median_age",
         output_table="acs5Demographics_medianAge_timeseries",
     ),
     # Median HH Income (from economics)
@@ -66,7 +67,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="economic",
         variables=["Median Household Income"],
         value_source_col="Value",
-        output_value_col="Median_Household_Income",
+        output_value_col="median_household_income",
         output_table="acs5Economics_medianHouseholdIncome_timeseries",
     ),
     # Median Home Value (from housing)
@@ -74,7 +75,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="housing",
         variables=["Median Home Value"],
         value_source_col="Value",
-        output_value_col="Median_Home_Value",
+        output_value_col="median_home_value",
         output_table="acs5Housing_medianHomeValue_timeseries",
     ),
     # Median Per Cap Income (from economics)
@@ -82,7 +83,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="economic",
         variables=["Per Capita Income"],
         value_source_col="Value",
-        output_value_col="Per_Capita_Income",
+        output_value_col="per_capita_income",
         output_table="acs5Economics_perCapitaIncome_timeseries",
     ),
     # Housing Units (from housing)
@@ -90,7 +91,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="housing",
         variables=["Total Housing Units"],
         value_source_col="Value",
-        output_value_col="Total_Housing_Units",
+        output_value_col="total_housing_units",
         output_table="acs5Housing_housingUnits_timeseries",
     ),
     # Vacancy Rate (from housing)
@@ -98,7 +99,7 @@ CONFIGS: dict[str, DatasetConfig] = {
         source_table="housing",
         variables=["Homeowner Vacancy Rate", "Rental Vacancy Rate"],
         value_source_col="Percent",
-        output_value_col="Percent",
+        output_value_col="percent",
         output_table="acs5Housing_vacancyRates_timeseries",
         keep_variable_col=True,
     ),
@@ -106,7 +107,7 @@ CONFIGS: dict[str, DatasetConfig] = {
 
 
 def read_raw_data(cfg: DatasetConfig, con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    select_parts = ["year", "NAME"]
+    select_parts = ["year", "NAME", "Jurisdiction", "county", "County_1", "state"]
     if cfg.keep_variable_col:
         select_parts.append("Variable")
 
@@ -141,11 +142,94 @@ def replace_unavailable_data(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
     return df
 
 
+def clean_geo_type(df: pd.DataFrame) -> pd.DataFrame:
+    df["geo_type"] = df["geo_type"].replace("county_subdivision", "town")
+    return df
+
+
+def rename_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df.rename(
+        columns={
+            "Jurisdiction": "town",
+            "county": "county_fips",
+            "County_1": "county",
+            "state": "state_fips",
+        },
+        inplace=True,
+    )
+
+    df["county_fips"] = df["state_fips"].astype("string") + df["county_fips"].astype(
+        "string"
+    )
+    df.drop(columns=["state_fips"], inplace=True)
+
+    return df
+
+
+def add_geoid(con: duckdb.DuckDBPyConnection, df: pd.DataFrame) -> pd.DataFrame:
+    df_with_geoid = con.execute(
+        """--sql
+        SELECT
+            df.*,
+            town_geoids.GEOID AS GEOID,
+            county_names.CNTYNAME AS county_name
+        FROM df
+        LEFT JOIN lake.RAW.vt_town_lines AS town_geoids
+        ON df.town = TRIM(SPLIT_PART(town_geoids.NAME, ',', 1))
+        LEFT JOIN lake.RAW.vt_county_lines AS county_names
+        ON df.county_fips = county_names.CNTYGEOID
+        """
+    ).df()
+
+    df_with_geoid["GEOID"] = df_with_geoid["GEOID"].case_when(
+        [
+            (
+                (df_with_geoid["geo_type"] == "county")
+                & (df_with_geoid["GEOID"].isna()),
+                df_with_geoid["county_fips"],
+            ),
+            (
+                (df_with_geoid["geo_type"] == "state")
+                & (df_with_geoid["GEOID"].isna()),
+                "50",
+            ),
+        ]
+    )
+
+    df_with_geoid["county"] = df_with_geoid["county"].case_when(
+        [
+            (
+                (df_with_geoid["geo_type"] == "county")
+                & (df_with_geoid["county"].isna()),
+                df_with_geoid["county_name"],
+            ),
+        ]
+    )
+
+    df_with_geoid["county"] = df_with_geoid["county"].str.title()
+
+    df_with_geoid.rename(columns={"GEOID": "geoid"}, inplace=True)
+    df_with_geoid.rename(columns={"NAME": "name"}, inplace=True)
+    df_with_geoid.drop(columns=["county_name", "town"], inplace=True)
+
+    return df_with_geoid
+
+
 def clean(con: duckdb.DuckDBPyConnection, cfg: DatasetConfig) -> pd.DataFrame:
     df = read_raw_data(cfg, con)
     df = change_dtype(df, cfg.output_value_col)
     df = replace_unavailable_data(df, cfg.output_value_col)
-    return df
+    df = clean_geo_type(df)
+    df = rename_columns(df)
+    df = add_geoid(con, df)
+
+    columns = ["year", "name", "geoid", "county_fips", "county"]
+    if cfg.keep_variable_col:
+        columns.append("Variable")
+    columns.append(cfg.output_value_col)
+    columns.append("geo_type")
+
+    return df[columns]
 
 
 def add_to_lake(
