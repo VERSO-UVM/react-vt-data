@@ -57,8 +57,8 @@ ACS_CAVEATS = (
 ZONING_URL = "https://geodata.vermont.gov/datasets/VCGI::vt-zoning-areas/about"
 ZONING_CAVEATS = (
     (
-        "A mapped inventory, not a legal determination. Consult municipal bylaws "
-        "and the recorded Bylaw_Date for the applicable rules."
+        "A mapped inventory, not a legal determination. Bylaw_Date is the bylaw "
+        "date recorded in the inventory."
     ),
     (
         "Overlay districts can overlap base districts. Acreage sums are not "
