@@ -305,6 +305,13 @@ repair those warehouse records.
   not a set of independent annual census counts. Preserve source caveats.
 - Comparisons use one common year. The tools do not silently select different
   years for different places or impute missing observations.
+- CDC `natl_pct` is a stored derived rank with an unverified reference population.
+  Preserve the returned caveats and avoid treating it as a verified national
+  benchmark. Filtering to one year or prevalence type does not recalculate ranks.
+- QCEW `employment_4qma` is a stored rolling average that may use partial windows
+  or carry averages through gaps. The current pipeline restarts it each year;
+  it is not guaranteed to cover four consecutive observed quarters. Query filters
+  do not recalculate these values.
 - Zoning acres are sums of recorded district areas. They are not a dissolved GIS
   calculation, and overlapping districts can double-count land. Including
   overlays makes that limitation especially important.

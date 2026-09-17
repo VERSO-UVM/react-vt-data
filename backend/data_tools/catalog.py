@@ -491,7 +491,7 @@ _DATASET_LIST = [
     Dataset(
         "qcew_employment_by_sector",
         "Employment by sector (QCEW)",
-        "Quarterly county employment by industry sector and four-quarter moving average.",
+        "Quarterly county employment by industry sector and a stored rolling average.",
         "qcew_sectorEmployment_timeseries",
         "https://www.bls.gov/cew/",
         "U.S. Bureau of Labor Statistics, Quarterly Census of Employment and Wages",
@@ -499,6 +499,19 @@ _DATASET_LIST = [
             (
                 "Covered employment is a job count, not employed residents. Industry totals "
                 "can overlap; do not sum an all-industry total with its components."
+            ),
+            (
+                "employment_4qma is a stored rolling average, not a guaranteed mean "
+                "of four consecutive observed quarters. The current pipeline allows "
+                "fewer than four observations, skips missing or suppressed values "
+                "in the mean, and can carry averages forward through gaps."
+            ),
+            (
+                "The current employment_4qma calculation runs separately for each "
+                "county/year and restarts at year boundaries. It uses available "
+                "rows without checking for consecutive quarters. Historical warehouse "
+                "calculation details are not recorded; query filters do not recompute "
+                "the stored averages."
             ),
         ),
         "tidy",
@@ -508,7 +521,7 @@ _DATASET_LIST = [
         variable_columns=("sector",),
         value_columns={
             "employment": "jobs",
-            "employment_4qma": "jobs (4-quarter mean)",
+            "employment_4qma": "jobs (stored rolling average; see caveats)",
         },
         filter_columns=("County", "year", "quarter", "quarter_label", "sector"),
     ),
@@ -663,7 +676,18 @@ _DATASET_LIST = [
                     "crude and age-adjusted prevalence. Year is the observation year "
                     "recorded in the source, not necessarily the release year."
                 ),
-                "National percentile is a derived comparison on a 0–1 scale, not prevalence.",
+                (
+                    "natl_pct is a precomputed derived rank on a 0–1 scale, not "
+                    "prevalence or a verified national percentile. The current "
+                    "project pipeline collects Vermont only and ranks by measure "
+                    "without separating years or crude/age-adjusted prevalence types."
+                ),
+                (
+                    "The reference population used for stored natl_pct values is not "
+                    "recorded. Query filters do not recompute these ranks. Do not use "
+                    "them as verified national benchmarks; report data_value with its "
+                    "year and prevalence type."
+                ),
             ),
             "tidy",
             "year",
@@ -675,7 +699,7 @@ _DATASET_LIST = [
                 "data_value": "percent",
                 "low_confidence_limit": "percent",
                 "high_confidence_limit": "percent",
-                "natl_pct": "national percentile (0–1)",
+                "natl_pct": "derived percentile (0–1; see caveats)",
             },
             filter_columns=(
                 "year",
