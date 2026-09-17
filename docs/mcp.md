@@ -10,6 +10,13 @@ The MCP endpoint is `/api/mcp`. It is opt-in on the existing API, and can run as
 separate local process for development. No frontend changes or agent framework
 are required to use it.
 
+HTTP tool calls use stateless POST requests with JSON responses. The server does
+not offer a standalone event stream: authenticated GET requests to `/api/mcp`
+return `405 Method Not Allowed` with `Allow: POST`, as permitted by
+[Streamable HTTP](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#listening-for-messages-from-the-server).
+These probes are rejected before taking a concurrency slot, so idle client
+connections cannot occupy tool capacity. GET `/api/mcp/health` remains available.
+
 ## 1. Try it locally without authentication
 
 Prerequisites: Python 3.13, `uv`, `just`, Claude Code, and an existing
@@ -347,7 +354,7 @@ environment variables. See the committed [`.env.example`](../.env.example).
 | `MCP_MAX_ROWS` | `1000` | Maximum data rows per response, within the tool schema's upper bound. |
 | `MCP_MAX_BYTES` | `1000000` | Maximum serialized tool-response size. |
 | `MCP_QUERY_TIMEOUT` | `20` | Query time budget in seconds. |
-| `MCP_MAX_CONCURRENCY` | `4` | Maximum simultaneous tool executions per process. |
+| `MCP_MAX_CONCURRENCY` | `4` | Maximum concurrent HTTP requests and data-service calls per process. |
 | `MCP_RATE_LIMIT` | `120` | HTTP requests per minute per client, per process. |
 | `MCP_MAX_REQUEST_BYTES` | `65536` | Maximum HTTP request-body size, checked before tool execution. |
 
@@ -450,8 +457,9 @@ does not guarantee that every source is present or current.
 5. Configure the VM's outer reverse proxy/load balancer to terminate HTTPS and
    forward `/api/mcp` and `/api/mcp/health` unchanged to port 3000. Preserve the
    public `Host` and the `Authorization`, `Origin`, and MCP protocol headers;
-   allow POST/GET/DELETE as used by Streamable HTTP, and disable response
-   buffering. The included nginx handles the inner hop. Keep host ports 3000 and
+   forward POST/GET/DELETE and preserve the endpoint's intentional GET 405
+   response; GET health checks must still work. Disable response buffering.
+   The included nginx handles the inner hop. Keep host ports 3000 and
    6767 reachable only from the trusted proxy/network using VM firewall or bind
    configuration; the existing Podman recipes publish both ports.
 6. Run the acceptance checks below against the public HTTPS URL before sharing

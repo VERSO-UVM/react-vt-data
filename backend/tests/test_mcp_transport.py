@@ -298,14 +298,18 @@ def test_concurrency_limit_returns_retry_and_recovers_after_request():
         async with httpx2.AsyncClient(
             transport=httpx2.ASGITransport(app=middleware), base_url="http://localhost"
         ) as client:
-            first = asyncio.create_task(client.get("/api/mcp"))
+            first = asyncio.create_task(client.post("/api/mcp"))
             await entered.wait()
-            second = await client.get("/api/mcp")
-            assert second.status_code == 503
-            assert second.headers["retry-after"] == "1"
-            release.set()
+            try:
+                # Unsupported event streams do not compete for the occupied slot.
+                assert (await client.get("/api/mcp")).status_code == 405
+                second = await client.post("/api/mcp")
+                assert second.status_code == 503
+                assert second.headers["retry-after"] == "1"
+            finally:
+                release.set()
             assert (await first).status_code == 200
-            assert (await client.get("/api/mcp")).status_code == 200
+            assert (await client.post("/api/mcp")).status_code == 200
 
     asyncio.run(run())
 

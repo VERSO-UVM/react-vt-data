@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 DEVELOPMENT_TOKEN = "vt-data-local-development-token"
+MCP_PATH = "/api/mcp"
 LOCAL_HOSTS = (
     "localhost",
     "localhost:*",

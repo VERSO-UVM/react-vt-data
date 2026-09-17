@@ -7,11 +7,12 @@ import hmac
 import time
 from collections import OrderedDict
 
+from starlette._utils import get_route_path
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from mcp_server.config import MCPSettings, is_loopback
+from mcp_server.config import MCP_PATH, MCPSettings, is_loopback
 
 
 def _matches(value: str, allowed: tuple[str, ...]) -> bool:
@@ -105,6 +106,16 @@ class SecurityMiddleware:
             return
         if not self._allow_rate(identity):
             await reject(429, "MCP request rate exceeded", {"Retry-After": "60"})
+            return
+        if scope["method"] in {"GET", "HEAD"} and get_route_path(scope) == MCP_PATH:
+            # This stateless, JSON-response server has no unsolicited messages.
+            # Reject optional SSE probes before reading a body or taking a slot;
+            # an idle GET stream would otherwise hold capacity until disconnect.
+            await reject(
+                405,
+                "Standalone event streams are not supported; use POST for MCP requests",
+                {"Allow": "POST"},
+            )
             return
         if self._active >= self.settings.max_concurrency:
             await reject(503, "MCP is busy; retry shortly", {"Retry-After": "1"})

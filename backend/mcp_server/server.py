@@ -24,7 +24,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from mcp_server.config import MCPSettings
+from mcp_server.config import MCP_PATH, MCPSettings
 from mcp_server.schemas import output_schema
 from mcp_server.security import SecurityMiddleware
 
@@ -160,7 +160,7 @@ def create_app(settings: MCPSettings | None = None, service: DataService | None 
             return JSONResponse({"status": "unavailable"}, status_code=503)
 
     app = server.streamable_http_app(
-        streamable_http_path="/api/mcp",
+        streamable_http_path=MCP_PATH,
         json_response=True,
         stateless_http=True,
         max_request_body_size=settings.max_request_bytes,
@@ -169,7 +169,7 @@ def create_app(settings: MCPSettings | None = None, service: DataService | None 
             allowed_hosts=list(settings.allowed_hosts),
             allowed_origins=list(settings.allowed_origins),
         ),
-        custom_starlette_routes=[Route("/api/mcp/health", health, methods=["GET"])],
+        custom_starlette_routes=[Route(f"{MCP_PATH}/health", health, methods=["GET"])],
     )
     app.add_middleware(SecurityMiddleware, settings=settings)
     app.state.mcp_server = server
@@ -198,8 +198,8 @@ def attach_mcp(
     api_app.router.lifespan_context = lifespan
     api_app.router.routes.extend(
         [
-            Route("/api/mcp", mcp_app, methods=["GET", "POST", "DELETE"]),
-            Route("/api/mcp/health", mcp_app, methods=["GET"]),
+            Route(MCP_PATH, mcp_app, methods=["GET", "POST", "DELETE"]),
+            Route(f"{MCP_PATH}/health", mcp_app, methods=["GET"]),
         ]
     )
     api_app.state.mcp_app = mcp_app
