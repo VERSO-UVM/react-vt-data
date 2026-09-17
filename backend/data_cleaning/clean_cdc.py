@@ -6,6 +6,8 @@
 **Description**:
     Data cleaning script for the raw `cdc` tables in the DuckLake.
     Cleans both county- and tract-level PLACES data plus the notes table.
+    Also builds a combined county+town table (`cdc_places_combined_tidy`)
+    so the two geo levels can be stacked/filtered together.
 **Run with**:
 python -m data_cleaning.clean_cdc
 """
@@ -192,6 +194,26 @@ def clean(con: duckdb.DuckDBPyConnection) -> dict[str, pd.DataFrame]:
         "cdc_places_county", "stateabbr", indicators, con
     )
 
+    county_places.rename(
+        columns={
+            "totalpop18plus": "total_pop_18plus",
+            "locationid": "geoid",
+            "categoryid": "category_id",
+            "stateabbr": "state_abbr",
+            "locationname": "county",
+            "datavaluetypeid": "data_value_type_id",
+            "measureid": "measure_id",
+            "totalpopulation": "total_population",
+        },
+        inplace=True,
+    )
+
+    county_places.drop(columns=["state_abbr"], inplace=True)
+    county_places["geo_type"] = "county"
+    # County-level geoid IS the county FIPS; add county_fips so the column
+    # is present on both geo levels and the tables can be stacked.
+    county_places["county_fips"] = county_places["geoid"]
+
     # PCA is fit on the national county data and applied to Vermont
     pca_county = build_PCA_table(county_us)
 
@@ -200,12 +222,35 @@ def clean(con: duckdb.DuckDBPyConnection) -> dict[str, pd.DataFrame]:
         "cdc_places_tract", "stateabbr", indicators, con
     )
 
+    tract_places.rename(
+        columns={
+            "totalpop18plus": "total_pop_18plus",
+            "locationid": "geoid",
+            "categoryid": "category_id",
+            "stateabbr": "state_abbr",
+            "countyname": "county",
+            "countyfips": "county_fips",
+            "datavaluetypeid": "data_value_type_id",
+            "measureid": "measure_id",
+            "totalpopulation": "total_population",
+        },
+        inplace=True,
+    )
+
+    tract_places.drop(columns=["locationname", "state_abbr"], inplace=True)
+    tract_places["geo_type"] = "town"
+
+    # Both tables now share an identical column set (county_fips added to
+    # county_places above), so they stack cleanly into one tidy table.
+    combined_places = pd.concat([county_places, tract_places], ignore_index=True)
+
     return {
         "cdc_places_county": county_places,
         "cdc_edges_county": county_edges,
         "cdc_places_tract": tract_places,
         "cdc_edges_tract": tract_edges,
         "cdc_pca_county": pca_county,
+        "cdc_places_combined_tidy": combined_places,
     }
 
 
