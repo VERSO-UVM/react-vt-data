@@ -464,8 +464,16 @@ does not guarantee that every source is present or current.
 
 5. Configure the VM's outer reverse proxy/load balancer to terminate HTTPS and
    forward `/api/mcp` and `/api/mcp/health` unchanged to port 3000. Preserve the
-   public `Host` and the `Authorization`, `Origin`, and MCP protocol headers;
-   forward POST/GET/DELETE and preserve the endpoint's intentional GET 405
+   public `Host` and the `Authorization`, `Origin`, and MCP protocol headers.
+   **Overwrite** `X-Forwarded-Proto` with the original request scheme (`https`
+   for public TLS requests); do not append to or pass through a client-supplied
+   value. The inner nginx preserves `http`/`https` and falls back to its own
+   connection scheme for missing or invalid values. This keeps trailing-slash
+   redirects on the public scheme and hostname. Nginx connects to the API via
+   `127.0.0.1`, Uvicorn's default trusted proxy address; keep that trust limited
+   to loopback, never `*`.
+
+   Forward POST/GET/DELETE and preserve the endpoint's intentional GET 405
    response; GET health checks must still work. Disable response buffering.
    The included nginx handles the inner hop. Keep host ports 3000 and
    6767 reachable only from the trusted proxy/network using VM firewall or bind
@@ -494,7 +502,10 @@ tokens protect the MCP route only.
   geography and the intended year; do not sum state and county records together.
 - Check MCP through nginx and the outer HTTPS proxy, not only by direct access
   to port 6767. Confirm an unexpected Host/Origin is rejected and browser CORS
-  has not been broadly enabled.
+  has not been broadly enabled. Requests to `/api/mcp/` and
+  `/api/mcp/health/` must redirect to the corresponding path without the final
+  slash, retaining `https://`, the public hostname/port, and any query string.
+  Check the `Location` header before following a redirect with credentials.
 - Restart the API and repeat a tool call. Remove a test token, restart again,
   and confirm that token no longer works. Monitor service logs and HTTP 429/5xx
   rates without logging authorization headers.
@@ -516,8 +527,21 @@ just test-mcp
 The MCP tests create small temporary DuckDB warehouses, so they run in CI without
 Git LFS datasets, external source APIs, or production credentials. They exercise
 the shared tool contract and HTTP transport/authentication. The CI workflow uses
-the locked Python dependencies and builds the deployable API image. These checks
-do not perform a rollout.
+the locked Python dependencies, runs the repository's nginx configuration
+against a temporary MCP server, and builds the deployable API image. These
+checks do not perform a rollout.
+
+Proxy tests are opt-in locally and require nginx plus permission to bind
+temporary loopback ports. They use fixture data and test credentials:
+
+```sh
+MCP_NGINX_TESTS=1 just test-mcp
+```
+
+Set `NGINX_BINARY` to an absolute executable path if nginx is not on `PATH`.
+The proxy tests check HTTPS redirects, local HTTP fallback, and MCP
+authentication/tool calls through nginx. They run automatically in CI, where
+a missing nginx executable is a failure rather than a skip.
 
 To opt in to read-only smoke tests against the configured real warehouse:
 
