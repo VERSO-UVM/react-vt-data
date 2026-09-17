@@ -1,0 +1,16 @@
+# Data is provided through /data at runtime, never baked into API or ETL images.
+Data/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.duckdb
+**/*.duckdb.wal
+logger/*.log
+tests/
+.env
+.env.*
+.DS_Store

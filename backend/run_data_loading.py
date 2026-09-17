@@ -17,7 +17,9 @@ from pathlib import Path
 
 import duckdb
 
-ROOT = Path(__file__).resolve().parent.parent
+from warehouse_schema import write_schema_snapshot
+
+ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "Data"))
 
 
@@ -74,7 +76,7 @@ def create_duckdb():
                 FROM lake.CLEANED."{table}"
                 '''
             )
-        except Exception as e:
+        except duckdb.Error as e:
             failed.append((table, str(e)))
 
         print(
@@ -89,9 +91,14 @@ def create_duckdb():
             print(f"  {table}: {error}")
 
     db_con.execute("DETACH lake")
-    db_con.close()
+    try:
+        # Record what was built; compatibility is checked later by the MCP tests.
+        schema_path = write_schema_snapshot(db_con, DATA_DIR / "warehouse.schema.json")
+    finally:
+        db_con.close()
 
     print("\nDATABASE COMPLETED!")
+    print(f"Schema snapshot: {schema_path}")
 
 
 def main():

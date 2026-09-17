@@ -1,0 +1,53 @@
+name: MCP tests
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/nginx.conf"
+      - "justfile"
+      - ".github/workflows/mcp.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/nginx.conf"
+      - "justfile"
+      - ".github/workflows/mcp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.21"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install locked Python dependencies
+        working-directory: backend
+        run: uv sync --frozen --python 3.13
+      - name: Check MCP formatting and lint
+        working-directory: backend
+        run: |
+          uv run --frozen ruff check data_tools mcp_server tests/test_mcp_*.py
+          uv run --frozen ruff format --check data_tools mcp_server tests/test_mcp_*.py
+      - name: Install nginx for proxy regression tests
+        run: sudo apt-get update && sudo apt-get install --yes nginx
+      - name: Test MCP against temporary fixture warehouses
+        working-directory: backend
+        env:
+          MCP_NGINX_TESTS: "1"
+        run: uv run --frozen pytest -q tests/test_mcp_*.py
+      - name: Build the deployable API image
+        run: docker build --tag vt-data-api:mcp --file backend/dockerfile backend
+      - name: Verify MCP packages are present in the runtime image
+        run: >-
+          docker run --rm --entrypoint /code/.venv/bin/python vt-data-api:mcp
+          -c 'from mcp_server.server import create_app; assert callable(create_app())'
