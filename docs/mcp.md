@@ -388,6 +388,27 @@ pipeline recipes are `just build-lake` (initial lake setup),
 `CENSUS_API_KEY`, source downloads, and considerable time; do not run it as a
 side effect of starting the API. Preserve the old warehouse before replacing it.
 
+The loading step also writes `warehouse.schema.json` beside the warehouse. This
+small, deterministic snapshot contains table names, column names, and SQL types;
+it contains no records or build timestamps. Schema changes do **not** fail the
+warehouse build. Commit the generated `backend/Data/warehouse.schema.json` with
+data updates so the existing MCP test job can compare it with the zoning catalog.
+The test reports missing fields, newly unmapped fields, and nonnumeric types for
+numeric measures. Review those differences and update the catalog or cleaner;
+do not hand-edit the snapshot to make a mismatch disappear.
+
+When `DATA_DIR` points outside the checkout, copy its generated snapshot to
+`backend/Data/warehouse.schema.json` for review. To generate the snapshot from an
+existing warehouse without rebuilding or changing the data, run from `backend/`:
+
+```sh
+uv run python -m warehouse_schema --warehouse /path/to/warehouse.duckdb --output Data/warehouse.schema.json
+```
+
+Compatibility is checked only by the regression test, not during loading or API
+startup. CI sees the committed snapshot; it cannot detect an independently
+replaced warehouse until its updated snapshot is included in the repository.
+
 Stop readers before replacing the database, keep the new database at the same
 mounted path, and restart the API. That avoids mixed data versions across
 connections and invalidates old pagination cursors. Validate real dataset
