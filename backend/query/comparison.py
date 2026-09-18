@@ -20,9 +20,9 @@ import pandas as pd
 from sklearn.decomposition import PCA
 
 from api.models import FilterSource
-from app_utils.sql_render import sql_filter_block
 from query.cdc import build_cmap, to_rgba
 from query.production_db import get_db
+from query.sql_render import sql_filter_block
 
 DB = get_db()
 

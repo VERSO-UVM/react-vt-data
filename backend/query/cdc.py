@@ -16,8 +16,8 @@ import xycmap
 from matplotlib import pyplot as plt
 
 from api.models import FilterSource
-from app_utils.sql_render import compile_where, sql_filter_block
 from query.production_db import get_db
+from query.sql_render import compile_where, sql_filter_block
 
 DB = get_db()
 

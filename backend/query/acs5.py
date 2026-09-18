@@ -13,9 +13,9 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource, RangeFilter
-from app_utils.sql_render import sql_filter_block
 from query.core_functions import filter_tree
 from query.production_db import get_db
+from query.sql_render import sql_filter_block
 
 DB = get_db()
 

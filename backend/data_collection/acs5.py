@@ -18,8 +18,8 @@ from datetime import datetime
 import pandas as pd
 import requests
 
-from app_utils.census import tidy_census
 from data_collection.base import ALL_GEOS
+from data_collection.census import tidy_census
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")

@@ -14,8 +14,8 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
-from app_utils.sql_render import render_sql
 from data_cleaning.geo_lookup import build_geo_lookups, geoid_sql, load_initcap
+from query.sql_render import render_sql
 
 SQL_PATH = Path(__file__).resolve().parent / "sql"
 # Town and zoning-district boundaries were digitised separately, so subtracting

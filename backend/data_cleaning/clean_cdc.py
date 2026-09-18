@@ -14,8 +14,6 @@ import duckdb
 import pandas as pd
 from sklearn.decomposition import PCA
 
-from build.core_functions import bin_measures
-
 # Columns to exclude from the cleaned tables
 EXCLUDE_COLS = [
     "statedesc",
@@ -23,6 +21,26 @@ EXCLUDE_COLS = [
     "data_value_footnote",
     "datasource",
 ]
+
+
+def bin_measures(
+    df: pd.DataFrame, variable_col, value_col
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    edges_by_variable = {}
+
+    def bin_group(s: pd.Series):
+        codes, edges = pd.qcut(s, 3, labels=False, retbins=True)
+        edges_by_variable[s.name] = edges
+        return codes
+
+    df["bin"] = df.groupby(variable_col)[value_col].transform(bin_group)
+    edge_df = (
+        pd.DataFrame(edges_by_variable)
+        .transpose()
+        .reset_index()
+        .rename(columns={"index": f"{variable_col}"})
+    )
+    return df, edge_df
 
 
 def get_sme_indicators(con: duckdb.DuckDBPyConnection) -> str:

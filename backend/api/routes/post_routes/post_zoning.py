@@ -64,11 +64,12 @@ async def zoning_unzoned():
     return Response(content=data, media_type="application/json")
 
 
-@router.post("/load/mapping/zoning/standard")
-async def zoning_geojson_info(request: FilterRequest):
-    source = request_to_source(request, "VersoZoning_info", "default")
-    data = get_zoning_geojson([source])
-    return Response(content=data, media_type="application/json")
+# Unused by the frontend (it calls standard_new); disabled pending removal.
+# @router.post("/load/mapping/zoning/standard")
+# async def zoning_geojson_info(request: FilterRequest):
+#     source = request_to_source(request, "VersoZoning_info", "default")
+#     data = get_zoning_geojson([source])
+#     return Response(content=data, media_type="application/json")
 
 
 @router.post("/load/data/zoning/aggregated")
