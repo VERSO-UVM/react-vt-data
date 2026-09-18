@@ -30,7 +30,6 @@ from data_cleaning.parcels_constants import (
     STATES,
     STATUTE_MAP,
     TOWN_COUNTY_MAP,
-    TOWN_DISPLAY_MAP,
     geom_cols,
     info_cols,
     tax_cols,
@@ -52,7 +51,6 @@ def build_lookup_maps(con: duckdb.DuckDBPyConnection) -> None:
     lookup tables.
     """
     _register_map(con, "county_map", TOWN_COUNTY_MAP)
-    _register_map(con, "town_map", TOWN_DISPLAY_MAP)
     _register_map(con, "rescode_map", RESCODE_MAP)
     _register_map(con, "cat_map", CAT_MAP)
     _register_map(con, "purpose_map", PURPOSE_MAP)
@@ -66,8 +64,13 @@ def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
     """
     Build a TOWN -> GEOID crosswalk from the canonical Census/VCGI town
     boundary layer (lake.RAW.vt_town_lines, the same source clean_fips.py
-    standardizes into vt_town_lines), normalized to the all-caps
-    town/city/gore/grant spelling used by the parcels TOWN column.
+    standardizes into vt_town_lines).
+
+    TOWN_KEY is normalized to the all-caps town/city/gore/grant spelling
+    used by the parcels TOWN column (suffix dropped unless it disambiguates
+    or is part of the proper name), purely to drive the join below. `town`
+    is the display value: the Census/ACS-style "{name} town/city/gore/grant"
+    form (lowercase suffix, always present) straight from vt_town_lines.NAME.
     """
     con.execute(
         r"""--sql
@@ -75,6 +78,7 @@ def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
         WITH parsed AS (
             SELECT DISTINCT
                 GEOID,
+                NAME,
                 regexp_extract(NAME, '^(.*?)\s+(town|city|gore|grant),', 1) AS base,
                 regexp_extract(NAME, '^(.*?)\s+(town|city|gore|grant),', 2) AS suffix
             FROM lake.RAW.vt_town_lines
@@ -86,6 +90,7 @@ def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
         normalized AS (
             SELECT
                 GEOID,
+                TRIM(SPLIT_PART(NAME, ',', 1)) AS town,
                 -- Only keep the town/city/gore/grant suffix where it disambiguates
                 -- two entities sharing a base name (Barre, Newport, Rutland,
                 -- Saint Albans) or where it's part of the proper name (gores/grants).
@@ -106,6 +111,7 @@ def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
         )
         SELECT
             GEOID,
+            town,
             -- VT's official name for this gore omits the possessive that the
             -- Census/TIGER source uses ("Warren's Gore" -> parcels' "WARREN GORE").
             CASE WHEN town_key = 'WARRENS GORE' THEN 'WARREN GORE' ELSE town_key END
@@ -153,67 +159,66 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
             FROM state_oos
         )
         SELECT
-            p.OBJECTID,
-            COALESCE(town_map.value, p.TOWN) AS TOWN,
-            county_map.value AS COUNTY,
-            town_geoid.GEOID,
-            p.SPAN,
-            p.PROPTYPE,
-            p.CAT,
-            cat_map.value AS CATEGORY,
-            purpose_map.value AS PURPOSE,
-            p.DESCPROP,
-            rescode_map.value AS RESCODE,
-            p.ACRESGL,
-            p.area_acres AS AREAACRESGEOM,
-            p.CITYGL,
-            p.stgl_final AS STGL,
-            p.E911ADDR AS ADDRESS,
-            p.OWNER1,
-            p.OWNER2,
+            p.OBJECTID AS object_id,
+            COALESCE(town_geoid.town, p.TOWN) AS town,
+            county_map.value AS county,
+            town_geoid.GEOID AS geoid,
+            p.SPAN AS span_number,
+            p.PROPTYPE AS property_type,
+            p.CAT AS cat,
+            cat_map.value AS category,
+            purpose_map.value AS purpose,
+            p.DESCPROP AS property_description,
+            rescode_map.value AS resident_type,
+            p.ACRESGL AS acres,
+            p.area_acres AS area_acres_geom,
+            p.CITYGL AS city,
+            p.stgl_final AS state,
+            p.ADDRGL1 AS address,
+            p.OWNER1 AS owner_1,
+            p.OWNER2 AS owner_2,
             CASE
                 WHEN p.SOURCENAME IN ('CITY', 'TOWN', 'City of Burlington')
                     THEN 'LOCAL DEPARTMENT'
                 ELSE 'NOT LOCAL DEPARTMENT'
-            END AS SOURCENAME,
-            p.MATCHSTAT,
-            p.TNAME,
+            END AS source_name,
+            p.MATCHSTAT AS match_stat,
+            p.TNAME AS town_name,
             (
                 p.CAT IN ('R1', 'R2', 'MHL', 'MHU')
                 AND (p.HSDECL IS NULL OR p.HSDECL = 'N')
-            ) AS INVESTMENTPROP,
-            ((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) AS VACANTLAND,
-            (COALESCE(p.stgl_final, 'VT') <> 'VT') AS OOSOWNER,
-            p.EDITOR,
-            p.EDITDATE,
-            p.REAL_FLV,
-            p.HSTED_FLV,
-            p.NRES_FLV,
-            p.LAND_LV,
-            p.IMPRV_LV,
-            p.EQUIPVAL,
-            COALESCE(equipcode_map.value, 'NOT A UTILITY') AS EQUIPCODE,
-            p.INVENVAL,
-            p.HSDECL,
-            p.VETEXAMT,
-            COALESCE(expdesc_map.value, 'None') AS EXPDESC,
-            (CASE WHEN p.STATUTE IS NOT NULL THEN 'YES' ELSE 'NO' END) AS EXEMPT,
-            COALESCE(statute_map.value, 'No Exemption') AS STATUTE,
-            p.EXAMT_HS,
-            p.EXAMT_NR,
-            p.UVREDUC_HS,
-            p.UVREDUC_NR,
-            p.GLVAL_HS,
-            p.GLVAL_NR,
+            ) AS investment_property,
+            ((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) AS vacant_land,
+            (COALESCE(p.stgl_final, 'VT') <> 'VT') AS out_of_state_owner,
+            p.EDITOR AS editor,
+            p.EDITDATE AS edit_date,
+            p.REAL_FLV AS listed_real_value,
+            p.HSTED_FLV AS homestead_listed_value,
+            p.NRES_FLV AS non_residential_value,
+            p.LAND_LV AS land_value,
+            p.IMPRV_LV AS improvements_value,
+            p.EQUIPVAL AS equipment_value,
+            COALESCE(equipcode_map.value, 'NOT A UTILITY') AS equipment_code,
+            p.INVENVAL AS inventory_value,
+            p.HSDECL AS homestead_declared,
+            p.VETEXAMT AS veterans_exemption_amount,
+            COALESCE(expdesc_map.value, 'None') AS exemption_description,
+            (CASE WHEN p.STATUTE IS NOT NULL THEN 'YES' ELSE 'NO' END) AS exempt,
+            COALESCE(statute_map.value, 'No Exemption') AS statute,
+            p.EXAMT_HS AS exemption_homestead_amount,
+            p.EXAMT_NR AS exemption_nonresidential_amount,
+            p.UVREDUC_HS AS current_use_homestead_reduction_amount,
+            p.UVREDUC_NR AS current_use_nonresidential_reduction_amount,
+            p.GLVAL_HS AS gl_value_homestead,
+            p.GLVAL_NR AS gl_value_nonresidential,
             CASE
                 WHEN p.REAL_FLV > 0 AND p.area_acres > 0
                     THEN p.REAL_FLV / p.area_acres
                 ELSE NULL
-            END AS ACREVALUE,
+            END AS value_per_acre,
             ST_Multi(ST_GeomFromWKB(p.geometry)) AS geometry
         FROM staged p
         LEFT JOIN county_map ON p.TOWN = county_map.key
-        LEFT JOIN town_map ON p.TOWN = town_map.key
         LEFT JOIN town_geoid ON p.TOWN = town_geoid.TOWN_KEY
         LEFT JOIN cat_map ON p.CAT = cat_map.key
         LEFT JOIN purpose_map ON p.CAT = purpose_map.key

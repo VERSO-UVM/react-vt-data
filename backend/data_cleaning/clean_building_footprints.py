@@ -13,40 +13,78 @@ import duckdb
 import pandas as pd
 
 
-def _load_spatial(con: duckdb.DuckDBPyConnection) -> None:
-    """Load the spatial extension, installing it first if necessary."""
-    try:
-        con.execute("LOAD spatial")
-    except duckdb.Error:
-        con.execute("INSTALL spatial")
-        con.execute("LOAD spatial")
+def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Building the table by joining in town geoids from the
+    RAW.vt_town_lines table
+    """
+    con.execute(
+        r"""--sql
+        CREATE OR REPLACE TEMP VIEW town_geoid AS
+        WITH parsed AS (
+            SELECT DISTINCT
+                GEOID,
+                NAME,
+                regexp_extract(NAME, '^(.*?)\s+(town|city|gore|grant),', 1) AS base,
+                regexp_extract(NAME, '^(.*?)\s+(town|city|gore|grant),', 2) AS suffix
+            FROM lake.RAW.vt_town_lines
+        ),
+        counted AS (
+            SELECT *, COUNT(*) OVER (PARTITION BY base) AS base_count
+            FROM parsed
+        ),
+        candidates AS (
+            SELECT
+                GEOID,
+                TRIM(SPLIT_PART(NAME, ',', 1)) AS town,
+                TRIM(REPLACE(SPLIT_PART(NAME, ',', 2), ' County', '')) AS county,
+                REPLACE(UPPER(base || ' ' || suffix), chr(39), '') AS town_key
+            FROM counted
+            UNION
+            -- Bare variant, only when it's unambiguous (unique base name)
+            -- and the suffix isn't part of the proper name.
+            SELECT
+                GEOID,
+                TRIM(SPLIT_PART(NAME, ',', 1)) AS town,
+                TRIM(REPLACE(SPLIT_PART(NAME, ',', 2), ' County', '')) AS county,
+                REPLACE(UPPER(base), chr(39), '') AS town_key
+            FROM counted
+            WHERE base_count = 1 AND suffix NOT IN ('gore', 'grant')
+        )
+        SELECT GEOID, town, county, town_key AS TOWN_KEY FROM candidates
+        """
+    )
 
 
 def build_footprints(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """Clean building footprint polygons."""
+    build_town_geoid(con)
+
     df = con.execute(
         """--sql
         SELECT
-            OBJECTID AS object_id,
-            E911TOWN AS town,
-            COUNTY AS county,
-            HEIGHTFT AS height_ft,
-            SITETYPE AS building_type,
-            POLY_TYPE AS print_type,
-            ST_GeomFromWKB(geometry) AS geometry
-        FROM lake.RAW.building_footprints
+            bf.OBJECTID AS object_id,
+            tg.town,
+            tg.county,
+            tg.GEOID AS geoid,
+            bf.HEIGHTFT AS height_ft,
+            bf.SITETYPE AS building_type,
+            bf.POLY_TYPE AS print_type,
+            ST_GeomFromWKB(bf.geometry) AS geometry
+        FROM lake.RAW.building_footprints bf
+        LEFT JOIN town_geoid tg
+            ON REPLACE(UPPER(TRIM(bf.E911TOWN)), chr(39), '') = tg.TOWN_KEY
         """
     ).df()
 
-    df["town"] = df["town"].str.title()
-    df["county"] = df["county"].str.capitalize() + " County, Vermont"
-    df["NAME"] = df["town"] + ", " + df["county"]
+    df["name"] = df["town"] + ", " + df["county"] + " County, Vermont"
 
     cols = [
         "object_id",
         "town",
         "county",
-        "NAME",
+        "geoid",
+        "name",
         "height_ft",
         "building_type",
         "print_type",
@@ -69,7 +107,6 @@ def add_to_lake(con: duckdb.DuckDBPyConnection, df: pd.DataFrame) -> None:
 
 
 def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    _load_spatial(con)
     return build_footprints(con)
 
 
