@@ -1,34 +1,34 @@
 {
   "default": {
     "VersoZoning_info": {
-      "join_key": "OBJECT_ID",
+      "join_key": "object_id",
       "join_type": "inner",
       "columns": {
-        "County": "County",
-        "Jurisdiction": "Municipal_Name",
-        "District Type": "District_Type",
-        "District Name": "District_Name"
+        "County": "county",
+        "Jurisdiction": "town",
+        "District Type": "district_type",
+        "District Name": "district_name"
       }
     },
     "VersoZoning_wide": {
-      "join_key": "OBJECT_ID",
+      "join_key": "object_id",
       "join_type": "inner",
       "columns": {
-        "District Type": "District_Type",
-        "Accessory Dwelling Unit": "ADU_Allowance",
-        "Single Family": "F1F_Allowance",
-        "Two Family": "F2F_Allowance",
-        "Three Family": "F3F_Allowance",
-        "Four Family": "F4F_Allowance",
-        "Affordable Housing": "Affordable_Housing_Allowance",
-        "Planned Residential Development": "PRD_Allowance",
-        "Planned Unit Development": "PUD_Allowance"
+        "District Type": "district_type",
+        "Accessory Dwelling Unit": "adu_allowance",
+        "Single Family": "f1f_allowance",
+        "Two Family": "f2f_allowance",
+        "Three Family": "f3f_allowance",
+        "Four Family": "f4f_allowance",
+        "Affordable Housing": "affordable_housing_allowance",
+        "Planned Residential Development": "prd_allowance",
+        "Planned Unit Development": "pud_allowance"
       },
       "range": {
-        "Single Family Min Lot Size (ac)": "F1F_Min_Lot_Size",
-        "Two Family Min Lot Size (ac)": "F2F_Min_Lot_Size",
-        "Three Family Min Lot Size (ac)": "F3F_Min_Lot_Size",
-        "Four Family Min Lot Size (ac)": "F4F_Min_Lot_Size"
+        "Single Family Min Lot Size (ac)": "f1f_min_lot_size",
+        "Two Family Min Lot Size (ac)": "f2f_min_lot_size",
+        "Three Family Min Lot Size (ac)": "f3f_min_lot_size",
+        "Four Family Min Lot Size (ac)": "f4f_min_lot_size"
       }
     },
     "VersoZoning_rules": {
@@ -43,25 +43,25 @@
       }
     },
     "VCGIParcels_info": {
-      "join_key": "OBJECTID",
+      "join_key": "object_id",
       "join_type": "inner",
       "columns": {
-        "County": "COUNTY",
-        "Jurisdiction": "TOWN",
-        "Category": "CATEGORY",
-        "Vacant Land": "VACANTLAND"
+        "County": "county",
+        "Jurisdiction": "town",
+        "Category": "category",
+        "Vacant Land": "vacant_land"
       },
       "range": {
-        "Parcel Size (ac)": "ACRESGL"
+        "Parcel Size (ac)": "acres"
       }
     },
     "VCGIParcels_tax": {
-      "join_key": "OBJECTID",
+      "join_key": "object_id",
       "join_type": "inner",
       "columns": {},
       "range": {
-        "Assessed Value": "REAL_FLV",
-        "Value Per Acre": "ACREVALUE"
+        "Assessed Value": "listed_real_value",
+        "Value Per Acre": "value_per_acre"
       }
     },
     "VCGI_buildingFootprints_geom": {
@@ -77,103 +77,97 @@
       }
     },
     "cdc_places_county": {
-      "join_key": "LocationID",
+      "join_key": "geoid",
       "join_type": "inner",
-      "value_col": "Data_Value",
-      "var_col": "Measure",
+      "value_col": "data_value",
+      "var_col": "measure",
       "columns": {
-        "Population Health Indicator": "SME_Highlight",
-        "Category": "Category",
-        "Measure": "Measure",
-        "Prevalence Measure": "Data_Value_Type",
-        "County": "LocationName"
+        "Population Health Indicator": "sme_highlight",
+        "Category": "category",
+        "Measure": "measure",
+        "Prevalence Measure": "data_value_type",
+        "County": "county"
       }
     },
     "acs5_demographics_tidy": {
-      "join_key": "NAME",
+      "join_key": "geoid",
       "join_type": "inner",
-      "value_col": "Value",
-      "var_col": "Variable",
+      "value_col": "value",
+      "var_col": "variable",
       "columns": {
-        "Section": "Section",
-        "Variable": "Variable"
+        "Section": "section",
+        "Variable": "variable"
       }
     },
     "acs5_housing_tidy": {
-      "join_key": "NAME",
+      "join_key": "geoid",
       "join_type": "inner",
-      "value_col": "Value",
-      "var_col": "Variable",
+      "value_col": "value",
+      "var_col": "variable",
       "columns": {
-        "Section": "Section",
-        "Variable": "Variable"
+        "Section": "section",
+        "Variable": "variable"
       }
     },
     "acs5_education_tidy": {
-      "join_key": "NAME",
+      "join_key": "geoid",
       "join_type": "inner",
-      "value_col": "Value",
-      "var_col": "Variable",
+      "value_col": "value",
+      "var_col": "variable",
       "columns": {
-        "Section": "Section",
-        "Variable": "Variable"
+        "Section": "section",
+        "Variable": "variable"
       }
     },
     "acs5_economics_tidy": {
-      "join_key": "NAME",
+      "join_key": "geoid",
       "join_type": "inner",
-      "value_col": "Value",
-      "var_col": "Variable",
+      "value_col": "value",
+      "var_col": "variable",
       "columns": {
-        "Section": "Section",
-        "Variable": "Variable"
+        "Section": "section",
+        "Variable": "variable"
       }
     },
     "VersoWastewater_soilSuitability_info": {
-      "join_key": "OGC_FID",
+      "join_key": "ogc_fid",
       "join_type": "inner",
       "columns": {
-        "Regional Planning Commission": "RPC",
-        "Jurisdiction": "Jurisdiction",
-        "Soil Suitability Level": "Suitability"
+        "Regional Planning Commission": "rpc",
+        "Jurisdiction": "town",
+        "Soil Suitability Level": "suitability"
       }
     },
     "VersoWastewater_treatmentFacilities_info": {
-      "join_key": "Facility_ID",
+      "join_key": "facility_id",
       "join_type": "inner",
       "columns": {
-        "Regional Planning Commission": "RPC",
-        "County": "County",
-        "Jurisdiction": "Municipal_Name",
-        "Town": "TownName"
+        "Regional Planning Commission": "rpc",
+        "County": "county",
+        "Jurisdiction": "town"
       }
     },
     "VersoWastewater_treatmentFacilitiesPermits_info": {
-      "join_key": "Facility_ID",
+      "join_key": "facility_id",
       "join_type": "inner",
-      "columns": {
-        "Regional Planning Commission": "RPC",
-        "County": "County",
-        "Jurisdiction": "Municipal_Name",
-        "Town": "TownName"
-      }
+      "columns": {}
     },
     "VersoWastewater_serviceAreas_info": {
-      "join_key": "Area_ID",
+      "join_key": "area_id",
       "join_type": "inner",
       "columns": {
-        "Regional Planning Commission": "RPC",
-        "County": "County",
-        "Jurisdiction": "Municipal_Name",
-        "Town": "TownName"
+        "Regional Planning Commission": "rpc",
+        "County": "county",
+        "Jurisdiction": "town"
       }
     },
     "VCGI_ambulanceService_info": {
-      "join_key": "OBJECTID",
+      "join_key": "object_id",
       "join_type": "inner",
       "columns": {
-        "Zip Code": "Zip_Code",
-        "City or Town": "City"
+        "Certification Level": "cert_level",
+        "Zip Code": "zip_code",
+        "City or Town": "city"
       }
     }
   }

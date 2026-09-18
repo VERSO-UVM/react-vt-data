@@ -64,7 +64,7 @@ export const ambulance_filtering: filterDef[] = [
     filter_table: 'VCGI_ambulanceService_info',
     filter_style: 'Checkbox',
     label: 'Certification Level',
-    cols: ['Cert_Level'],
+    cols: ['Certification Level'],
   },
 ];
 

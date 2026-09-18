@@ -15,6 +15,7 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource
+from query.core_functions import to_export_geo
 from query.production_db import get_db
 from query.sql_render import render_sql, sql_filter_block
 
@@ -88,11 +89,11 @@ def get_building_footprints(
 def get_zoning_export_table(table: str) -> pd.DataFrame:
     """Load a full zoning table for CSV export.
 
-    Drops map-only columns (geometry, colors, tooltip HTML) and renames
-    `Municipal_Name` to `Jurisdiction` so it lines up with the town-filter
-    column name used by every other export source.
+    Drops map-only columns (geometry, colors, tooltip HTML) and names the
+    `town`/`county` columns `Jurisdiction`/`County` so they line up with the
+    filter columns used by every other export source.
     """
     df = DB.execute(f'SELECT * FROM "{table}"').df()
     drop_cols = ["geometry", "fill", "fill-opacity", "tooltip"]
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
-    return df.rename(columns={"Municipal_Name": "Jurisdiction"})
+    return to_export_geo(df)

@@ -75,12 +75,12 @@ QUERY_CONFIG = {
     },
     "labor_force": {
         "table": "acs5_economics_tidy",
-        "fixed_filters": {"Section": ["Labor Force"]},
+        "fixed_filters": {"section": ["Labor Force"]},
         "timeseries": {},
     },
     "income": {
         "table": "acs5_economics_tidy",
-        "fixed_filters": {"Section": ["Income"]},
+        "fixed_filters": {"section": ["Income"]},
         "timeseries": {},
     },
     "housing": {
@@ -120,8 +120,21 @@ QUERY_CONFIG = {
 # frontend filter label -> database column. Location and the year range both
 # travel inside `filters`; unknown labels (e.g. County/Jurisdiction sent for other
 # datasets) are ignored.
-ACS5_FILTER_COLS = {"Location": "NAME", "year": "year"}
+ACS5_FILTER_COLS = {"Location": "name", "year": "year"}
 ACS5_TREE_LABELS = ["Location"]
+
+
+# The cleaned timeseries tables store their measure columns in snake_case, but
+# the frontend charts read these Title_Case field names, so responses keep them.
+TIMESERIES_FIELD_NAMES = {
+    "median_age": "Median_Age",
+    "age_dependency_ratio": "Age_Dependency_Ratio",
+    "median_household_income": "Median_Household_Income",
+    "per_capita_income": "Per_Capita_Income",
+    "total_housing_units": "Total_Housing_Units",
+    "median_home_value": "Median_Home_Value",
+    "percent": "Percent",
+}
 
 
 def _acs5_source(
@@ -192,7 +205,7 @@ def get_acs5_timeseries(
         [source],
     )
 
-    result = DB.execute(sql, params).df()
+    result = DB.execute(sql, params).df().rename(columns=TIMESERIES_FIELD_NAMES)
 
     if result.empty:
         logger.error(

@@ -1,12 +1,12 @@
 /**
  * @description
- *   Best-effort mapping from a municipality's TIGER/Census display name (as
- *   used by the town search, e.g. "St. Johnsbury town, Caledonia County,
- *   Vermont") to the plausible spellings of that town's name as stored in
- *   the zoning/wastewater datasets (e.g. "Saint Johnsbury"). Those datasets
- *   were digitized independently and don't share a canonical name column, so
- *   this produces a handful of candidate spellings to pass as an IN-list
- *   filter rather than a single guess.
+ *   Maps a municipality's TIGER/Census display name (as used by the town
+ *   search, e.g. "St. Johnsbury town, Caledonia County, Vermont") to the
+ *   values of the `town` column in the zoning/wastewater/parcels datasets.
+ *   The cleaned datasets store the Census-style name ("St. Johnsbury town"),
+ *   which is always the first candidate. Rows the cleaners couldn't match to
+ *   a municipality keep their raw source spelling (e.g. "Saint George"), so a
+ *   handful of alternate spellings ride along in the IN-list filter.
  */
 
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
@@ -32,8 +32,8 @@ const AMBIGUOUS_CITY_TOWN_PAIRS = new Set([
   'saint albans',
 ]);
 
-/** Given a town's full TIGER display name, return candidate Jurisdiction/
- *  Municipal_Name spellings to filter on. */
+/** Given a town's full TIGER display name, return candidate `town` column
+ *  spellings to filter on. */
 export function jurisdictionCandidates(fullMuniName: string): string[] {
   const first = fullMuniName.split(',')[0].trim();
   // "town" is the generic default and is always dropped from these
@@ -53,7 +53,8 @@ export function jurisdictionCandidates(fullMuniName: string): string[] {
 
   const bases = isAmbiguousPair ? [suffixedBase] : [suffixedBase, bareBase];
 
-  const candidates = new Set<string>();
+  // The exact Census-style name every standardized `town` column holds.
+  const candidates = new Set<string>([first]);
   for (const base of bases) {
     const noApostrophe = base.replace(/'/g, '');
     candidates.add(base);

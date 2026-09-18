@@ -74,20 +74,20 @@ def _acs5_dataset(table: str, label: str) -> dict:
             "county": {
                 "sql": sql_dir / "acs5" / "acs5_county_compare.sql",
                 "table": table,
-                "var_col": "Variable",
-                "value_col": "Value",
-                "id_col": "CountyFIPS",
-                "name_col": "CountyName",
+                "var_col": "variable",
+                "value_col": "value",
+                "id_col": "geoid",
+                "name_col": "county",
                 "geo_type": "county",
             },
             "town": {
                 "sql": sql_dir / "acs5" / "acs5_town_compare.sql",
                 "table": table,
-                "var_col": "Variable",
-                "value_col": "Value",
+                "var_col": "variable",
+                "value_col": "value",
                 "id_col": "FIPS_ID",
                 "name_col": "TOWN_NAME",
-                "geo_type": "county_subdivision",
+                "geo_type": "town",
             },
         },
     }
@@ -104,19 +104,18 @@ DATASETS: dict[str, dict] = {
                 # Matches schema.json's cdc_places_county entry, which the
                 # canonical filter_table (used for both county and tract) is
                 # resolved against -- var_col must match the column name
-                # spec_to_source maps "Measure" onto, not the raw table's
-                # (lowercase) storage casing.
-                "var_col": "Measure",
-                "value_col": "Data_Value",
-                "id_col": "CountyFIPS",
-                "name_col": "CountyName",
+                # spec_to_source maps "Measure" onto.
+                "var_col": "measure",
+                "value_col": "data_value",
+                "id_col": "geoid",
+                "name_col": "county",
             },
             "tract": {
                 "sql": sql_dir / "cdc" / "tract_places.sql",
                 "table": "cdc_places_tract",
-                "var_col": "Measure",
-                "value_col": "Data_Value",
-                "id_col": "locationid",
+                "var_col": "measure",
+                "value_col": "data_value",
+                "id_col": "geoid",
                 "name_col": "name",
             },
         },
@@ -229,7 +228,7 @@ def compare_variables(
     support `level` -- each side is fetched independently and merged on
     `geoid`, which is stable across datasets because every county/town-level
     query joins through the same vt_county_lines_geom/vt_town_lines_geom
-    tables.
+    tables (all keyed by the standardized geoid).
 
     `filters1`/`filters2` carry any *other* cascade picks alongside the
     variable itself (e.g. CDC's Prevalence Measure sits one level below

@@ -12,21 +12,21 @@ FROM (
                     ST_Simplify(g.geometry, 0.0001)
                 )::JSON,
             'properties', json_object(
-                'Suitability', i.Suitability,
-                'Acres', ROUND(i.Acres, 2),
+                'Suitability', i.suitability,
+                'Acres', ROUND(i.acres, 2),
                 'rgba_color', c.rgba::JSON,
                 'tooltip', json_object(
                     '__title__', 'Septic Tank Soil Suitability',
-                    'Jurisdiction', i.Jurisdiction || ' ' || i.RPC,
-                    'Suitability Level', i.Suitability,
-                    'Acres', ROUND(i.Acres, 2)
+                    'Jurisdiction', i.town || ' ' || i.rpc,
+                    'Suitability Level', i.suitability,
+                    'Acres', ROUND(i.acres, 2)
                 )
             )
         ) AS feature
     FROM VersoWastewater_soilSuitability_info AS i
     INNER JOIN VersoWastewater_soilSuitability_geom AS g
-        ON i.OGC_FID = g.OGC_FID
+        ON i.ogc_fid = g.OGC_FID
     LEFT JOIN VersoWastewater_soilSuitability_colors AS c
-        ON i.Suitability = c.soil_suitability
+        ON i.suitability = c.soil_suitability
     {{ where_string }}
 ) AS features;

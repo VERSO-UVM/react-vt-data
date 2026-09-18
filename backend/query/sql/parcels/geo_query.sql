@@ -2,24 +2,23 @@
 
 filtered AS (
     SELECT
-        g.COUNTY,
-        g.TOWN,
-        i.CATEGORY,
-        i.ADDRESS,
-        ROUND(i.ACRESGL, 2) AS Acres,
-        i.VACANTLAND,
-        i.TNAME,
-        i.CITYGL,
-        i.STGL,
-        i.OWNER1,
-        i.OWNER2,
-        i.OOSOWNER,
-        t.REAL_FLV,
-        ROUND(t.ACREVALUE, 2) AS ACREVALUE,
+        g.county,
+        g.town,
+        i.category,
+        i.address,
+        ROUND(i.acres, 2) AS acres,
+        i.vacant_land,
+        i.city,
+        i.state,
+        i.owner_1,
+        i.owner_2,
+        i.out_of_state_owner,
+        t.listed_real_value,
+        ROUND(t.value_per_acre, 2) AS value_per_acre,
         g.geometry
     FROM VCGIParcels_geom AS g
-    INNER JOIN VCGIParcels_info AS i USING (OBJECTID)
-    LEFT JOIN VCGIParcels_tax AS t USING (OBJECTID)
+    INNER JOIN VCGIParcels_info AS i USING (object_id)
+    LEFT JOIN VCGIParcels_tax AS t USING (object_id)
     {{ join_filter_block }}
 ),
 
@@ -29,28 +28,28 @@ features AS (
             'type', 'Feature',
             'geometry', ST_ASGEOJSON(ST_SIMPLIFY(geometry, 0.0001))::JSON,
             'properties', JSON_OBJECT(
-                'County', COUNTY,
-                'Jurisdiction', TOWN,
-                'Category', CATEGORY,
-                'Acres', Acres,
-                'Vacant Land', VACANTLAND,
-                'Assessed Value', REAL_FLV,
-                'Value Per Acre', ACREVALUE,
+                'County', county,
+                'Jurisdiction', town,
+                'Category', category,
+                'Acres', acres,
+                'Vacant Land', vacant_land,
+                'Assessed Value', listed_real_value,
+                'Value Per Acre', value_per_acre,
                 'tooltip', JSON_OBJECT(
                     '__title__', 'Parcel',
-                    'Jurisdiction', TOWN,
-                    'County', COUNTY,
-                    'Address', ADDRESS,
-                    'Category', CATEGORY,
-                    'Acres', Acres,
-                    'Vacant Land', VACANTLAND,
-                    'Assessed Value', REAL_FLV,
-                    'Value Per Acre', ACREVALUE,
-                    'Primary Owner', OWNER1,
-                    'Secondary Owner', OWNER2,
-                    'Mailing City', CITYGL,
-                    'Mailing State', STGL,
-                    'Out-of-State Owner', OOSOWNER
+                    'Jurisdiction', town,
+                    'County', county,
+                    'Address', address,
+                    'Category', category,
+                    'Acres', acres,
+                    'Vacant Land', vacant_land,
+                    'Assessed Value', listed_real_value,
+                    'Value Per Acre', value_per_acre,
+                    'Primary Owner', owner_1,
+                    'Secondary Owner', owner_2,
+                    'Mailing City', city,
+                    'Mailing State', state,
+                    'Out-of-State Owner', out_of_state_owner
                 )
             )
         ) AS feature

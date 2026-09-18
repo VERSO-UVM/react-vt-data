@@ -17,7 +17,6 @@ RUN uv run python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')
 # The source data cleaning (data_cleaning) scripts (source --> destination)
 COPY --chown=app:app ./data_cleaning /code/data_cleaning
 COPY --chown=app:app ./run_data_cleaning.py /code/run_data_cleaning.py
-COPY --chown=app:app ./build /code/build
 COPY --chown=app:app ./api /code/api
 COPY --chown=app:app ./query /code/query
 COPY --chown=app:app ./logger /code/logger
