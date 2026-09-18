@@ -12,6 +12,8 @@ python -m data_cleaning.clean_wastewater
 
 import duckdb
 
+from data_cleaning.geo_lookup import build_geo_lookups, geoid_sql
+
 
 ## ADD UNIQUE ID COLUMNS --------------------
 def build_service_area_id(con: duckdb.DuckDBPyConnection) -> None:
@@ -76,23 +78,37 @@ def build_soil_suitability_id(con: duckdb.DuckDBPyConnection) -> None:
 
 ## SERVICE AREA TABLES --------------------
 def build_service_info(con: duckdb.DuckDBPyConnection) -> None:
-    service_area_info_cols = [
-        "Area_ID",
-        "TownID",
-        "TreatmentFacility",
-        "SystemName",
-        "SystemOwner",
-        "TownName",
-        "Municipal_Name",
-        "County",
-        "RPC",
-    ]
+    con.execute(
+        """--sql
+        CREATE OR REPLACE MACRO initcap(s) AS list_reduce(
+            list_transform(
+                string_split(s, ' '),
+                x -> upper(x[1]) || lower(x[2:])
+            ),
+            (x, y) -> x || ' ' || y
+        );
+        """
+    )
 
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW serviceAreas_info AS 
-        SELECT {", ".join(service_area_info_cols)} 
-        FROM service_areas_with_id
+        CREATE OR REPLACE VIEW serviceAreas_info AS
+        SELECT
+            s.Area_ID AS area_id,
+            s.TownID AS town_id,
+            s.TreatmentFacility AS treatment_facility,
+            s.SystemName AS system_name,
+            s.SystemOwner AS system_owner,
+            t.geoid,
+            COALESCE(t.town, s.Municipal_Name) AS town,
+            t.county_fips,
+            COALESCE(t.county, INITCAP(s.County)) AS county,
+            s.RPC AS rpc
+        FROM (
+            SELECT *, {geoid_sql("GEOIDTXT")} AS geoid_norm
+            FROM service_areas_with_id
+        ) AS s
+        LEFT JOIN geo_town_lookup AS t ON s.geoid_norm = t.geoid
         """
     )
 
@@ -132,23 +148,25 @@ def build_service_misc(con: duckdb.DuckDBPyConnection) -> None:
 
 ## TREATMENT FACILITY TABLES --------------------
 def build_facility_info(con: duckdb.DuckDBPyConnection) -> None:
-    facility_info_cols = [
-        "Facility_ID",
-        "DesignHydraulicCapacityInMGD",
-        "SeptageReceivedAtThisFacility",
-        "WWInventoryURL",
-        "FacilityName",
-        "TownName",
-        "Municipal_Name",
-        "County",
-        "RPC",
-    ]
-
     con.execute(
         f"""--sql
-        CREATE OR REPLACE VIEW treatmentFacilities_info AS 
-        SELECT {", ".join(facility_info_cols)} 
-        FROM treatment_facilities_with_id
+        CREATE OR REPLACE VIEW treatmentFacilities_info AS
+        SELECT
+            f.Facility_ID AS facility_id,
+            f.DesignHydraulicCapacityInMGD AS design_hydraulic_capacity_mgd,
+            f.SeptageReceivedAtThisFacility AS septage_received,
+            f.WWInventoryURL AS ww_inventory_url,
+            f.FacilityName AS facility_name,
+            t.geoid,
+            COALESCE(t.town, f.Municipal_Name) AS town,
+            t.county_fips,
+            COALESCE(t.county, INITCAP(f.County)) AS county,
+            f.RPC AS rpc
+        FROM (
+            SELECT *, {geoid_sql("GEOIDTXT")} AS geoid_norm
+            FROM treatment_facilities_with_id
+        ) AS f
+        LEFT JOIN geo_town_lookup AS t ON f.geoid_norm = t.geoid
         """
     )
 
@@ -201,13 +219,25 @@ def build_facility_misc(con: duckdb.DuckDBPyConnection) -> None:
 
 ## SOIL SUITABILITY TABLES --------------------
 def build_suitability_info(con: duckdb.DuckDBPyConnection) -> None:
-    suitability_info_cols = ["OGC_FID", "Suitability", "Jurisdiction", "RPC", "Acres"]
-
+    # Soil suitability has no GEOID, so match the free-text Jurisdiction to
+    # the town crosswalk by normalized name.
     con.execute(
-        f"""--sql
-        CREATE OR REPLACE VIEW soilSuitability_info AS 
-        SELECT {", ".join(suitability_info_cols)} 
-        FROM soil_suitability_with_id
+        r"""--sql
+        CREATE OR REPLACE VIEW soilSuitability_info AS
+        SELECT
+            s.OGC_FID AS ogc_fid,
+            s.Suitability AS suitability,
+            t.geoid,
+            COALESCE(t.town, s.Jurisdiction) AS town,
+            t.county_fips,
+            t.county,
+            s.RPC AS rpc,
+            s.Acres AS acres
+        FROM soil_suitability_with_id AS s
+        LEFT JOIN geo_town_lookup AS t
+            ON REPLACE(
+                REPLACE(UPPER(TRIM(s.Jurisdiction)), 'ST.', 'SAINT'), '''', ''
+            ) = t.town_key
         """
     )
 
@@ -248,10 +278,10 @@ def build_suitability_colors(con: duckdb.DuckDBPyConnection) -> None:
 def build_stormwater_info(con: duckdb.DuckDBPyConnection) -> None:
     # "Type" labels derived from VERSO WIM GitHub pages
     con.execute(
-        """--sql
+        f"""--sql
         CREATE OR REPLACE VIEW stormwaterManagement_info AS
         SELECT
-            CASE Type
+            CASE w.Type
                 WHEN 2 THEN 'Bioretention / Rain Garden'
                 WHEN 6 THEN 'Wet Pond'
                 WHEN 7 THEN 'Dry Detention Pond'
@@ -267,15 +297,20 @@ def build_stormwater_info(con: duckdb.DuckDBPyConnection) -> None:
                 WHEN 19 THEN 'Infiltration Basin / Trench'
                 WHEN 20 THEN 'Sand Filter'
                 WHEN 21 THEN 'Constructed Wetland'
-                ELSE CAST(Type AS VARCHAR)
-            END AS Type,
-            Status,
-            GEOIDTXT,
-            GlobalID,
-            Municipal_Name,
-            County,
-            RPC
-        FROM lake.RAW.ww_stormwater_management_areas
+                ELSE CAST(w.Type AS VARCHAR)
+            END AS type,
+            w.Status AS status,
+            w.GlobalID AS global_id,
+            t.geoid,
+            COALESCE(t.town, w.Municipal_Name) AS town,
+            t.county_fips,
+            COALESCE(t.county, INITCAP(w.County)) AS county,
+            w.RPC AS rpc
+        FROM (
+            SELECT *, {geoid_sql("GEOIDTXT")} AS geoid_norm
+            FROM lake.RAW.ww_stormwater_management_areas
+        ) AS w
+        LEFT JOIN geo_town_lookup AS t ON w.geoid_norm = t.geoid
         """
     )
 
@@ -294,6 +329,8 @@ def build_stormwater_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 ## CLEANING PIPELINE --------------------
 def clean(con: duckdb.DuckDBPyConnection):
+    build_geo_lookups(con)
+
     # Add unique IDs to each table
     build_service_area_id(con)
     build_facility_id(con)

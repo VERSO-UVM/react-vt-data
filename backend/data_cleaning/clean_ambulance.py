@@ -9,6 +9,8 @@
 
 import duckdb
 
+from data_cleaning.geo_lookup import lowercase_cols
+
 # Hardcoded column selections
 AMBULANCE_INFO_COLS = [
     "OBJECTID",
@@ -35,9 +37,12 @@ AMBULANCE_GEOM_COLS = [
 ]
 
 
+AMBULANCE_RENAMES = {"OBJECTID": "object_id"}
+
+
 def build_ambulance_info_table(con: duckdb.DuckDBPyConnection):
     """Create the cleaned info table in DuckLake."""
-    info_cols_str = ", ".join(AMBULANCE_INFO_COLS)
+    info_cols_str = lowercase_cols(AMBULANCE_INFO_COLS, AMBULANCE_RENAMES)
 
     con.execute(
         f"""--sql
@@ -50,7 +55,7 @@ def build_ambulance_info_table(con: duckdb.DuckDBPyConnection):
 
 def build_ambulance_geom_table(con: duckdb.DuckDBPyConnection):
     """Create the cleaned spatial table in DuckLake."""
-    geom_cols_str = ", ".join(AMBULANCE_GEOM_COLS)
+    geom_cols_str = lowercase_cols(AMBULANCE_GEOM_COLS, AMBULANCE_RENAMES)
 
     con.execute(
         f"""--sql

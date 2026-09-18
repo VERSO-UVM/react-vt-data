@@ -15,6 +15,7 @@ import duckdb
 import pandas as pd
 
 from app_utils.sql_render import render_sql
+from data_cleaning.geo_lookup import build_geo_lookups, geoid_sql
 
 SQL_PATH = Path(__file__).resolve().parent / "sql"
 # Town and zoning-district boundaries were digitised separately, so subtracting
@@ -88,7 +89,40 @@ def build_info(con: duckdb.DuckDBPyConnection) -> None:
 
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
-    con.register("info", info_df)
+    con.register("info_raw", info_df)
+
+    # Lowercase columns; GEO_ID -> geoid, plus town/county from the crosswalk.
+    replaced = {"GEO_ID", "Municipal_Name", "County", "OBJECT_ID"}
+    passthrough = ", ".join(
+        f'i."{c}" AS {c.lower()}' for c in info_df.columns if c not in replaced
+    )
+
+    con.execute(
+        """--sql
+        CREATE OR REPLACE MACRO initcap(s) AS list_reduce(
+            list_transform(
+                string_split(s, ' '),
+                x -> upper(x[1]) || lower(x[2:])
+            ),
+            (x, y) -> x || ' ' || y
+        );
+        """
+    )
+
+    con.execute(
+        f"""--sql
+        CREATE OR REPLACE TEMP VIEW info AS
+        SELECT
+            i.OBJECT_ID AS object_id,
+            t.geoid,
+            COALESCE(t.town, i.Municipal_Name) AS town,
+            t.county_fips,
+            COALESCE(t.county, INITCAP(i.County)) AS county,
+            {passthrough}
+        FROM info_raw AS i
+        LEFT JOIN geo_town_lookup AS t ON {geoid_sql("i.GEO_ID")} = t.geoid
+        """
+    )
 
 
 def build_geom(con: duckdb.DuckDBPyConnection) -> None:
@@ -117,7 +151,7 @@ def get_rule_cols(con: duckdb.DuckDBPyConnection) -> list[str]:
     rule_cols = set(all_cols)
     for item in geom_cols + info_cols + ["Acres"] + dropped_cols:
         if item in rule_cols:
-            rule_cols.remove(item)
+            rule_cols.discard(item)
     rule_cols = list(rule_cols)
     return rule_cols
 
@@ -154,7 +188,7 @@ def build_rules(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
         con.register("zoning_raw", raw_df)
 
     # separate by use type and filter:
-    use_types = set([col.split("_")[0] for col in clean_rule_cols])
+    use_types = {col.split("_")[0] for col in clean_rule_cols}
     use_types.remove("Affordable")
     use_types.add("Affordable_Housing")
     rules[["use_type", "rule"]] = (
@@ -170,13 +204,26 @@ def build_rules(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
     con.register("rules", rules)
 
 
-def build_full(con: duckdb.DuckDBPyConnection) -> None:
+def build_full(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
     drop_cols = ["geometry", "Shape_Area", "Shape_Length"]
-    exclude = ", ".join(drop_cols)
+    geo_cols = ["GEO_ID", "Municipal_Name", "County", "OBJECT_ID"]
+    passthrough = ", ".join(
+        f'w."{c}" AS "{c.lower()}"'
+        for c in raw_df.columns
+        if c not in drop_cols + geo_cols
+    )
     con.execute(
         f"""--sql
         CREATE OR REPLACE TEMP VIEW wide AS
-        SELECT * EXCLUDE ({exclude}) FROM zoning_raw
+        SELECT
+            w.OBJECT_ID AS object_id,
+            t.geoid,
+            COALESCE(t.town, w.Municipal_Name) AS town,
+            t.county_fips,
+            COALESCE(t.county, INITCAP(w.County)) AS county,
+            {passthrough}
+        FROM zoning_raw AS w
+        LEFT JOIN geo_town_lookup AS t ON {geoid_sql("w.GEO_ID")} = t.geoid
         """
     )
 
@@ -223,12 +270,13 @@ def build_empty_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     df = read_raw_data(con)
+    build_geo_lookups(con)
     build_info(con)
     build_geom(con)
     build_rules(con, df)
     build_empty_geom(con)
     build_color(con)
-    build_full(con)
+    build_full(con, df)
 
     return df
 

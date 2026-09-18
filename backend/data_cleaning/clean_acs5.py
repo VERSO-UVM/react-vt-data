@@ -109,12 +109,16 @@ def build_county_geoids(con: duckdb.DuckDBPyConnection):
     Create the county GEOID lookup table.
     """
 
-    values = ", ".join(f"('{name}', {geoid})" for name, geoid in COUNTY_GEOIDS.items())
+    values = ", ".join(f"('{name}', '{geoid}')" for name, geoid in COUNTY_GEOIDS.items())
 
     con.execute(
         f"""--sql
         CREATE OR REPLACE TABLE lake.CLEANED.vt_county_geoids AS
-        SELECT *
+        SELECT
+            name,
+            REPLACE(name, ' County, Vermont', '') AS county,
+            geoid,
+            geoid AS county_fips
         FROM (
             VALUES {values}
         ) AS t(name, geoid)

@@ -38,16 +38,16 @@ def build_county_lines(con: duckdb.DuckDBPyConnection) -> None:
 
     Standardizes county identifiers and names to the legacy boundary
     column conventions:
-        CNTYGEOID -> CountyFIPS
-        CNTYNAME  -> CountyName
-        geometry      -> geom
+        CNTYGEOID -> geoid (VARCHAR), county_fips (same value)
+        CNTYNAME  -> county (short title-case, e.g. "Grand Isle")
     """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW vt_county_lines AS
         SELECT
-            CNTYGEOID AS CountyFIPS,
-            CNTYNAME AS CountyName,
+            CAST(CNTYGEOID AS VARCHAR) AS geoid,
+            CAST(CNTYGEOID AS VARCHAR) AS county_fips,
+            INITCAP(REGEXP_REPLACE(TRIM(CNTYNAME), '(?i)\\s+county.*$', '')) AS county,
             geometry
         FROM lake.RAW.vt_county_lines
         """
