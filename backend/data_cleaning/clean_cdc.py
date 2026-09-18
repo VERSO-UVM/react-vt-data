@@ -6,8 +6,6 @@
 **Description**:
     Data cleaning script for the raw `cdc` tables in the DuckLake.
     Cleans both county- and tract-level PLACES data plus the notes table.
-    Also builds a combined county+town table (`cdc_places_combined_tidy`)
-    so the two geo levels can be stacked/filtered together.
 **Run with**:
 python -m data_cleaning.clean_cdc
 """
@@ -29,7 +27,13 @@ EXCLUDE_COLS = [
 
 def get_sme_indicators(con: duckdb.DuckDBPyConnection) -> str:
     """
-    Get CDC Notes indicators
+    Get CDC Notes indicators (manually created key indicators list)
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+
+    Returns:
+        str: A comma separated string list of key indicators for SQL queries
     """
     data_notes = con.execute(
         """--sql
@@ -44,14 +48,16 @@ def get_sme_indicators(con: duckdb.DuckDBPyConnection) -> str:
 
 def build_PCA_table(us_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Builds a 2-component PCA score for Vermont counties.
+    Builds a 2-Principal Component PCA score for Vermont counties.
 
     PCA is fit using the full national county dataset. Vermont county
     observations are then standardized using the national means and
     standard deviations before being projected into the fitted PCA space.
 
+    Args:
+        us_df: A pandas.DataFrame object containing CDC PLACES data for all states in the U.S.
     Returns:
-        DataFrame containing LocationID and the first PCA component score.
+        pd.DataFrame: A pandas DataFrame object containing "LocationID" and the first PCA component score.
     """
     # Build a wide national dataset:
     #   rows    = counties
@@ -116,20 +122,33 @@ def build_PCA_table(us_df: pd.DataFrame) -> pd.DataFrame:
 def add_national_percentile(us_df: pd.DataFrame) -> pd.DataFrame:
     """
     Adds a ranked national percentage column to the VT-only table
+
+    Args:
+        us_df: A pandas.DataFrame object containing CDC PLACES data for all states in the U.S.
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame object containing the "natl_pct" column for comparisons.
     """
     df = us_df.copy()
     df["natl_pct"] = df.groupby("measure")["data_value"].rank(pct=True)
     return df[df["stateabbr"] == "VT"]
 
 
-def get_columns(table: str, con: duckdb.DuckDBPyConnection) -> list[str]:
+def get_columns(raw_table_name: str, con: duckdb.DuckDBPyConnection) -> list[str]:
     """
     Returns the actual column names for a RAW table.
+
+    Args:
+        table: The name of the `lake.RAW ` table from which to return the column names of
+        con: DuckDBPyConnection to the DuckLake
+
+    Returns:
+        list[str]: A list of string column names from the lake.RAW table
     """
     return (
         con.execute(
             f"""--sql
-            DESCRIBE lake.RAW.{table}
+            DESCRIBE lake.RAW.{raw_table_name}
             """
         )
         .df()["column_name"]
@@ -138,17 +157,25 @@ def get_columns(table: str, con: duckdb.DuckDBPyConnection) -> list[str]:
 
 
 def build_places_table(
-    raw_table: str, geo_filter_col: str, indicators: str, con: duckdb.DuckDBPyConnection
+    raw_table_name: str,
+    geo_filter_col: str,
+    indicators: str,
+    con: duckdb.DuckDBPyConnection,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Cleans a single PLACES RAW table (county or tract).
-
+    Args:
+        raw_table_name: The name of the Lake.RAW table to clean
+        geo_filter_col: The name of the geographic name column to filter to
+        indicators: String comma separated list of key indicators
+            - See :func:`get_sme_indicators`
+        con: DuckDBPyConnection to the DuckLake
     Returns:
         us_df: Full national dataset with national percentiles.
         vt_df: Vermont-only cleaned dataset with measure bins.
-        edge_df: Measure bin edges.
+        edge_df: Measure binned category edges.
     """
-    existing_cols = set(get_columns(raw_table, con))
+    existing_cols = set(get_columns(raw_table_name, con))
     exclude_cols = [c for c in EXCLUDE_COLS if c in existing_cols]
     exclude_clause = ", ".join(exclude_cols)
 
@@ -162,7 +189,7 @@ def build_places_table(
                 THEN TRUE
                 ELSE FALSE
             END AS sme_highlight
-        FROM lake.RAW.{raw_table}
+        FROM lake.RAW.{raw_table_name}
         """
     ).df()
 

@@ -17,7 +17,7 @@ info_cols = [
     "county",
     "span_number",
     "property_type",
-    "cat",
+    "category_code",
     "category",
     "purpose",
     "property_description",

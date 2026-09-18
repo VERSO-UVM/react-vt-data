@@ -15,8 +15,11 @@ import pandas as pd
 
 def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
     """
-    Building the table by joining in town geoids from the
+    Building the `town_geoid` table by joining in town geoids from the
     RAW.vt_town_lines table
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
     con.execute(
         r"""--sql
@@ -57,7 +60,12 @@ def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_footprints(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    """Clean building footprint polygons."""
+    """
+    Clean building footprint polygons.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     build_town_geoid(con)
 
     df = con.execute(
@@ -94,6 +102,13 @@ def build_footprints(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
 
 
 def add_to_lake(con: duckdb.DuckDBPyConnection, df: pd.DataFrame) -> None:
+    """
+    Add the building footprints table to the lake.CLEANED schema table.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+        df: pandas.DataFrame object in which to write to the CLEANED table
+    """
     con.register("tmp_df", df)
     try:
         con.execute(

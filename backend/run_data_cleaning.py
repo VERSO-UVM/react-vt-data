@@ -18,10 +18,6 @@ def get_cleaners(script_name: str | None = None):
         if ispkg:
             continue
 
-        # Don't accidentally import the master runner itself.
-        if module_name == "run_cleaning":
-            continue
-
         if script_name and module_name != script_name:
             continue
 
@@ -75,7 +71,7 @@ def main():
         nargs="?",
         default=None,
         help="Name of a single data_cleaning module to run (e.g. "
-        "clean_housing_cost_burden). Omit to run all.",
+        "clean_acs5_timeseries). Omit to run all.",
     )
     args = parser.parse_args()
 

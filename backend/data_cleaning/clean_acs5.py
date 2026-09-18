@@ -25,12 +25,17 @@ COUNTY_GEOIDS = {
 }
 
 
-def _dp_select_sql(dp: str, raw_table: str) -> str:
+def _dp_select_sql(dp: str, raw_table_name: str) -> str:
     """
-    Build the SELECT for a single DP table, joined against `vt_town_lines`
-    to attach a `geoid` (town GEOID, county FIPS, or state FIPS depending on
-    `geo_type`). `county_fips` (the geoid's first 5 characters) is only
-    populated for county- and town-level rows.
+    Build the SELECT query for a single census DP table, joined against `vt_town_lines`
+    to attach a `geoid` column.
+
+    Args:
+        dp: Data Profile table name (ie. "DP02", "DP03", "DP04", "DP05")
+        raw_table_name: The name of the lake.RAW schema DP table.
+
+    Returns:
+        str: SQL query string selecting the DP table.
     """
 
     return f"""--sql
@@ -71,7 +76,7 @@ def _dp_select_sql(dp: str, raw_table: str) -> str:
                         WHEN r.geo_type = 'county_subdivision' THEN 'town'
                         ELSE r.geo_type
                     END AS geo_type_norm
-                FROM lake.RAW.{raw_table} AS r
+                FROM lake.RAW.{raw_table_name} AS r
             ) AS n
             LEFT JOIN lake.RAW.vt_town_lines AS t
                 ON n.NAME = t.NAME
@@ -79,9 +84,12 @@ def _dp_select_sql(dp: str, raw_table: str) -> str:
         """
 
 
-def add_dp_tables(con: duckdb.DuckDBPyConnection):
+def add_dp_tables(con: duckdb.DuckDBPyConnection) -> None:
     """
     Write each RAW DP table to CLEANED and add the DP identifier.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
 
     for dp, (raw_table, cleaned_table) in DP_TABLES.items():
@@ -94,6 +102,12 @@ def add_dp_tables(con: duckdb.DuckDBPyConnection):
 
 
 def build_dp_combined(con: duckdb.DuckDBPyConnection):
+    """
+    Builds the combined table housing all 4 Census DP tables with a "table" column identifier
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     unions = [_dp_select_sql(dp, raw_table) for dp, (raw_table, _) in DP_TABLES.items()]
 
     con.execute(
@@ -107,9 +121,14 @@ def build_dp_combined(con: duckdb.DuckDBPyConnection):
 def build_county_geoids(con: duckdb.DuckDBPyConnection):
     """
     Create the county GEOID lookup table.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
 
-    values = ", ".join(f"('{name}', '{geoid}')" for name, geoid in COUNTY_GEOIDS.items())
+    values = ", ".join(
+        f"('{name}', '{geoid}')" for name, geoid in COUNTY_GEOIDS.items()
+    )
 
     con.execute(
         f"""--sql

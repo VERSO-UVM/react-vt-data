@@ -40,8 +40,13 @@ AMBULANCE_GEOM_COLS = [
 AMBULANCE_RENAMES = {"OBJECTID": "object_id"}
 
 
-def build_ambulance_info_table(con: duckdb.DuckDBPyConnection):
-    """Create the cleaned info table in DuckLake."""
+def build_ambulance_info_table(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Create the ambulance `info` table in DuckLake.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     info_cols_str = lowercase_cols(AMBULANCE_INFO_COLS, AMBULANCE_RENAMES)
 
     con.execute(
@@ -53,8 +58,13 @@ def build_ambulance_info_table(con: duckdb.DuckDBPyConnection):
     )
 
 
-def build_ambulance_geom_table(con: duckdb.DuckDBPyConnection):
-    """Create the cleaned spatial table in DuckLake."""
+def build_ambulance_geom_table(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Create the ambulance `geom` table in DuckLake.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     geom_cols_str = lowercase_cols(AMBULANCE_GEOM_COLS, AMBULANCE_RENAMES)
 
     con.execute(
@@ -66,8 +76,13 @@ def build_ambulance_geom_table(con: duckdb.DuckDBPyConnection):
     )
 
 
-def build_ambulance_color_table(con: duckdb.DuckDBPyConnection):
-    """Create and populate the certification level colors lookup table."""
+def build_ambulance_color_table(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Create the ambulance `color` table in DuckLake.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.VCGI_ambulanceService_colors AS

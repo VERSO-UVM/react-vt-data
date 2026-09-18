@@ -12,11 +12,17 @@ python -m data_cleaning.clean_wastewater
 
 import duckdb
 
-from data_cleaning.geo_lookup import build_geo_lookups, geoid_sql
+from data_cleaning.geo_lookup import build_geo_lookups, geoid_sql, load_initcap
 
 
 ## ADD UNIQUE ID COLUMNS --------------------
 def build_service_area_id(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating a unique identifier for wastewater service areas called "Area_ID."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW service_areas_with_id AS
@@ -29,6 +35,12 @@ def build_service_area_id(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_facility_id(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating a unique identifier for wastewater treatment facilities called "Facility_ID."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW treatment_facilities_with_id AS
@@ -41,6 +53,12 @@ def build_facility_id(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_soil_combined(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Building the master "combined" soil septic suitability table for all RPCs
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     RPCs = [
         "ACRPC",
         "BCRC",
@@ -65,6 +83,12 @@ def build_soil_combined(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_soil_suitability_id(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating a unique identifier for soil suitability polygons "OGC_FID."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW soil_suitability_with_id AS
@@ -78,18 +102,13 @@ def build_soil_suitability_id(con: duckdb.DuckDBPyConnection) -> None:
 
 ## SERVICE AREA TABLES --------------------
 def build_service_info(con: duckdb.DuckDBPyConnection) -> None:
-    con.execute(
-        """--sql
-        CREATE OR REPLACE MACRO initcap(s) AS list_reduce(
-            list_transform(
-                string_split(s, ' '),
-                x -> upper(x[1]) || lower(x[2:])
-            ),
-            (x, y) -> x || ' ' || y
-        );
-        """
-    )
+    """
+    Creating the wastewater service area `info` table."
 
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
+    load_initcap(con)
     con.execute(
         f"""--sql
         CREATE OR REPLACE VIEW serviceAreas_info AS
@@ -114,7 +133,12 @@ def build_service_info(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_service_geom(con: duckdb.DuckDBPyConnection) -> None:
-    # service_geom_cols = ["Area_ID", "geometry"]
+    """
+    Creating the wastewater service area `geom` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW serviceAreas_geom AS 
@@ -127,6 +151,12 @@ def build_service_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_service_misc(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating the wastewater service area `misc` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     service_miscellaneous_info_cols = [
         "Area_ID",
         "GISNotes",
@@ -148,6 +178,12 @@ def build_service_misc(con: duckdb.DuckDBPyConnection) -> None:
 
 ## TREATMENT FACILITY TABLES --------------------
 def build_facility_info(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating the wastewater treatment facility `info` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         f"""--sql
         CREATE OR REPLACE VIEW treatmentFacilities_info AS
@@ -172,7 +208,12 @@ def build_facility_info(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_facility_geom(con: duckdb.DuckDBPyConnection) -> None:
-    # facility_geom_cols = ["Facility_ID", "Latitude", "Longitude", "geometry"]
+    """
+    Creating the wastewater treatment facility `geom` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW treatmentFacilities_geom AS 
@@ -187,6 +228,12 @@ def build_facility_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_facility_permits(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating the wastewater treatment facility `permit info` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     permit_info_cols = [
         "Facility_ID",
         "PermitID",
@@ -206,6 +253,12 @@ def build_facility_permits(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_facility_misc(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating the wastewater treatment facility `misc` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     facility_miscellaneous_info_cols = ["Facility_ID", "SourceFile", "GEOIDTXT"]
 
     con.execute(
@@ -219,8 +272,12 @@ def build_facility_misc(con: duckdb.DuckDBPyConnection) -> None:
 
 ## SOIL SUITABILITY TABLES --------------------
 def build_suitability_info(con: duckdb.DuckDBPyConnection) -> None:
-    # Soil suitability has no GEOID, so match the free-text Jurisdiction to
-    # the town crosswalk by normalized name.
+    """
+    Creating the soil septic suitability `info` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         r"""--sql
         CREATE OR REPLACE VIEW soilSuitability_info AS
@@ -243,7 +300,12 @@ def build_suitability_info(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_suitability_geom(con: duckdb.DuckDBPyConnection) -> None:
-    # suitability_geom_cols = ["OGC_FID", "geometry"]
+    """
+    Creating the soil septic suitability `geom` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW soilSuitability_geom AS 
@@ -256,6 +318,12 @@ def build_suitability_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_suitability_colors(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating the soil septic suitability `colors` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE TABLE soilSuitability_colors (
@@ -276,6 +344,12 @@ def build_suitability_colors(con: duckdb.DuckDBPyConnection) -> None:
 
 ## STORMWATER MANAGEMENT TABLES --------------------
 def build_stormwater_info(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating the stormwater management area `info` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     # "Type" labels derived from VERSO WIM GitHub pages
     con.execute(
         f"""--sql
@@ -316,6 +390,12 @@ def build_stormwater_info(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_stormwater_geom(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Creating the stormwater management area `geom` table."
+
+    Args:
+        con: DuckDBPyConnection to the Ducklake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW stormwaterManagement_geom AS 
@@ -329,6 +409,7 @@ def build_stormwater_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 ## CLEANING PIPELINE --------------------
 def clean(con: duckdb.DuckDBPyConnection):
+    load_initcap(con)
     build_geo_lookups(con)
 
     # Add unique IDs to each table
@@ -359,6 +440,12 @@ def clean(con: duckdb.DuckDBPyConnection):
 
 
 def add_to_lake(con: duckdb.DuckDBPyConnection):
+    """
+    Adds the wastewater infrastructure tables into the lake.CLEANED table schema
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     table_names = [
         "serviceAreas_info",
         "serviceAreas_geom",

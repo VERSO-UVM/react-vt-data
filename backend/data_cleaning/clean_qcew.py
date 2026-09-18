@@ -17,6 +17,15 @@ from data_cleaning.geo_lookup import build_geo_lookups
 
 
 def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """
+    Reads the lake.RAW.qcew table into Python memory using pandas
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+
+    Returns:
+        pd.DataFrame: The pandas DataFrame version of the RAW qcew table
+    """
     raw_df = con.execute(
         """--sql
         SELECT * 
@@ -27,16 +36,19 @@ def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     return raw_df
 
 
-def clean(con: duckdb.DuckDBPyConnection):
+def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     raw_df = read_raw_data(con)
     # NOTE: Cleaning already included in data fetch --> returning raw dataframe
     return raw_df
 
 
-def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame):
+def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame) -> None:
     """
-    Writes the cleaned qcew dataframe
-    to the CLEANED schema in DuckLake.
+    Writes the cleaned qcew dataframe to the CLEANED schema in DuckLake.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+        clean_df: The cleaned pandas DataFrame qcew data
     """
     build_geo_lookups(con)
     con.register("clean_df", clean_df)

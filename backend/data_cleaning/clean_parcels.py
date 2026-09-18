@@ -41,6 +41,13 @@ _STATES_SQL = ", ".join(f"'{s}'" for s in STATES)
 def _register_map(
     con: duckdb.DuckDBPyConnection, view_name: str, mapping: dict
 ) -> None:
+    """
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+        view_name: Name of the SQL "VIEW" to register
+        mapping: Variable mapping/renaming dictionary
+            - Example: :func:`parcels_constants.STATUTE_MAP`
+    """
     df = pd.DataFrame(mapping.items(), columns=["key", "value"])
     con.register(view_name, df)
 
@@ -49,6 +56,9 @@ def build_lookup_maps(con: duckdb.DuckDBPyConnection) -> None:
     """
     Register the hand-maintained VCGI recode dictionaries as joinable
     lookup tables.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
     _register_map(con, "county_map", TOWN_COUNTY_MAP)
     _register_map(con, "rescode_map", RESCODE_MAP)
@@ -62,15 +72,10 @@ def build_lookup_maps(con: duckdb.DuckDBPyConnection) -> None:
 
 def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
     """
-    Build a TOWN -> GEOID crosswalk from the canonical Census/VCGI town
-    boundary layer (lake.RAW.vt_town_lines, the same source clean_fips.py
-    standardizes into vt_town_lines).
+    Build a TOWN -> GEOID cleaning logic
 
-    TOWN_KEY is normalized to the all-caps town/city/gore/grant spelling
-    used by the parcels TOWN column (suffix dropped unless it disambiguates
-    or is part of the proper name), purely to drive the join below. `town`
-    is the display value: the Census/ACS-style "{name} town/city/gore/grant"
-    form (lowercase suffix, always present) straight from vt_town_lines.NAME.
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
     con.execute(
         r"""--sql
@@ -122,6 +127,13 @@ def build_town_geoid(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Builds the full parcels table with lowercase column names, stadardized state abbreviations,
+    and mapped renamed parcel codes.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     con.execute(
         f"""--sql
         CREATE OR REPLACE TEMP VIEW parcels_full AS
@@ -233,6 +245,12 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_geom(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Build the parcels `geom` table view
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     con.execute(
         f"""--sql
         CREATE OR REPLACE TEMP VIEW geom AS
@@ -243,6 +261,12 @@ def build_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_info(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Build the parcels `info` table view
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     con.execute(
         f"""--sql
         CREATE OR REPLACE TEMP VIEW info AS
@@ -253,6 +277,12 @@ def build_info(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def build_tax(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Build the parcels `tax` table view
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     con.execute(
         f"""--sql
         CREATE OR REPLACE TEMP VIEW tax AS
@@ -280,11 +310,6 @@ def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
             SELECT * FROM {name}
             """
         )
-        # These are SQL-created TEMP VIEWs, not Python-registered relations,
-        # so con.unregister() is a silent no-op here and leaves the view
-        # behind in the shared connection — colliding with same-named views
-        # (e.g. "info") that other cleaners in run_data_cleaning.py register
-        # later on the same connection.
         con.execute(f"DROP VIEW IF EXISTS {name}")
 
 

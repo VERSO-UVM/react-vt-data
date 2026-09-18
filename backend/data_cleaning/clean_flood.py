@@ -15,6 +15,9 @@ import duckdb
 def build_flood(con: duckdb.DuckDBPyConnection) -> None:
     """
     Clean FEMA flood polygons.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
     con.execute(
         """--sql
@@ -51,6 +54,12 @@ def build_flood(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Write cleaned FEMA flood data to the lake.CLEANED schema table using the `flood` view
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE TABLE lake.CLEANED.FEMA_floodHazard_geom AS
