@@ -165,7 +165,7 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
             town_geoid.GEOID AS geoid,
             p.SPAN AS span_number,
             p.PROPTYPE AS property_type,
-            p.CAT AS cat,
+            p.CAT AS category_code,
             cat_map.value AS category,
             purpose_map.value AS purpose,
             p.DESCPROP AS property_description,
