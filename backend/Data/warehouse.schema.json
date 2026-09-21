@@ -1,0 +1,585 @@
+{
+  "format_version": 1,
+  "tables": {
+    "FEMA_floodHazard_geom": {
+      "FLD_ZONE": "VARCHAR",
+      "STATIC_BFE_DISPLAY": "VARCHAR",
+      "ZONE_SUBTY_DISPLAY": "VARCHAR",
+      "geometry": "GEOMETRY",
+      "rgba_color": "INTEGER[]"
+    },
+    "VCGI_ambulanceService_colors": {
+      "certification_level": "VARCHAR",
+      "hex_color": "VARCHAR",
+      "rgba": "VARCHAR"
+    },
+    "VCGI_ambulanceService_geom": {
+      "OBJECTID": "INTEGER",
+      "Shape__Area": "DOUBLE",
+      "Shape__Length": "DOUBLE",
+      "geometry": "BLOB"
+    },
+    "VCGI_ambulanceService_info": {
+      "Address": "VARCHAR",
+      "Cert_Level": "VARCHAR",
+      "City": "VARCHAR",
+      "Cost_Call": "DOUBLE",
+      "Cost_Per": "DOUBLE",
+      "OBJECTID": "INTEGER",
+      "Per_No_Tran": "DOUBLE",
+      "Re_Per_Tran": "DOUBLE",
+      "Serv_Name": "VARCHAR",
+      "State": "VARCHAR",
+      "Street_1": "VARCHAR",
+      "Street_2": "VARCHAR",
+      "Total_Tran": "DOUBLE",
+      "Zip_Code": "VARCHAR"
+    },
+    "VCGI_historicPopulation_pctChange_timeseries": {
+      "County": "VARCHAR",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Pct_Population_Change": "DOUBLE",
+      "Population": "DOUBLE",
+      "geo_type": "VARCHAR",
+      "geoid": "BIGINT",
+      "year": "BIGINT"
+    },
+    "VCGI_historicPopulation_timeseries": {
+      "County": "VARCHAR",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Population": "DOUBLE",
+      "geo_type": "VARCHAR",
+      "geoid": "BIGINT",
+      "year": "VARCHAR"
+    },
+    "VersoWastewater_serviceAreas_geom": {
+      "Area_ID": "BIGINT",
+      "geometry": "GEOMETRY"
+    },
+    "VersoWastewater_serviceAreas_info": {
+      "Area_ID": "BIGINT",
+      "County": "VARCHAR",
+      "Municipal_Name": "VARCHAR",
+      "RPC": "VARCHAR",
+      "SystemName": "VARCHAR",
+      "SystemOwner": "VARCHAR",
+      "TownID": "DOUBLE",
+      "TownName": "VARCHAR",
+      "TreatmentFacility": "VARCHAR"
+    },
+    "VersoWastewater_serviceAreas_misc": {
+      "Area_ID": "BIGINT",
+      "Creator": "VARCHAR",
+      "GEOIDTXT": "VARCHAR",
+      "GISDate": "VARCHAR",
+      "GISNotes": "VARCHAR",
+      "GISUpdate": "VARCHAR",
+      "SourceFile": "VARCHAR"
+    },
+    "VersoWastewater_soilSuitability_colors": {
+      "hex_color": "VARCHAR",
+      "rgba": "VARCHAR",
+      "soil_suitability": "VARCHAR"
+    },
+    "VersoWastewater_soilSuitability_geom": {
+      "OGC_FID": "INTEGER",
+      "geometry": "GEOMETRY"
+    },
+    "VersoWastewater_soilSuitability_info": {
+      "Acres": "DOUBLE",
+      "Jurisdiction": "VARCHAR",
+      "OGC_FID": "INTEGER",
+      "RPC": "VARCHAR",
+      "Suitability": "VARCHAR"
+    },
+    "VersoWastewater_stormwaterManagement_geom": {
+      "GlobalID": "VARCHAR",
+      "geometry": "GEOMETRY"
+    },
+    "VersoWastewater_stormwaterManagement_info": {
+      "County": "VARCHAR",
+      "GEOIDTXT": "VARCHAR",
+      "GlobalID": "VARCHAR",
+      "Municipal_Name": "VARCHAR",
+      "RPC": "VARCHAR",
+      "Status": "VARCHAR",
+      "Type": "VARCHAR"
+    },
+    "VersoWastewater_treatmentFacilitiesMisc_info": {
+      "Facility_ID": "BIGINT",
+      "GEOIDTXT": "VARCHAR",
+      "SourceFile": "VARCHAR"
+    },
+    "VersoWastewater_treatmentFacilitiesPermits_info": {
+      "Facility_ID": "BIGINT",
+      "NPDESPermitNumber": "VARCHAR",
+      "PermitID": "VARCHAR",
+      "PermitLink": "VARCHAR",
+      "PermitRecordID": "VARCHAR",
+      "PermitteeName": "VARCHAR"
+    },
+    "VersoWastewater_treatmentFacilities_geom": {
+      "Facility_ID": "BIGINT",
+      "Latitude": "VARCHAR",
+      "Longitude": "VARCHAR",
+      "geometry": "GEOMETRY"
+    },
+    "VersoWastewater_treatmentFacilities_info": {
+      "County": "VARCHAR",
+      "DesignHydraulicCapacityInMGD": "VARCHAR",
+      "FacilityID": "VARCHAR",
+      "FacilityName": "VARCHAR",
+      "Facility_ID": "BIGINT",
+      "Municipal_Name": "VARCHAR",
+      "RPC": "VARCHAR",
+      "SeptageReceivedAtThisFacility": "VARCHAR",
+      "TownName": "VARCHAR",
+      "WWInventoryURL": "VARCHAR"
+    },
+    "VersoZoning_colors": {
+      "district_type": "VARCHAR",
+      "hex_color": "VARCHAR",
+      "rgba": "VARCHAR"
+    },
+    "VersoZoning_empty_geom": {
+      "Acres": "DOUBLE",
+      "GEOID": "VARCHAR",
+      "TOWN_NAME": "VARCHAR",
+      "geom": "BLOB"
+    },
+    "VersoZoning_geom": {
+      "OBJECT_ID": "INTEGER",
+      "geometry": "GEOMETRY"
+    },
+    "VersoZoning_info": {
+      "Abbreviated_District_Name": "VARCHAR",
+      "Acres": "DOUBLE",
+      "Affordable_Housing_District": "VARCHAR",
+      "Base_Density": "DOUBLE",
+      "Bylaw_Date": "TIMESTAMP",
+      "County": "VARCHAR",
+      "District_Mapped": "VARCHAR",
+      "District_Name": "VARCHAR",
+      "District_Type": "VARCHAR",
+      "Elderly_Housing_District": "VARCHAR",
+      "GEO_ID": "VARCHAR",
+      "Municipal_Name": "VARCHAR",
+      "Notes": "VARCHAR",
+      "OBJECT_ID": "INTEGER",
+      "Overlay_District": "VARCHAR",
+      "RPC": "VARCHAR"
+    },
+    "VersoZoning_rules": {
+      "OBJECT_ID": "INTEGER",
+      "rule": "VARCHAR",
+      "use_type": "VARCHAR",
+      "val": "VARCHAR"
+    },
+    "VersoZoning_wide": {
+      "ADU_Allowance": "VARCHAR",
+      "ADU_Elderly_Housing_Only": "VARCHAR",
+      "ADU_Employee_or_Family_Occupancy_Required": "VARCHAR",
+      "ADU_Max_Bedrooms": "DOUBLE",
+      "ADU_Max_Size_as_Percent_of_Primary_Strcture": "DOUBLE",
+      "ADU_Max_Size_in_sq_ft": "DOUBLE",
+      "ADU_Min_Lot_Size": "DOUBLE",
+      "ADU_Min_Parking_Spaces": "DOUBLE",
+      "ADU_Owner_Occupancy_Required": "VARCHAR",
+      "ADU_Renter_Occupancy_Prohibited": "VARCHAR",
+      "ADU_Restricted_to_Primary_Structure": "VARCHAR",
+      "Abbreviated_District_Name": "VARCHAR",
+      "Affordable_Housing_Allowance": "VARCHAR",
+      "Affordable_Housing_District": "VARCHAR",
+      "Affordable_Housing_Elderly_Only": "VARCHAR",
+      "Affordable_Housing_Max_Density": "DOUBLE",
+      "Affordable_Housing_Max_Units_per_Building": "DOUBLE",
+      "Affordable_Housing_Min_Lot_Size": "DOUBLE",
+      "Affordable_Housing_Min_Parking_Spaces_per_1BR": "DOUBLE",
+      "Affordable_Housing_Min_Parking_Spaces_per_mult_BR": "DOUBLE",
+      "Base_Density": "DOUBLE",
+      "Bylaw_Date": "TIMESTAMP",
+      "County": "VARCHAR",
+      "District_Mapped": "VARCHAR",
+      "District_Name": "VARCHAR",
+      "District_Type": "VARCHAR",
+      "Elderly_Housing_District": "VARCHAR",
+      "F1F_Allowance": "VARCHAR",
+      "F1F_Front_Setback": "DOUBLE",
+      "F1F_Frontage": "DOUBLE",
+      "F1F_Max_Height": "DOUBLE",
+      "F1F_Max_Lot_Building_Coverage": "DOUBLE",
+      "F1F_Max_Lot_Impervious_Coverage": "DOUBLE",
+      "F1F_Max_Stories": "DOUBLE",
+      "F1F_Min_Lot_Size": "DOUBLE",
+      "F1F_Min_Parking_Spaces": "DOUBLE",
+      "F1F_Rear_Setback": "DOUBLE",
+      "F1F_Side_Setback": "DOUBLE",
+      "F2F_Affordable_Housing_Only": "VARCHAR",
+      "F2F_Allowance": "VARCHAR",
+      "F2F_Elderly_Housing_Only": "VARCHAR",
+      "F2F_Front_Setback": "DOUBLE",
+      "F2F_Frontage": "DOUBLE",
+      "F2F_Max_Density": "DOUBLE",
+      "F2F_Max_Height": "DOUBLE",
+      "F2F_Max_Lot_Building_Coverage": "DOUBLE",
+      "F2F_Max_Lot_Impervious_Coverage": "DOUBLE",
+      "F2F_Max_Stories": "DOUBLE",
+      "F2F_Min_Lot_Size": "DOUBLE",
+      "F2F_Min_Parking_Spaces_per_1BR": "DOUBLE",
+      "F2F_Min_Parking_Spaces_per_mult_BR": "DOUBLE",
+      "F2F_Rear_Setback": "DOUBLE",
+      "F2F_Side_Setback": "DOUBLE",
+      "F3F_Affordable_Housing_Only": "VARCHAR",
+      "F3F_Allowance": "VARCHAR",
+      "F3F_Connection_to_Sewage/Water_Required": "VARCHAR",
+      "F3F_Elderly_Housing_Only": "VARCHAR",
+      "F3F_Front_Setback": "DOUBLE",
+      "F3F_Frontage": "DOUBLE",
+      "F3F_Max_Density": "DOUBLE",
+      "F3F_Max_Height": "DOUBLE",
+      "F3F_Max_Lot_Building_Coverage": "DOUBLE",
+      "F3F_Max_Lot_Impervious_Coverage": "DOUBLE",
+      "F3F_Max_Stories": "DOUBLE",
+      "F3F_Min_Lot_Size": "DOUBLE",
+      "F3F_Min_Parking_Spaces_per_1BR": "DOUBLE",
+      "F3F_Min_Parking_Spaces_per_mult_BR": "DOUBLE",
+      "F3F_Proximity_to_Public_Transit_Required": "VARCHAR",
+      "F3F_Rear_Setback": "DOUBLE",
+      "F3F_Side_Setback": "DOUBLE",
+      "F4F_Affordable_Housing_Only": "VARCHAR",
+      "F4F_Allowance": "VARCHAR",
+      "F4F_Connection_to_Sewage/Water_Required": "VARCHAR",
+      "F4F_Elderly_Housing_Only": "VARCHAR",
+      "F4F_Front_Setback": "DOUBLE",
+      "F4F_Frontage": "DOUBLE",
+      "F4F_Max_Density": "DOUBLE",
+      "F4F_Max_Height": "DOUBLE",
+      "F4F_Max_Lot_Building_Coverage": "DOUBLE",
+      "F4F_Max_Lot_Impervious_Coverage": "DOUBLE",
+      "F4F_Max_Stories": "DOUBLE",
+      "F4F_Min_Lot_Size": "DOUBLE",
+      "F4F_Min_Parking_Spaces_per_1BR": "DOUBLE",
+      "F4F_Min_Parking_Spaces_per_mult_BR": "DOUBLE",
+      "F4F_Proximity_to_Public_Transit_Required": "VARCHAR",
+      "F4F_Rear_Setback": "DOUBLE",
+      "F4F_Side_Setback": "DOUBLE",
+      "GEO_ID": "VARCHAR",
+      "Municipal_Name": "VARCHAR",
+      "Notes": "VARCHAR",
+      "OBJECT_ID": "INTEGER",
+      "Overlay_District": "VARCHAR",
+      "PRD_Allowance": "VARCHAR",
+      "PRD_Max_Density": "DOUBLE",
+      "PRD_Max_Units": "DOUBLE",
+      "PRD_Min_Lot_Size": "DOUBLE",
+      "PRD_Mobile_or_Manufactured_Home_Park": "VARCHAR",
+      "PUD_Allowance": "VARCHAR",
+      "PUD_Required_with_Subdivision": "VARCHAR",
+      "PUD_Requires_Land_Conservation": "VARCHAR",
+      "PUD_Threshold_Number": "DOUBLE",
+      "RPC": "VARCHAR"
+    },
+    "acs5Demographics_ageDependencyRatio_timeseries": {
+      "Age_Dependency_Ratio": "DOUBLE",
+      "NAME": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Demographics_medianAge_timeseries": {
+      "Median_Age": "DOUBLE",
+      "NAME": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Demographics_populationChange_timeseries": {
+      "NAME": "VARCHAR",
+      "Pct_Population_Change": "DOUBLE",
+      "Population": "DOUBLE",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Economics_healthInsurance_timeseries": {
+      "NAME": "VARCHAR",
+      "Value": "BIGINT",
+      "Variable": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "acs5Economics_medianEarnings_timeseries": {
+      "NAME": "VARCHAR",
+      "Value": "DOUBLE",
+      "Variable": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "acs5Economics_medianHouseholdIncome_timeseries": {
+      "Median_Household_Income": "DOUBLE",
+      "NAME": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Economics_perCapitaIncome_timeseries": {
+      "NAME": "VARCHAR",
+      "Per_Capita_Income": "DOUBLE",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Economics_unemploymentRate_timeseries": {
+      "County": "VARCHAR",
+      "GEOID": "BIGINT",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Value": "DOUBLE",
+      "Variable": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Housing_housingUnits_timeseries": {
+      "NAME": "VARCHAR",
+      "Total_Housing_Units": "DOUBLE",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Housing_incomeBurden_timeseries": {
+      "NAME": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "pct_housing_burden": "DOUBLE",
+      "year": "BIGINT"
+    },
+    "acs5Housing_medianHomeValue_timeseries": {
+      "Median_Home_Value": "DOUBLE",
+      "NAME": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5Housing_vacancyRates_timeseries": {
+      "NAME": "VARCHAR",
+      "Percent": "DOUBLE",
+      "Variable": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5_demographics_tidy": {
+      "County_1": "VARCHAR",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Percent": "DOUBLE",
+      "Section": "VARCHAR",
+      "Value": "DOUBLE",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5_dp_combined_tidy": {
+      "Category": "VARCHAR",
+      "Measure": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Subcategory": "VARCHAR",
+      "Value": "VARCHAR",
+      "Variable": "VARCHAR",
+      "table": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "acs5_economics_tidy": {
+      "County_1": "VARCHAR",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Percent": "DOUBLE",
+      "Section": "VARCHAR",
+      "Value": "DOUBLE",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5_education_tidy": {
+      "County_1": "VARCHAR",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Percent": "DOUBLE",
+      "Section": "VARCHAR",
+      "Value": "BIGINT",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5_housing_tidy": {
+      "County_1": "VARCHAR",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Percent": "DOUBLE",
+      "Section": "VARCHAR",
+      "Value": "DOUBLE",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5_snapshot_indicators_tidy": {
+      "County_1": "VARCHAR",
+      "Jurisdiction": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Percent": "DOUBLE",
+      "Section": "VARCHAR",
+      "Value": "DOUBLE",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "cdc_edges_county": {
+      "0": "DOUBLE",
+      "1": "DOUBLE",
+      "2": "DOUBLE",
+      "3": "DOUBLE",
+      "measure": "VARCHAR"
+    },
+    "cdc_edges_tract": {
+      "0": "DOUBLE",
+      "1": "DOUBLE",
+      "2": "DOUBLE",
+      "3": "DOUBLE",
+      "measure": "VARCHAR"
+    },
+    "cdc_pca_county": {
+      "LocationID": "VARCHAR",
+      "pca_score": "DOUBLE"
+    },
+    "cdc_places_county": {
+      "bin": "BIGINT",
+      "category": "VARCHAR",
+      "categoryid": "VARCHAR",
+      "data_value": "DOUBLE",
+      "data_value_type": "VARCHAR",
+      "data_value_unit": "VARCHAR",
+      "datavaluetypeid": "VARCHAR",
+      "geolocation": "VARCHAR",
+      "high_confidence_limit": "DOUBLE",
+      "locationid": "VARCHAR",
+      "locationname": "VARCHAR",
+      "low_confidence_limit": "DOUBLE",
+      "measure": "VARCHAR",
+      "measureid": "VARCHAR",
+      "natl_pct": "DOUBLE",
+      "short_question_text": "VARCHAR",
+      "sme_highlight": "BOOLEAN",
+      "stateabbr": "VARCHAR",
+      "totalpop18plus": "VARCHAR",
+      "totalpopulation": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "cdc_places_tract": {
+      "bin": "BIGINT",
+      "category": "VARCHAR",
+      "categoryid": "VARCHAR",
+      "countyfips": "BIGINT",
+      "countyname": "VARCHAR",
+      "data_value": "DOUBLE",
+      "data_value_type": "VARCHAR",
+      "data_value_unit": "VARCHAR",
+      "datavaluetypeid": "VARCHAR",
+      "high_confidence_limit": "DOUBLE",
+      "locationid": "BIGINT",
+      "locationname": "BIGINT",
+      "low_confidence_limit": "DOUBLE",
+      "measure": "VARCHAR",
+      "measureid": "VARCHAR",
+      "natl_pct": "DOUBLE",
+      "short_question_text": "VARCHAR",
+      "sme_highlight": "BOOLEAN",
+      "stateabbr": "VARCHAR",
+      "totalpop18plus": "VARCHAR",
+      "totalpopulation": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "dp_demographic": {
+      "Category": "VARCHAR",
+      "Measure": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Subcategory": "VARCHAR",
+      "Value": "VARCHAR",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "table": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "dp_economic": {
+      "Category": "VARCHAR",
+      "Measure": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Subcategory": "VARCHAR",
+      "Value": "VARCHAR",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "table": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "dp_housing": {
+      "Category": "VARCHAR",
+      "Measure": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Subcategory": "VARCHAR",
+      "Value": "VARCHAR",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "table": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "dp_social": {
+      "Category": "VARCHAR",
+      "Measure": "VARCHAR",
+      "NAME": "VARCHAR",
+      "Subcategory": "VARCHAR",
+      "Value": "VARCHAR",
+      "Variable": "VARCHAR",
+      "county": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "state": "VARCHAR",
+      "table": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "qcew_sectorEmployment_timeseries": {
+      "County": "VARCHAR",
+      "employment": "DOUBLE",
+      "employment_4qma": "DOUBLE",
+      "quarter": "BIGINT",
+      "quarter_label": "VARCHAR",
+      "sector": "VARCHAR",
+      "year": "BIGINT"
+    },
+    "vt_county_geoids": {
+      "GEOID": "INTEGER",
+      "NAME": "VARCHAR"
+    },
+    "vt_county_lines_geom": {
+      "CountyFIPS": "VARCHAR",
+      "CountyName": "VARCHAR",
+      "geometry": "BLOB"
+    },
+    "vt_town_lines_geom": {
+      "FIPS_ID": "VARCHAR",
+      "TOWN_NAME": "VARCHAR",
+      "geometry": "BLOB"
+    },
+    "vt_tract_lines_geom": {
+      "LocationID": "VARCHAR",
+      "geometry": "BLOB",
+      "name": "VARCHAR"
+    }
+  }
+}
