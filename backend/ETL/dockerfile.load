@@ -16,6 +16,7 @@ RUN uv run python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')
 
 
 COPY --chown=app:app ./run_data_loading.py /code/run_data_loading.py
+COPY --chown=app:app ./warehouse_schema.py /code/warehouse_schema.py
 # TODO: Remove the dependency on app_utils
 COPY --chown=app:app ./app_utils /code/app_utils
 # For lake connection import

@@ -1,12 +1,16 @@
 ## Set up environment ##
 
-export DATA_DIR := justfile_directory() / "backend" / "Data"
+export DATA_DIR := env("DATA_DIR", justfile_directory() / "backend" / "Data")
 # Load environment variables
 set dotenv-filename := ".env"
 
 api_host := env("API_HOST", "127.0.0.1")
 api_port := env("API_PORT", "6767")
 api_url := env("NEXT_PUBLIC_API_URL", "http://localhost:6767/api")
+mcp_host := env("MCP_HOST", "127.0.0.1")
+mcp_port := env("MCP_PORT", "6768")
+# Pass named variables without placing bearer-token values in podman arguments.
+mcp_container_env := "-e MCP_ENABLED -e MCP_AUTH_MODE -e MCP_BEARER_TOKENS -e MCP_ALLOWED_HOSTS -e MCP_ALLOWED_ORIGINS -e MCP_MAX_ROWS -e MCP_MAX_BYTES -e MCP_QUERY_TIMEOUT -e MCP_MAX_CONCURRENCY -e MCP_RATE_LIMIT -e MCP_MAX_REQUEST_BYTES -e MCP_REQUEST_BODY_TIMEOUT"
 # Host-specific podman flags. Empty by default (Docker, macOS, rootful podman).
 # On the VM with rootless podman, override:  just podman_flags="--userns=keep-id:uid=1000,gid=1000"
 podman_flags := env("PODMAN_FLAGS", "")
@@ -32,6 +36,53 @@ local-frontend:
 [group("CLI Rapid Development")]
 local-dev:
     uvx honcho start
+
+################
+# MCP Development #
+################
+
+[doc("run the standalone MCP on localhost:6768 (auth mode from environment; defaults to none)")]
+[group("MCP")]
+[working-directory("backend")]
+mcp:
+    uv run python -m mcp_server --host {{ mcp_host }} --port {{ mcp_port }}
+
+[doc("run local MCP with the documented development bearer token")]
+[group("MCP")]
+[working-directory("backend")]
+mcp-dev-auth:
+    MCP_AUTH_MODE=development uv run python -m mcp_server --host {{ mcp_host }} --port {{ mcp_port }}
+
+[doc("run the MCP over stdio for a local agent-managed subprocess")]
+[group("MCP")]
+[working-directory("backend")]
+mcp-stdio:
+    MCP_AUTH_MODE=none uv run python -m mcp_server --transport stdio
+
+[doc("generate one random production bearer token; save its output in your secrets configuration")]
+[group("MCP")]
+[working-directory("backend")]
+mcp-token:
+    @uv run python -c 'import secrets; print(secrets.token_urlsafe(32))'
+
+[doc("check MCP Python formatting and lint without changing files")]
+[group("MCP")]
+[working-directory("backend")]
+mcp-check:
+    uv run ruff check data_tools mcp_server tests/test_mcp_*.py
+    uv run ruff format --check data_tools mcp_server tests/test_mcp_*.py
+
+[doc("run MCP tests with temporary fixture databases; no production warehouse needed")]
+[group("MCP")]
+[working-directory("backend")]
+test-mcp:
+    uv run pytest -q tests/test_mcp_*.py
+
+[doc("smoke-test every MCP dataset against the configured real warehouse (read-only)")]
+[group("MCP")]
+[working-directory("backend")]
+test-mcp-live:
+    MCP_LIVE_WAREHOUSE="{{ DATA_DIR }}/warehouse.duckdb" uv run pytest -q tests/test_mcp_live.py
 
 ########################################################
 ########################################################
@@ -83,13 +134,13 @@ build-api:
 [group("API Container")]
 [working-directory("backend")]
 run-api:
-    podman run --pod app --name api -d --rm -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api
+    podman run --pod app --name api -d --rm -v "{{ DATA_DIR }}:/data:ro,z" {{ mcp_container_env }} localhost/my-api
 
 [doc("build the api image and then check it with more error printing (non detached)")]
 [group("API Container")]
 [working-directory("backend")]
 run-check-api: build-api
-    podman run --pod app -v "{{ DATA_DIR }}:/data:ro,z"  localhost/my-api
+    podman run --pod app -v "{{ DATA_DIR }}:/data:ro,z" {{ mcp_container_env }} localhost/my-api
 
 [doc("everything to get the api up and running")]
 [group("API Container")]
@@ -206,7 +257,7 @@ test:
 [working-directory("backend")]
 build-lake:
     podman build -t localhost/vdc-lake -f ETL/dockerfile.lake .
-    podman run --rm {{ podman_flags }} -v "$(pwd)/Data:/data:z" -e DATA_DIR=/data localhost/vdc-lake
+    podman run --rm {{ podman_flags }} -v "{{ DATA_DIR }}:/data:z" -e DATA_DIR=/data localhost/vdc-lake
 
 # --------- 1. Data Collection (E) ---------------------
 [doc("build the backend COLLECTION image")]
@@ -220,7 +271,7 @@ build-collection:
 [working-directory("backend")]
 get-data start_year end_year: build-collection
     podman run --rm {{ podman_flags }} \
-        -v "$(pwd)/Data:/data:z" \
+        -v "{{ DATA_DIR }}:/data:z" \
         -e DATA_DIR=/data \
         -e CENSUS_API_KEY="$CENSUS_API_KEY" \
         localhost/vdc-collection {{ start_year }} {{ end_year }}
@@ -232,7 +283,7 @@ get-data start_year end_year: build-collection
 transform-data:
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
     podman run --rm {{ podman_flags }} \
-     -v "$(pwd)/Data:/data:z" localhost/vdc-cleaning
+     -v "{{ DATA_DIR }}:/data:z" localhost/vdc-cleaning
 
 # --------- 3. Data Loading (L) ---------------------
 [doc("Load the lake.CLEANED tables into a DuckDB database")]
@@ -240,7 +291,7 @@ transform-data:
 [working-directory("backend")]
 load-data:
     podman build -t localhost/vdc-loading -f ETL/dockerfile.load .
-    podman run {{ podman_flags }} --rm -v "$(pwd)/Data:/data:z" localhost/vdc-loading
+    podman run {{ podman_flags }} --rm -v "{{ DATA_DIR }}:/data:z" localhost/vdc-loading
 
 [doc("Collect (E), clean (T), and load (L) the data (Full pipeline run)")]
 [group("ETL Pipeline")]
