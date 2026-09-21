@@ -183,7 +183,7 @@ All development should:
 - Use [Mantine](https://mantine.dev/) UI where applicable.
 - Use [Axios](https://axios-http.com/docs/intro) for internal API queries (frontend requesting backend API).
 - Use [Duckdb](https://duckdb.org/) for any new data queries.
-- Add new commands as `just` recipes rather than documenting bare shell invocations, so there is one place to look them up. Include comments.
+- Add new commands as `just` recipes rather than documenting bare shell invocations, so there is one place to look them up. Include comment documentation.
 
 ## License
 
@@ -191,12 +191,28 @@ This project is open-source under the **MIT License**.
 
 ---
 
-## VM Deployment
+## Virtual Machine (VM) Deployment
 
 The API and MCP run in the existing rootless Podman stack on the VM, using a
-read-only warehouse volume. The application account has historically been
-`appuser0`. The GitHub Pages workflow only publishes the static frontend; it does
-not deploy the backend or MCP.
+read-only warehouse volume.
+
+### Updating Changes to the Live Site
+
+1. SSH into the UVM Virtual Machine using `ssh yournetid@vtdatacollab.uvm.edu`\
+***Note**: You must either be on UVM Wi-Fi or the remote VPN for VM access*
+
+2. Switch your account to *appuser0* using `sudo su - appuser0`\
+***Note**: You can verify it is correct using the `whoami` command. (It should echo `appuser0`*
+
+3. Ensure the correct working directory using `ls` and `cd react-vt-data`\
+***Note**: The parent folder should be `react-vt-data`*
+
+4. Run `git pull` to pull any updates or changes from the `main` branch\
+
+6. Run the `just dev` recipe to restart the app containers for the live site\
+***Note**: If changes update the **ETL process** (`data_collection/`, `data_cleaning/`, `data_loading/`, etc.),*
+then run `just run-etl 2009 2024` before running `just dev` to update the database (This should take ~20-30 minutes). 
+
 
 Use the [MCP deployment runbook](docs/mcp.md#deployment-in-this-repository) for the
 environment configuration, image build and rollout procedure, HTTPS proxy
