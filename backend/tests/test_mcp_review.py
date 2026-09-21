@@ -22,9 +22,9 @@ def review_warehouse(tmp_path):
             "('Chittenden County, Vermont', '50007')"
         )
         conn.execute(
-            "CREATE TABLE acs5_housing_tidy(year VARCHAR, NAME VARCHAR, "
-            "geo_type VARCHAR, Section VARCHAR, Variable VARCHAR, "
-            "Value DOUBLE, Percent DOUBLE)"
+            "CREATE TABLE acs5_housing_tidy(year VARCHAR, name VARCHAR, "
+            "geo_type VARCHAR, section VARCHAR, variable VARCHAR, "
+            "value DOUBLE, percent DOUBLE)"
         )
         for place in ("Addison", "Chittenden"):
             for variable in ("Owners", "Renters"):
@@ -46,9 +46,9 @@ def review_warehouse(tmp_path):
             "('2023', 'Chittenden County, Vermont', 'county', 'Tenure', 'Renters', 100, 50)"
         )
         conn.execute(
-            "CREATE TABLE VersoZoning_info(OBJECT_ID INTEGER, County VARCHAR, "
-            "Municipal_Name VARCHAR, GEO_ID VARCHAR, District_Name VARCHAR, "
-            "District_Type VARCHAR, Overlay_District VARCHAR, Acres DOUBLE)"
+            "CREATE TABLE VersoZoning_info(object_id INTEGER, county VARCHAR, "
+            "town VARCHAR, geoid VARCHAR, district_name VARCHAR, "
+            "district_type VARCHAR, overlay_district VARCHAR, acres DOUBLE)"
         )
         conn.executemany(
             "INSERT INTO VersoZoning_info VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -109,7 +109,7 @@ def test_byte_limited_pages_preserve_every_row_without_duplicates(
             if tool == "export_data"
             else result["rows"]
         )
-        ids.extend(int(row["OBJECT_ID"]) for row in rows)
+        ids.extend(int(row["object_id"]) for row in rows)
         pages += 1
         if not result["has_more"]:
             assert result["next_cursor"] is None
@@ -136,7 +136,7 @@ def test_comparison_requires_each_variable_at_each_place_in_common_year(
     result = service.call("compare_places", arguments)
     assert result["comparison_year"] == 2022
     assert len(result["rows"]) == 4
-    assert {(row["_location_id"], row["Variable"]) for row in result["rows"]} == {
+    assert {(row["_location_id"], row["variable"]) for row in result["rows"]} == {
         (place, variable)
         for place in ("50001", "50007")
         for variable in ("Owners", "Renters")

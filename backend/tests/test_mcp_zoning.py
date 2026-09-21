@@ -36,9 +36,9 @@ def inventory():
         "('5001570525', 'Stowe town')"
     )
     conn.execute(
-        "CREATE TABLE VersoZoning_info(OBJECT_ID INTEGER, County VARCHAR, "
-        "Municipal_Name VARCHAR, GEO_ID VARCHAR, District_Name VARCHAR, "
-        "District_Type VARCHAR, Overlay_District VARCHAR, Acres DOUBLE)"
+        "CREATE TABLE VersoZoning_info(object_id INTEGER, county VARCHAR, "
+        "town VARCHAR, geoid VARCHAR, district_name VARCHAR, "
+        "district_type VARCHAR, overlay_district VARCHAR, acres DOUBLE)"
     )
     conn.executemany(
         "INSERT INTO VersoZoning_info VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -156,7 +156,7 @@ def inventory():
         ],
     )
     conn.execute("CREATE TABLE VersoZoning_wide AS SELECT * FROM VersoZoning_info")
-    conn.execute("UPDATE VersoZoning_wide SET Municipal_Name = Municipal_Name || ' '")
+    conn.execute("UPDATE VersoZoning_wide SET town = town || ' '")
     yield conn
     conn.close()
 
@@ -185,16 +185,16 @@ def test_city_selection_uses_names_and_preserves_wrong_source_id(inventory, tabl
         inventory, places(inventory, "5002161225"), table=table
     )
     rows = inventory.execute(
-        f'SELECT Municipal_Name, GEO_ID FROM "{table}" WHERE {clause}', params
+        f'SELECT town, geoid FROM "{table}" WHERE {clause}', params
     ).fetchall()
     assert len(rows) == 2
     assert {name.strip() for name, _ in rows} == {"Rutland City"}
     assert {geoid for _, geoid in rows} == {"5002161300"}
     assert diagnostics["mismatched_source_geoid_count"] == 2
     for name, geoid in rows:
-        source = {"Municipal_Name": name, "GEO_ID": geoid}
+        source = {"town": name, "geoid": geoid}
         assert zoning_location_id(source, diagnostics) == "5002161225"
-        assert source["GEO_ID"] == "5002161300"
+        assert source["geoid"] == "5002161300"
 
 
 def test_town_does_not_take_city_districts_with_same_source_geoid(inventory):
@@ -202,7 +202,7 @@ def test_town_does_not_take_city_districts_with_same_source_geoid(inventory):
         inventory, places(inventory, "5001161750")
     )
     rows = inventory.execute(
-        f"SELECT Municipal_Name FROM VersoZoning_info WHERE {clause}", params
+        f"SELECT town FROM VersoZoning_info WHERE {clause}", params
     ).fetchall()
     assert rows == [("Saint Albans Town",)]
     assert diagnostics["conflicting_geoid_districts_excluded"] == 1
@@ -213,7 +213,7 @@ def test_missing_source_geoid_can_resolve_from_unambiguous_name(inventory):
         inventory, places(inventory, "5000766175")
     )
     row = inventory.execute(
-        f"SELECT Municipal_Name,GEO_ID FROM VersoZoning_info WHERE {clause}", params
+        f"SELECT town,geoid FROM VersoZoning_info WHERE {clause}", params
     ).fetchone()
     assert row == ("South Burlington", None)
     assert diagnostics["missing_source_geoid_count"] == 1
@@ -230,14 +230,14 @@ def test_concatenated_source_name_is_not_assigned_to_a_single_town(inventory):
         == 0
     )
     assert any(
-        item["Municipal_Name"] == "Stowe Town Stowe Village"
+        item["town"] == "Stowe Town Stowe Village"
         for item in diagnostics["inventory_unresolved_names_preview"]
     )
 
 
 def test_summary_aliases_match_census_and_inventory_spelling(inventory):
     result = zoning_summary(inventory, request(municipality="St.Albanscity"), 100)
-    assert result["rows"][0]["Municipal_Name"] == "Saint Albans City"
+    assert result["rows"][0]["town"] == "Saint Albans City"
     assert result["rows"][0]["recorded_acres"] == 300
     assert result["resolved_locations"][0]["id"] == "5001161675"
     assert result["location_diagnostics"]["mismatched_source_geoid_count"] == 1
@@ -247,7 +247,7 @@ def test_ambiguous_municipality_requires_explicit_city_or_town(inventory):
     with pytest.raises(ValueError, match=r"Ambiguous.*5002161225.*5002161300"):
         zoning_summary(inventory, request(municipality="Rutland"), 100)
     result = zoning_summary(inventory, request(municipality="Rutland City"), 100)
-    assert {row["Municipal_Name"] for row in result["rows"]} == {"Rutland City"}
+    assert {row["town"] for row in result["rows"]} == {"Rutland City"}
 
 
 def test_explicit_location_and_alias_must_agree(inventory):
@@ -268,7 +268,7 @@ def test_excluded_overlay_totals_reconcile_without_correcting_source_flags(inven
     assert excluded["district_count"] == 2
     assert excluded["recorded_acres"] == 86.1
     assert excluded["districts_missing_acres"] == 1
-    assert {row["District_Name"] for row in excluded["districts_preview"]} == {
+    assert {row["district_name"] for row in excluded["districts_preview"]} == {
         "Residential high density",
         "Unknown acres overlay",
     }
@@ -338,7 +338,7 @@ def test_no_location_match_never_falls_back_to_whole_state(inventory):
 def test_partial_inventory_exact_name_does_not_invent_a_canonical_id(inventory):
     inventory.execute("DROP TABLE vt_town_lines_geom")
     result = zoning_summary(inventory, request(municipality="Rutland City"), 100)
-    assert result["rows"][0]["Municipal_Name"] == "Rutland City"
+    assert result["rows"][0]["town"] == "Rutland City"
     assert result["resolved_locations"] == []
     assert "unresolved" in result["location_diagnostics"]["strategy"]
 

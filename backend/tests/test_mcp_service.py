@@ -22,19 +22,19 @@ def warehouse(tmp_path):
             "INSERT INTO vt_county_geoids VALUES ('Addison County, Vermont', '50001'), ('Chittenden County, Vermont', '50007')"
         )
         conn.execute(
-            "CREATE TABLE acs5Economics_medianHouseholdIncome_timeseries(year VARCHAR, NAME VARCHAR, Median_Household_Income DOUBLE, geo_type VARCHAR)"
+            "CREATE TABLE acs5Economics_medianHouseholdIncome_timeseries(year VARCHAR, name VARCHAR, median_household_income DOUBLE, geo_type VARCHAR)"
         )
         conn.execute(
             "INSERT INTO acs5Economics_medianHouseholdIncome_timeseries VALUES ('2021', 'Addison County, Vermont', 61000, 'county'), ('2022', 'Addison County, Vermont', 64000, 'county'), ('2023', 'Addison County, Vermont', 68000, 'county'), ('2021', 'Chittenden County, Vermont', 71000, 'county'), ('2022', 'Chittenden County, Vermont', 75000, 'county')"
         )
         conn.execute(
-            "CREATE TABLE acs5_housing_tidy(year VARCHAR, NAME VARCHAR, geo_type VARCHAR, Section VARCHAR, Variable VARCHAR, Value DOUBLE, Percent DOUBLE)"
+            "CREATE TABLE acs5_housing_tidy(year VARCHAR, name VARCHAR, geo_type VARCHAR, section VARCHAR, variable VARCHAR, value DOUBLE, percent DOUBLE)"
         )
         conn.execute(
             "INSERT INTO acs5_housing_tidy VALUES ('2022', 'Addison County, Vermont', 'county', 'Occupancy', 'Occupied housing units', 12000, 80), ('2023', 'Addison County, Vermont', 'county', 'Occupancy', 'Occupied housing units', 13000, 81), ('2023', 'Chittenden County, Vermont', 'county', 'Occupancy', 'Occupied housing units', -666666666, 82), ('2023', 'Addison County, Vermont', 'county', 'Tenure', 'Owner occupied', 10000, 70)"
         )
         conn.execute(
-            "CREATE TABLE VersoZoning_info(OBJECT_ID INTEGER, County VARCHAR, Municipal_Name VARCHAR, GEO_ID VARCHAR, District_Name VARCHAR, District_Type VARCHAR, Overlay_District VARCHAR, Acres DOUBLE)"
+            "CREATE TABLE VersoZoning_info(object_id INTEGER, county VARCHAR, town VARCHAR, geoid VARCHAR, district_name VARCHAR, district_type VARCHAR, overlay_district VARCHAR, acres DOUBLE)"
         )
         conn.execute(
             "INSERT INTO VersoZoning_info VALUES (1, 'Addison', 'Addison', '5000100325', '=unsafe', 'Residential', 'No', 100), (2, 'Addison', 'Addison', '5000100325', 'R2', 'Residential', 'No', 50), (3, 'Addison', 'Addison', '5000100325', 'Flood overlay', 'Overlay', 'Yes', 80), (4, 'Addison', 'Addison', '5000100325', 'Unknown acres', 'Residential', 'No', NULL)"
@@ -60,7 +60,7 @@ def test_discovery_reports_availability_and_real_coverage(service):
     assert any(d["dataset_id"] == "acs5_ts_household_income" for d in datasets)
     assert service.health()["available_datasets"] >= 3
     described = service.call("describe_dataset", {"dataset_id": "acs5_housing"})
-    assert "Percent" in json.dumps(described)
+    assert "percent" in json.dumps(described)
     assert "warehouse_version" in described
 
 
@@ -78,7 +78,7 @@ def test_canonical_places_and_exact_observations(service):
         },
     )
     assert result["row_count"] == 1
-    assert result["rows"][0]["Median_Household_Income"] == 64000
+    assert result["rows"][0]["median_household_income"] == 64000
     assert result["rows"][0]["_location_id"] == "50001"
     assert result["provenance"]["source_url"].startswith("https://")
 
@@ -89,19 +89,19 @@ def test_value_and_percent_separate_and_sentinel_null(service):
         {
             "dataset_id": "acs5_housing",
             "years": [2023],
-            "filters": {"Variable": ["Occupied housing units"]},
+            "filters": {"variable": ["Occupied housing units"]},
         },
     )
     assert len(result["rows"]) == 2
     chittenden = next(
-        row for row in result["rows"] if row["NAME"].startswith("Chittenden")
+        row for row in result["rows"] if row["name"].startswith("Chittenden")
     )
-    assert chittenden["Value"] is None
-    assert chittenden["Percent"] == 82
+    assert chittenden["value"] is None
+    assert chittenden["percent"] == 82
     percent_only = service.call(
-        "query_data", {"dataset_id": "acs5_housing", "measures": ["Percent"]}
+        "query_data", {"dataset_id": "acs5_housing", "measures": ["percent"]}
     )
-    assert all("Value" not in row for row in percent_only["rows"])
+    assert all("value" not in row for row in percent_only["rows"])
 
 
 def test_variable_selection_does_not_mix_sections(service):
@@ -114,7 +114,7 @@ def test_variable_selection_does_not_mix_sections(service):
         {"dataset_id": "acs5_housing", "variable_ids": [variables[0]["variable_id"]]},
     )
     assert result["row_count"] == 3
-    assert {row["Section"] for row in result["rows"]} == {"Occupancy"}
+    assert {row["section"] for row in result["rows"]} == {"Occupancy"}
 
 
 def test_timeseries_preserves_actual_years_and_order(service):
@@ -143,7 +143,7 @@ def test_compare_aligns_latest_common_year(service):
     )
     assert result["comparison_year"] == 2022
     assert {row["year"] for row in result["rows"]} == {2022}
-    assert {row["Median_Household_Income"] for row in result["rows"]} == {64000, 75000}
+    assert {row["median_household_income"] for row in result["rows"]} == {64000, 75000}
     with pytest.raises(ValueError, match="No common"):
         service.call(
             "compare_places",
@@ -167,7 +167,7 @@ def test_pagination_is_complete_without_duplicates(service):
             break
         args["cursor"] = result["next_cursor"]
     assert len(rows) == 5
-    assert len({(row["NAME"], row["year"]) for row in rows}) == 5
+    assert len({(row["name"], row["year"]) for row in rows}) == 5
 
 
 def test_cursors_bound_to_query_tool_and_warehouse(service, warehouse):
@@ -204,7 +204,7 @@ def test_reject_unsupported_requests(service, changes):
 def test_sql_injection_values_are_literals(service):
     result = service.call(
         "query_data",
-        {"dataset_id": "acs5_housing", "filters": {"Variable": ["x' OR 1=1 --"]}},
+        {"dataset_id": "acs5_housing", "filters": {"variable": ["x' OR 1=1 --"]}},
     )
     assert result["rows"] == []
     assert service.health()["status"] == "ok"
@@ -243,7 +243,7 @@ def test_export_matches_query_and_escapes_spreadsheet_formulas(service):
     assert result["media_type"] == "text/csv"
     assert result["truncated"] and result["next_cursor"]
     exported = list(csv.DictReader(io.StringIO(result["csv"])))
-    assert exported[0]["District_Name"] == "'=unsafe"
+    assert exported[0]["district_name"] == "'=unsafe"
     assert "rows" not in result
 
 

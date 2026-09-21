@@ -64,18 +64,18 @@ def test_contract_detects_source_schema_changes(built_schema, change):
     changed = copy.deepcopy(built_schema)
     columns = changed["tables"]["VersoZoning_wide"]
     if change == "added":
-        columns["PRD_New_Standard"] = "DOUBLE"
+        columns["prd_new_standard"] = "DOUBLE"
     elif change == "removed":
-        del columns["PRD_Max_Units"]
+        del columns["prd_max_units"]
     elif change == "renamed":
-        columns["PRD_Maximum_Units"] = columns.pop("PRD_Max_Units")
+        columns["prd_maximum_units"] = columns.pop("prd_max_units")
     elif change == "type":
-        columns["PRD_Max_Units"] = "VARCHAR"
+        columns["prd_max_units"] = "VARCHAR"
     else:
         del changed["tables"]["VersoZoning_wide"]
     errors = _zoning_contract_errors(changed)
     assert errors
-    assert "PRD_" in " ".join(errors) or "Missing table" in errors[0]
+    assert "prd_" in " ".join(errors) or "Missing table" in errors[0]
 
 
 def test_snapshot_is_metadata_only_and_ignores_attached_databases(tmp_path):

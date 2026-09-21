@@ -27,8 +27,8 @@ def service(tmp_path):
             INSERT INTO vt_town_lines_geom VALUES
                 ('5002161225', 'Rutland city'), ('5002161300', 'Rutland town');
             CREATE TABLE acs5_dp_combined_tidy(
-                year VARCHAR, NAME VARCHAR, "table" VARCHAR, Category VARCHAR,
-                Subcategory VARCHAR, Variable VARCHAR, Measure VARCHAR, Value VARCHAR
+                year VARCHAR, name VARCHAR, "table" VARCHAR, category VARCHAR,
+                subcategory VARCHAR, variable VARCHAR, measure VARCHAR, value VARCHAR
             );
             INSERT INTO acs5_dp_combined_tidy VALUES
                 ('2009', 'Rutland city, Rutland County, Vermont', 'DP04', 'Estimate', 'GROSS RENT', 'Occupied units paying rent: Median (dollars)', 'Number', '650'),
@@ -39,16 +39,16 @@ def service(tmp_path):
                 ('2011', 'Rutland city, Rutland County, Vermont', 'DP04', 'GRAPI', '35.0 percent or more', 'Total', 'Percent', '22.5'),
                 ('2013', 'Rutland city, Rutland County, Vermont', 'DP04', 'GRAPI', 'Occupied units paying rent', 'Not computed', 'Percent', '-888888888');
             CREATE TABLE VersoZoning_info(
-                OBJECT_ID INTEGER, County VARCHAR, Municipal_Name VARCHAR, GEO_ID VARCHAR,
-                District_Name VARCHAR, District_Type VARCHAR, Overlay_District VARCHAR,
-                Acres DOUBLE, Base_Density DOUBLE, Notes VARCHAR
+                object_id INTEGER, county VARCHAR, town VARCHAR, geoid VARCHAR,
+                district_name VARCHAR, district_type VARCHAR, overlay_district VARCHAR,
+                acres DOUBLE, base_density DOUBLE, notes VARCHAR
             );
             INSERT INTO VersoZoning_info VALUES
                 (1, 'Rutland', 'Rutland City', '5002161300', 'Residential', 'Residential', 'No', 100, 10, repeat('Long source notes ', 200)),
                 (2, 'Rutland', 'Rutland Town', '5002161300', 'Rural', 'Residential', 'No', 500, 1, 'Town notes'),
                 (3, 'Rutland', 'Rutland City', '5002161300', 'Flood overlay', 'Overlay', 'Yes', 40, NULL, 'Source overlay'),
                 (4, 'Rutland', 'Rutland City', NULL, 'Downtown', 'Mixed', 'No', 25, 20, 'Missing source ID');
-            CREATE TABLE VersoZoning_wide AS SELECT * EXCLUDE(Municipal_Name), Municipal_Name || ' ' AS Municipal_Name FROM VersoZoning_info;
+            CREATE TABLE VersoZoning_wide AS SELECT * EXCLUDE(town), town || ' ' AS town FROM VersoZoning_info;
         """)
     return DataToolService(warehouse)
 
@@ -81,7 +81,7 @@ def test_empty_year_filter_reports_coverage_before_year_constraint(service):
         "query_data",
         {
             "dataset_id": "acs5_dp",
-            "filters": {"year": [2010], "Category": ["gross rent"]},
+            "filters": {"year": [2010], "category": ["gross rent"]},
         },
     )
     assert result["rows"] == []
@@ -108,27 +108,27 @@ def test_open_year_range_outside_dataset_keeps_explicit_constraint(
 def test_empty_filter_diagnostics_suggest_values_without_changing_query(service):
     result = service.call(
         "query_data",
-        {"dataset_id": "zoning_bylaws", "filters": {"Municipal_Name": ["Rutland Cty"]}},
+        {"dataset_id": "zoning_bylaws", "filters": {"town": ["Rutland Cty"]}},
     )
     assert result["rows"] == []
     hint = next(hint for hint in result["hints"] if hint["code"] == "filter_matches")
     assert hint["matching_rows_alone"] == 0
     assert hint["suggested_values"][0] == "Rutland City"
-    assert result["applied_query"]["filters"] == {"Municipal_Name": ["Rutland Cty"]}
+    assert result["applied_query"]["filters"] == {"town": ["Rutland Cty"]}
 
 
 def test_projection_bounds_wide_rows_and_retains_hidden_location_resolution(service):
     args = {
         "dataset_id": "zoning_bylaws",
         "location_ids": ["5002161225"],
-        "columns": ["District_Name", "GEO_ID", "_location_id"],
+        "columns": ["district_name", "geoid", "_location_id"],
     }
     result = service.call("query_data", args)
     assert result["row_count"] == 3
     assert result["columns"] == args["columns"]
     assert all(list(row) == args["columns"] for row in result["rows"])
     assert {row["_location_id"] for row in result["rows"]} == {"5002161225"}
-    assert {row["GEO_ID"] for row in result["rows"]} == {"5002161300", None}
+    assert {row["geoid"] for row in result["rows"]} == {"5002161300", None}
     assert result["location_diagnostics"]["mismatched_source_geoid_count"] == 2
     full = service.call(
         "query_data", {"dataset_id": "zoning_bylaws", "location_ids": ["5002161225"]}
@@ -144,19 +144,19 @@ def test_city_records_never_leak_into_town_query(service):
     result = service.call(
         "query_data", {"dataset_id": "zoning_districts", "location_ids": ["5002161300"]}
     )
-    assert [row["District_Name"] for row in result["rows"]] == ["Rural"]
+    assert [row["district_name"] for row in result["rows"]] == ["Rural"]
     assert result["location_diagnostics"]["conflicting_geoid_districts_excluded"] == 2
 
 
 def test_text_filters_ignore_case_and_outer_spaces_but_preserve_source_text(service):
     args = {
         "dataset_id": "zoning_bylaws",
-        "filters": {"Municipal_Name": ["  rUTLAND cITY  "]},
-        "columns": ["Municipal_Name", "District_Name"],
+        "filters": {"town": ["  rUTLAND cITY  "]},
+        "columns": ["town", "district_name"],
     }
     rows = service.call("query_data", args)["rows"]
     assert len(rows) == 3
-    assert {row["Municipal_Name"] for row in rows} == {"Rutland City "}
+    assert {row["town"] for row in rows} == {"Rutland City "}
     exported = list(
         csv.DictReader(io.StringIO(service.call("export_data", args)["csv"]))
     )
@@ -168,7 +168,7 @@ def test_text_filters_ignore_case_and_outer_spaces_but_preserve_source_text(serv
     [
         {},
         {"include_row_units": False},
-        {"columns": ["Value", "_units", "_location_id"]},
+        {"columns": ["value", "_units", "_location_id"]},
     ],
 )
 def test_columns_are_stable_for_empty_and_nonempty_results(service, options):
@@ -183,16 +183,16 @@ def test_columns_are_stable_for_empty_and_nonempty_results(service, options):
 
 def test_numeric_totals_preserved_without_claiming_percent_units(service):
     result = service.call(
-        "query_data", {"dataset_id": "acs5_dp", "filters": {"Category": ["GRAPI"]}}
+        "query_data", {"dataset_id": "acs5_dp", "filters": {"category": ["GRAPI"]}}
     )
-    totals = [row for row in result["rows"] if row["Value"] in (9418, 50)]
+    totals = [row for row in result["rows"] if row["value"] in (9418, 50)]
     assert len(totals) == 2
-    assert all("not verified" in row["_units"]["Value"] for row in totals)
-    bracket = next(row for row in result["rows"] if row["Value"] == 22.5)
-    assert bracket["_units"]["Value"] == "percent"
+    assert all("not verified" in row["_units"]["value"] for row in totals)
+    bracket = next(row for row in result["rows"] if row["value"] == 22.5)
+    assert bracket["_units"]["value"] == "percent"
     assert (
-        next(row for row in result["rows"] if row["Variable"] == "Not computed")[
-            "Value"
+        next(row for row in result["rows"] if row["variable"] == "Not computed")[
+            "value"
         ]
         is None
     )
@@ -204,8 +204,8 @@ def test_distinct_values_accept_filters_through_service_contract(service):
         "describe_dataset",
         {
             "dataset_id": "acs5_dp",
-            "value_column": "Measure",
-            "value_filters": {"Category": [" gross rent "]},
+            "value_column": "measure",
+            "value_filters": {"category": [" gross rent "]},
             "value_limit": 1,
         },
     )
@@ -234,7 +234,7 @@ def test_projection_rejects_unregistered_columns(service, columns):
 
 
 def test_projection_pagination_does_not_collapse_identical_values(service):
-    args = {"dataset_id": "zoning_bylaws", "columns": ["Municipal_Name"], "limit": 1}
+    args = {"dataset_id": "zoning_bylaws", "columns": ["town"], "limit": 1}
     rows = []
     while True:
         result = service.call("query_data", args)
@@ -243,7 +243,7 @@ def test_projection_pagination_does_not_collapse_identical_values(service):
             break
         args["cursor"] = result["next_cursor"]
     assert len(rows) == 4
-    assert rows.count({"Municipal_Name": "Rutland City "}) == 3
+    assert rows.count({"town": "Rutland City "}) == 3
 
 
 @pytest.mark.parametrize("mode", ["auto", "legacy"])
@@ -266,20 +266,20 @@ def test_new_query_contract_roundtrips_over_real_mcp_transport(service, mode):
                 {
                     "dataset_id": "zoning_bylaws",
                     "location_ids": ["5002161225"],
-                    "columns": ["District_Name", "_location_id"],
+                    "columns": ["district_name", "_location_id"],
                 },
             )
             assert not result.is_error
             assert result.structured_content["row_count"] == 3
             assert result.structured_content["columns"] == [
-                "District_Name",
+                "district_name",
                 "_location_id",
             ]
             discovered = await client.call_tool(
                 "describe_dataset",
                 {
                     "dataset_id": "acs5_dp",
-                    "value_column": "Measure",
+                    "value_column": "measure",
                     "value_filters": {"year": [2009]},
                 },
             )
