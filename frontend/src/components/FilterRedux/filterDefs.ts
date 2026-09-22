@@ -50,6 +50,21 @@ export const ambulance_filtering: filterDef[] = [
   },
 ];
 
+export const flood_filtering: filterDef[] = [
+  {
+    filter_table: 'FEMA_floodHazard_geom',
+    filter_style: 'Checkbox',
+    label: 'Flood Risk',
+    cols: ['Flood Risk'],
+  },
+  {
+    filter_table: 'FEMA_floodHazard_geom',
+    filter_style: 'Checkbox',
+    label: 'Flood Zone Type',
+    cols: ['Flood Zone Type'],
+  },
+];
+
 export const parcels_filtering: filterDef[] = [
   {
     filter_table: 'VCGIParcels_info',

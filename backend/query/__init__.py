@@ -21,6 +21,7 @@ _EXPORTS = {
     ],
     "query.comparison": ["compare_variables", "composite_index", "dataset_registry"],
     "query.core_functions": ["filter_options", "filter_ranges", "filter_tree"],
+    "query.flood": ["get_flood_geojson"],
     "query.production_db": ["get_db"],
     "query.wastewater": [
         "get_soil_suit_geojson",

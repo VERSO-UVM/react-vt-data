@@ -5,9 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Response
 
-from query.production_db import get_db
-
-DB = get_db()
+from query import get_flood_geojson
 
 logger = logging.getLogger(__name__)
 
@@ -23,29 +21,13 @@ def read_root():
 
 
 # Flood Endpoint
+# Unfiltered legacy fetch — the filterable, tooltip-carrying query lives in
+# query/flood.py (also used by the POST /load/mapping/flood_legal route in
+# post_flood.py, which supports the mapping explorer's flood filters).
 @router.get("/load/mapping/flood_legal")
 async def read_flood_data():
-    result = DB.execute("""--sql
-        SELECT
-            JSON_OBJECT(
-                'type', 'FeatureCollection',
-                'features', JSON_GROUP_ARRAY(JSON_OBJECT(
-                    'type', 'Feature',
-                    'geometry', ST_ASGEOJSON(geometry)::JSON,
-                    'properties', JSON_OBJECT(
-                        'flood_zone_type', flood_zone_type,
-                        'zone_subtype', zone_subtype,
-                        'base_flood_elevation', base_flood_elevation,
-                        'rgba_color', rgba_color,
-                        'flood_risk', flood_risk,
-                        'special_flood_hazard_zone', special_flood_hazard_zone
-                    )
-                ))
-            )::VARCHAR
-        FROM FEMA_floodHazard_geom
-    """).fetchone()
-
-    return Response(content=result[0], media_type="application/json")
+    data = get_flood_geojson([])
+    return Response(content=data, media_type="application/json")
 
 
 # VT Municipalities Endpoint

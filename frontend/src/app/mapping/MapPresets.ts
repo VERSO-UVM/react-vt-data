@@ -74,6 +74,11 @@ export const MAP_PRESETS: MapPreset[] = [
           cols: ['Soil Suitability Level'],
         },
       ],
+      // No filters of its own — flood only needs to be locked here so the
+      // overlay's "outside FEMA flood hazard area" subtraction (see
+      // buildableOverlay.ts) always runs against the full flood dataset,
+      // not a subset the user has quietly filtered down.
+      'flood-legal': [],
     },
   },
   {

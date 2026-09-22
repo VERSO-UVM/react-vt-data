@@ -8,6 +8,7 @@
 import { BASE_API_URL } from '@/config';
 import { filterDef } from '@/components/FilterRedux/filterTypes';
 import {
+  flood_filtering,
   soil_suitability_filtering,
   zoning_filtering,
   // ambulance_filtering, // ambulance layer disabled for now, see MAP_LAYERS below
@@ -53,8 +54,8 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     id: 'flood-legal',
     title: 'Flood Insurance',
     dataURL: `${BASE_API_URL}/load/mapping/flood_legal`,
-    method: 'GET',
-    filterList: [],
+    method: 'POST',
+    filterList: flood_filtering,
     responseShape: 'direct',
     color: '#3b6cff',
   },
