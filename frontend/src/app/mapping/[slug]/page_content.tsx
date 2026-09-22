@@ -40,7 +40,7 @@ const MAP_CONFIG: Record<string, MapConfig> = {
   },
 
   'soil-suitability': {
-    title: 'Soil Suitability',
+    title: 'Soil Suitability for Septic Systems',
     initialURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     initialMethod: 'POST',
     filterURL: `${BASE_API_URL}/filters/tree?filter_table=VersoWastewater_soilSuitability_info`,

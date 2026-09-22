@@ -53,6 +53,21 @@ const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   infrastructure: IconDroplet,
 };
 
+const SOIL_SUITABILITY_ORDER = [
+  'Well Suited',
+  'Moderately Suited',
+  'Marginally Suited',
+  'Not Suited',
+  'Not Rated',
+];
+const SOIL_SUITABILITY_COLORS: Record<string, string> = {
+  'Well Suited': '#2ca02c',
+  'Moderately Suited': '#ffcc00',
+  'Marginally Suited': '#fd7e14',
+  'Not Suited': '#dc3545',
+  'Not Rated': '#6c757d',
+};
+
 export default function MapExplorerPage() {
   return (
     <Suspense fallback={null}>
@@ -336,6 +351,32 @@ function MapExplorerContent() {
       return sum + (Number.isFinite(acres) ? acres : 0);
     }, 0);
   }, [buildableOverlay, layerData, activeLayers, bothZoningAndSoilActive]);
+
+  const soilSuitabilityDistribution = useMemo(() => {
+    const fc = layerData['soil-suitability'];
+    if (!activeLayers.has('soil-suitability') || !fc?.features?.length) {
+      return null;
+    }
+
+    const counts = new Map<string, number>();
+    for (const feature of fc.features) {
+      const key = String(feature.properties?.Suitability ?? 'Not Rated');
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const total = fc.features.length;
+
+    return SOIL_SUITABILITY_ORDER.filter((label) => counts.has(label)).map(
+      (label) => {
+        const count = counts.get(label) ?? 0;
+        return {
+          label,
+          count,
+          pct: (count / total) * 100,
+          color: SOIL_SUITABILITY_COLORS[label],
+        };
+      },
+    );
+  }, [layerData, activeLayers]);
 
   return (
     <Box
@@ -767,6 +808,39 @@ function MapExplorerContent() {
                     </Stack>
                   )}
                 </Paper>
+
+                {soilSuitabilityDistribution && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
+                  >
+                    <Text size="sm" c="dimmed" fw={600} mb="xs">
+                      Soil Suitability Distribution
+                    </Text>
+                    <Stack gap={6}>
+                      {soilSuitabilityDistribution.map((d) => (
+                        <Box key={d.label}>
+                          <Group justify="space-between" mb={2}>
+                            <Text size="sm" fw={500} lineClamp={1}>
+                              {d.label}
+                            </Text>
+                            <Text size="sm" c="dimmed">
+                              {d.pct.toFixed(1)}%
+                            </Text>
+                          </Group>
+                          <Progress
+                            value={d.pct}
+                            color={d.color}
+                            size="xs"
+                            radius="xl"
+                          />
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Paper>
+                )}
 
                 <Paper
                   withBorder

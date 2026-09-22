@@ -149,7 +149,8 @@ export function computeBuildableOverlay(
                 Acreage: `${Math.round(acres).toLocaleString()} ac`,
                 'Zoning Districts': districtCount,
                 'District Types': districtTypes.join(', ') || '—',
-                'Soil Suitability': suitabilityLevels.join(', ') || '—',
+                'Soil Suitability for Septic Systems':
+                  suitabilityLevels.join(', ') || '—',
                 'Flood Area Excluded': floodExcluded ? 'Yes' : 'No',
               },
             },

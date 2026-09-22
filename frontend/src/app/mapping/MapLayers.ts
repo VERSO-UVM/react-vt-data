@@ -61,7 +61,7 @@ export const MAP_LAYERS: MapLayerConfig[] = [
   },
   {
     id: 'soil-suitability',
-    title: 'Soil Suitability',
+    title: 'Soil Suitability for Septic Systems',
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     method: 'POST',
     filterList: soil_suitability_filtering,

@@ -33,6 +33,18 @@ def _nest(rows: list[tuple]) -> dict:
     return tree
 
 
+# Explicit display order for columns whose values have a natural ranking
+CUSTOM_OPTION_ORDER: dict[str, list[str]] = {
+    "Suitability": [
+        "Well Suited",
+        "Moderately Suited",
+        "Marginally Suited",
+        "Not Suited",
+        "Not Rated",
+    ],
+}
+
+
 def filter_options(
     colmap: dict, labels: list[str], table: str, db=DB
 ) -> FilterResponse:
@@ -40,7 +52,13 @@ def filter_options(
     for label in labels:
         col = colmap[label]
         rows = db.execute(f'SELECT DISTINCT "{col}" FROM {table} ORDER BY 1').fetchall()
-        options[label] = [r[0] for r in rows if r[0] is not None]
+        values = [r[0] for r in rows if r[0] is not None]
+        order = CUSTOM_OPTION_ORDER.get(col)
+        if order:
+            values = [v for v in order if v in values] + [
+                v for v in values if v not in order
+            ]
+        options[label] = values
     return FilterResponse(labels=labels, options=options)
 
 
