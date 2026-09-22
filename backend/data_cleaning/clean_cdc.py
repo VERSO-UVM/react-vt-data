@@ -280,7 +280,7 @@ def clean(con: duckdb.DuckDBPyConnection) -> dict[str, pd.DataFrame]:
     )
 
     tract_places.drop(columns=["locationname", "state_abbr"], inplace=True)
-    tract_places["geo_type"] = "town"
+    tract_places["geo_type"] = "tract"
 
     # Both tables now share an identical column set (county_fips added to
     # county_places above), so they stack cleanly into one tidy table.
