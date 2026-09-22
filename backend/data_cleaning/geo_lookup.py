@@ -93,7 +93,7 @@ def acs_geo_sql(base: str) -> str:
             SELECT
                 COLUMNS(
                     c -> LOWER(c) NOT IN (
-                        'name', 'geo_type', 'state', 'county', 'county_1', 'gt', "geoid",
+                        'name', 'geo_type', 'state', 'county', 'county_1', 'gt', 'geoid',
                     )
                 ),
                 n.NAME AS name,
