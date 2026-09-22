@@ -29,7 +29,7 @@ from datetime import datetime
 import pandas as pd
 import requests
 
-from app_utils.census import split_name_col
+from data_collection.census import split_name_col
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")

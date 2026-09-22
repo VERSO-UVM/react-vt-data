@@ -30,6 +30,8 @@ Run with:
 
 import duckdb
 
+from data_cleaning.geo_lookup import load_initcap
+
 
 ## BUILD CLEANED VIEWS --------------------
 def build_county_lines(con: duckdb.DuckDBPyConnection) -> None:
@@ -38,16 +40,20 @@ def build_county_lines(con: duckdb.DuckDBPyConnection) -> None:
 
     Standardizes county identifiers and names to the legacy boundary
     column conventions:
-        CNTYGEOID -> CountyFIPS
-        CNTYNAME  -> CountyName
-        geometry      -> geom
+        "CNTYGEOID" -> "geoid" (type VARCHAR), county_fips (type VARCHAR)
+        "CNTYNAME"  -> "county" (short title-case, e.g. "Grand Isle", "Bennington")
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
+    load_initcap(con)
     con.execute(
         """--sql
         CREATE OR REPLACE VIEW vt_county_lines AS
         SELECT
-            CNTYGEOID AS CountyFIPS,
-            CNTYNAME AS CountyName,
+            CAST(CNTYGEOID AS VARCHAR) AS geoid,
+            CAST(CNTYGEOID AS VARCHAR) AS county_fips,
+            INITCAP(REGEXP_REPLACE(TRIM(CNTYNAME), '(?i)\\s+county.*$', '')) AS county,
             geometry
         FROM lake.RAW.vt_county_lines
         """
@@ -63,6 +69,9 @@ def build_town_lines(con: duckdb.DuckDBPyConnection) -> None:
         GEOID -> FIPS_ID
         NAME  -> TOWN_NAME
         geom  -> geometry
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
     con.execute(
         """--sql
@@ -79,8 +88,10 @@ def build_town_lines(con: duckdb.DuckDBPyConnection) -> None:
 def build_tract_lines(con: duckdb.DuckDBPyConnection) -> None:
     """
     Clean VT Census tract boundary lines.
-
     Standardizes the tract identifier to LocationID.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
     con.execute(
         """--sql
@@ -96,6 +107,12 @@ def build_tract_lines(con: duckdb.DuckDBPyConnection) -> None:
 
 ## WRITE CLEANED TABLES --------------------
 def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Writing the fips standardized datasets into the DuckLake
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     table_names = [
         "vt_county_lines",
         "vt_town_lines",

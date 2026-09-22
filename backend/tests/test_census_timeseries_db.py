@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from app_utils import timeseries_db
+from query import timeseries_db
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
 FILTER_TOWN = "Addison town"

@@ -13,8 +13,9 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource
-from app_utils.sql_render import sql_filter_block
+from query.core_functions import to_export_geo
 from query.production_db import get_db
+from query.sql_render import sql_filter_block
 
 DB = get_db()
 
@@ -76,11 +77,11 @@ def get_soil_suit_legend():
 def get_wastewater_export_table(table: str) -> pd.DataFrame:
     """Load a full wastewater table for CSV export.
 
-    Drops geometry if present and renames `Municipal_Name` to `Jurisdiction`
-    so it lines up with the town-filter column name used by every other
-    export source.
+    Drops geometry if present and names the `town`/`county` columns
+    `Jurisdiction`/`County` so they line up with the filter columns used by
+    every other export source.
     """
     df = DB.execute(f'SELECT * FROM "{table}"').df()
     if "geometry" in df.columns:
         df = df.drop(columns=["geometry"])
-    return df.rename(columns={"Municipal_Name": "Jurisdiction"})
+    return to_export_geo(df)

@@ -1,4 +1,5 @@
 import os
+import warnings
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -66,7 +67,14 @@ def insert_year(
 
     if isinstance(df, gpd.GeoDataFrame):
         df = df.copy()
-        df["geometry"] = df.geometry.to_wkb()
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Geometry column does not contain geometry",
+                category=UserWarning,
+            )
+            df["geometry"] = df["geometry"].to_wkb()
 
     # If no lake connection, create one
     own_connection = con is None
@@ -136,7 +144,14 @@ def replace_table(
     """
     if isinstance(df, gpd.GeoDataFrame):
         df = df.copy()
-        df["geometry"] = df.geometry.to_wkb()
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Geometry column does not contain geometry",
+                category=UserWarning,
+            )
+            df["geometry"] = df["geometry"].to_wkb()
 
     own_connection = con is None
     if own_connection:

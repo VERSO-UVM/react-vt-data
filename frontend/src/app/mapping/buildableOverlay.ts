@@ -36,7 +36,7 @@ export const BUILDABLE_COLOR: [number, number, number, number] = [
   34, 139, 34, 180,
 ];
 
-type PolyFeature = Feature<Polygon | MultiPolygon>;
+export type PolyFeature = Feature<Polygon | MultiPolygon>;
 type PolyFC = FeatureCollection<Polygon | MultiPolygon>;
 
 function asPolygonFC(fc: FeatureCollection | null | undefined): PolyFC | null {
@@ -87,6 +87,58 @@ export type BuildableOverlay = {
   geojson: FeatureCollection;
   acres: number;
 };
+
+/** Annotate each parcel with what share of its area falls inside the
+ *  buildable-areas overlay (zoning ∩ soil − flood, from
+ *  computeBuildableOverlay above). Only meaningful — and only called —
+ *  while both the Parcels layer and that overlay are active; skipped
+ *  otherwise so a few thousand turf.intersect calls per town don't run on
+ *  every render for users who never combine the two. */
+export function withParcelBuildability(
+  parcelsFc: FeatureCollection | null,
+  buildable: PolyFeature | null,
+): FeatureCollection | null {
+  if (!parcelsFc || !buildable) return parcelsFc;
+
+  return {
+    ...parcelsFc,
+    features: parcelsFc.features.map((f) => {
+      if (
+        f.geometry?.type !== 'Polygon' &&
+        f.geometry?.type !== 'MultiPolygon'
+      ) {
+        return f;
+      }
+      const parcel = f as PolyFeature;
+
+      let pct: number | null = null;
+      try {
+        const parcelArea = area(parcel);
+        if (parcelArea > 0) {
+          const overlap = intersect(pairFC(parcel, buildable));
+          pct = overlap ? Math.min(100, (area(overlap) / parcelArea) * 100) : 0;
+        }
+      } catch {
+        pct = null; // degenerate/self-intersecting geometry — leave unscored
+      }
+
+      const tooltip = f.properties?.tooltip as
+        Record<string, unknown> | undefined;
+      return {
+        ...f,
+        properties: {
+          ...f.properties,
+          ...(tooltip && {
+            tooltip: {
+              ...tooltip,
+              Buildable: pct == null ? 'Unknown' : `${Math.round(pct)}%`,
+            },
+          }),
+        },
+      };
+    }),
+  };
+}
 
 /** Returns null when zoning/soil data isn't available yet, when there's no
  *  geometric overlap between them, or when flood hazard area covers the

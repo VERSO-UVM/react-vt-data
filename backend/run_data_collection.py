@@ -1,9 +1,10 @@
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from data_collection import (
     acs5,
     ambulance,
+    building_footprints,
     cdc,
     demographics,
     economic,
@@ -12,6 +13,7 @@ from data_collection import (
     flood,
     historic_population,
     housing,
+    parcels,
     qcew,
     wastewater,
     zoning,
@@ -29,15 +31,18 @@ YEARLY_SCRAPERS = [
 
 STATIC_SCRAPERS = [
     ambulance,
+    building_footprints,
     cdc,
     fips,
     flood,
     historic_population,
+    parcels,
     wastewater,
     zoning,
 ]
 
-MAX_YEAR = datetime.now().year - 1
+eastern_std_time = timezone(timedelta(hours=5))
+MAX_YEAR = datetime.now(eastern_std_time).year - 1
 
 
 def run_scraper(
@@ -49,7 +54,7 @@ def run_scraper(
     """Run a scraper and write its output to DuckLake."""
     name = scraper.__name__.split(".")[-1]
 
-    print(f"Running {name}...")
+    print(f"Collecting \033[1m{name}\033[0m data ...")
 
     if yearly:
         if years is None:
@@ -87,7 +92,7 @@ def run_master_scrape(
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=True, years=years)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 failed.append(name)
                 print(f"FAILED {name}: {e}")
 
@@ -95,7 +100,7 @@ def run_master_scrape(
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=False)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 failed.append(name)
                 print(f"FAILED {name}: {e}")
 

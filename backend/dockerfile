@@ -12,11 +12,9 @@ RUN uv sync --frozen --no-dev --no-install-project
 # bake the spatial extension into the image cache
 RUN /code/.venv/bin/python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')"
 
-# TODO: remove app_utils or at least greatly clean it from this point.
 COPY --chown=app:app ./api /code/api
 COPY --chown=app:app ./query /code/query
 COPY --chown=app:app ./logger /code/logger
-COPY --chown=app:app ./app_utils /code/app_utils
 COPY --chown=app:app ./data_tools /code/data_tools
 COPY --chown=app:app ./mcp_server /code/mcp_server
 

@@ -14,7 +14,13 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
-from app_utils.sql_render import render_sql
+from data_cleaning.geo_lookup import (
+    build_geo_lookups,
+    load_initcap,
+    resolved_town_sql,
+    town_lookup_joins_sql,
+)
+from query.sql_render import render_sql
 
 SQL_PATH = Path(__file__).resolve().parent / "sql"
 # Town and zoning-district boundaries were digitised separately, so subtracting
@@ -24,7 +30,7 @@ SQL_PATH = Path(__file__).resolve().parent / "sql"
 MIN_GAP_ACRES = 10
 
 
-# hardcoded specifics:
+# Hardcoded columns by table:
 info_cols = [
     # identity
     "OBJECT_ID", "County", "RPC", "Municipal_Name", "GEO_ID",
@@ -60,6 +66,15 @@ boolean_remapper = {
 
 
 def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    """
+    Reads the lake.RAW.zoning table into python memory
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+
+    Returns:
+        pd.DataFrame: The raw zoning dataset as a pandas DataFrame object
+    """
     raw_df = con.execute(
         """--sql
         SELECT * 
@@ -73,6 +88,12 @@ def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
 
 
 def build_info(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Builds the zoning `info` table
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     info_string = ", ".join(info_cols)
 
     info_sql = render_sql(
@@ -88,10 +109,53 @@ def build_info(con: duckdb.DuckDBPyConnection) -> None:
 
     str_cols = info_df.select_dtypes("object").columns
     info_df[str_cols] = info_df[str_cols].apply(lambda c: c.str.strip())
-    con.register("info", info_df)
+    con.register("info_raw", info_df)
+
+    # Lowercase columns; GEO_ID -> geoid, plus town/county from the crosswalk.
+    replaced = {"GEO_ID", "Municipal_Name", "County", "OBJECT_ID"}
+    passthrough = ", ".join(
+        f'i."{c}" AS {c.lower()}' for c in info_df.columns if c not in replaced
+    )
+
+    con.execute(
+        """--sql
+        CREATE OR REPLACE MACRO initcap(s) AS list_reduce(
+            list_transform(
+                string_split(s, ' '),
+                x -> upper(x[1]) || lower(x[2:])
+            ),
+            (x, y) -> x || ' ' || y
+        );
+        """
+    )
+
+    con.execute(
+        f"""--sql
+        CREATE OR REPLACE TEMP VIEW info AS
+        SELECT
+            i.OBJECT_ID AS object_id,
+            {resolved_town_sql("i.Municipal_Name", "geoid")} AS geoid,
+            COALESCE(
+                {resolved_town_sql("i.Municipal_Name", "town")}, i.Municipal_Name
+            ) AS town,
+            {resolved_town_sql("i.Municipal_Name", "county_fips")} AS county_fips,
+            COALESCE(
+                {resolved_town_sql("i.Municipal_Name", "county")}, INITCAP(i.County)
+            ) AS county,
+            {passthrough}
+        FROM info_raw AS i
+        {town_lookup_joins_sql("i.GEO_ID", "i.Municipal_Name")}
+        """
+    )
 
 
 def build_geom(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Builds the zoning `geom` table
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
     con.execute(
         """--sql
         CREATE OR REPLACE TEMP VIEW geom AS
@@ -104,6 +168,15 @@ def build_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def get_rule_cols(con: duckdb.DuckDBPyConnection) -> list[str]:
+    """
+    Fetches the zoning "rule" columns (ie. 1-Family, 2-Family Allowance, etc.)
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+
+    Returns:
+        list[str]: A list of column names corresponding to zoning "rules."
+    """
     dropped_cols = ["Shape_Area", "Shape_Length"]
     all_cols = (
         con.execute(
@@ -117,12 +190,25 @@ def get_rule_cols(con: duckdb.DuckDBPyConnection) -> list[str]:
     rule_cols = set(all_cols)
     for item in geom_cols + info_cols + ["Acres"] + dropped_cols:
         if item in rule_cols:
-            rule_cols.remove(item)
+            rule_cols.discard(item)
     rule_cols = list(rule_cols)
     return rule_cols
 
 
 def split_col(col: str, use_types: set[str]) -> tuple[str | None, str | None]:
+    """
+    Splits a column name into its matching use type prefix and remaining rule suffix.
+
+    Args:
+        col: The column name to split (e.g., "residential_high/density").
+        use_types: A set of valid use type prefixes to check against (e.g., {"residential", "commercial"}).
+
+    Returns:
+        tuple[str | None, str | None]: A tuple containing:
+            - The matched use type string, or None if no match is found.
+            - The modified rule string with slashes replaced by underscores, or None if no match is found.
+
+    """
     for use_type in use_types:
         if col.startswith(f"{use_type}_"):
             rule = col[len(use_type) + 1 :]
@@ -132,6 +218,13 @@ def split_col(col: str, use_types: set[str]) -> tuple[str | None, str | None]:
 
 
 def build_rules(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
+    """
+    Builds the zoning `rules` table
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+        raw_df: pd.DataFrame of the raw zoning data
+    """
     rule_cols = get_rule_cols(con)
     clean_rule_cols = [col.replace("/", "_") for col in rule_cols]
 
@@ -154,7 +247,7 @@ def build_rules(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
         con.register("zoning_raw", raw_df)
 
     # separate by use type and filter:
-    use_types = set([col.split("_")[0] for col in clean_rule_cols])
+    use_types = {col.split("_")[0] for col in clean_rule_cols}
     use_types.remove("Affordable")
     use_types.add("Affordable_Housing")
     rules[["use_type", "rule"]] = (
@@ -170,13 +263,30 @@ def build_rules(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
     con.register("rules", rules)
 
 
-def build_full(con: duckdb.DuckDBPyConnection) -> None:
+def build_full(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
     drop_cols = ["geometry", "Shape_Area", "Shape_Length"]
-    exclude = ", ".join(drop_cols)
+    geo_cols = ["GEO_ID", "Municipal_Name", "County", "OBJECT_ID"]
+    passthrough = ", ".join(
+        f'w."{c}" AS "{c.lower()}"'
+        for c in raw_df.columns
+        if c not in drop_cols + geo_cols
+    )
     con.execute(
         f"""--sql
         CREATE OR REPLACE TEMP VIEW wide AS
-        SELECT * EXCLUDE ({exclude}) FROM zoning_raw
+        SELECT
+            w.OBJECT_ID AS object_id,
+            {resolved_town_sql("w.Municipal_Name", "geoid")} AS geoid,
+            COALESCE(
+                {resolved_town_sql("w.Municipal_Name", "town")}, w.Municipal_Name
+            ) AS town,
+            {resolved_town_sql("w.Municipal_Name", "county_fips")} AS county_fips,
+            COALESCE(
+                {resolved_town_sql("w.Municipal_Name", "county")}, INITCAP(w.County)
+            ) AS county,
+            {passthrough}
+        FROM zoning_raw AS w
+        {town_lookup_joins_sql("w.GEO_ID", "w.Municipal_Name")}
         """
     )
 
@@ -222,21 +332,26 @@ def build_empty_geom(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
+    load_initcap(con)
     df = read_raw_data(con)
+    build_geo_lookups(con)
     build_info(con)
     build_geom(con)
     build_rules(con, df)
     build_empty_geom(con)
     build_color(con)
-    build_full(con)
+    build_full(con, df)
 
     return df
 
 
 def add_to_lake(con: duckdb.DuckDBPyConnection) -> None:
     """
-    Persists each cleaned zoning table (info, geom, rules, empty_geom, wide, colors)
+    Writes each cleaned zoning table (info, geom, rules, empty_geom, wide, colors)
     into the CLEANED schema in DuckLake.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
     """
     tables = ["info", "geom", "rules", "empty_geom", "wide", "colors"]
     for name in tables:

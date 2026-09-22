@@ -13,8 +13,8 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource
-from app_utils.sql_render import sql_filter_block
 from query.production_db import get_db
+from query.sql_render import sql_filter_block
 
 DB = get_db()
 
@@ -44,9 +44,9 @@ def get_ambulance_legend():
 def get_ambulance_export_table() -> pd.DataFrame:
     """Load the full ambulance service table for CSV export.
 
-    Renames `City` (the service's home town) to `Jurisdiction` so it lines
+    Renames `city` (the service's home town) to `Jurisdiction` so it lines
     up with the town-filter column name used by every other export source.
     There is no county-level column for this dataset.
     """
     df = DB.execute('SELECT * FROM "VCGI_ambulanceService_info"').df()
-    return df.rename(columns={"City": "Jurisdiction"})
+    return df.rename(columns={"city": "Jurisdiction"})

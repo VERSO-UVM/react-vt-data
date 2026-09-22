@@ -176,17 +176,17 @@ client variable; the server reads `MCP_BEARER_TOKENS` instead.
 
 ## Tool contract
 
-| Tool | Purpose and important inputs |
-| --- | --- |
-| `list_datasets` | Discover registered datasets, actual availability, coverage, and source information. Optional `query` searches the catalog. |
-| `describe_dataset` | Inspect one `dataset_id`, including fields, measures, units, lineage, and coverage by geography. Use `value_column`, optional `value_filters`, and `value_limit` to discover distinct filter values. |
-| `search_variables` | Search words across source selector fields within a `dataset_id`; returns stable `variable_ids` and each variant's actual years. Accepts `query` and `limit`. |
-| `search_locations` | Resolve a place name into canonical geography IDs, with optional `geo_type`. Town, city, and county candidates remain distinct. |
-| `query_data` | Fetch one bounded page from a `dataset_id`. Supports `location_ids`, `geo_type`, `variable_ids`, `measures`, `columns`, advertised `filters`, and either `years` or `year_min`/`year_max`. Text filters ignore case and surrounding whitespace. |
-| `get_timeseries` | Retrieve temporal observations with the same selectors, ordered by year. Missing years remain missing; values are not interpolated. |
-| `compare_places` | Compare selected `variable_ids` for 2–20 locations at a common geography level and year. Default `year_policy="latest_common"`; use `year_policy="explicit"` with `years=[2023]` to request a particular year. |
+| Tool                 | Purpose and important inputs                                                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `list_datasets`      | Discover registered datasets, actual availability, coverage, and source information. Optional `query` searches the catalog.                                                                                                                                              |
+| `describe_dataset`   | Inspect one `dataset_id`, including fields, measures, units, lineage, and coverage by geography. Use `value_column`, optional `value_filters`, and `value_limit` to discover distinct filter values.                                                                     |
+| `search_variables`   | Search words across source selector fields within a `dataset_id`; returns stable `variable_ids` and each variant's actual years. Accepts `query` and `limit`.                                                                                                            |
+| `search_locations`   | Resolve a place name into canonical geography IDs, with optional `geo_type`. Town, city, and county candidates remain distinct.                                                                                                                                          |
+| `query_data`         | Fetch one bounded page from a `dataset_id`. Supports `location_ids`, `geo_type`, `variable_ids`, `measures`, `columns`, advertised `filters`, and either `years` or `year_min`/`year_max`. Text filters ignore case and surrounding whitespace.                          |
+| `get_timeseries`     | Retrieve temporal observations with the same selectors, ordered by year. Missing years remain missing; values are not interpolated.                                                                                                                                      |
+| `compare_places`     | Compare selected `variable_ids` for 2–20 locations at a common geography level and year. Default `year_policy="latest_common"`; use `year_policy="explicit"` with `years=[2023]` to request a particular year.                                                           |
 | `get_zoning_summary` | Summarize district counts and recorded acreage by municipality and district type. Select `municipality` or canonical `location_id`, with optional `county`. Overlays are excluded unless `include_overlays=true`; `excluded_overlays` reconciles their counts and acres. |
-| `export_data` | Return a bounded CSV page inline using the `query_data` selectors, with provenance and a continuation cursor. Spreadsheet formula cells are escaped. |
+| `export_data`        | Return a bounded CSV page inline using the `query_data` selectors, with provenance and a continuation cursor. Spreadsheet formula cells are escaped.                                                                                                                     |
 
 `query_data`, `get_timeseries`, `compare_places`, `get_zoning_summary`, and
 `export_data` accept `limit` and `cursor`. Follow a returned `next_cursor` with
@@ -224,7 +224,14 @@ For example, this avoids fetching long notes and every housing-form standard:
 {
   "dataset_id": "zoning_bylaws",
   "location_ids": ["5002161225"],
-  "columns": ["OBJECT_ID", "Municipal_Name", "District_Name", "Base_Density", "GEO_ID", "_location_id"],
+  "columns": [
+    "OBJECT_ID",
+    "Municipal_Name",
+    "District_Name",
+    "Base_Density",
+    "GEO_ID",
+    "_location_id"
+  ],
   "limit": 100
 }
 ```
@@ -243,7 +250,7 @@ To inspect valid values, call `describe_dataset` with an advertised filter field
 {
   "dataset_id": "acs5_dp",
   "value_column": "Measure",
-  "value_filters": {"table": ["DP04"], "year": [2017, 2018]},
+  "value_filters": { "table": ["DP04"], "year": [2017, 2018] },
   "value_limit": 50
 }
 ```
@@ -348,23 +355,23 @@ Configuration is read when a service instance starts. Restart after changing it.
 The justfile loads the root `.env`; direct Python/Uvicorn invocations need exported
 environment variables. See the committed [`.env.example`](../.env.example).
 
-| Variable | Default | Meaning |
-| --- | --- | --- |
-| `DATA_DIR` | `backend/Data` locally; `/data` in the API container | Directory containing the materialized `warehouse.duckdb`. Use an absolute host path when overriding it in `.env`. |
-| `MCP_ENABLED` | `false` | Mount MCP in the existing FastAPI app. The standalone server does not need this flag. |
-| `MCP_AUTH_MODE` | `none` for standalone | `none`, `development`, or `bearer`. The existing API mount requires `bearer`. |
-| `MCP_BEARER_TOKENS` | unset | Comma-separated production token allowlist. Required in `bearer` mode. |
-| `MCP_HOST` | `127.0.0.1` | Standalone bind address used by `just mcp` and `just mcp-dev-auth`. |
-| `MCP_PORT` | `6768` | Standalone port used by the just recipes. |
-| `MCP_ALLOWED_HOSTS` | loopback hosts | Comma-separated accepted HTTP Host values; `localhost:*` permits a port. Include the public host at deployment. |
-| `MCP_ALLOWED_ORIGINS` | loopback origins | Comma-separated accepted Origin values when clients send an Origin header. This does not enable browser CORS or replace bearer authentication. |
-| `MCP_MAX_ROWS` | `1000` | Maximum data rows per response, within the tool schema's upper bound. |
-| `MCP_MAX_BYTES` | `1000000` | Maximum serialized tool-response size. |
-| `MCP_QUERY_TIMEOUT` | `20` | Query time budget in seconds. |
-| `MCP_MAX_CONCURRENCY` | `4` | Maximum concurrent HTTP requests and data-service calls per process. |
-| `MCP_RATE_LIMIT` | `120` | HTTP requests per minute per client, per process. |
-| `MCP_MAX_REQUEST_BYTES` | `65536` | Maximum HTTP request-body size, checked before tool execution. |
-| `MCP_REQUEST_BODY_TIMEOUT` | `10` | Total seconds allowed to receive an HTTP request body (0.1–120), before tool execution. |
+| Variable                   | Default                                              | Meaning                                                                                                                                        |
+| -------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATA_DIR`                 | `backend/Data` locally; `/data` in the API container | Directory containing the materialized `warehouse.duckdb`. Use an absolute host path when overriding it in `.env`.                              |
+| `MCP_ENABLED`              | `false`                                              | Mount MCP in the existing FastAPI app. The standalone server does not need this flag.                                                          |
+| `MCP_AUTH_MODE`            | `none` for standalone                                | `none`, `development`, or `bearer`. The existing API mount requires `bearer`.                                                                  |
+| `MCP_BEARER_TOKENS`        | unset                                                | Comma-separated production token allowlist. Required in `bearer` mode.                                                                         |
+| `MCP_HOST`                 | `127.0.0.1`                                          | Standalone bind address used by `just mcp` and `just mcp-dev-auth`.                                                                            |
+| `MCP_PORT`                 | `6768`                                               | Standalone port used by the just recipes.                                                                                                      |
+| `MCP_ALLOWED_HOSTS`        | loopback hosts                                       | Comma-separated accepted HTTP Host values; `localhost:*` permits a port. Include the public host at deployment.                                |
+| `MCP_ALLOWED_ORIGINS`      | loopback origins                                     | Comma-separated accepted Origin values when clients send an Origin header. This does not enable browser CORS or replace bearer authentication. |
+| `MCP_MAX_ROWS`             | `1000`                                               | Maximum data rows per response, within the tool schema's upper bound.                                                                          |
+| `MCP_MAX_BYTES`            | `1000000`                                            | Maximum serialized tool-response size.                                                                                                         |
+| `MCP_QUERY_TIMEOUT`        | `20`                                                 | Query time budget in seconds.                                                                                                                  |
+| `MCP_MAX_CONCURRENCY`      | `4`                                                  | Maximum concurrent HTTP requests and data-service calls per process.                                                                           |
+| `MCP_RATE_LIMIT`           | `120`                                                | HTTP requests per minute per client, per process.                                                                                              |
+| `MCP_MAX_REQUEST_BYTES`    | `65536`                                              | Maximum HTTP request-body size, checked before tool execution.                                                                                 |
+| `MCP_REQUEST_BODY_TIMEOUT` | `10`                                                 | Total seconds allowed to receive an HTTP request body (0.1–120), before tool execution.                                                        |
 
 Incomplete HTTP request bodies receive `408 Request Timeout` after the body-read
 deadline and release their concurrency slot. Receiving another chunk does not
@@ -485,6 +492,7 @@ does not guarantee that every source is present or current.
    The included nginx handles the inner hop. Keep host ports 3000 and
    6767 reachable only from the trusted proxy/network using VM firewall or bind
    configuration; the existing Podman recipes publish both ports.
+
 6. Run the acceptance checks below against the public HTTPS URL before sharing
    credentials with a consumer. Give each consumer its own token and connection
    instructions.

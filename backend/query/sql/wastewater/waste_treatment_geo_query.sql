@@ -10,20 +10,20 @@ FROM (
             'type', 'Feature',
             'geometry', ST_AsGeoJSON(ST_Simplify(g.geometry, 0.0001))::JSON,
             'properties', json_object(
-                'Septage Received At Facility', i.SeptageReceivedAtThisFacility,
-                'Design Hydraulic Capacity', i.DesignHydraulicCapacityInMGD,
+                'Septage Received At Facility', i.septage_received,
+                'Design Hydraulic Capacity', i.design_hydraulic_capacity_mgd,
                 'tooltip', json_object(
                     '__title__', 'Wastewater Treatment Facilities',
-                    'Regional Planning Commission', i.RPC,
-                    'County', i.County,
-                    'Town Name', i.TownName,
-                    'Facility Name', i.FacilityName,
-                    'Septage Received At Facility', i.SeptageReceivedAtThisFacility,
-                    'Design Hydraulic Capacity', i.DesignHydraulicCapacityInMGD
+                    'Regional Planning Commission', i.rpc,
+                    'County', i.county,
+                    'Town Name', i.town,
+                    'Facility Name', i.facility_name,
+                    'Septage Received At Facility', i.septage_received,
+                    'Design Hydraulic Capacity', i.design_hydraulic_capacity_mgd
                 )
             )
         ) AS feature
     FROM VersoWastewater_treatmentFacilities_info AS i
-    INNER JOIN VersoWastewater_treatmentFacilities_geom AS g USING (Facility_ID)
+    INNER JOIN VersoWastewater_treatmentFacilities_geom AS g USING (facility_id)
     {{ join_filter_block }}
 ) AS features
