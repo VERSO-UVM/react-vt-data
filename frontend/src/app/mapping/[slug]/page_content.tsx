@@ -64,16 +64,17 @@ const MAP_CONFIG: Record<string, MapConfig> = {
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
   },
 
-  ambulance: {
-    title: 'Ambulance Service Areas',
-    initialURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
-    initialMethod: 'POST',
-    filterURL: `${BASE_API_URL}/filters/tree?filter_table=VCGI_ambulanceService_info`,
-    dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
-    legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
-    townBorder: false,
-    largeBorder: true,
-  },
+  // Ambulance service areas disabled for now.
+  // ambulance: {
+  //   title: 'Ambulance Service Areas',
+  //   initialURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+  //   initialMethod: 'POST',
+  //   filterURL: `${BASE_API_URL}/filters/tree?filter_table=VCGI_ambulanceService_info`,
+  //   dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+  //   legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
+  //   townBorder: false,
+  //   largeBorder: true,
+  // },
 };
 
 export default function MappingContent() {

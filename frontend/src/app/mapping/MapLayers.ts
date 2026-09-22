@@ -10,7 +10,7 @@ import { filterDef } from '@/components/FilterRedux/filterTypes';
 import {
   soil_suitability_filtering,
   zoning_filtering,
-  ambulance_filtering,
+  // ambulance_filtering, // ambulance layer disabled for now, see MAP_LAYERS below
 } from '@/components/FilterRedux/filterDefs';
 
 /**
@@ -110,16 +110,17 @@ export const MAP_LAYERS: MapLayerConfig[] = [
       label: 'Jurisdiction',
     },
   },
-  {
-    id: 'ambulance',
-    title: 'Ambulance Service Areas',
-    dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
-    method: 'POST',
-    filterList: ambulance_filtering,
-    legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
-    responseShape: 'direct',
-    color: '#fd7e14',
-  },
+  // Ambulance service areas disabled for now.
+  // {
+  //   id: 'ambulance',
+  //   title: 'Ambulance Service Areas',
+  //   dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
+  //   method: 'POST',
+  //   filterList: ambulance_filtering,
+  //   legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
+  //   responseShape: 'direct',
+  //   color: '#fd7e14',
+  // },
 ];
 
 // Zoning's grey "no zoning information here" backdrop is not a toggleable
