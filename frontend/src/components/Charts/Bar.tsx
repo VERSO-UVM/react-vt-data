@@ -42,50 +42,72 @@ import { IconInfoCircle } from '@tabler/icons-react';
 // d3 color schemes looked up by name (e.g. 'schemeCategory10')
 const d3Schemes = d3 as unknown as Record<string, readonly string[]>;
 
-const SamePerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => (
-  <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-    <Group gap={4}>
-      <Text size="sm" fw={600}>
-        {chart.title}
-      </Text>
-      {chart.description && (
-        <MantineTooltip label={chart.description} multiline w={240}>
-          <ActionIcon variant="subtle" size="sm">
-            <IconInfoCircle size={14} />
-          </ActionIcon>
-        </MantineTooltip>
-      )}
-    </Group>
-    <Box style={{ flex: 1, minHeight: 0 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={chart.data}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey={chart.xField}
-            interval={chart.chartParams?.xInterval ?? 0}
-            tickFormatter={(value) =>
-              String(value)
-                .toLowerCase()
-                .replace(/\b\w/g, (char) => char.toUpperCase())
-            }
-            angle={chart.chartParams?.xAngle ?? -40}
-            textAnchor={chart.chartParams?.xAngle ? 'end' : 'middle'}
-            height={chart.chartParams?.xHeight ?? 70}
-          />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          {chart.chartParams?.datakeys?.map(([datakey, color]) => (
-            <Bar key={datakey} dataKey={datakey} fill={color} />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+// Chart items are rebuilt on every page render (fresh object, fresh
+// chartParams, and a fresh `[]` for data that hasn't loaded), so the Chart.js
+// memos below key on the data arrays and primitive params instead of `chart`.
+// A new `data`/`options` object makes react-chartjs-2 call chart.update(),
+// which replays the animation.
+const EMPTY_ROWS: DataRow[] = [];
+const stableRows = (rows?: DataRow[]) => (rows?.length ? rows : EMPTY_ROWS);
+
+const SamePerXBarChart = ({
+  chart,
+  view,
+}: {
+  chart: ChartItem<DataRow>;
+  view?: 'gallery' | 'report';
+}) => {
+  const isPdfMode = usePdfMode();
+  return (
+    <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Group gap={4}>
+        <Text size="sm" fw={600}>
+          {chart.title}
+        </Text>
+        {chart.description && (
+          <MantineTooltip label={chart.description} multiline w={240}>
+            <ActionIcon variant="subtle" size="sm">
+              <IconInfoCircle size={14} />
+            </ActionIcon>
+          </MantineTooltip>
+        )}
+      </Group>
+      <Box style={{ flex: 1, minHeight: 0 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chart.data}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey={chart.xField}
+              interval={chart.chartParams?.xInterval ?? 0}
+              tickFormatter={(value) =>
+                String(value)
+                  .toLowerCase()
+                  .replace(/\b\w/g, (char) => char.toUpperCase())
+              }
+              angle={chart.chartParams?.xAngle ?? -40}
+              textAnchor={chart.chartParams?.xAngle ? 'end' : 'middle'}
+              height={chart.chartParams?.xHeight ?? 70}
+            />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {chart.chartParams?.datakeys?.map(([datakey, color]) => (
+              <Bar
+                key={datakey}
+                dataKey={datakey}
+                fill={color}
+                isAnimationActive={view !== 'gallery' && !isPdfMode}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </Box>
     </Box>
-  </Box>
-);
+  );
+};
 
 // ---------------------------------------------------------------------------
 // DiffPerXBarChart — single dataset, per-bar colors from data
@@ -116,34 +138,47 @@ const DiffPerXBarChartSVG = ({ chart }: { chart: ChartItem<DataRow> }) => {
   );
 };
 
-const DiffPerXBarChart = ({ chart }: { chart: ChartItem<DataRow> }) => {
+const DiffPerXBarChart = ({
+  chart,
+  view,
+}: {
+  chart: ChartItem<DataRow>;
+  view?: 'gallery' | 'report';
+}) => {
   const isPdfMode = usePdfMode();
-  if (isPdfMode) return <DiffPerXBarChartSVG chart={chart} />;
 
-  const labels = chart.data.map((entry) => entry[chart.xField]);
-  const colors = chart.data.map(
-    (entry) => entry[chart.chartParams!.color!] as string,
+  const rows = stableRows(chart.data);
+  const { xField, yField } = chart;
+  const colorField = chart.chartParams!.color!;
+  const data = useMemo(
+    () => ({
+      labels: rows.map((entry) => entry[xField]),
+      datasets: [
+        {
+          label: yField,
+          data: rows.map((entry) => entry[yField] as number),
+          backgroundColor: rows.map((entry) => entry[colorField] as string),
+        },
+      ],
+    }),
+    [rows, xField, yField, colorField],
   );
 
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: chart.yField,
-        data: chart.data.map((entry) => entry[chart.yField] as number),
-        backgroundColor: colors,
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      // Gallery charts update as other requests finish; never animate those updates.
+      animation: view === 'gallery' ? (false as const) : undefined,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true },
       },
-    ],
-  };
+    }),
+    [view],
+  );
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { enabled: true },
-    },
-  };
+  if (isPdfMode) return <DiffPerXBarChartSVG chart={chart} />;
 
   return <BarJS data={data} options={options} />;
 };
@@ -242,24 +277,26 @@ const CompareDiffPerXBarChart = ({
   const isPdfMode = usePdfMode();
 
   const includeCategories = chart.chartParams?.includeCategories;
+  const rows = stableRows(chart.data);
+  const compareRows = stableRows(chart.compareData);
 
   // Filter primary dataset based on categories if specified
   const filteredData = useMemo(() => {
     return includeCategories
-      ? chart.data.filter((entry: any) =>
+      ? rows.filter((entry: any) =>
           includeCategories.includes(entry[chart.xField]),
         )
-      : chart.data;
-  }, [chart.data, includeCategories, chart.xField]);
+      : rows;
+  }, [rows, includeCategories, chart.xField]);
 
   // Filter comparison dataset based on categories if specified
   const filteredCompareData = useMemo(() => {
-    return includeCategories && chart.compareData
-      ? chart.compareData.filter((entry: any) =>
+    return includeCategories
+      ? compareRows.filter((entry: any) =>
           includeCategories.includes(entry[chart.xField]),
         )
-      : (chart.compareData ?? []);
-  }, [chart.compareData, includeCategories, chart.xField]);
+      : compareRows;
+  }, [compareRows, includeCategories, chart.xField]);
 
   // Derive exact plottable rows and report back to ChartCard for TableView
   const plotData = useMemo(() => {
@@ -279,71 +316,81 @@ const CompareDiffPerXBarChart = ({
     onPlotData?.(plotData);
   }, [plotData, onPlotData]);
 
-  if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
+  const { xField, yField } = chart;
+  const colorField = chart.chartParams?.color;
+  const colorScheme = chart.chartParams?.colorScheme || 'schemeTableau10';
+  const primaryLabel = chart.chartParams?.legendLabels?.[0] ?? yField;
+  const compareLabel =
+    chart.chartParams?.legendLabels?.[1] ?? `${yField} (compare)`;
 
-  const labels = filteredData.map((entry: any) => entry[chart.xField]);
+  const data = useMemo(() => {
+    let colors: string[];
+    if (colorField && (rows[0] as any)?.[colorField]) {
+      colors = filteredData.map((entry: any) => entry[colorField]);
+    } else {
+      const colorScale = d3.scaleOrdinal<string, string>(
+        (d3 as any)[colorScheme],
+      );
+      colors = filteredData.map((_, index) => colorScale(index.toString()));
+    }
 
-  let colors: string[];
-  if (
-    chart.chartParams?.color &&
-    (chart.data[0] as any)?.[chart.chartParams.color]
-  ) {
-    colors = filteredData.map((entry: any) => entry[chart.chartParams.color!]);
-  } else {
-    const schemeName = chart.chartParams?.colorScheme || 'schemeTableau10';
-    const colorScale = d3.scaleOrdinal<string, string>((d3 as any)[schemeName]);
-    colors = filteredData.map((_, index) => colorScale(index.toString()));
-  }
-  const compareColors = filteredCompareData.map(() => '#D3D3D3');
+    return {
+      labels: filteredData.map((entry: any) => entry[xField]),
+      datasets: [
+        {
+          label: primaryLabel,
+          data: filteredData.map((entry: any) => entry[yField]),
+          backgroundColor: colors,
+        },
+        {
+          label: compareLabel,
+          data: filteredCompareData.map((entry: any) => entry[yField]),
+          backgroundColor: filteredCompareData.map(() => '#D3D3D3'),
+        },
+      ],
+    };
+  }, [
+    rows,
+    filteredData,
+    filteredCompareData,
+    xField,
+    yField,
+    colorField,
+    colorScheme,
+    primaryLabel,
+    compareLabel,
+  ]);
 
-  const legendLabels = chart.chartParams.legendLabels || [
-    chart.yField,
-    `${chart.yField} (compare)`,
-  ];
-
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: legendLabels[0],
-        data: filteredData.map((entry: any) => entry[chart.yField]),
-        backgroundColor: colors,
-      },
-      {
-        label: legendLabels[1],
-        data: filteredCompareData.map((entry: any) => entry[chart.yField]),
-        backgroundColor: compareColors,
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => {
-            const value = context.parsed.y;
-            return (chart.chartParams?.percentFormat ?? false)
-              ? `${value}%`
-              : value.toLocaleString();
+  const percentFormat = chart.chartParams?.percentFormat ?? false;
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: view === 'gallery' ? (false as const) : undefined,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            label: (context: any) => {
+              const value = context.parsed.y;
+              return percentFormat ? `${value}%` : value.toLocaleString();
+            },
           },
         },
       },
-    },
-    scales: {
-      y: {
-        ticks: {
-          callback: (value: any) =>
-            (chart.chartParams?.percentFormat ?? false)
-              ? `${value}%`
-              : value.toLocaleString(),
+      scales: {
+        y: {
+          ticks: {
+            callback: (value: any) =>
+              percentFormat ? `${value}%` : value.toLocaleString(),
+          },
         },
       },
-    },
-  };
+    }),
+    [view, percentFormat],
+  );
+
+  if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
 
   return <BarJS data={data} options={options} />;
 };
@@ -403,44 +450,57 @@ const VAL_ORDER = ['Allowed', 'May be Allowed', 'Prohibited', 'Not Mentioned'];
 
 const cleanUseType = (useType: string) => useType.replace(/_/g, ' ');
 
+type PivotRow = { use_type: string } & Record<string, number | string>;
+const pivot = (rows: AllowanceRow[]): Record<string, PivotRow> => {
+  const map: Record<string, PivotRow> = {};
+  for (const r of rows) {
+    const useType = cleanUseType(r.use_type);
+    const group = groupVal(r.val);
+    if (!map[useType]) map[useType] = { use_type: useType };
+    map[useType][group] =
+      ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
+  }
+  return map;
+};
+
+// Module-level so they're stable references in the useMemo deps below.
+const colorForGroup = (group: string) => VAL_GROUP_COLORS[group] ?? '#999999';
+
+const mutedColor = (hex: string) => {
+  const { r, g, b } = d3.rgb(hex);
+  return `rgba(${r}, ${g}, ${b}, 0.45)`;
+};
+
 const ZoningAllowanceStackedBarChart = ({
   chart,
+  view,
   onPlotData,
 }: {
   chart: CompareDiffChartItem;
+  view?: 'gallery' | 'report';
   onPlotData?: (rows: DataRow[]) => void;
 }) => {
   // const isPdfMode = usePdfMode();
   // if (isPdfMode) return <ZoningAllowanceStackedBarChartSVG chart={chart} />;
 
+  const rawMain = stableRows(chart.data);
+  const rawCompare = stableRows(chart.compareData);
+
   const mainRows = useMemo(
     () =>
-      ((chart.data || []) as AllowanceRow[]).filter((r) =>
+      (rawMain as unknown as AllowanceRow[]).filter((r) =>
         INCLUDED_USE_TYPES.has(r.use_type),
       ),
-    [chart.data],
+    [rawMain],
   );
 
   const compareRows = useMemo(
     () =>
-      ((chart.compareData || []) as AllowanceRow[]).filter((r) =>
+      (rawCompare as unknown as AllowanceRow[]).filter((r) =>
         INCLUDED_USE_TYPES.has(r.use_type),
       ),
-    [chart.compareData],
+    [rawCompare],
   );
-
-  type PivotRow = { use_type: string } & Record<string, number | string>;
-  const pivot = (rows: AllowanceRow[]): Record<string, PivotRow> => {
-    const map: Record<string, PivotRow> = {};
-    for (const r of rows) {
-      const useType = cleanUseType(r.use_type);
-      const group = groupVal(r.val);
-      if (!map[useType]) map[useType] = { use_type: useType };
-      map[useType][group] =
-        ((map[useType][group] as number) || 0) + (Number(r.Acres) || 0);
-    }
-    return map;
-  };
 
   const main = useMemo(() => pivot(mainRows), [mainRows]);
   const compare = useMemo(() => pivot(compareRows), [compareRows]);
@@ -481,13 +541,6 @@ const ZoningAllowanceStackedBarChart = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serializedPlotData, onPlotData]);
 
-  const colorForGroup = (group: string) => VAL_GROUP_COLORS[group] ?? '#999999';
-
-  const mutedColor = (hex: string) => {
-    const { r, g, b } = d3.rgb(hex);
-    return `rgba(${r}, ${g}, ${b}, 0.45)`;
-  };
-
   const datasets = useMemo(
     () => [
       ...stackKeys.map((key) => ({
@@ -506,7 +559,7 @@ const ZoningAllowanceStackedBarChart = ({
         borderWidth: 1,
       })),
     ],
-    [stackKeys, labels, main, compare, colorForGroup],
+    [stackKeys, labels, main, compare],
   );
 
   const data = useMemo(
@@ -521,7 +574,7 @@ const ZoningAllowanceStackedBarChart = ({
     () => ({
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 250 },
+      animation: view === 'gallery' ? (false as const) : { duration: 250 },
       transitions: {
         active: {
           animation: {
@@ -586,7 +639,7 @@ const ZoningAllowanceStackedBarChart = ({
         y: { stacked: true },
       },
     }),
-    [stackKeys],
+    [stackKeys, view],
   );
 
   return <BarJS data={data} options={options} />;
@@ -643,56 +696,68 @@ const CompareHBarChartSVG = ({ chart }: { chart: CompareDiffChartItem }) => {
   );
 };
 
-const CompareHBarChart = ({ chart }: { chart: CompareDiffChartItem }) => {
+const CompareHBarChart = ({
+  chart,
+  view,
+}: {
+  chart: CompareDiffChartItem;
+  view?: 'gallery' | 'report';
+}) => {
   const isPdfMode = usePdfMode();
-  if (isPdfMode) return <CompareHBarChartSVG chart={chart} />;
-
-  const labels = chart.data.map((entry) => entry[chart.xField]);
-  const legendLabels = chart.chartParams?.legendLabels || [
-    'Primary',
-    'Comparison',
-  ];
   const unit = chart.chartParams?.unit ?? '';
 
-  const data = {
-    labels,
-    datasets: [
-      {
-        label: legendLabels[0],
-        data: chart.data.map((entry) => entry[chart.yField] as number),
-        backgroundColor: '#154734',
-      },
-      {
-        label: legendLabels[1] ?? 'Comparison',
-        data: (chart.compareData ?? []).map(
-          (entry) => entry[chart.yField] as number,
-        ),
-        backgroundColor: '#8899aa',
-      },
-    ],
-  };
+  const rows = stableRows(chart.data);
+  const compareRows = stableRows(chart.compareData);
+  const { xField, yField } = chart;
+  const primaryLabel = chart.chartParams?.legendLabels?.[0] ?? 'Primary';
+  const compareLabel = chart.chartParams?.legendLabels?.[1] ?? 'Comparison';
 
-  const options = {
-    indexAxis: 'y' as const,
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'bar'>) =>
-            `${ctx.dataset.label}: ${ctx.raw}${unit}`,
+  const data = useMemo(
+    () => ({
+      labels: rows.map((entry) => entry[xField]),
+      datasets: [
+        {
+          label: primaryLabel,
+          data: rows.map((entry) => entry[yField] as number),
+          backgroundColor: '#154734',
+        },
+        {
+          label: compareLabel,
+          data: compareRows.map((entry) => entry[yField] as number),
+          backgroundColor: '#8899aa',
+        },
+      ],
+    }),
+    [rows, compareRows, xField, yField, primaryLabel, compareLabel],
+  );
+
+  const options = useMemo(
+    () => ({
+      indexAxis: 'y' as const,
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: view === 'gallery' ? (false as const) : undefined,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            label: (ctx: TooltipItem<'bar'>) =>
+              `${ctx.dataset.label}: ${ctx.raw}${unit}`,
+          },
         },
       },
-    },
-    scales: {
-      x: {
-        ticks: {
-          callback: (value: number | string) => `${value}${unit}`,
+      scales: {
+        x: {
+          ticks: {
+            callback: (value: number | string) => `${value}${unit}`,
+          },
         },
       },
-    },
-  };
+    }),
+    [view, unit],
+  );
+
+  if (isPdfMode) return <CompareHBarChartSVG chart={chart} />;
 
   return <BarJS data={data} options={options} />;
 };
