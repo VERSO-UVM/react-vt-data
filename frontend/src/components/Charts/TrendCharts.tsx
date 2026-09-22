@@ -102,6 +102,10 @@ export interface SingleSeriesConfig {
   seriesKey: string | null;
   /** Field to read off the matched row, e.g. 'Value' | 'Percent' | 'Population'. */
   valueField: string;
+  /** Readable series name, used as the plotData key and so the table row
+   *  label. Defaults to seriesKey, then valueField. No dots — Recharts reads
+   *  a dotted dataKey as a nested path. */
+  displayName?: string;
   format: FormatType;
   /** For percent format, forces toFixed(decimals) in the tooltip (Unemployment uses 1). */
   decimals?: number;
@@ -128,6 +132,7 @@ export const SingleSeriesTrendChart = <TData,>({
   const {
     seriesKey,
     valueField,
+    displayName,
     format,
     decimals,
     color = '#154734',
@@ -141,7 +146,7 @@ export const SingleSeriesTrendChart = <TData,>({
   const data = chart.data as any[];
   const compareData = chart.compareData as any[];
 
-  const seriesName = seriesKey ?? valueField;
+  const seriesName = displayName ?? seriesKey ?? valueField;
   const labels = chart.chartParams?.legendLabels as
     [string, string] | undefined;
 
@@ -467,6 +472,7 @@ export const HistoricPopulationChangeTrendChart = <TData,>({
     {
       seriesKey: null,
       valueField: 'Pct_Population_Change',
+      displayName: 'Population Change (%)',
       format: 'percent',
       decimals: 1,
       showHelperText: false,
@@ -489,6 +495,7 @@ export const PopulationChangeTrendChart = <TData,>({
     {
       seriesKey: null,
       valueField: 'Pct_Population_Change',
+      displayName: 'Population Change (%)',
       format: 'percent',
       decimals: 1,
       showHelperText: false,
@@ -508,7 +515,12 @@ export const MedianAgeTrendChart = <TData,>({
 }) =>
   single(
     chart,
-    { seriesKey: null, valueField: 'Median_Age', format: 'years' },
+    {
+      seriesKey: null,
+      valueField: 'Median_Age',
+      displayName: 'Median Age',
+      format: 'years',
+    },
     view,
     onPlotData,
   );
@@ -640,6 +652,7 @@ export const HouseholdIncomeTrendChart = <TData,>({
     {
       seriesKey: null,
       valueField: 'Median_Household_Income',
+      displayName: 'Median Household Income',
       format: 'currency',
       showHelperText: false,
     },
@@ -661,6 +674,7 @@ export const PerCapitaIncomeTrendChart = <TData,>({
     {
       seriesKey: null,
       valueField: 'Per_Capita_Income',
+      displayName: 'Per Capita Income',
       format: 'currency',
       showHelperText: false,
     },
@@ -682,6 +696,7 @@ export const HousingIncomeBurdenChart = <TData,>({
     {
       seriesKey: null,
       valueField: 'pct_housing_burden',
+      displayName: 'Cost-Burdened Owners with a Mortgage (%)',
       format: 'percent',
       decimals: 1,
       showHelperText: false,
