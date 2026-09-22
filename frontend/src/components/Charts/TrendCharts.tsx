@@ -406,11 +406,9 @@ export const MultiSeriesTrendChart = <TData,>({
               <Line
                 key={`${s.key}-cmp`}
                 dataKey={`${s.key} (cmp)`}
-                name={
-                  nameSuffix
-                    ? `${s.key} (${labels?.[1] ?? 'Comparison'})`
-                    : undefined
-                }
+                // Always named: without one the tooltip falls back to the
+                // internal "(cmp)" dataKey. legendType="none" hides it from the legend.
+                name={`${s.key} (${labels?.[1] ?? 'Comparison'})`}
                 stroke={s.color}
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
