@@ -138,9 +138,9 @@ EXPORT_SOURCES: dict[str, dict] = {
         ),
     },
     "acs5_ts_income_burden": {
-        "label": "Housing Income Burden by Year",
+        "label": "Housing Cost Burden by Year",
         "group": "Historical Trends",
-        "description": "Share of income spent on housing costs by town and year (ACS 5-year).",
+        "description": "Share of households spending 30% or more of income on housing, by tenure (renters, owners with and without a mortgage, all households), town, and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
         "loader": lambda: _load_full_table(
             QUERY_CONFIG["housing"]["timeseries"]["income_burden"]["table"]

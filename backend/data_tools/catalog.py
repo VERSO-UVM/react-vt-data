@@ -407,12 +407,16 @@ _DATASET_LIST = [
     ),
     _acs_series(
         "income_burden",
-        "Owner housing cost burden",
+        "Housing cost burden by tenure",
         "acs5Housing_incomeBurden_timeseries",
-        {"pct_housing_burden": "percent"},
-        description="Share of owner housing units with a mortgage spending "
-        "at least 30% of household income on housing; excludes units where "
-        "the percentage cannot be computed.",
+        {"Value": "households", "Total": "households", "Percent": "percent"},
+        dimensions=("Variable",),
+        description="Households spending at least 30% of household income on "
+        "housing, by tenure: Renters (gross rent, GRAPI), Owners with a "
+        "mortgage and Owners without a mortgage (owner costs, SMOCAPI), and "
+        "All households (the three summed). Value is cost-burdened "
+        "households, Total is households where the percentage can be "
+        "computed, and Percent is Value / Total. Covers 2013 onward.",
     ),
     _acs_series(
         "household_income",
@@ -921,23 +925,47 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
                 "build/acs5.py median-home-value CSV path is not this declared pipeline."
             )
     elif dataset.id == "acs5_ts_income_burden":
+        subcategories = {
+            "Renters": "Occupied units paying rent (excluding units where GRAPI cannot be computed)",
+            "Owners with a mortgage": "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)",
+            "Owners without a mortgage": "Housing unit without a mortgage (excluding units where SMOCAPI cannot be computed)",
+        }
+        selectors = {
+            "Measure": "Estimate",
+            "Subcategory_by_Variable": subcategories,
+            "year_min": 2013,
+        }
         result["source_columns"] = {
-            "pct_housing_burden": {
+            "Value": {
                 "raw_table": "RAW.acs5_housing",
                 "raw_column": "Value",
-                "aggregation": "SUM(TRY_CAST(Value AS DOUBLE))",
+                "aggregation": "SUM of the 30.0-34.9% and 35.0%+ household "
+                "counts; All households sums the three tenures",
                 "selectors": {
-                    "Category_contains": "SELECTED MONTHLY OWNER COSTS AS A PERCENTAGE OF HOUSEHOLD INCOME",
-                    "Subcategory": "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)",
+                    **selectors,
                     "Variable": ["30.0 to 34.9 percent", "35.0 percent or more"],
-                    "Measure": "Percent",
                 },
                 "census_codes": [],
-            }
+            },
+            "Total": {
+                "raw_table": "RAW.acs5_housing",
+                "raw_column": "Value",
+                "aggregation": "Tenure Total; All households sums the three tenures",
+                "selectors": {**selectors, "Variable": "Total"},
+                "census_codes": [],
+            },
+            "Percent": {
+                "derived_from": ["Value", "Total"],
+                "aggregation": "ROUND(100 * Value / Total, 1); null when Total is 0",
+                "census_codes": [],
+            },
         }
         result["source_code_note"] += (
-            " The current cleaner matches Measure='Percent'; source years labelled "
-            "'Percent Estimate' are excluded. See observed year coverage."
+            " Counts are used rather than the published percentages, whose "
+            "Measure label is 'Percent Estimate' in 2017-2018. Negative Census "
+            "sentinels and non-numeric values are treated as missing before "
+            "summing, and a row is missing unless every input is present "
+            "exactly once."
         )
     elif dataset.kind == "dp":
         result["source_columns"] = {

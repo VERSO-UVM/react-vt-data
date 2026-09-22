@@ -509,7 +509,9 @@ def test_provenance_identifies_the_current_served_pipeline_without_guessing_code
     assert "older build/acs5.py" in home["source_code_note"]
     assert "not a certificate" in home["source_code_note"]
     burden = provenance_metadata(get_dataset("acs5_ts_income_burden"))
-    assert burden["source_columns"]["pct_housing_burden"]["census_codes"] == []
+    assert burden["source_columns"]["Value"]["census_codes"] == []
+    assert burden["source_columns"]["Value"]["selectors"]["Measure"] == "Estimate"
+    assert set(burden["source_columns"]) == {"Value", "Total", "Percent"}
     assert "Percent Estimate" in burden["source_code_note"]
     assert (
         "backend/data_cleaning/clean_housing_cost_burden.py"
