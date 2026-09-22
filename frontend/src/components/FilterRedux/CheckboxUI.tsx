@@ -3,15 +3,53 @@ import axios from 'axios';
 import { BASE_API_URL } from '@/config';
 import {
   Accordion,
+  ActionIcon,
   Group,
   Text,
   Stack,
+  Tooltip,
   UnstyledButton,
   Divider,
   Checkbox,
 } from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { apiFilterParams } from './filterTypes';
 import { COLORS } from '@/app/theme';
+import { FILTER_GLOSSARY } from './glossary';
+
+/** A term's display text, with an (i) tooltip appended when a plain-language
+ *  definition exists for it in FILTER_GLOSSARY. Clicks on the icon are
+ *  swallowed so they don't toggle the checkbox/accordion item it sits in. */
+function TermLabel({ text }: { text: string }) {
+  const definition = FILTER_GLOSSARY[text];
+  if (!definition) return <>{text}</>;
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      {text}
+      <Tooltip
+        label={definition}
+        multiline
+        w={260}
+        withArrow
+        events={{ hover: true, focus: true, touch: true }}
+      >
+        <ActionIcon
+          component="span"
+          variant="transparent"
+          size="xs"
+          c="gray"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          <IconInfoCircle size={14} />
+        </ActionIcon>
+      </Tooltip>
+    </span>
+  );
+}
 
 export function CheckboxFilter(params: apiFilterParams) {
   const { spec, setValue } = params;
@@ -88,7 +126,7 @@ export function CheckboxFilter(params: apiFilterParams) {
             <Accordion.Control>
               <Group justify="space-between" wrap="nowrap" pr="xs">
                 <Text size="md" fw={600} c="gray.8" truncate>
-                  {label}
+                  <TermLabel text={label} />
                 </Text>
 
                 <Text size="sm" c={noneSelected ? 'red.6' : 'gray.5'} fw={500}>
@@ -149,7 +187,7 @@ export function CheckboxFilter(params: apiFilterParams) {
                   {options.map((opt) => (
                     <Checkbox
                       key={opt}
-                      label={opt}
+                      label={<TermLabel text={opt} />}
                       checked={current.includes(opt)}
                       color={COLORS.spruce}
                       onChange={() => {
