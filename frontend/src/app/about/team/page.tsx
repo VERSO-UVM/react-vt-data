@@ -46,7 +46,7 @@ function TeamCard({
             h={260}
             w="100%"
             fit="cover"
-            fallbackSrc="https://placehold.co/400x400?text=No+Image"
+            fallbackSrc="https://placehold.co/600x400?text=No+Image"
             style={{ backgroundColor: '#f1f3f5' }}
           />
           <motion.div
