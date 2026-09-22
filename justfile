@@ -283,7 +283,7 @@ get-data start_year end_year: build-collection
 transform-data script_name="":
     podman build -t localhost/vdc-cleaning -f ETL/dockerfile.clean .
     podman run --rm {{ podman_flags }} \
-     -v "{{ DATA_DIR }}:/data:z" localhost/vdc-cleaning
+     -v "{{ DATA_DIR }}:/data:z" localhost/vdc-cleaning {{ script_name }}
 
 # --------- 3. Data Loading (L) ---------------------
 [doc("Load the lake.CLEANED tables into a DuckDB database")]
