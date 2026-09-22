@@ -30,3 +30,9 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* Recharts renders the tooltip before the legend, both absolutely positioned,
+   so without this the legend text paints over an open tooltip. */
+.recharts-tooltip-wrapper {
+  z-index: 10;
+}

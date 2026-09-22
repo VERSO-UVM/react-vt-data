@@ -41,6 +41,18 @@ METADATA: dict[str, dict] = {
         "lastUpdated": "2023",
         "caveats": ["Median home values are in nominal survey-year dollars."],
     },
+    "housing_cost_burden": {
+        "source": (
+            "U.S. Census Bureau, American Community Survey 5-Year Estimates "
+            "(Table DP04: GRAPI and SMOCAPI)"
+        ),
+        "lastUpdated": "2024",
+        "caveats": [
+            "Households are cost-burdened when housing costs are 30% or more of household income.",
+            "Excludes households where the percentage cannot be computed.",
+            "Estimates for small geographies may have high margins of error.",
+        ],
+    },
     "labor_force": {
         "source": (
             "U.S. Census Bureau, American Community Survey 5-Year Estimates "

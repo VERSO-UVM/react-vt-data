@@ -109,6 +109,7 @@ def _acs_tidy(key: str, label: str, description: str, table: str) -> Dataset:
             "geo_type",
             "county",
             "county_fips",
+            "GEOID",
             "section",
             "variable",
         ),
@@ -124,8 +125,12 @@ def _acs_series(
     dimensions: tuple[str, ...] = (),
     description: str | None = None,
     historic: bool = False,
+    county: bool = True,
     caveats: tuple[str, ...] = (),
 ) -> Dataset:
+    # ACS series carry the standard geoid/county_fips identifiers; `county` is
+    # False for tables built with `with_county=False` in clean_acs5_timeseries.
+    identifiers = ("geoid", "county_fips") + (("county",) if county else ())
     return Dataset(
         f"acs5_ts_{key}",
         label,
@@ -152,7 +157,7 @@ def _acs_series(
         value_columns=values,
         filter_columns=("year", "name", "geo_type")
         + dimensions
-        + (("geoid", "county_fips", "County") if historic else ()),
+        + (("geoid", "county_fips", "County") if historic else identifiers),
     )
 
 
@@ -406,12 +411,17 @@ _DATASET_LIST = [
     ),
     _acs_series(
         "income_burden",
-        "Owner housing cost burden",
+        "Housing cost burden by tenure",
         "acs5Housing_incomeBurden_timeseries",
-        {"pct_housing_burden": "percent"},
-        description="Share of owner housing units with a mortgage spending "
-        "at least 30% of household income on housing; excludes units where "
-        "the percentage cannot be computed.",
+        {"Value": "households", "Total": "households", "Percent": "percent"},
+        dimensions=("Variable",),
+        county=False,
+        description="Households spending at least 30% of household income on "
+        "housing, by tenure: Renters (gross rent, GRAPI), Owners with a "
+        "mortgage and Owners without a mortgage (owner costs, SMOCAPI), and "
+        "All households (the three summed). Value is cost-burdened "
+        "households, Total is households where the percentage can be "
+        "computed, and Percent is Value / Total. Covers 2013 onward.",
     ),
     _acs_series(
         "household_income",
@@ -431,6 +441,7 @@ _DATASET_LIST = [
         "acs5Economics_medianEarnings_timeseries",
         {"Value": "USD (year-specific dollars)"},
         dimensions=("Variable",),
+        county=False,
     ),
     _acs_series(
         "health_insurance",
@@ -438,6 +449,7 @@ _DATASET_LIST = [
         "acs5Economics_healthInsurance_timeseries",
         {"Value": "people"},
         dimensions=("Variable",),
+        county=False,
         description="People by health insurance coverage category.",
     ),
     _acs_series(
@@ -479,6 +491,9 @@ _DATASET_LIST = [
         value_columns={"value": "varies by variable and measure"},
         filter_columns=(
             "name",
+            "geo_type",
+            "geoid",
+            "county_fips",
             "table",
             "category",
             "subcategory",
@@ -522,7 +537,15 @@ _DATASET_LIST = [
             "employment": "jobs",
             "employment_4qma": "jobs (stored rolling average; see caveats)",
         },
-        filter_columns=("county", "year", "quarter", "quarter_label", "sector"),
+        filter_columns=(
+            "county",
+            "county_fips",
+            "geoid",
+            "year",
+            "quarter",
+            "quarter_label",
+            "sector",
+        ),
     ),
     Dataset(
         "zoning_districts",
@@ -575,6 +598,8 @@ _DATASET_LIST = [
             "system_owner",
             "town",
             "county",
+            "county_fips",
+            "geoid",
             "rpc",
         ),
     ),
@@ -597,6 +622,8 @@ _DATASET_LIST = [
             "facility_name",
             "town",
             "county",
+            "county_fips",
+            "geoid",
             "rpc",
         ),
     ),
@@ -634,7 +661,16 @@ _DATASET_LIST = [
         name_column="town",
         fixed_geo_type="county_subdivision",
         value_columns={"acres": "acres"},
-        filter_columns=("ogc_fid", "suitability", "town", "rpc", "acres"),
+        filter_columns=(
+            "ogc_fid",
+            "suitability",
+            "town",
+            "county",
+            "county_fips",
+            "geoid",
+            "rpc",
+            "acres",
+        ),
     ),
     Dataset(
         "wastewater_stormwater_management",
@@ -654,6 +690,7 @@ _DATASET_LIST = [
             "geoid",
             "town",
             "county",
+            "county_fips",
             "rpc",
         ),
     ),
@@ -699,6 +736,7 @@ _DATASET_LIST = [
             },
             filter_columns=(
                 "year",
+                "geo_type",
                 "county",
                 "county_fips",
                 "category",
@@ -769,7 +807,13 @@ _DATASET_LIST = [
                 "cleaned table; municipality filters and time series are not supported."
             ),
         ),
-        filter_columns=("flood_zone_type", "zone_subtype", "base_flood_elevation"),
+        filter_columns=(
+            "flood_zone_type",
+            "zone_subtype",
+            "base_flood_elevation",
+            "flood_risk",
+            "special_flood_hazard_zone",
+        ),
     ),
 ]
 
@@ -871,7 +915,7 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
         "acs5_ts_historic_population_change": "historic_population_change",
         "acs5_ts_median_earnings": "median_earnings",
         "acs5_ts_health_insurance": "health_insurance_coverage",
-        "acs5_ts_income_burden": "housing_cost_burden",
+        "acs5_ts_income_burden": "acs5_timeseries",
         "acs5_ts_vacancy_rates": "derived_time_series",
         "qcew_employment_by_sector": "qcew",
         "ambulance_service_areas": "ambulance",
@@ -916,23 +960,47 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
                 "build/acs5.py median-home-value CSV path is not this declared pipeline."
             )
     elif dataset.id == "acs5_ts_income_burden":
+        subcategories = {
+            "Renters": "Occupied units paying rent (excluding units where GRAPI cannot be computed)",
+            "Owners with a mortgage": "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)",
+            "Owners without a mortgage": "Housing unit without a mortgage (excluding units where SMOCAPI cannot be computed)",
+        }
+        selectors = {
+            "Measure": "Estimate",
+            "Subcategory_by_Variable": subcategories,
+            "year_min": 2013,
+        }
         result["source_columns"] = {
-            "pct_housing_burden": {
+            "Value": {
                 "raw_table": "RAW.acs5_housing",
                 "raw_column": "Value",
-                "aggregation": "SUM(TRY_CAST(Value AS DOUBLE))",
+                "aggregation": "SUM of the 30.0-34.9% and 35.0%+ household "
+                "counts; All households sums the three tenures",
                 "selectors": {
-                    "Category_contains": "SELECTED MONTHLY OWNER COSTS AS A PERCENTAGE OF HOUSEHOLD INCOME",
-                    "Subcategory": "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)",
+                    **selectors,
                     "Variable": ["30.0 to 34.9 percent", "35.0 percent or more"],
-                    "Measure": "Percent",
                 },
                 "census_codes": [],
-            }
+            },
+            "Total": {
+                "raw_table": "RAW.acs5_housing",
+                "raw_column": "Value",
+                "aggregation": "Tenure Total; All households sums the three tenures",
+                "selectors": {**selectors, "Variable": "Total"},
+                "census_codes": [],
+            },
+            "Percent": {
+                "derived_from": ["Value", "Total"],
+                "aggregation": "ROUND(100 * Value / Total, 1); null when Total is 0",
+                "census_codes": [],
+            },
         }
         result["source_code_note"] += (
-            " The current cleaner matches Measure='Percent'; source years labelled "
-            "'Percent Estimate' are excluded. See observed year coverage."
+            " Counts are used rather than the published percentages, whose "
+            "Measure label is 'Percent Estimate' in 2017-2018. Negative Census "
+            "sentinels and non-numeric values are treated as missing before "
+            "summing, and a row is missing unless every input is present "
+            "exactly once."
         )
     elif dataset.kind == "dp":
         result["source_columns"] = {

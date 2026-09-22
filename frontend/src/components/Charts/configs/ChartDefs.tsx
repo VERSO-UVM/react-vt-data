@@ -260,11 +260,11 @@ export const chartDefs: ChartDef[] = [
   },
   {
     id: 'housing_income_burden',
-    title: 'Housing Income Burden',
+    title: 'Housing Cost Burden (30%+ of Income)',
     url: `${BASE_API_URL}/load/acs5-db/timeseries/housing/income-burden`,
     xField: '',
     yField: '',
-    subtype: 'renderTableEstimates',
+    subtype: 'renderTable',
     trendChart: 'HousingIncomeBurdenChart',
     categories: ['Housing'],
     filterKey: '',

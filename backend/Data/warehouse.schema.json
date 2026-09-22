@@ -435,11 +435,14 @@
       "year": "VARCHAR"
     },
     "acs5Housing_incomeBurden_timeseries": {
+      "Percent": "DOUBLE",
+      "Total": "DOUBLE",
+      "Value": "DOUBLE",
+      "Variable": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
       "geoid": "VARCHAR",
       "name": "VARCHAR",
-      "pct_housing_burden": "DOUBLE",
       "year": "BIGINT"
     },
     "acs5Housing_medianHomeValue_timeseries": {
