@@ -1,3 +1,17 @@
+.galleryCard {
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease;
+  transform: translateY(0);
+}
+
+/* Keep hover feedback in CSS so it does not rerender the chart. */
+.galleryCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
 /* Recharts' ResponsiveContainer is height:100% of the box regardless of
    sibling helper text above it, so it (and its bottom Legend) overflows
    past the box and collides with the source line below — worst with
