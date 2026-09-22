@@ -109,7 +109,6 @@ export const ChartCard = <TData extends DataRow>({
   const isPdfMode = usePdfMode();
   const isGallery = view === 'gallery';
   const showBorder = border === true;
-  const [isHovered, setIsHovered] = useState(false);
 
   // Stable across renders even though chart.id is a fresh UUID every render
   // (auto-populated items are rebuilt from live data on each mount) — this is
@@ -198,10 +197,9 @@ export const ChartCard = <TData extends DataRow>({
         padding={isGallery ? 'sm' : 'lg'}
         radius="md"
         withBorder={showBorder}
+        className={isGallery ? classes.galleryCard : undefined}
         data-chart-id={customizationId}
         data-chart-subtype={chart.subtype}
-        onMouseEnter={isGallery ? () => setIsHovered(true) : undefined}
-        onMouseLeave={isGallery ? () => setIsHovered(false) : undefined}
         onClick={
           isGallery
             ? (e) => {
@@ -214,16 +212,6 @@ export const ChartCard = <TData extends DataRow>({
           ...(isHighlighted ? { borderColor: '#154734', borderWidth: 2 } : {}),
           breakInside: 'avoid',
           pageBreakInside: 'avoid',
-          ...(isGallery
-            ? {
-                cursor: 'pointer',
-                transition: 'transform 150ms ease, box-shadow 150ms ease',
-                transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-                boxShadow: isHovered
-                  ? '0 8px 20px rgba(0,0,0,0.12)'
-                  : undefined,
-              }
-            : {}),
         }}
       >
         <Box mb={isGallery ? 4 : 'xs'}>
