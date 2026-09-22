@@ -36,6 +36,7 @@ import {
 } from '@tabler/icons-react';
 
 import { Search } from 'lucide-react';
+import { area } from '@turf/area';
 
 import VTMap from '@/components/mapping';
 import LayerPanel from './LayerPanel';
@@ -67,6 +68,8 @@ const SOIL_SUITABILITY_COLORS: Record<string, string> = {
   'Not Suited': '#dc3545',
   'Not Rated': '#6c757d',
 };
+
+const ACRES_PER_SQM = 1 / 4046.8564224;
 
 export default function MapExplorerPage() {
   return (
@@ -100,6 +103,11 @@ function MapExplorerContent() {
   const [layerData, setLayerData] = useState<
     Record<string, FeatureCollection | null>
   >({});
+  // Zoning's unfiltered baseline (everything the selected town has, ignoring
+  // active checkbox/range filters) — denominator for the "% of this town's
+  // zoned area matches your filters" report stat.
+  const [zoningBaseline, setZoningBaseline] =
+    useState<FeatureCollection | null>(null);
   const [presetFilters, setPresetFilters] = useState<
     Record<string, FilterSpec[]>
   >({});
@@ -224,6 +232,7 @@ function MapExplorerContent() {
         // while the rescoped fetch is in flight.
         setSelectedTown(match);
         setLayerData({});
+        setZoningBaseline(null);
         setScopeVersion((v) => v + 1);
       }
     },
@@ -250,6 +259,7 @@ function MapExplorerContent() {
     });
     if (!active) {
       setLayerData((prev) => ({ ...prev, [id]: null }));
+      if (id === 'zoning') setZoningBaseline(null);
     }
     // Manual toggling breaks out of "preset" mode so the picker no longer
     // shows a preset as selected.
@@ -266,6 +276,7 @@ function MapExplorerContent() {
   const handlePresetClear = useCallback(() => {
     setActiveLayers(new Set());
     setLayerData({});
+    setZoningBaseline(null);
     setPresetFilters({});
     setActivePresetId(null);
   }, []);
@@ -283,6 +294,13 @@ function MapExplorerContent() {
   const handleDataChange = useCallback(
     (id: string, geojson: FeatureCollection | null) => {
       setLayerData((prev) => ({ ...prev, [id]: geojson }));
+    },
+    [],
+  );
+
+  const handleBaselineChange = useCallback(
+    (id: string, geojson: FeatureCollection | null) => {
+      if (id === 'zoning') setZoningBaseline(geojson);
     },
     [],
   );
@@ -358,24 +376,133 @@ function MapExplorerContent() {
       return null;
     }
 
-    const counts = new Map<string, number>();
+    // Acreage-weighted, not feature-count-weighted: suitability polygons are
+    // dissolved/merged per rating class upstream, so a handful of large
+    // polygons can outweigh many small ones — counting features would
+    // misrepresent how much land is actually in each class.
+    const acresByClass = new Map<string, number>();
+    let totalAcres = 0;
     for (const feature of fc.features) {
       const key = String(feature.properties?.Suitability ?? 'Not Rated');
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+      const acres = Number(feature.properties?.Acres) || 0;
+      acresByClass.set(key, (acresByClass.get(key) ?? 0) + acres);
+      totalAcres += acres;
     }
-    const total = fc.features.length;
+    if (totalAcres === 0) return null;
 
-    return SOIL_SUITABILITY_ORDER.filter((label) => counts.has(label)).map(
-      (label) => {
-        const count = counts.get(label) ?? 0;
-        return {
-          label,
-          count,
-          pct: (count / total) * 100,
-          color: SOIL_SUITABILITY_COLORS[label],
-        };
-      },
+    return SOIL_SUITABILITY_ORDER.filter((label) =>
+      acresByClass.has(label),
+    ).map((label) => {
+      const acres = acresByClass.get(label) ?? 0;
+      return {
+        label,
+        acres,
+        pct: (acres / totalAcres) * 100,
+        color: SOIL_SUITABILITY_COLORS[label],
+      };
+    });
+  }, [layerData, activeLayers]);
+
+  const zoningDistrictComposition = useMemo(() => {
+    const fc = layerData['zoning'];
+    if (!activeLayers.has('zoning') || !fc?.features?.length) return null;
+
+    const acresByDistrict = new Map<string, number>();
+    const colorByDistrict = new Map<string, string>();
+    let totalAcres = 0;
+
+    for (const feature of fc.features) {
+      const district = String(
+        feature.properties?.['District Type'] ?? 'Unknown',
+      );
+      const acres = Number(feature.properties?.Acres) || 0;
+      acresByDistrict.set(
+        district,
+        (acresByDistrict.get(district) ?? 0) + acres,
+      );
+      totalAcres += acres;
+
+      if (!colorByDistrict.has(district)) {
+        const rgba = feature.properties?.rgba_color as number[] | undefined;
+        colorByDistrict.set(
+          district,
+          Array.isArray(rgba) && rgba.length >= 3
+            ? `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`
+            : '#64748b',
+        );
+      }
+    }
+
+    if (totalAcres === 0) return null;
+
+    return Array.from(acresByDistrict.entries())
+      .map(([district, acres]) => ({
+        district,
+        acres,
+        pct: (acres / totalAcres) * 100,
+        color: colorByDistrict.get(district) ?? '#64748b',
+      }))
+      .sort((a, b) => b.acres - a.acres);
+  }, [layerData, activeLayers]);
+
+  const treatmentFacilityCapacity = useMemo(() => {
+    const fc = layerData['treatment-facilities'];
+    if (!activeLayers.has('treatment-facilities') || !fc?.features?.length) {
+      return null;
+    }
+
+    let totalMgd = 0;
+    let reporting = 0;
+    for (const feature of fc.features) {
+      const raw = feature.properties?.['Design Hydraulic Capacity'];
+      const mgd = Number(raw);
+      if (Number.isFinite(mgd)) {
+        totalMgd += mgd;
+        reporting += 1;
+      }
+    }
+    return { totalMgd, reporting, total: fc.features.length };
+  }, [layerData, activeLayers]);
+
+  // % of this town's own zoned area (not the county's, see zoningBaseline)
+  // that matches the active filters.
+  const zoningCoverage = useMemo(() => {
+    if (!activeLayers.has('zoning') || !zoningDistrictComposition) {
+      return null;
+    }
+    const matchedAcres = zoningDistrictComposition.reduce(
+      (sum, d) => sum + d.acres,
+      0,
     );
+    const totalAcres = (zoningBaseline?.features ?? []).reduce(
+      (sum, f) => sum + (Number(f.properties?.Acres) || 0),
+      0,
+    );
+    if (totalAcres === 0) return null;
+    return { matchedAcres, totalAcres, pct: (matchedAcres / totalAcres) * 100 };
+  }, [activeLayers, zoningDistrictComposition, zoningBaseline]);
+
+  const serviceAreaSummary = useMemo(() => {
+    const fc = layerData['service-areas'];
+    if (!activeLayers.has('service-areas') || !fc?.features?.length) {
+      return null;
+    }
+
+    let totalAcres = 0;
+    const systems = new Set<string>();
+    const owners = new Set<string>();
+    for (const feature of fc.features) {
+      try {
+        totalAcres += area(feature) * ACRES_PER_SQM;
+      } catch {
+        // Malformed geometry shouldn't block the rest of the summary.
+      }
+      const systemName = feature.properties?.['System Name'];
+      const systemOwner = feature.properties?.['System Owner'];
+      if (systemName) systems.add(String(systemName));
+      if (systemOwner) owners.add(String(systemOwner));
+    }
+    return { totalAcres, systemCount: systems.size, ownerCount: owners.size };
   }, [layerData, activeLayers]);
 
   return (
@@ -623,6 +750,7 @@ function MapExplorerContent() {
                   activeLayers={activeLayers}
                   onToggle={handleToggle}
                   onDataChange={handleDataChange}
+                  onBaselineChange={handleBaselineChange}
                   presetFilters={presetFilters}
                   lockedLayerIds={lockedLayerIds}
                   townCandidates={townCandidates}
@@ -762,6 +890,31 @@ function MapExplorerContent() {
                   )}
                 </Paper>
 
+                {zoningCoverage && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
+                  >
+                    <Text size="sm" c="dimmed" fw={600}>
+                      Zoning Match Coverage
+                    </Text>
+                    <Text fw={700} size="xl" c={COLORS.spruce}>
+                      {zoningCoverage.pct.toFixed(1)}%
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {Math.round(zoningCoverage.matchedAcres).toLocaleString()}{' '}
+                      of{' '}
+                      {Math.round(zoningCoverage.totalAcres).toLocaleString()}{' '}
+                      zoned acres in{' '}
+                      {selectedTown?.properties.NAME.split(',')[0] ??
+                        'this town'}{' '}
+                      match your filters
+                    </Text>
+                  </Paper>
+                )}
+
                 <Paper
                   withBorder
                   p="xs"
@@ -827,7 +980,8 @@ function MapExplorerContent() {
                               {d.label}
                             </Text>
                             <Text size="sm" c="dimmed">
-                              {d.pct.toFixed(1)}%
+                              {Math.round(d.acres).toLocaleString()} ac (
+                              {d.pct.toFixed(1)}%)
                             </Text>
                           </Group>
                           <Progress
@@ -842,31 +996,85 @@ function MapExplorerContent() {
                   </Paper>
                 )}
 
-                <Paper
-                  withBorder
-                  p="xs"
-                  radius="sm"
-                  bg="var(--mantine-color-body)"
-                >
-                  <Text size="sm" c="dimmed" fw={600} mb={4}>
-                    Regional Findings
-                  </Text>
-                  <Box
-                    mt="xs"
-                    h={70}
-                    style={{
-                      border: '1px dashed var(--mantine-color-default-border)',
-                      borderRadius: theme.radius.sm,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                {zoningDistrictComposition && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
                   >
-                    <Text size="xs" c="dimmed">
-                      Chart Canvas / Spatial Distribution Plot
+                    <Text size="sm" c="dimmed" fw={600} mb="xs">
+                      Zoning District Composition
                     </Text>
-                  </Box>
-                </Paper>
+                    <Stack gap={6}>
+                      {zoningDistrictComposition.map((d) => (
+                        <Box key={d.district}>
+                          <Group justify="space-between" mb={2}>
+                            <Text size="sm" fw={500} lineClamp={1}>
+                              {d.district}
+                            </Text>
+                            <Text size="sm" c="dimmed">
+                              {Math.round(d.acres).toLocaleString()} ac (
+                              {d.pct.toFixed(1)}%)
+                            </Text>
+                          </Group>
+                          <Progress
+                            value={d.pct}
+                            color={d.color}
+                            size="xs"
+                            radius="xl"
+                          />
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Paper>
+                )}
+
+                {serviceAreaSummary && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
+                  >
+                    <Text size="sm" c="dimmed" fw={600}>
+                      Service Area Coverage
+                    </Text>
+                    <Text fw={700} size="xl" c={COLORS.spruce}>
+                      {Math.round(
+                        serviceAreaSummary.totalAcres,
+                      ).toLocaleString()}{' '}
+                      ac
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {serviceAreaSummary.systemCount} system
+                      {serviceAreaSummary.systemCount === 1 ? '' : 's'},{' '}
+                      {serviceAreaSummary.ownerCount} owner
+                      {serviceAreaSummary.ownerCount === 1 ? '' : 's'}
+                    </Text>
+                  </Paper>
+                )}
+
+                {treatmentFacilityCapacity && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
+                  >
+                    <Text size="sm" c="dimmed" fw={600}>
+                      Treatment Capacity
+                    </Text>
+                    <Text fw={700} size="xl" c={COLORS.spruce}>
+                      {treatmentFacilityCapacity.totalMgd.toFixed(2)} MGD
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {treatmentFacilityCapacity.reporting} of{' '}
+                      {treatmentFacilityCapacity.total} facilities report design
+                      capacity
+                    </Text>
+                  </Paper>
+                )}
               </SimpleGrid>
             </Box>
           </Collapse>

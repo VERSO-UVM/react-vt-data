@@ -36,6 +36,13 @@ export function useMapLayer(
 ) {
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
   const [legend, setLegend] = useState<LegendRow[]>([]);
+  // Snapshot of this layer's data from the most recent fetch that had no
+  // user-selected filters active (i.e. "everything this town has for this
+  // layer"), independent of whatever filters are applied afterwards. Used
+  // as a stable denominator for "% of the total that matches your filters"
+  // style report metrics.
+  const [unfilteredGeojson, setUnfilteredGeojson] =
+    useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -56,11 +63,16 @@ export function useMapLayer(
   const applyFilters = useCallback(
     async (specs: FilterSpec[]) => {
       setLoading(true);
+      // No filter the user has actually set (checkbox/range selections) —
+      // true both on first load and if they clear everything and re-apply.
+      // Either way, whatever comes back represents this layer's full total
+      // for the town, not a filtered subset.
+      const isUnfiltered = assemble(specs).length === 0;
       try {
+        let fc: FeatureCollection;
         if (config.method === 'GET') {
           const res = await axios.get(config.dataURL);
-          const fc = cropToBBox(res.data as FeatureCollection, townBBox);
-          setGeojson(recolorLayer(config.id, fc));
+          fc = cropToBBox(res.data as FeatureCollection, townBBox);
         } else {
           const scopedSpecs = applyJurisdictionScope(
             config,
@@ -89,9 +101,11 @@ export function useMapLayer(
           const rawFc = (
             config.responseShape === 'geojson-stats' ? res.geojson : res
           ) as FeatureCollection;
-          const fc = cropToBBox(rawFc, townBBox);
-          setGeojson(recolorLayer(config.id, fc));
+          fc = cropToBBox(rawFc, townBBox);
         }
+        const recolored = recolorLayer(config.id, fc);
+        setGeojson(recolored);
+        if (isUnfiltered) setUnfilteredGeojson(recolored);
         setLoaded(true);
       } catch (e) {
         console.error(`data fetch failed for ${config.id}`, e);
@@ -111,5 +125,13 @@ export function useMapLayer(
     fetchLegend();
   }, [loaded, applyFilters, fetchLegend]);
 
-  return { geojson, legend, loading, applyFilters, loadInitial, fetchLegend };
+  return {
+    geojson,
+    legend,
+    unfilteredGeojson,
+    loading,
+    applyFilters,
+    loadInitial,
+    fetchLegend,
+  };
 }

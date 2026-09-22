@@ -10,6 +10,7 @@ interface LayerPanelProps {
   activeLayers: Set<string>;
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
+  onBaselineChange: (id: string, geojson: FeatureCollection | null) => void;
   presetFilters?: Record<string, FilterSpec[]>;
   lockedLayerIds: Set<string>;
   townCandidates: string[] | null;
@@ -21,6 +22,7 @@ export default function LayerPanel({
   activeLayers,
   onToggle,
   onDataChange,
+  onBaselineChange,
   presetFilters,
   lockedLayerIds,
   townCandidates,
@@ -37,6 +39,7 @@ export default function LayerPanel({
             active={activeLayers.has(cfg.id)}
             onToggle={onToggle}
             onDataChange={onDataChange}
+            onBaselineChange={onBaselineChange}
             presetFilters={presetFilters?.[cfg.id]}
             locked={lockedLayerIds.has(cfg.id)}
             townCandidates={townCandidates}

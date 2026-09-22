@@ -13,6 +13,10 @@ interface LayerRowProps {
   active: boolean;
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
+  /** This layer's most recent *unfiltered* data (everything for the
+   *  selected town, ignoring any checkbox/range filters) — a stable
+   *  denominator for "% of the total matches your filters" report metrics. */
+  onBaselineChange: (id: string, geojson: FeatureCollection | null) => void;
   /** Initial filters to apply for this layer, e.g. from a use-case preset. */
   presetFilters?: FilterSpec[];
   /** Candidate spellings of the selected town's name, merged into every
@@ -36,13 +40,14 @@ export default function LayerRow({
   active,
   onToggle,
   onDataChange,
+  onBaselineChange,
   presetFilters,
   townCandidates,
   townBBox,
   locked,
   scopeVersion,
 }: LayerRowProps) {
-  const { geojson, loading, applyFilters } = useMapLayer(
+  const { geojson, unfilteredGeojson, loading, applyFilters } = useMapLayer(
     config,
     townCandidates,
     townBBox,
@@ -55,6 +60,11 @@ export default function LayerRow({
     onDataChange(config.id, active ? geojson : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geojson, active]);
+
+  useEffect(() => {
+    onBaselineChange(config.id, active ? unfilteredGeojson : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unfilteredGeojson, active]);
 
   // (Re)fetch at most once per scopeVersion while active: once on first
   // activation, and again whenever a preset is (re)selected or the town
