@@ -69,9 +69,12 @@ export function useMapLayer(
           );
           const assembledPayload = assemble(scopedSpecs);
 
-          // Zoning requires a top-level list [...], whereas wastewater endpoints require an object {...}
+          // Zoning and parcels can filter across multiple source tables at
+          // once (e.g. parcels' info + tax tables), so they need the full
+          // specs list [...]; single-source wastewater endpoints require a
+          // bare object {...}.
           let formattedPayload: unknown;
-          if (config.id === 'zoning') {
+          if (config.id === 'zoning' || config.id === 'parcels') {
             formattedPayload = Array.isArray(assembledPayload)
               ? assembledPayload
               : [assembledPayload];

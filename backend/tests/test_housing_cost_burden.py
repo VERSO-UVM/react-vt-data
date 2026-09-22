@@ -1,25 +1,30 @@
 """
-Tests for the housing cost burden cleaner, run against small in-memory DP04
-fixtures instead of the DuckLake.
+Tests for the housing cost burden series in clean_acs5_timeseries, run against
+small in-memory DP04 fixtures instead of the DuckLake. They exercise the base
+query, before the shared geography standardization is applied.
 """
 
 import duckdb
 import pandas as pd
 import pytest
 
-from data_cleaning.clean_housing_cost_burden import (
-    ALL_HOUSEHOLDS,
-    TENURES,
-    build_burden,
+from data_cleaning.clean_acs5_timeseries import (
+    BURDEN_ALL_HOUSEHOLDS as ALL_HOUSEHOLDS,
+)
+from data_cleaning.clean_acs5_timeseries import (
+    BURDEN_TENURES,
+    housing_cost_burden_sql,
 )
 
-RENT, MORTGAGE, NO_MORTGAGE = TENURES.keys()
+RENT, MORTGAGE, NO_MORTGAGE = BURDEN_TENURES.keys()
+# Raw identifier columns shared by every fixture row: geo_type, state, county.
+GEO = ("county_subdivision", "50", "007")
 
 
 def rows(year, name, subcategory, low, high, total, measure="Estimate"):
     """DP04 rows for one tenure: the two burden brackets and the total."""
     return [
-        (year, name, "county_subdivision", subcategory, variable, measure, value)
+        (year, name, *GEO, subcategory, variable, measure, value)
         for variable, value in [
             ("30.0 to 34.9 percent", low),
             ("35.0 percent or more", high),
@@ -41,13 +46,14 @@ def run(raw_rows):
     con.execute(
         """
         CREATE TABLE raw (
-            year BIGINT, NAME VARCHAR, geo_type VARCHAR, Subcategory VARCHAR,
-            Variable VARCHAR, Measure VARCHAR, Value VARCHAR
+            year BIGINT, NAME VARCHAR, geo_type VARCHAR, state VARCHAR,
+            county VARCHAR, Subcategory VARCHAR, Variable VARCHAR,
+            Measure VARCHAR, Value VARCHAR
         )
         """
     )
-    con.executemany("INSERT INTO raw VALUES (?, ?, ?, ?, ?, ?, ?)", raw_rows)
-    df = build_burden(con, source="raw")
+    con.executemany("INSERT INTO raw VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", raw_rows)
+    df = con.execute(housing_cost_burden_sql(source="raw")).df()
     return df.set_index(["year", "NAME", "Variable"])
 
 
@@ -75,7 +81,7 @@ def test_percent_estimate_years_are_included():
         (
             2017,
             "A",
-            "county_subdivision",
+            *GEO,
             RENT,
             "35.0 percent or more",
             "Percent Estimate",
@@ -94,7 +100,7 @@ def test_percent_rows_and_early_years_are_ignored():
             (
                 2020,
                 "A",
-                "county_subdivision",
+                *GEO,
                 RENT,
                 "35.0 percent or more",
                 "Percent",

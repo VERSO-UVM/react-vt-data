@@ -55,7 +55,7 @@ interface SectionConfig {
   // Filter label sent as the location key (defaults to "Location", which
   // matches the ACS5 routes' NAME column). Zoning/wastewater tables have no
   // "Location" column in their filter schema — they use "Jurisdiction"
-  // (Municipal_Name) instead, so requests sent with the default key
+  // (the `town` column) instead, so requests sent with the default key
   // silently return unfiltered, statewide results.
   locationFilterKey?: string;
   // False for datasets with no `year` column (e.g. zoning is a current-
@@ -152,14 +152,11 @@ const SECTIONS: Record<string, SectionConfig> = {
 };
 
 // county_town_names.json (the profile's town picker) stores Census-style
-// subdivision names, not bare municipality names — e.g. location.town is
-// "Burlington city" or "Addison town", never "Burlington"/"Addison". Most
-// zoning Municipal_Name values are bare with no suffix at all, BUT a few
-// towns have a same-named City and Town in the same county (Rutland City /
-// West Rutland, Barre City / Barre Town, Saint Albans City / Saint Albans
-// Town) and keep the suffix, title-cased, to disambiguate. So try both the
-// stripped and title-cased-suffix forms — whichever one exists matches,
-// the other matches nothing.
+// subdivision names — e.g. location.town is "Burlington city" or "Addison
+// town" — which is exactly what the cleaned datasets' `town` columns hold, so
+// that is the primary candidate. Rows the cleaners couldn't match to a
+// municipality keep their raw source spelling ("Huntington", "Barre Town"),
+// so the bare and title-cased-suffix forms ride along in the IN-list too.
 const TOWN_SUFFIX_RE = /\s+(town|city|gore|grant)$/i;
 const bareTownName = (town: string) => town.replace(TOWN_SUFFIX_RE, '');
 const titledTownName = (town: string) =>
@@ -190,8 +187,14 @@ function buildLocationFilters(
     return location.county ? { County: [location.county] } : {};
   }
   if (location.type === 'town' && location.town) {
+    // `town` columns hold the Census-style name as-is ("Rockingham town");
+    // the bare/titled spellings only match rows the cleaners left unmatched.
     const candidates = Array.from(
-      new Set([bareTownName(location.town), titledTownName(location.town)]),
+      new Set([
+        location.town,
+        bareTownName(location.town),
+        titledTownName(location.town),
+      ]),
     );
     const filters: Record<string, string[]> = {
       [cfg.locationFilterKey]: candidates,

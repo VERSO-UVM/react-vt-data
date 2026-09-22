@@ -52,5 +52,5 @@ def get_db() -> duckdb.DuckDBPyConnection:
     except Exception as exc:
         raise RuntimeError(
             f"Could not open the production database at {WAREHOUSE_PATH}.\n"
-            "Try running `just etl` to rebuild the production database."
+            "Try running `just run-etl` to rebuild the production database."
         ) from exc

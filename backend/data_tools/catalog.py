@@ -57,7 +57,7 @@ ACS_CAVEATS = (
 ZONING_URL = "https://geodata.vermont.gov/datasets/VCGI::vt-zoning-areas/about"
 ZONING_CAVEATS = (
     (
-        "A mapped inventory, not a legal determination. Bylaw_Date is the bylaw "
+        "A mapped inventory, not a legal determination. bylaw_date is the bylaw "
         "date recorded in the inventory."
     ),
     (
@@ -65,14 +65,14 @@ ZONING_CAVEATS = (
         "unique land area; some districts have missing geographic identifiers."
     ),
     (
-        "GEO_ID can be missing or conflict with the municipality name. Canonical "
+        "geoid can be missing or conflict with the municipality name. Canonical "
         "location selection uses unambiguous names and reports the discrepancy; "
         "source IDs are preserved. Notes are inventory commentary, not ordinance text."
     ),
     (
-        "District_Type differs between tables: info maps Primarily Residential to "
+        "district_type differs between tables: info maps Primarily Residential to "
         "Residential, Mixed with Residential to Mixed, and Overlay not Affecting Use "
-        "to Overlay; wide retains source labels. Join districts on OBJECT_ID."
+        "to Overlay; wide retains source labels. Join districts on object_id."
     ),
     "Geometry is intentionally excluded from tool results.",
 )
@@ -99,20 +99,19 @@ def _acs_tidy(key: str, label: str, description: str, table: str) -> Dataset:
         ACS_CAVEATS,
         "tidy",
         "year",
-        "NAME",
+        "name",
         "geo_type",
-        variable_columns=("Section", "Variable"),
-        value_columns={"Value": "varies by variable", "Percent": "percent"},
+        variable_columns=("section", "variable"),
+        value_columns={"value": "varies by variable", "percent": "percent"},
         filter_columns=(
             "year",
-            "NAME",
+            "name",
             "geo_type",
-            "state",
             "county",
-            "Section",
-            "Variable",
-            "Jurisdiction",
-            "County_1",
+            "county_fips",
+            "GEOID",
+            "section",
+            "variable",
         ),
     )
 
@@ -126,8 +125,12 @@ def _acs_series(
     dimensions: tuple[str, ...] = (),
     description: str | None = None,
     historic: bool = False,
+    county: bool = True,
     caveats: tuple[str, ...] = (),
 ) -> Dataset:
+    # ACS series carry the standard geoid/county_fips identifiers; `county` is
+    # False for tables built with `with_county=False` in clean_acs5_timeseries.
+    identifiers = ("geoid", "county_fips") + (("county",) if county else ())
     return Dataset(
         f"acs5_ts_{key}",
         label,
@@ -147,33 +150,34 @@ def _acs_series(
         + caveats,
         "tidy" if dimensions else "wide",
         "year",
-        "NAME",
+        "name",
         "geo_type",
         "geoid" if historic else None,
         variable_columns=dimensions,
         value_columns=values,
-        filter_columns=("year", "NAME", "geo_type")
+        filter_columns=("year", "name", "geo_type")
         + dimensions
-        + (("geoid", "Jurisdiction", "County") if historic else ()),
+        + (("geoid", "county_fips", "County") if historic else identifiers),
     )
 
 
 _ZONING_COMMON = (
-    "OBJECT_ID",
-    "County",
-    "RPC",
-    "Municipal_Name",
-    "GEO_ID",
-    "District_Name",
-    "Abbreviated_District_Name",
-    "District_Type",
-    "Bylaw_Date",
-    "Elderly_Housing_District",
-    "District_Mapped",
-    "Overlay_District",
-    "Base_Density",
-    "Affordable_Housing_District",
-    "Notes",
+    "object_id",
+    "county",
+    "county_fips",
+    "rpc",
+    "town",
+    "geoid",
+    "district_name",
+    "abbreviated_district_name",
+    "district_type",
+    "bylaw_date",
+    "elderly_housing_district",
+    "district_mapped",
+    "overlay_district",
+    "base_density",
+    "affordable_housing_district",
+    "notes",
 )
 _ZONING_STANDARDS = {
     "F1F": (
@@ -281,7 +285,7 @@ _ZONING_STANDARDS = {
     ),
 }
 _ZONING_COLUMNS = tuple(
-    f"{prefix}_{suffix}"
+    f"{prefix}_{suffix}".lower()
     for prefix, suffixes in _ZONING_STANDARDS.items()
     for suffix in suffixes
 )
@@ -290,15 +294,15 @@ _ZONING_COLUMNS = tuple(
 def _zoning_unit(column: str) -> str:
     # Lot-size acres are documented in api/schema.json. Other ambiguous fields
     # keep their source units instead of inventing a conversion.
-    if "Min_Lot_Size" in column:
+    if "min_lot_size" in column:
         return "acres"
-    if "Setback" in column or "Frontage" in column or "Max_Height" in column:
+    if "setback" in column or "frontage" in column or "max_height" in column:
         return "feet"
-    if "Coverage" in column or "as_Percent" in column:
+    if "coverage" in column or "as_percent" in column:
         return "percent"
     if "sq_ft" in column:
         return "square feet"
-    if "Density" in column:
+    if "density" in column:
         return "source-defined density"
     return "count"
 
@@ -307,18 +311,18 @@ def _zoning_numeric(column: str) -> bool:
     return any(
         token in column
         for token in (
-            "Setback",
-            "Frontage",
-            "Max_Height",
-            "Max_Stories",
-            "Min_Lot_Size",
-            "Coverage",
-            "Min_Parking_Spaces",
-            "Max_Density",
-            "Max_Size_",
-            "Max_Bedrooms",
-            "Max_Units",
-            "Threshold_Number",
+            "setback",
+            "frontage",
+            "max_height",
+            "max_stories",
+            "min_lot_size",
+            "coverage",
+            "min_parking_spaces",
+            "max_density",
+            "max_size_",
+            "max_bedrooms",
+            "max_units",
+            "threshold_number",
         )
     )
 
@@ -384,25 +388,25 @@ _DATASET_LIST = [
         "median_age",
         "Median age",
         "acs5Demographics_medianAge_timeseries",
-        {"Median_Age": "years"},
+        {"median_age": "years"},
     ),
     _acs_series(
         "age_dependency_ratio",
         "Age dependency ratio",
         "acs5Demographics_ageDependencyRatio_timeseries",
-        {"Age_Dependency_Ratio": "dependents per 100 working-age people"},
+        {"age_dependency_ratio": "dependents per 100 working-age people"},
     ),
     _acs_series(
         "median_home_value",
         "Median home value",
         "acs5Housing_medianHomeValue_timeseries",
-        {"Median_Home_Value": "USD (year-specific dollars)"},
+        {"median_home_value": "USD (year-specific dollars)"},
     ),
     _acs_series(
         "vacancy_rates",
         "Vacancy rates",
         "acs5Housing_vacancyRates_timeseries",
-        {"Percent": "percent"},
+        {"percent": "percent"},
         dimensions=("Variable",),
     ),
     _acs_series(
@@ -411,6 +415,7 @@ _DATASET_LIST = [
         "acs5Housing_incomeBurden_timeseries",
         {"Value": "households", "Total": "households", "Percent": "percent"},
         dimensions=("Variable",),
+        county=False,
         description="Households spending at least 30% of household income on "
         "housing, by tenure: Renters (gross rent, GRAPI), Owners with a "
         "mortgage and Owners without a mortgage (owner costs, SMOCAPI), and "
@@ -422,13 +427,13 @@ _DATASET_LIST = [
         "household_income",
         "Median household income",
         "acs5Economics_medianHouseholdIncome_timeseries",
-        {"Median_Household_Income": "USD (year-specific dollars)"},
+        {"median_household_income": "USD (year-specific dollars)"},
     ),
     _acs_series(
         "per_capita_income",
         "Per capita income",
         "acs5Economics_perCapitaIncome_timeseries",
-        {"Per_Capita_Income": "USD (year-specific dollars)"},
+        {"per_capita_income": "USD (year-specific dollars)"},
     ),
     _acs_series(
         "median_earnings",
@@ -436,6 +441,7 @@ _DATASET_LIST = [
         "acs5Economics_medianEarnings_timeseries",
         {"Value": "USD (year-specific dollars)"},
         dimensions=("Variable",),
+        county=False,
     ),
     _acs_series(
         "health_insurance",
@@ -443,13 +449,14 @@ _DATASET_LIST = [
         "acs5Economics_healthInsurance_timeseries",
         {"Value": "people"},
         dimensions=("Variable",),
+        county=False,
         description="People by health insurance coverage category.",
     ),
     _acs_series(
         "housing_units",
         "Housing units",
         "acs5Housing_housingUnits_timeseries",
-        {"Total_Housing_Units": "housing units"},
+        {"total_housing_units": "housing units"},
     ),
     Dataset(
         "acs5_dp",
@@ -463,7 +470,7 @@ _DATASET_LIST = [
         + (
             (
                 "Estimate and percentage labels vary across source years. "
-                "Discover Measure values before selecting a series."
+                "Discover measure values before selecting a series."
             ),
             (
                 "Some source rows labelled Percent or Percent Estimate contain totals "
@@ -479,16 +486,19 @@ _DATASET_LIST = [
         ),
         "dp",
         "year",
-        "NAME",
-        variable_columns=("table", "Category", "Subcategory", "Variable", "Measure"),
-        value_columns={"Value": "varies by variable and Measure"},
+        "name",
+        variable_columns=("table", "category", "subcategory", "variable", "measure"),
+        value_columns={"value": "varies by variable and measure"},
         filter_columns=(
-            "NAME",
+            "name",
+            "geo_type",
+            "geoid",
+            "county_fips",
             "table",
-            "Category",
-            "Subcategory",
-            "Variable",
-            "Measure",
+            "category",
+            "subcategory",
+            "variable",
+            "measure",
             "year",
         ),
     ),
@@ -520,14 +530,22 @@ _DATASET_LIST = [
         ),
         "tidy",
         "year",
-        "County",
+        "county",
         fixed_geo_type="county",
         variable_columns=("sector",),
         value_columns={
             "employment": "jobs",
             "employment_4qma": "jobs (stored rolling average; see caveats)",
         },
-        filter_columns=("County", "year", "quarter", "quarter_label", "sector"),
+        filter_columns=(
+            "county",
+            "county_fips",
+            "geoid",
+            "year",
+            "quarter",
+            "quarter_label",
+            "sector",
+        ),
     ),
     Dataset(
         "zoning_districts",
@@ -537,11 +555,11 @@ _DATASET_LIST = [
         ZONING_URL,
         "VCGI / VERSO Vermont zoning inventory",
         ZONING_CAVEATS,
-        name_column="Municipal_Name",
-        id_column="GEO_ID",
+        name_column="town",
+        id_column="geoid",
         fixed_geo_type="county_subdivision",
-        value_columns={"Base_Density": "source-defined density", "Acres": "acres"},
-        filter_columns=_ZONING_COMMON + ("Acres",),
+        value_columns={"base_density": "source-defined density", "acres": "acres"},
+        filter_columns=_ZONING_COMMON + ("acres",),
     ),
     Dataset(
         "zoning_bylaws",
@@ -551,10 +569,10 @@ _DATASET_LIST = [
         ZONING_URL,
         "VCGI / VERSO Vermont zoning inventory",
         ZONING_CAVEATS,
-        name_column="Municipal_Name",
-        id_column="GEO_ID",
+        name_column="town",
+        id_column="geoid",
         fixed_geo_type="county_subdivision",
-        value_columns={"Base_Density": "source-defined density"}
+        value_columns={"base_density": "source-defined density"}
         | {
             column: _zoning_unit(column)
             for column in _ZONING_COLUMNS
@@ -570,18 +588,19 @@ _DATASET_LIST = [
         WASTEWATER_URL,
         "VERSO Wastewater Infrastructure Mapping",
         INFRA_CAVEATS,
-        name_column="Municipal_Name",
+        name_column="town",
         fixed_geo_type="county_subdivision",
         filter_columns=(
-            "Area_ID",
-            "TownID",
-            "TreatmentFacility",
-            "SystemName",
-            "SystemOwner",
-            "TownName",
-            "Municipal_Name",
-            "County",
-            "RPC",
+            "area_id",
+            "town_id",
+            "treatment_facility",
+            "system_name",
+            "system_owner",
+            "town",
+            "county",
+            "county_fips",
+            "geoid",
+            "rpc",
         ),
     ),
     Dataset(
@@ -592,20 +611,20 @@ _DATASET_LIST = [
         WASTEWATER_URL,
         "VERSO Wastewater Infrastructure Mapping",
         INFRA_CAVEATS,
-        name_column="Municipal_Name",
+        name_column="town",
         fixed_geo_type="county_subdivision",
-        value_columns={"DesignHydraulicCapacityInMGD": "million gallons per day"},
+        value_columns={"design_hydraulic_capacity_mgd": "million gallons per day"},
         filter_columns=(
-            "Facility_ID",
-            "FacilityID",
-            "DesignHydraulicCapacityInMGD",
-            "SeptageReceivedAtThisFacility",
-            "WWInventoryURL",
-            "FacilityName",
-            "TownName",
-            "Municipal_Name",
-            "County",
-            "RPC",
+            "facility_id",
+            "design_hydraulic_capacity_mgd",
+            "septage_received",
+            "ww_inventory_url",
+            "facility_name",
+            "town",
+            "county",
+            "county_fips",
+            "geoid",
+            "rpc",
         ),
     ),
     Dataset(
@@ -639,10 +658,19 @@ _DATASET_LIST = [
                 "engineering or permitting determination."
             ),
         ),
-        name_column="Jurisdiction",
+        name_column="town",
         fixed_geo_type="county_subdivision",
-        value_columns={"Acres": "acres"},
-        filter_columns=("OGC_FID", "Suitability", "Jurisdiction", "RPC", "Acres"),
+        value_columns={"acres": "acres"},
+        filter_columns=(
+            "ogc_fid",
+            "suitability",
+            "town",
+            "county",
+            "county_fips",
+            "geoid",
+            "rpc",
+            "acres",
+        ),
     ),
     Dataset(
         "wastewater_stormwater_management",
@@ -652,17 +680,18 @@ _DATASET_LIST = [
         WASTEWATER_URL,
         "VERSO Wastewater Infrastructure Mapping",
         INFRA_CAVEATS,
-        name_column="Municipal_Name",
-        id_column="GEOIDTXT",
+        name_column="town",
+        id_column="geoid",
         fixed_geo_type="county_subdivision",
         filter_columns=(
-            "GlobalID",
-            "Type",
-            "Status",
-            "GEOIDTXT",
-            "Municipal_Name",
-            "County",
-            "RPC",
+            "global_id",
+            "type",
+            "status",
+            "geoid",
+            "town",
+            "county",
+            "county_fips",
+            "rpc",
         ),
     ),
     *[
@@ -695,8 +724,8 @@ _DATASET_LIST = [
             ),
             "tidy",
             "year",
-            "locationname",
-            id_column="locationid",
+            None,
+            id_column="geoid",
             fixed_geo_type=level,
             variable_columns=("category", "measure", "data_value_type"),
             value_columns={
@@ -707,21 +736,21 @@ _DATASET_LIST = [
             },
             filter_columns=(
                 "year",
-                "stateabbr",
-                "locationname",
+                "geo_type",
+                "county",
+                "county_fips",
                 "category",
                 "measure",
                 "data_value_unit",
                 "data_value_type",
-                "locationid",
-                "categoryid",
-                "measureid",
-                "datavaluetypeid",
+                "geoid",
+                "category_id",
+                "measure_id",
+                "data_value_type_id",
                 "short_question_text",
                 "sme_highlight",
                 "bin",
-            )
-            + (("countyname", "countyfips") if level == "tract" else ()),
+            ),
         )
         for level in ("county", "tract")
     ],
@@ -742,22 +771,22 @@ _DATASET_LIST = [
             ),
         ),
         value_columns={
-            "Total_Tran": "transports",
-            "Per_No_Tran": "source-defined percent",
-            "Re_Per_Tran": "source-defined rate",
-            "Cost_Per": "USD",
-            "Cost_Call": "USD",
+            "total_tran": "transports",
+            "per_no_tran": "source-defined percent",
+            "re_per_tran": "source-defined rate",
+            "cost_per": "USD",
+            "cost_call": "USD",
         },
         filter_columns=(
-            "OBJECTID",
-            "Serv_Name",
-            "Cert_Level",
-            "Address",
-            "Street_1",
-            "Street_2",
-            "City",
-            "State",
-            "Zip_Code",
+            "object_id",
+            "serv_name",
+            "cert_level",
+            "address",
+            "street_1",
+            "street_2",
+            "city",
+            "state",
+            "zip_code",
         ),
     ),
     Dataset(
@@ -778,7 +807,13 @@ _DATASET_LIST = [
                 "cleaned table; municipality filters and time series are not supported."
             ),
         ),
-        filter_columns=("FLD_ZONE", "ZONE_SUBTY_DISPLAY", "STATIC_BFE_DISPLAY"),
+        filter_columns=(
+            "flood_zone_type",
+            "zone_subtype",
+            "base_flood_elevation",
+            "flood_risk",
+            "special_flood_hazard_zone",
+        ),
     ),
 ]
 
@@ -839,31 +874,31 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
         "acs5_ts_median_age": (
             "demographics",
             "Median Age",
-            "Median_Age",
+            "median_age",
             "B01002_001E",
         ),
         "acs5_ts_household_income": (
             "economic",
             "Median Household Income",
-            "Median_Household_Income",
+            "median_household_income",
             "B19013_001E",
         ),
         "acs5_ts_per_capita_income": (
             "economic",
             "Per Capita Income",
-            "Per_Capita_Income",
+            "per_capita_income",
             "B19301_001E",
         ),
         "acs5_ts_median_home_value": (
             "housing",
             "Median Home Value",
-            "Median_Home_Value",
+            "median_home_value",
             "B25077_001E",
         ),
         "acs5_ts_housing_units": (
             "housing",
             "Total Housing Units",
-            "Total_Housing_Units",
+            "total_housing_units",
             "B25001_001E",
         ),
     }
@@ -880,7 +915,7 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
         "acs5_ts_historic_population_change": "historic_population_change",
         "acs5_ts_median_earnings": "median_earnings",
         "acs5_ts_health_insurance": "health_insurance_coverage",
-        "acs5_ts_income_burden": "housing_cost_burden",
+        "acs5_ts_income_burden": "acs5_timeseries",
         "acs5_ts_vacancy_rates": "derived_time_series",
         "qcew_employment_by_sector": "qcew",
         "ambulance_service_areas": "ambulance",
@@ -969,7 +1004,7 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
         )
     elif dataset.kind == "dp":
         result["source_columns"] = {
-            "Value": {
+            "value": {
                 "raw_tables": [
                     "RAW.acs5_social",
                     "RAW.acs5_economic",
@@ -1213,11 +1248,11 @@ def describe_dataset(
         column_names = {column["name"] for column in result["columns"]}
         suggested = (
             "table",
-            "Category",
-            "Measure",
-            "Section",
-            "District_Type",
-            "Overlay_District",
+            "category",
+            "measure",
+            "section",
+            "district_type",
+            "overlay_district",
         )
         result["filter_values_by_column"] = {
             column: _filter_values(conn, dataset, column, filters, 25)
@@ -1277,12 +1312,12 @@ def decode_variable_id(dataset: Dataset, variable_id: str) -> dict[str, Any]:
 
 
 def variable_units(dataset: Dataset, selectors: dict[str, Any]) -> dict[str, str]:
-    """Resolve row-specific units without treating every ACS Value as a count."""
+    """Resolve row-specific units without treating every ACS value as a count."""
     units = dict(dataset.value_columns or {})
     column = selectors.get("$column")
     if column:
         return {column: units[column]}
-    variable = str(selectors.get("Variable", ""))
+    variable = str(selectors.get("variable", ""))
     if dataset.id in {
         "acs5_demographics",
         "acs5_economics",
@@ -1291,8 +1326,8 @@ def variable_units(dataset: Dataset, selectors: dict[str, Any]) -> dict[str, str
         "acs5_snapshot",
     }:
         # These are the exact cleaned indicators, not guesses from label words.
-        # A variable named "... Rate" still has a count in Value and its rate
-        # in Percent. Future indicators retain an explicit unknown unit.
+        # A variable named "... Rate" still has a count in value and its rate
+        # in percent. Future indicators retain an explicit unknown unit.
         value_units = {
             **dict.fromkeys(
                 (
@@ -1341,10 +1376,10 @@ def variable_units(dataset: Dataset, selectors: dict[str, Any]) -> dict[str, str
             ),
             "Median Age": "years",
         }
-        units["Value"] = value_units.get(variable, "source-defined; unit unavailable")
+        units["value"] = value_units.get(variable, "source-defined; unit unavailable")
     if dataset.kind == "dp":
-        measure = str(selectors.get("Measure", "")).casefold()
-        subcategory = str(selectors.get("Subcategory", "")).strip().casefold()
+        measure = str(selectors.get("measure", "")).casefold()
+        subcategory = str(selectors.get("subcategory", "")).strip().casefold()
         percentage_bracket = re.fullmatch(
             r"(?:less than )?\d+(?:\.\d+)?(?: to \d+(?:\.\d+)?)? percent(?: or more)?",
             subcategory,
@@ -1354,11 +1389,11 @@ def variable_units(dataset: Dataset, selectors: dict[str, Any]) -> dict[str, str
             and variable.strip().casefold() == "total"
             and not percentage_bracket
         ):
-            units["Value"] = "source-defined total; unit not verified"
+            units["value"] = "source-defined total; unit not verified"
         elif "percent" in measure:
-            units["Value"] = "percent"
+            units["value"] = "percent"
         else:
-            units["Value"] = "source-defined estimate; inspect variable label"
+            units["value"] = "source-defined estimate; inspect variable label"
     return units
 
 
@@ -1488,7 +1523,7 @@ def build_locations(conn: Any) -> list[dict[str, Any]]:
     counties: dict[str, str] = {}
     if "vt_county_geoids" in tables:
         for name, geoid in conn.execute(
-            "SELECT NAME, GEOID FROM vt_county_geoids"
+            "SELECT name, geoid FROM vt_county_geoids"
         ).fetchall():
             if geoid is None or name is None:
                 continue
@@ -1498,7 +1533,7 @@ def build_locations(conn: Any) -> list[dict[str, Any]]:
             add(geoid, name, "county", [county, f"{county} County"])
     elif "vt_county_lines_geom" in tables:
         for geoid, county in conn.execute(
-            "SELECT CountyFIPS, CountyName FROM vt_county_lines_geom"
+            "SELECT county_fips, county FROM vt_county_lines_geom"
         ).fetchall():
             county = county.title()
             geoid = str(geoid).zfill(5)
@@ -1526,8 +1561,8 @@ def build_locations(conn: Any) -> list[dict[str, Any]]:
                 aliases.append(town[:-5])
             add(geoid, name, "county_subdivision", aliases, county)
     if "VCGI_historicPopulation_timeseries" in tables:
-        for geoid, name, geo_type, town, county in conn.execute(
-            "SELECT DISTINCT geoid, NAME, geo_type, Jurisdiction, County "
+        for geoid, name, geo_type, county in conn.execute(
+            "SELECT DISTINCT geoid, name, geo_type, County "
             "FROM VCGI_historicPopulation_timeseries"
         ).fetchall():
             if geoid is None or name is None:
@@ -1536,7 +1571,7 @@ def build_locations(conn: Any) -> list[dict[str, Any]]:
             if normalized not in {"state", "county", "county_subdivision", "national"}:
                 continue
             canonical_id = "US" if normalized == "national" else str(geoid)
-            add(canonical_id, name, normalized, [town or ""], county)
+            add(canonical_id, name, normalized, [], county)
     if "vt_tract_lines_geom" in tables:
         for geoid, name in conn.execute(
             "SELECT LocationID, name FROM vt_tract_lines_geom"
@@ -1564,7 +1599,7 @@ def build_locations(conn: Any) -> list[dict[str, Any]]:
         if table in tables:
             census_names.update(
                 conn.execute(
-                    f"SELECT DISTINCT NAME, geo_type FROM {quote_identifier(table)}"
+                    f"SELECT DISTINCT name, geo_type FROM {quote_identifier(table)}"
                 ).fetchall()
             )
     for name, geo_type in census_names:

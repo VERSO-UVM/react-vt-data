@@ -35,7 +35,9 @@ export function buildFilters(location: Location, range?: filterRange) {
   filters['Location'] = [location.name];
   if (location.county) filters['County'] = [location.county];
   if (location.rpc) filters['RPC'] = [location.rpc];
-  if (location.town) filters['Jurisdiction'] = [location.town.split(' ')[0]];
+  // `town` is already the Census-style name ("Rockingham town") every
+  // dataset's town column stores, so it is sent whole.
+  if (location.town) filters['Jurisdiction'] = [location.town];
   if (range)
     filters[range.col] = { min: range.selected[0], max: range.selected[1] };
   return filters;

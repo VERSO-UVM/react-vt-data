@@ -26,9 +26,7 @@ EXPORT_SOURCES: dict[str, dict] = {
             "prevention, and health-related behaviors."
         ),
         "primary_source": "https://data.cdc.gov/resource/swc5-untb",
-        "loader": lambda: get_cdc_export_table(
-            "cdc_places_county", county_col="locationname"
-        ),
+        "loader": lambda: get_cdc_export_table("cdc_places_county"),
     },
     "cdc_places_tract": {
         "label": "Health Measures by Census Tract (CDC PLACES)",
@@ -38,9 +36,7 @@ EXPORT_SOURCES: dict[str, dict] = {
             "prevention, and health-related behaviors."
         ),
         "primary_source": "https://data.cdc.gov/resource/cwsq-ngmh",
-        "loader": lambda: get_cdc_export_table(
-            "cdc_places_tract", county_col="countyname"
-        ),
+        "loader": lambda: get_cdc_export_table("cdc_places_tract"),
     },
 }
 

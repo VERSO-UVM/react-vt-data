@@ -223,9 +223,7 @@ def geojson(filters: dict | None = None) -> dict:
             "Type": props["District Type"],
             "Acreage": props["Acres_fmt"],
         }
-        features.append(
-            {"type": "Feature", "geometry": geometry, "properties": props}
-        )
+        features.append({"type": "Feature", "geometry": geometry, "properties": props})
     return {"type": "FeatureCollection", "features": features}
 
 

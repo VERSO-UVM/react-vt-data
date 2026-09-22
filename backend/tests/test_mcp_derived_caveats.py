@@ -45,7 +45,7 @@ def service(tmp_path_factory):
         ):
             conn.execute(f"""
                 CREATE TABLE cdc_places_{level}(
-                    locationid VARCHAR, locationname VARCHAR, stateabbr VARCHAR,
+                    geoid VARCHAR, county VARCHAR, stateabbr VARCHAR,
                     year INTEGER, category VARCHAR, measure VARCHAR,
                     data_value_type VARCHAR, data_value DOUBLE, natl_pct DOUBLE
                 )

@@ -195,15 +195,19 @@ client = TestClient(app)
 
 ADDISON = {"filters": {"Jurisdiction": ["Vergennes"]}}
 
-@pytest.mark.parametrize("subcategory,expected_csv", [
-    ("unemployment_rate",   "tests/golden/unemployment_addison.csv"),
-    ("median_earnings",     "tests/golden/median_earnings_addison.csv"),
-    ("median_home_value",   "tests/golden/med_home_value_addison.csv"),
-    ("median_smoc",         "tests/golden/med_smoc_addison.csv"),
-    ("commute_habits",      "tests/golden/commute_habits_addison.csv"),
-    ("commute_time",        "tests/golden/commute_time_addison.csv"),
-    ("historic_population", "tests/golden/historic_population_addison.csv"),
-])
+
+@pytest.mark.parametrize(
+    "subcategory,expected_csv",
+    [
+        ("unemployment_rate", "tests/golden/unemployment_addison.csv"),
+        ("median_earnings", "tests/golden/median_earnings_addison.csv"),
+        ("median_home_value", "tests/golden/med_home_value_addison.csv"),
+        ("median_smoc", "tests/golden/med_smoc_addison.csv"),
+        ("commute_habits", "tests/golden/commute_habits_addison.csv"),
+        ("commute_time", "tests/golden/commute_time_addison.csv"),
+        ("historic_population", "tests/golden/historic_population_addison.csv"),
+    ],
+)
 def test_subcategory_matches_golden(subcategory, expected_csv):
     resp = client.post(f"/load/census/economic/{subcategory}", json=ADDISON)
     assert resp.status_code == 200

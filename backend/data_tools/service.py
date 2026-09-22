@@ -675,13 +675,13 @@ class DataToolService:
                 for field, unit in catalog.variable_units(ds, selectors).items()
                 if field in measures
             }
-            value = row.get("Value")
-            if ds.kind == "dp" and "percent" in str(row.get("Measure", "")).lower():
+            value = row.get("value")
+            if ds.kind == "dp" and "percent" in str(row.get("measure", "")).lower():
                 if isinstance(value, (float, int)) and not 0 <= value <= 100:
-                    row["_units"]["Value"] = "source value; unit not verified"
+                    row["_units"]["value"] = "source value; unit not verified"
                     row["_unit_issue"] = True
                 elif value is not None and "not verified" in row["_units"].get(
-                    "Value", ""
+                    "value", ""
                 ):
                     row["_unit_issue"] = True
         if locations:
@@ -820,7 +820,7 @@ class DataToolService:
             result.setdefault("hints", []).append(
                 {
                     "code": "no_matching_zoning_districts",
-                    "message": "No districts match this scope and overlay policy. Check excluded_overlays, inspect municipality values with describe_dataset(value_column='Municipal_Name'), or use a canonical location_id.",
+                    "message": "No districts match this scope and overlay policy. Check excluded_overlays, inspect municipality values with describe_dataset(value_column='town'), or use a canonical location_id.",
                 }
             )
         return self._bound_rows(result, rows, has_more, offset, fingerprint, version)

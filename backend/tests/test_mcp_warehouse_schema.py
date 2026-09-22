@@ -28,13 +28,20 @@ NUMERIC_TYPE = re.compile(
 # this list from going stale.
 TEXT_MEASURES = {
     # DP profile values mix numbers, Census sentinels, and '(X)'.
-    ("acs5_dp", "Value"),
+    ("acs5_dp", "value"),
     # Stored as text by the wastewater cleaner.
-    ("wastewater_treatment_facilities", "DesignHydraulicCapacityInMGD"),
+    ("wastewater_treatment_facilities", "design_hydraulic_capacity_mgd"),
+    # Text since the ETL standardization (#97): clean_cdc converts only
+    # data_value to a number. These were DOUBLE before.
+    ("cdc_places_county", "low_confidence_limit"),
+    ("cdc_places_county", "high_confidence_limit"),
+    ("cdc_places_tract", "low_confidence_limit"),
+    ("cdc_places_tract", "high_confidence_limit"),
 }
 UNEXPOSED_COLUMNS = {
-    "cdc_places_county": {"geolocation", "totalpop18plus", "totalpopulation"},
-    "cdc_places_tract": {"totalpop18plus", "totalpopulation"},
+    # Population counts stored as text, and map geometry.
+    "cdc_places_county": {"geometry", "total_pop_18plus", "total_population"},
+    "cdc_places_tract": {"geometry", "total_pop_18plus", "total_population"},
     # Map-only geometry and display color.
     "flood_hazard": {"geometry", "rgba_color"},
 }
@@ -103,18 +110,18 @@ def test_contract_detects_source_schema_changes(built_schema, change):
     changed = copy.deepcopy(built_schema)
     columns = changed["tables"]["VersoZoning_wide"]
     if change == "added":
-        columns["PRD_New_Standard"] = "DOUBLE"
+        columns["prd_new_standard"] = "DOUBLE"
     elif change == "removed":
-        del columns["PRD_Max_Units"]
+        del columns["prd_max_units"]
     elif change == "renamed":
-        columns["PRD_Maximum_Units"] = columns.pop("PRD_Max_Units")
+        columns["prd_maximum_units"] = columns.pop("prd_max_units")
     elif change == "type":
-        columns["PRD_Max_Units"] = "VARCHAR"
+        columns["prd_max_units"] = "VARCHAR"
     else:
         del changed["tables"]["VersoZoning_wide"]
     errors = _zoning_contract_errors(changed)
     assert errors
-    assert "PRD_" in " ".join(errors) or "Missing table" in errors[0]
+    assert "prd_" in " ".join(errors) or "Missing table" in errors[0]
 
 
 @pytest.mark.parametrize("dataset_id", sorted(DATASETS))
@@ -150,11 +157,22 @@ def test_contract_exceptions_still_apply(built_schema):
 # The housing cost burden table changed from one wide measure to a tidy table
 # by tenure (#127). Either half of that change landing alone must fail.
 OLD_BURDEN_COLUMNS = {
-    "NAME": "VARCHAR",
+    "county_fips": "VARCHAR",
     "geo_type": "VARCHAR",
+    "geoid": "VARCHAR",
+    "name": "VARCHAR",
     "pct_housing_burden": "DOUBLE",
     "year": "BIGINT",
 }
+NEW_BURDEN_MEASURES = {"Percent", "Total", "Value", "Variable"}
+
+
+def _error_columns(errors, prefix):
+    """Column names listed in the error that starts with `prefix`."""
+    for error in errors:
+        if error.startswith(prefix):
+            return set(error.removeprefix(prefix).split(", "))
+    return set()
 
 
 def test_contract_catches_catalog_not_updated_for_new_table(built_schema):
@@ -163,24 +181,22 @@ def test_contract_catches_catalog_not_updated_for_new_table(built_schema):
         kind="wide",
         variable_columns=(),
         value_columns={"pct_housing_burden": "percent"},
-        filter_columns=("year", "NAME", "geo_type"),
+        filter_columns=("year", "name", "geo_type"),
     )
-    errors = " ".join(_contract_errors(stale_catalog, built_schema))
+    errors = _contract_errors(stale_catalog, built_schema)
 
-    assert "Missing catalog fields: pct_housing_burden" in errors
-    assert "Unmapped warehouse fields: Percent, Total, Value, Variable" in errors
+    assert _error_columns(errors, "Missing catalog fields: ") == {"pct_housing_burden"}
+    assert NEW_BURDEN_MEASURES <= _error_columns(errors, "Unmapped warehouse fields: ")
 
 
 def test_contract_catches_table_not_rebuilt_for_new_catalog(built_schema):
     stale_schema = copy.deepcopy(built_schema)
     table = get_dataset("acs5_ts_income_burden").table
     stale_schema["tables"][table] = dict(OLD_BURDEN_COLUMNS)
-    errors = " ".join(
-        _contract_errors(get_dataset("acs5_ts_income_burden"), stale_schema)
-    )
+    errors = _contract_errors(get_dataset("acs5_ts_income_burden"), stale_schema)
 
-    assert "Missing catalog fields: Percent, Total, Value, Variable" in errors
-    assert "Unmapped warehouse fields: pct_housing_burden" in errors
+    assert _error_columns(errors, "Missing catalog fields: ") == NEW_BURDEN_MEASURES
+    assert "pct_housing_burden" in _error_columns(errors, "Unmapped warehouse fields: ")
 
 
 def test_snapshot_is_metadata_only_and_ignores_attached_databases(tmp_path):

@@ -3,10 +3,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from api.models import FilterRequest, make_response
-from app_utils import timeseries_db
-from app_utils.df_filtering import (
-    filter_from_request,
-)
+from query import timeseries_db
 from query.production_db import get_db
 
 DB = get_db()
@@ -64,22 +61,7 @@ async def read_census_data_subcat(
             )
         return make_response(data, {})
 
-    # FGB/CSV-backed subcategories (legacy path for any remaining non-timeseries)
-    if subcategory not in CENSUS_DATASETS[category]:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Census subcategory '{subcategory}' was not found in category '{category}'",
-        )
-
-    # data = data_loading.load_census_data(CENSUS_DATASETS[category][subcategory])
-    data = DB.execute(f"SELECT * FROM acs5_{category}_tidy")
-    data = filter_from_request(data, request)
-    metadata = {}
-
-    if data.empty:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No data found for the given filters: {request.filters if request else {}}",
-        )
-
-    return make_response(data, metadata)
+    raise HTTPException(
+        status_code=404,
+        detail=f"Census subcategory '{subcategory}' was not found in category '{category}'",
+    )

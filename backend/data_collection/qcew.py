@@ -224,7 +224,7 @@ def run_qcew_scrape(years: range = YEARS) -> pd.DataFrame:
     all_frames = []
     for year in years:
         for fips, name in VT_COUNTIES.items():
-            print(f"\n=== {name} County ({fips}) ===")
+            print(f"\n{name} County ...")
             df = process_county(fips, name, year)
             if not df.empty:
                 all_frames.append(df)

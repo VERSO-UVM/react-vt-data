@@ -11,6 +11,7 @@ from query.acs5 import (
     get_acs5_tidy,
     get_acs5_timeseries,
 )
+from query.core_functions import to_export_geo
 from query.production_db import get_db
 
 DB = get_db()
@@ -29,11 +30,10 @@ router = APIRouter()
 def _load_full_table(table: str):
     """Load an entire ACS5 table for CSV export.
 
-    Renames the county-name column to `County` so every export source shares
-    the same filter-column contract (`County` / `Jurisdiction`).
+    Adds `County` / `Jurisdiction` columns so every export source shares the
+    same filter-column contract.
     """
-    df = DB.execute(f'SELECT * FROM "{table}"').df()
-    return df.rename(columns={"County_1": "County"})
+    return to_export_geo(DB.execute(f'SELECT * FROM "{table}"').df())
 
 
 EXPORT_SOURCES: dict[str, dict] = {
@@ -413,7 +413,12 @@ async def dp_combined_tree():
     """Return the global set of distinct cascade options across all DP tables."""
     rows = DB.execute(
         """--sql
-        SELECT DISTINCT "table", Category, Subcategory, Variable, Measure
+        SELECT DISTINCT
+            "table",
+            category AS Category,
+            subcategory AS Subcategory,
+            variable AS Variable,
+            measure AS Measure
         FROM acs5_dp_combined_tidy
         ORDER BY "table", Category, Subcategory, Variable, Measure
         """
@@ -429,14 +434,14 @@ async def dp_combined_series(request: DPSeriesRequest):
     rows = DB.execute(
         """--sql
         SELECT CAST(year AS INTEGER) AS year,
-               CAST(Value AS DOUBLE) AS Value
+               CAST(value AS DOUBLE) AS Value
         FROM acs5_dp_combined_tidy
-        WHERE NAME = ?
+        WHERE name = ?
           AND "table" = ?
-          AND Category = ?
-          AND Subcategory = ?
-          AND Variable = ?
-          AND Measure = ?
+          AND category = ?
+          AND subcategory = ?
+          AND variable = ?
+          AND measure = ?
           AND CAST(year AS INTEGER) BETWEEN ? AND ?
         ORDER BY year
         """,

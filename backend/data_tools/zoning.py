@@ -1,7 +1,7 @@
 """Read-only zoning reconciliation without rewriting defective source identifiers.
 
 Municipality names must identify one canonical subdivision before a source row can
-be selected by location ID. A source GEO_ID is evidence to report, never authority
+be selected by location ID. A source geoid is evidence to report, never authority
 to turn a city's district into its same-named town's district.
 """
 
@@ -18,12 +18,12 @@ from . import catalog
 _TABLES = {"VersoZoning_info", "VersoZoning_wide"}
 _PREVIEW_LIMIT = 20
 _SUFFIXES = ("city", "town", "village", "gore", "grant")
-_OVERLAY = "lower(trim(COALESCE(Overlay_District, ''))) IN ('yes', 'y', 'true', '1')"
+_OVERLAY = "lower(trim(COALESCE(overlay_district, ''))) IN ('yes', 'y', 'true', '1')"
 _METHOD = (
     "Counts and recorded acreage sums, not dissolved land area. Source overlay "
     "flags determine exclusions, including any source classification errors. "
     "Overlapping districts may double-count land. Canonical location selection "
-    "uses unambiguous municipality names; raw GEO_ID values are retained and "
+    "uses unambiguous municipality names; raw geoid values are retained and "
     "missing or conflicting IDs are reported, not repaired."
 )
 
@@ -90,16 +90,16 @@ def _county_name(value: str) -> str:
 
 def _inventory(conn, table: str, *, county: str | None = None):
     columns = _columns(conn, table)
-    if "Municipal_Name" not in columns:
+    if "town" not in columns:
         raise ValueError("The zoning inventory has no municipality-name field")
-    geoid = '"GEO_ID"' if "GEO_ID" in columns else "NULL"
-    county_column = '"County"' if "County" in columns else "NULL"
-    if county and "County" not in columns:
+    geoid = '"geoid"' if "geoid" in columns else "NULL"
+    county_column = '"county"' if "county" in columns else "NULL"
+    if county and "county" not in columns:
         raise ValueError("The zoning inventory has no county field")
-    condition = 'lower(trim("County")) = lower(?)' if county else "TRUE"
+    condition = 'lower(trim("county")) = lower(?)' if county else "TRUE"
     parameters = [_county_name(county)] if county else []
     return conn.execute(
-        f'SELECT "Municipal_Name", {geoid}, {county_column}, COUNT(*) '
+        f'SELECT "town", {geoid}, {county_column}, COUNT(*) '
         f'FROM "{table}" WHERE {condition} GROUP BY 1, 2, 3 ORDER BY 1, 2, 3',
         parameters,
     ).fetchall()
@@ -176,24 +176,20 @@ def resolve_zoning_locations(
         if source_id != canonical["id"] and len(mismatch_preview) < _PREVIEW_LIMIT:
             mismatch_preview.append(
                 {
-                    "Municipal_Name": raw_name,
-                    "source_GEO_ID": raw_geoid,
+                    "town": raw_name,
+                    "source_geoid": raw_geoid,
                     "canonical_location_id": canonical["id"],
                     "district_count": count,
                 }
             )
     names = sorted(mapping, key=str.casefold)
-    clause = (
-        '"Municipal_Name" IN (' + ",".join("?" for _ in names) + ")"
-        if names
-        else "FALSE"
-    )
+    clause = '"town" IN (' + ",".join("?" for _ in names) + ")" if names else "FALSE"
     parameters = list(names)
     if county:
-        clause = f'({clause}) AND lower(trim("County")) = lower(?)'
+        clause = f'({clause}) AND lower(trim("county")) = lower(?)'
         parameters.append(_county_name(county))
     diagnostics = {
-        "strategy": "unambiguous canonical municipality name; raw GEO_ID is retained",
+        "strategy": "unambiguous canonical municipality name; raw geoid is retained",
         "inventory_county_scope": _county_name(county) if county else None,
         "scope_note": (
             "Matched/source-ID counts describe the canonical location selection within "
@@ -215,7 +211,7 @@ def resolve_zoning_locations(
         "inventory_unresolved_district_count": unresolved_rows,
         "inventory_unresolved_municipality_count": len(unresolved),
         "inventory_unresolved_names_preview": [
-            {"Municipal_Name": name, "district_count": count}
+            {"town": name, "district_count": count}
             for name, count in sorted(unresolved.items())[:_PREVIEW_LIMIT]
         ],
         "inventory_unresolved_names_truncated": len(unresolved) > _PREVIEW_LIMIT,
@@ -224,10 +220,8 @@ def resolve_zoning_locations(
 
 
 def zoning_location_id(row: dict, diagnostics: dict) -> str | None:
-    """Get the reconciled ID while leaving ``row['GEO_ID']`` untouched."""
-    return diagnostics.get("municipality_location_ids", {}).get(
-        row.get("Municipal_Name")
-    )
+    """Get the reconciled ID while leaving ``row['geoid']`` untouched."""
+    return diagnostics.get("municipality_location_ids", {}).get(row.get("town"))
 
 
 def _selection(conn, request):
@@ -268,9 +262,7 @@ def _selection(conn, request):
                 }
             )
             clause = (
-                '"Municipal_Name" IN (' + ",".join("?" for _ in names) + ")"
-                if names
-                else "FALSE"
+                '"town" IN (' + ",".join("?" for _ in names) + ")" if names else "FALSE"
             )
             return (
                 clause,
@@ -278,7 +270,7 @@ def _selection(conn, request):
                 {
                     "strategy": "exact inventory municipality name; canonical location unresolved",
                     "municipality_location_ids": {},
-                    "warning": "These source names are not verified canonical subdivisions. No GEO_ID repair or interpretation was performed.",
+                    "warning": "These source names are not verified canonical subdivisions. No geoid repair or interpretation was performed.",
                 },
                 [],
             )
@@ -305,11 +297,11 @@ def zoning_summary(conn, request, limit: int, offset: int = 0) -> dict:
     """Summarize one page and reconcile excluded overlays over its full selection."""
     columns = _columns(conn, "VersoZoning_info")
     required = {
-        "County",
-        "Municipal_Name",
-        "District_Type",
-        "Overlay_District",
-        "Acres",
+        "county",
+        "town",
+        "district_type",
+        "overlay_district",
+        "acres",
     }
     if not required <= columns:
         raise ValueError("This warehouse lacks required zoning summary fields")
@@ -320,24 +312,24 @@ def zoning_summary(conn, request, limit: int, offset: int = 0) -> dict:
         county = re.sub(
             r"\s+county$", "", request.county.split(",")[0].strip(), flags=re.IGNORECASE
         )
-        clause += ' AND lower(trim("County")) = lower(?)'
+        clause += ' AND lower(trim("county")) = lower(?)'
         params = [*params, county]
     included = (
         clause if request.include_overlays else f"({clause}) AND NOT ({_OVERLAY})"
     )
     fields = [
-        "County",
-        "Municipal_Name",
-        "District_Type",
+        "county",
+        "town",
+        "district_type",
         "district_count",
         "recorded_acres",
         "districts_missing_acres",
     ]
     raw = conn.execute(
-        "SELECT County, Municipal_Name, District_Type, COUNT(*), SUM(Acres), "
-        'COUNT(*) FILTER (WHERE Acres IS NULL) FROM "VersoZoning_info" '
-        f"WHERE {included} GROUP BY County, Municipal_Name, District_Type "
-        "ORDER BY County, Municipal_Name, District_Type LIMIT ? OFFSET ?",
+        "SELECT county, town, district_type, COUNT(*), SUM(acres), "
+        'COUNT(*) FILTER (WHERE acres IS NULL) FROM "VersoZoning_info" '
+        f"WHERE {included} GROUP BY county, town, district_type "
+        "ORDER BY county, town, district_type LIMIT ? OFFSET ?",
         [*params, limit + 1, offset],
     ).fetchall()
     rows = [dict(zip(fields, row, strict=True)) for row in raw[:limit]]
@@ -354,19 +346,19 @@ def zoning_summary(conn, request, limit: int, offset: int = 0) -> dict:
     if not request.include_overlays:
         overlay_where = f"({clause}) AND ({_OVERLAY})"
         count, acres, missing = conn.execute(
-            "SELECT COUNT(*), SUM(Acres), COUNT(*) FILTER (WHERE Acres IS NULL) "
+            "SELECT COUNT(*), SUM(acres), COUNT(*) FILTER (WHERE acres IS NULL) "
             f'FROM "VersoZoning_info" WHERE {overlay_where}',
             params,
         ).fetchone()
         preview_fields = [
             name
             for name in (
-                "OBJECT_ID",
-                "County",
-                "Municipal_Name",
-                "District_Name",
-                "District_Type",
-                "Acres",
+                "object_id",
+                "county",
+                "town",
+                "district_name",
+                "district_type",
+                "acres",
             )
             if name in columns
         ]
@@ -380,7 +372,7 @@ def zoning_summary(conn, request, limit: int, offset: int = 0) -> dict:
         ).fetchall()
         preview_rows = [dict(zip(preview_fields, row, strict=True)) for row in preview]
         for row in preview_rows:
-            row["Acres"] = _number(row.get("Acres"))
+            row["acres"] = _number(row.get("acres"))
         excluded.update(
             district_count=count,
             recorded_acres=_number(acres) if count else 0.0,
