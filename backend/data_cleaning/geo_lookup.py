@@ -138,6 +138,60 @@ def geoid_sql(expr: str) -> str:
     )
 
 
+def town_lookup_joins_sql(id_col: str, name_col: str) -> str:
+    """
+    LEFT JOIN `geo_town_lookup` twice: once by GEOID (alias `t`), once by the
+    normalized municipality name (alias `t_by_name`). Pair with
+    :func:`resolved_town_sql` to pick between the two.
+
+    A few Vermont municipalities have both a City and a Town of the same name
+    (Barre, Rutland, St. Albans, Newport). The zoning source's GEO_ID is wrong
+    on rows explicitly labeled "... City" -- it always carries the sibling
+    Town's GEOID -- so a GEOID-only join silently renames those City districts
+    to the Town (17 Barre City, 19 Rutland City, 10 St. Albans City, and 9
+    Newport City rows). `name_col` (e.g. "Barre City") is unambiguous on those
+    rows, so also resolve by name and let `resolved_town_sql` prefer it when
+    the two disagree on city vs. town.
+
+    Requires :func:`build_geo_lookups` to have been called on the connection.
+
+    Args:
+        id_col: The raw GEOID-ish column to join by (e.g. "i.GEO_ID").
+        name_col: The raw municipality-name column (e.g. "i.Municipal_Name").
+    """
+    normalized_name = (
+        f"REPLACE(REPLACE(UPPER(TRIM({name_col})), 'ST.', 'SAINT'), '''', '')"
+    )
+    return f"""
+        LEFT JOIN geo_town_lookup AS t ON {geoid_sql(id_col)} = t.geoid
+        LEFT JOIN geo_town_lookup AS t_by_name ON {normalized_name} = t_by_name.town_key
+    """
+
+
+def resolved_town_sql(name_col: str, field: str) -> str:
+    """
+    CASE expression resolving one `geo_town_lookup` column from the two joins
+    set up by :func:`town_lookup_joins_sql`, preferring the by-name match (`t_by_name`)
+    over the by-GEOID match (`t`) only when they disagree on city vs. town.
+
+    Args:
+        name_col: The raw municipality-name column (e.g. "i.Municipal_Name").
+        field: Which `geo_town_lookup` column to resolve: "geoid", "town",
+            "county_fips", or "county".
+    """
+    trimmed_name = f"TRIM({name_col})"
+    mismatch = f"""(
+        t.town IS NOT NULL AND (
+            ({trimmed_name} ILIKE '%city' AND t.town NOT ILIKE '%city')
+            OR ({trimmed_name} ILIKE '%town' AND t.town NOT ILIKE '%town')
+        )
+    )"""
+    return (
+        f"CASE WHEN {mismatch} AND t_by_name.{field} IS NOT NULL "
+        f"THEN t_by_name.{field} ELSE t.{field} END"
+    )
+
+
 def lowercase_cols(cols: list[str], renames: dict[str, str] | None = None) -> str:
     """
     `Col AS col` select list; `renames` overrides individual aliases.

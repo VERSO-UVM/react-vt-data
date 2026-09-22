@@ -14,7 +14,12 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
-from data_cleaning.geo_lookup import build_geo_lookups, geoid_sql, load_initcap
+from data_cleaning.geo_lookup import (
+    build_geo_lookups,
+    load_initcap,
+    resolved_town_sql,
+    town_lookup_joins_sql,
+)
 from query.sql_render import render_sql
 
 SQL_PATH = Path(__file__).resolve().parent / "sql"
@@ -129,13 +134,17 @@ def build_info(con: duckdb.DuckDBPyConnection) -> None:
         CREATE OR REPLACE TEMP VIEW info AS
         SELECT
             i.OBJECT_ID AS object_id,
-            t.geoid,
-            COALESCE(t.town, i.Municipal_Name) AS town,
-            t.county_fips,
-            COALESCE(t.county, INITCAP(i.County)) AS county,
+            {resolved_town_sql("i.Municipal_Name", "geoid")} AS geoid,
+            COALESCE(
+                {resolved_town_sql("i.Municipal_Name", "town")}, i.Municipal_Name
+            ) AS town,
+            {resolved_town_sql("i.Municipal_Name", "county_fips")} AS county_fips,
+            COALESCE(
+                {resolved_town_sql("i.Municipal_Name", "county")}, INITCAP(i.County)
+            ) AS county,
             {passthrough}
         FROM info_raw AS i
-        LEFT JOIN geo_town_lookup AS t ON {geoid_sql("i.GEO_ID")} = t.geoid
+        {town_lookup_joins_sql("i.GEO_ID", "i.Municipal_Name")}
         """
     )
 
@@ -267,13 +276,17 @@ def build_full(con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame) -> None:
         CREATE OR REPLACE TEMP VIEW wide AS
         SELECT
             w.OBJECT_ID AS object_id,
-            t.geoid,
-            COALESCE(t.town, w.Municipal_Name) AS town,
-            t.county_fips,
-            COALESCE(t.county, INITCAP(w.County)) AS county,
+            {resolved_town_sql("w.Municipal_Name", "geoid")} AS geoid,
+            COALESCE(
+                {resolved_town_sql("w.Municipal_Name", "town")}, w.Municipal_Name
+            ) AS town,
+            {resolved_town_sql("w.Municipal_Name", "county_fips")} AS county_fips,
+            COALESCE(
+                {resolved_town_sql("w.Municipal_Name", "county")}, INITCAP(w.County)
+            ) AS county,
             {passthrough}
         FROM zoning_raw AS w
-        LEFT JOIN geo_town_lookup AS t ON {geoid_sql("w.GEO_ID")} = t.geoid
+        {town_lookup_joins_sql("w.GEO_ID", "w.Municipal_Name")}
         """
     )
 
