@@ -9,8 +9,6 @@ import { BASE_API_URL } from '@/config';
 import { filterDef } from '@/components/FilterRedux/filterTypes';
 import {
   soil_suitability_filtering,
-  treatment_facility_filtering,
-  service_area_filtering,
   zoning_filtering,
   ambulance_filtering,
 } from '@/components/FilterRedux/filterDefs';
@@ -78,7 +76,7 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     title: 'Wastewater Treatment Facilities',
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
     method: 'POST',
-    filterList: treatment_facility_filtering,
+    filterList: [],
     responseShape: 'direct',
     color: '#2bb673',
     jurisdiction: {
@@ -91,7 +89,7 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     title: 'Wastewater Service Areas',
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
     method: 'POST',
-    filterList: service_area_filtering,
+    filterList: [],
     responseShape: 'direct',
     color: '#8a5bd6',
     jurisdiction: {

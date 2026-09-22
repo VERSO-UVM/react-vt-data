@@ -57,7 +57,7 @@ export function useMapLayer(
     async (specs: FilterSpec[]) => {
       setLoading(true);
       try {
-        if (config.method === 'GET' || config.filterList.length === 0) {
+        if (config.method === 'GET') {
           const res = await axios.get(config.dataURL);
           const fc = cropToBBox(res.data as FeatureCollection, townBBox);
           setGeojson(recolorLayer(config.id, fc));

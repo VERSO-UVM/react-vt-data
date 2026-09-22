@@ -41,24 +41,6 @@ export const soil_suitability_filtering: filterDef[] = [
   },
 ];
 
-export const treatment_facility_filtering: filterDef[] = [
-  {
-    filter_table: 'VersoWastewater_treatmentFacilities_info',
-    filter_style: 'Checkbox',
-    label: 'Treatment Facilities',
-    cols: ['County'],
-  },
-];
-
-export const service_area_filtering: filterDef[] = [
-  {
-    filter_table: 'VersoWastewater_serviceAreas_info',
-    filter_style: 'Checkbox',
-    label: 'Service Areas',
-    cols: ['County'],
-  },
-];
-
 export const ambulance_filtering: filterDef[] = [
   {
     filter_table: 'VCGI_ambulanceService_info',
