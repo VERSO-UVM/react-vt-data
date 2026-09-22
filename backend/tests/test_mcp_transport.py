@@ -398,13 +398,13 @@ def test_real_stdio_subprocess_runs_every_tool_without_network_or_production_dat
             "INSERT INTO vt_county_geoids VALUES ('Addison County, Vermont', '50001'), ('Chittenden County, Vermont', '50007')"
         )
         conn.execute(
-            "CREATE TABLE acs5Economics_medianHouseholdIncome_timeseries(year VARCHAR, NAME VARCHAR, Median_Household_Income DOUBLE, geo_type VARCHAR)"
+            "CREATE TABLE acs5Economics_medianHouseholdIncome_timeseries(year VARCHAR, name VARCHAR, median_household_income DOUBLE, geo_type VARCHAR)"
         )
         conn.execute(
             "INSERT INTO acs5Economics_medianHouseholdIncome_timeseries VALUES ('2022', 'Addison County, Vermont', 64000, 'county'), ('2022', 'Chittenden County, Vermont', 75000, 'county')"
         )
         conn.execute(
-            "CREATE TABLE VersoZoning_info(OBJECT_ID INTEGER, County VARCHAR, Municipal_Name VARCHAR, GEO_ID VARCHAR, District_Name VARCHAR, District_Type VARCHAR, Overlay_District VARCHAR, Acres DOUBLE)"
+            "CREATE TABLE VersoZoning_info(object_id INTEGER, county VARCHAR, town VARCHAR, geoid VARCHAR, district_name VARCHAR, district_type VARCHAR, overlay_district VARCHAR, acres DOUBLE)"
         )
         conn.execute(
             "INSERT INTO VersoZoning_info VALUES (1, 'Addison', 'Addison', '5000100325', 'R1', 'Residential', 'No', 100)"
@@ -448,7 +448,7 @@ def test_real_stdio_subprocess_runs_every_tool_without_network_or_production_dat
                 assert result.structured_content["warehouse_version"]
                 if name == "query_data":
                     assert (
-                        result.structured_content["rows"][0]["Median_Household_Income"]
+                        result.structured_content["rows"][0]["median_household_income"]
                         == 64000
                     )
                 if name == "compare_places":

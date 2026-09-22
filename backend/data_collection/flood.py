@@ -14,20 +14,24 @@ import pandas as pd
 import requests
 from pyogrio import read_dataframe
 
-BASE_URL = "https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&f=geojson"
-STORAGE_LOCATION = "Data/flood"
-
 # ---------------------------------------------------------------------------
 # FEMA Flood API fetch
 # ---------------------------------------------------------------------------
 
-# Fetch zoning data from github repo (an fgb file)
 
-
+# Fetch flood data from VCGI API (this uses pagination to get around the row limit)
 def fetch_flood() -> pd.DataFrame | None:
-    r = requests.get(BASE_URL, timeout=30)
-    r.raise_for_status()
-    df = read_dataframe(BytesIO(r.content))
+    start_rows = list(range(0, 8000, 1000))
+    dfs = []
+    for row_num in start_rows:
+        BASE_URL = f"https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&resultRecordCount=2000&resultOffset={row_num}&f=geojson"
+        r = requests.get(BASE_URL, timeout=3000)
+        r.raise_for_status()
+        df = read_dataframe(BytesIO(r.content))
+        dfs.append(df)
+
+    df = pd.concat(dfs, ignore_index=True)
+
     return df
 
 

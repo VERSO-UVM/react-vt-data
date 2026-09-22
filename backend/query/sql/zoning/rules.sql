@@ -10,19 +10,20 @@ FROM (
             'type', 'Feature',
             'geometry', ST_ASGEOJSON(ST_SIMPLIFY(g.geom, 0.0001))::JSON,
             'properties', JSON_OBJECT(
-                'District Type', i.District_Type,
-                'Acres', ROUND(i.Acres, 2),
+                'District Type', i.district_type,
+                'Acres', ROUND(i.acres, 2),
                 'rgba_color', c.rgba::JSON,
                 'tooltip', JSON_OBJECT(
                     '__title__', 'Zoning',
-                    'District', i.Municipal_Name || ' ' || i.District_Name,
-                    'Type', i.District_Type,
-                    'Acres', ROUND(i.Acres, 2)
+                    'Jurisdiction', i.town,
+                    'District', i.district_name,
+                    'Type', i.district_type,
+                    'Acres', ROUND(i.acres, 2)
                 )
             )
         ) AS feature
     FROM VersoZoning_info AS i
-    INNER JOIN VersoZoning_geom AS g USING (OBJECT_ID)
-    LEFT JOIN VersoZoning_colors AS c ON i.District_Type = c.district_type
+    INNER JOIN VersoZoning_geom AS g USING (object_id)
+    LEFT JOIN VersoZoning_colors AS c ON i.district_type = c.district_type
     {{ join_filter_block }}
 ) AS features

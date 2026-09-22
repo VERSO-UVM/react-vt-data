@@ -26,8 +26,8 @@ def warehouse():
     with duckdb.connect(":memory:") as conn:
         conn.execute("""
             CREATE TABLE acs5_demographics_tidy (
-                year VARCHAR, NAME VARCHAR, geo_type VARCHAR,
-                Section VARCHAR, Variable VARCHAR, Value DOUBLE, Percent DOUBLE
+                year VARCHAR, name VARCHAR, geo_type VARCHAR,
+                section VARCHAR, variable VARCHAR, value DOUBLE, percent DOUBLE
             );
             INSERT INTO acs5_demographics_tidy VALUES
                 ('2020', 'Vermont', 'state', 'Age/Sex', 'Population (ACS)', 640000, NULL),
@@ -35,7 +35,7 @@ def warehouse():
                 ('2024', 'Vermont', 'state', 'Age/Sex', 'Median Age', 43.5, NULL),
                 ('unavailable', 'Vermont', 'state', 'Race', 'White', 600000, 92.7);
             CREATE TABLE acs5Demographics_medianAge_timeseries (
-                year VARCHAR, NAME VARCHAR, geo_type VARCHAR, Median_Age DOUBLE
+                year VARCHAR, name VARCHAR, geo_type VARCHAR, median_age DOUBLE
             );
             INSERT INTO acs5Demographics_medianAge_timeseries
                 VALUES ('2024', 'Vermont', 'state', 43.5);
@@ -115,12 +115,12 @@ def test_availability_and_years_are_from_current_warehouse(warehouse):
     assert description["geo_types"] == ["state"]
     assert {row["name"] for row in description["columns"]} == {
         "year",
-        "NAME",
+        "name",
         "geo_type",
-        "Section",
-        "Variable",
-        "Value",
-        "Percent",
+        "section",
+        "variable",
+        "value",
+        "percent",
     }
 
 
@@ -135,10 +135,10 @@ def test_variable_search_deduplicates_years_and_roundtrips(warehouse):
     rows = search_variables(warehouse, "acs5_demographics", query="population")
     assert len(rows) == 1
     assert rows[0]["selectors"] == {
-        "Section": "Age/Sex",
-        "Variable": "Population (ACS)",
+        "section": "Age/Sex",
+        "variable": "Population (ACS)",
     }
-    assert rows[0]["value_columns"] == {"Value": "people", "Percent": "percent"}
+    assert rows[0]["value_columns"] == {"value": "people", "percent": "percent"}
     dataset = get_dataset("acs5_demographics")
     assert decode_variable_id(dataset, rows[0]["variable_id"]) == rows[0]["selectors"]
     assert (
@@ -153,13 +153,13 @@ def test_variable_search_deduplicates_years_and_roundtrips(warehouse):
 
 def test_wide_metric_variable_id_and_units(warehouse):
     row = search_variables(warehouse, "acs5_ts_median_age")[0]
-    assert row["selectors"] == {"$column": "Median_Age"}
-    assert row["measures"] == [{"name": "Median_Age", "unit": "years"}]
+    assert row["selectors"] == {"$column": "median_age"}
+    assert row["measures"] == [{"name": "median_age", "unit": "years"}]
     assert decode_variable_id(
         get_dataset("acs5_ts_median_age"), row["variable_id"]
-    ) == {"$column": "Median_Age"}
+    ) == {"$column": "median_age"}
     median = search_variables(warehouse, "acs5_demographics", "median")[0]
-    assert median["value_columns"]["Value"] == "years"
+    assert median["value_columns"]["value"] == "years"
 
 
 def _encoded(payload):
@@ -307,25 +307,25 @@ def test_missing_dataset_and_unknown_geography_fail_clearly(warehouse):
 
 def test_units_preserve_percentages_and_source_specific_estimates():
     dataset = get_dataset("acs5_dp")
-    assert variable_units(dataset, {"Measure": "Percent Estimate"}) == {
-        "Value": "percent"
+    assert variable_units(dataset, {"measure": "Percent Estimate"}) == {
+        "value": "percent"
     }
-    assert "source-defined" in variable_units(dataset, {"Measure": "Estimate"})["Value"]
-    assert get_dataset("zoning_bylaws").value_columns["F1F_Min_Lot_Size"] == "acres"
+    assert "source-defined" in variable_units(dataset, {"measure": "Estimate"})["value"]
+    assert get_dataset("zoning_bylaws").value_columns["f1f_min_lot_size"] == "acres"
     assert get_dataset("acs5_ts_health_insurance").value_columns["Value"] == "people"
     assert "with a mortgage" in get_dataset("acs5_ts_income_burden").description
     economics = get_dataset("acs5_economics")
     assert variable_units(
-        economics, {"Variable": "Labor Force Participation Rate (16+)"}
-    ) == {"Value": "people", "Percent": "percent"}
+        economics, {"variable": "Labor Force Participation Rate (16+)"}
+    ) == {"value": "people", "percent": "percent"}
     housing = get_dataset("acs5_housing")
-    assert variable_units(housing, {"Variable": "Rental Vacancy Rate"}) == {
-        "Value": "housing units",
-        "Percent": "percent",
+    assert variable_units(housing, {"variable": "Rental Vacancy Rate"}) == {
+        "value": "housing units",
+        "percent": "percent",
     }
     assert (
         "unavailable"
-        in variable_units(economics, {"Variable": "Income below poverty"})["Value"]
+        in variable_units(economics, {"variable": "Income below poverty"})["value"]
     )
 
 
@@ -338,8 +338,8 @@ def test_location_index_requires_no_observation_tables():
 def profile_warehouse(warehouse):
     warehouse.execute("""
         CREATE TABLE acs5_dp_combined_tidy (
-            NAME VARCHAR, "table" VARCHAR, Category VARCHAR, Subcategory VARCHAR,
-            Variable VARCHAR, Measure VARCHAR, year INTEGER, Value VARCHAR
+            name VARCHAR, "table" VARCHAR, category VARCHAR, subcategory VARCHAR,
+            variable VARCHAR, measure VARCHAR, year INTEGER, value VARCHAR
         );
         INSERT INTO acs5_dp_combined_tidy VALUES
             ('Burlington city, Chittenden County, Vermont', 'DP04', 'Estimate',
@@ -391,7 +391,7 @@ def test_multiword_variable_search_matches_across_dimensions_and_punctuation(
         profile_warehouse, "acs5_dp", "GRAPI 35.0 percent or more"
     )
     assert len(brackets) == 2
-    assert {row["selectors"]["Measure"] for row in brackets} == {
+    assert {row["selectors"]["measure"] for row in brackets} == {
         "Percent",
         "Percent Estimate",
     }
@@ -400,7 +400,7 @@ def test_multiword_variable_search_matches_across_dimensions_and_punctuation(
 def test_selector_variants_report_their_actual_distinct_years(profile_warehouse):
     rows = search_variables(profile_warehouse, "acs5_dp", "gross rent median dollars")
     variants = {
-        row["selectors"]["Measure"] + ":" + row["selectors"]["Variable"]: row
+        row["selectors"]["measure"] + ":" + row["selectors"]["variable"]: row
         for row in rows
     }
     assert variants["Number:Occupied units paying rent: Median (dollars)"][
@@ -436,7 +436,7 @@ def test_profile_coverage_discloses_geography_specific_gaps(profile_warehouse):
 
 def test_default_and_filtered_distinct_value_discovery(profile_warehouse):
     description = describe_dataset(profile_warehouse, "acs5_dp")
-    assert description["filter_values_by_column"]["Measure"]["values"] == [
+    assert description["filter_values_by_column"]["measure"]["values"] == [
         "Estimate",
         "Number",
         "Percent",
@@ -445,7 +445,7 @@ def test_default_and_filtered_distinct_value_discovery(profile_warehouse):
     filtered = describe_dataset(
         profile_warehouse,
         "acs5_dp",
-        value_column="Measure",
+        value_column="measure",
         value_filters={"table": [" dp04 "], "year": [2017]},
         value_limit=20,
     )["filter_values"]
@@ -455,7 +455,7 @@ def test_default_and_filtered_distinct_value_discovery(profile_warehouse):
     truncated = describe_dataset(
         profile_warehouse,
         "acs5_dp",
-        value_column="Measure",
+        value_column="measure",
         value_limit=2,
     )["filter_values"]
     assert truncated["values"] == ["Estimate", "Number"]
@@ -472,16 +472,16 @@ def test_distinct_values_trim_and_deduplicate_text_without_ignoring_bad_filters(
     result = describe_dataset(
         profile_warehouse,
         "acs5_dp",
-        value_column="Category",
-        value_filters={"table": ["dp04"], "Measure": [" ESTIMATE "]},
+        value_column="category",
+        value_filters={"table": ["dp04"], "measure": [" ESTIMATE "]},
     )
     assert result["filter_values"]["values"] == ["GROSS RENT"]
     for kwargs in (
-        {"value_column": "Value"},
-        {"value_column": "Measure; DROP TABLE x"},
-        {"value_column": "Measure", "value_filters": {"unknown": ["x"]}},
-        {"value_column": "Measure", "value_filters": {"table": []}},
-        {"value_column": "Measure", "value_filters": {"table": [float("inf")]}},
+        {"value_column": "value"},
+        {"value_column": "measure; DROP TABLE x"},
+        {"value_column": "measure", "value_filters": {"unknown": ["x"]}},
+        {"value_column": "measure", "value_filters": {"table": []}},
+        {"value_column": "measure", "value_filters": {"table": [float("inf")]}},
         {"value_filters": {"table": ["DP04"]}},
     ):
         with pytest.raises(ValueError):
@@ -489,7 +489,7 @@ def test_distinct_values_trim_and_deduplicate_text_without_ignoring_bad_filters(
     injected = describe_dataset(
         profile_warehouse,
         "acs5_dp",
-        value_column="Measure",
+        value_column="measure",
         value_filters={"table": ["DP04' OR TRUE --"]},
     )
     assert injected["filter_values"]["values"] == []
@@ -498,12 +498,12 @@ def test_distinct_values_trim_and_deduplicate_text_without_ignoring_bad_filters(
 def test_provenance_identifies_the_current_served_pipeline_without_guessing_codes():
     income = provenance_metadata(get_dataset("acs5_ts_household_income"))
     assert income["warehouse_table"] == "acs5Economics_medianHouseholdIncome_timeseries"
-    assert income["source_columns"]["Median_Household_Income"]["census_codes"] == [
+    assert income["source_columns"]["median_household_income"]["census_codes"] == [
         "B19013_001E"
     ]
     assert "backend/data_collection/economic.py" in income["transformations"]
     home = provenance_metadata(get_dataset("acs5_ts_median_home_value"))
-    assert home["source_columns"]["Median_Home_Value"]["census_codes"] == [
+    assert home["source_columns"]["median_home_value"]["census_codes"] == [
         "B25077_001E"
     ]
     assert "older build/acs5.py" in home["source_code_note"]
@@ -520,17 +520,17 @@ def test_provenance_identifies_the_current_served_pipeline_without_guessing_code
 def test_percent_total_units_are_conservative_but_true_percent_brackets_survive():
     dataset = get_dataset("acs5_dp")
     suspicious = {
-        "Variable": " Total ",
-        "Measure": "Percent Estimate",
-        "Subcategory": "Occupied units paying rent",
+        "variable": " Total ",
+        "measure": "Percent Estimate",
+        "subcategory": "Occupied units paying rent",
     }
-    assert "unit not verified" in variable_units(dataset, suspicious)["Value"]
-    genuine_bracket = suspicious | {"Subcategory": "35.0 percent or more"}
-    assert variable_units(dataset, genuine_bracket)["Value"] == "percent"
+    assert "unit not verified" in variable_units(dataset, suspicious)["value"]
+    genuine_bracket = suspicious | {"subcategory": "35.0 percent or more"}
+    assert variable_units(dataset, genuine_bracket)["value"] == "percent"
     assert (
         variable_units(
-            dataset, genuine_bracket | {"Subcategory": "Less than 20.0 percent"}
-        )["Value"]
+            dataset, genuine_bracket | {"subcategory": "Less than 20.0 percent"}
+        )["value"]
         == "percent"
     )
     assert any("contain totals" in caveat for caveat in dataset.caveats)

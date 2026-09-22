@@ -2,16 +2,16 @@
 
 filtered AS (
     SELECT
-        i.County,
-        i.District_Type,
-        ROUND(i.Acres, 2) AS Acres,
-        i.Municipal_Name,
-        i.District_Name,
+        i.county,
+        i.district_type,
+        ROUND(i.acres, 2) AS acres,
+        i.town,
+        i.district_name,
         c.rgba,
         g.geometry
     FROM VersoZoning_info AS i
-    INNER JOIN VersoZoning_geom AS g USING (OBJECT_ID)
-    LEFT JOIN VersoZoning_colors AS c ON i.District_Type = c.district_type
+    INNER JOIN VersoZoning_geom AS g USING (object_id)
+    LEFT JOIN VersoZoning_colors AS c ON i.district_type = c.district_type
     {{ join_filter_block }}
 ),
 
@@ -21,17 +21,18 @@ features AS (
             'type', 'Feature',
             'geometry', ST_ASGEOJSON(ST_SIMPLIFY(geometry, 0.0001))::JSON,
             'properties', JSON_OBJECT(
-                'District Type', District_Type,
-                'District Name', District_Name,
-                'Acres', Acres,
+                'District Type', district_type,
+                'District Name', district_name,
+                'Acres', acres,
                 'rgba_color', rgba::JSON,
-                'county', County,
+                'county', county,
                 'tooltip', JSON_OBJECT(
                     '__title__', 'Zoning',
-                    'County', County,
-                    'District', Municipal_Name || ' ' || District_Name,
-                    'Type', District_Type,
-                    'Acres', Acres
+                    'County', county,
+                    'Jurisdiction', town,
+                    'District', district_name,
+                    'Type', district_type,
+                    'Acres', acres
                 )
             )
         ) AS feature
@@ -40,32 +41,32 @@ features AS (
 
 matched_area AS (
     SELECT
-        County,
+        county,
         ST_Area_Spheroid(ST_Union_Agg(geometry)) / 4046.8564224 AS matched_acres
     FROM filtered
-    GROUP BY County
+    GROUP BY county
 ),
 
 county_area AS (
     SELECT
-        i.County,
+        i.county,
         ST_Area_Spheroid(ST_Union_Agg(g.geometry)) / 4046.8564224 AS total_acres
     FROM VersoZoning_info AS i
-    INNER JOIN VersoZoning_geom AS g USING (OBJECT_ID)
-    GROUP BY i.County
+    INNER JOIN VersoZoning_geom AS g USING (object_id)
+    GROUP BY i.county
 ),
 
 stats AS (
     SELECT
         JSON_GROUP_ARRAY(JSON_OBJECT(
-            'county', t.County,
+            'county', t.county,
             'matched_acres', ROUND(COALESCE(m.matched_acres, 0), 2),
             'total_acres', ROUND(t.total_acres, 2),
             'pct',
             ROUND(100 * COALESCE(m.matched_acres, 0) / NULLIF(t.total_acres, 0), 2)
         )) AS arr
     FROM county_area AS t
-    LEFT JOIN matched_area AS m USING (County)
+    LEFT JOIN matched_area AS m USING (county)
 )
 
 SELECT JSON_OBJECT(

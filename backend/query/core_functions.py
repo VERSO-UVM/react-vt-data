@@ -12,12 +12,29 @@
 
 import logging
 
+import pandas as pd
+
 from api.models import FilterResponse, RangeDescriptor
 from query.production_db import get_db
 
 DB = get_db()
 
 logger = logging.getLogger(__name__)
+
+
+def to_export_geo(df: pd.DataFrame) -> pd.DataFrame:
+    """Name the standardized geography columns the way the export tool filters.
+
+    `county` -> `County` and `town` -> `Jurisdiction`. Tables that only carry
+    the full Census `name` (ACS) get their Jurisdiction from its first segment,
+    e.g. "Addison town, Addison County, Vermont" -> "Addison town" (the same
+    form the `town` column holds elsewhere).
+    """
+    df = df.rename(columns={"county": "County", "town": "Jurisdiction"})
+    if "Jurisdiction" not in df.columns and {"name", "geo_type"} <= set(df.columns):
+        is_town = df["geo_type"] == "town"
+        df["Jurisdiction"] = df["name"].str.split(",").str[0].where(is_town)
+    return df
 
 
 def _nest(rows: list[tuple]) -> dict:

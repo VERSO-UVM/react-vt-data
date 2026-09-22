@@ -33,7 +33,7 @@ uv run sqlfluff fix query/sql build/sql    # Auto-fix SQL lint issues
 ```
 
 SQL templates under `backend/query/sql/` and `backend/build/sql/` are Jinja
-templates rendered by `sql_render.py`, which also holds the
+templates rendered by `query/sql_render.py`, which also holds the
 general-purpose filter compiler (it emits `$N` prepared-statement placeholders
 plus a params list — execute with `DB.execute(sql, params)`). Lint-time
 template context lives in `backend/.sqlfluff`.
@@ -77,12 +77,13 @@ template context lives in `backend/.sqlfluff`.
 
 **Response model:** `api/models/response_models.py` — `APIResponse` with `data`, `tableData`, and `metadata` fields.
 
-**Data utilities (`app_utils/`):**
+**Query layer (`query/`):**
 
-- `data_loading.py` — `masterload()` loads CSV/Parquet/FGB/GeoJSON, handles geometry/CRS
-- `df_filtering.py` — `FilterState` class for hierarchical filtering
-- `constants/dataset_sources.py` — Dataset path definitions
-- Domain modules: `census.py`, `demographic.py`, `economic.py`, `housing.py`, `social.py`, `zoning.py`, `flooding.py`
+- `sql_render.py` — Jinja SQL rendering and the filter compiler (`sql_filter_block`, `compile_where`)
+- `timeseries_db.py` — DuckDB access to census time-series tables
+- `production_db.py` — lazy DuckDB connection
+
+**ETL census helpers:** `data_collection/census.py` (`tidy_census`, `split_name_col`).
 
 **Data files:** `backend/Data/` — Census ACS-5, flood-hazard, soil-suitability, wastewater, zoning (CSV, Parquet, FGB, GeoJSON formats).
 

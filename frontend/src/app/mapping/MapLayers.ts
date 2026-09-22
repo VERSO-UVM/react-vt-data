@@ -11,6 +11,7 @@ import {
   soil_suitability_filtering,
   zoning_filtering,
   // ambulance_filtering, // ambulance layer disabled for now, see MAP_LAYERS below
+  parcels_filtering,
 } from '@/components/FilterRedux/filterDefs';
 
 /**
@@ -121,6 +122,19 @@ export const MAP_LAYERS: MapLayerConfig[] = [
   //   responseShape: 'direct',
   //   color: '#fd7e14',
   // },
+  {
+    id: 'parcels',
+    title: 'Parcels',
+    dataURL: `${BASE_API_URL}/load/mapping/parcels/standard`,
+    method: 'POST',
+    filterList: parcels_filtering,
+    responseShape: 'direct',
+    color: '#0ea5a5',
+    jurisdiction: {
+      filterTable: 'VCGIParcels_info',
+      label: 'Jurisdiction',
+    },
+  },
 ];
 
 // Zoning's grey "no zoning information here" backdrop is not a toggleable

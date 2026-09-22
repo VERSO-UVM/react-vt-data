@@ -153,16 +153,16 @@ cp .env.example .env
 
 The justfile loads this file automatically (`set dotenv-filename := ".env"`), so every recipe sees these values without you exporting anything by hand. `.env` is gitignored; `.env.example` is the committed template and documents optional values as commented examples.
 
-| Variable         | Required for                    | Notes                                                                                                                                                                                   |
-| ---------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CENSUS_API_KEY` | `just get-data`, `just run-etl` | Census Bureau API key for the ACS-5 scrapers. Free and instant from [the signup page](https://api.census.gov/data/key_signup.html).                                                     |
-| `DATA_DIR`       | optional                        | Absolute host data directory; defaults to `backend/Data`. API and ETL containers mount this at `/data`. |
-| `MCP_ENABLED` | deployed MCP | Set `true` to mount `/api/mcp` in the API. Disabled by default; standalone `just mcp` does not need it. |
-| `MCP_AUTH_MODE` | MCP authentication | `none`, `development`, or `bearer`. The existing API mount requires bearer mode. |
-| `MCP_BEARER_TOKENS` | bearer mode | Comma-separated tokens, one per consumer. Generate each with `just mcp-token`. |
-| `MCP_ALLOWED_HOSTS`, `MCP_ALLOWED_ORIGINS` | deployed MCP | Explicit hostname and origin allowlists for the deployed endpoint. |
-| `MCP_HOST`, `MCP_PORT` | optional standalone MCP | Default `127.0.0.1:6768`; local no-auth/development modes require loopback. |
-| `MCP_MAX_ROWS`, `MCP_MAX_BYTES`, `MCP_QUERY_TIMEOUT`, `MCP_MAX_CONCURRENCY`, `MCP_RATE_LIMIT`, `MCP_MAX_REQUEST_BYTES` | optional MCP limits | Response, query, concurrency, and HTTP limits; see [MCP configuration](docs/mcp.md#configuration). |
+| Variable                                                                                                               | Required for                    | Notes                                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `CENSUS_API_KEY`                                                                                                       | `just get-data`, `just run-etl` | Census Bureau API key for the ACS-5 scrapers. Free and instant from [the signup page](https://api.census.gov/data/key_signup.html). |
+| `DATA_DIR`                                                                                                             | optional                        | Absolute host data directory; defaults to `backend/Data`. API and ETL containers mount this at `/data`.                             |
+| `MCP_ENABLED`                                                                                                          | deployed MCP                    | Set `true` to mount `/api/mcp` in the API. Disabled by default; standalone `just mcp` does not need it.                             |
+| `MCP_AUTH_MODE`                                                                                                        | MCP authentication              | `none`, `development`, or `bearer`. The existing API mount requires bearer mode.                                                    |
+| `MCP_BEARER_TOKENS`                                                                                                    | bearer mode                     | Comma-separated tokens, one per consumer. Generate each with `just mcp-token`.                                                      |
+| `MCP_ALLOWED_HOSTS`, `MCP_ALLOWED_ORIGINS`                                                                             | deployed MCP                    | Explicit hostname and origin allowlists for the deployed endpoint.                                                                  |
+| `MCP_HOST`, `MCP_PORT`                                                                                                 | optional standalone MCP         | Default `127.0.0.1:6768`; local no-auth/development modes require loopback.                                                         |
+| `MCP_MAX_ROWS`, `MCP_MAX_BYTES`, `MCP_QUERY_TIMEOUT`, `MCP_MAX_CONCURRENCY`, `MCP_RATE_LIMIT`, `MCP_MAX_REQUEST_BYTES` | optional MCP limits             | Response, query, concurrency, and HTTP limits; see [MCP configuration](docs/mcp.md#configuration).                                  |
 
 Notes:
 

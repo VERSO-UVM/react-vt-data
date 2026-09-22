@@ -43,7 +43,11 @@ import LayerPanel from './LayerPanel';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
 import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
 import { jurisdictionCandidates } from './jurisdictionMatch';
-import { computeBuildableOverlay } from './buildableOverlay';
+import {
+  computeBuildableOverlay,
+  withParcelBuildability,
+  type PolyFeature,
+} from './buildableOverlay';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
 import { getFeatureBBox } from './geoUtils';
@@ -321,13 +325,30 @@ function MapExplorerContent() {
     );
   }, [bothZoningAndSoilActive, layerData, activeLayers, townCandidates]);
 
+  // Gated on both being active so the per-parcel turf.intersect pass (a few
+  // thousand clips against the dissolved buildable polygon, worst case)
+  // never runs for users who haven't combined Parcels with zoning+soil.
+  const parcelsWithBuildability = useMemo(() => {
+    if (!activeLayers.has('parcels') || !buildableOverlay) {
+      return layerData['parcels'] ?? null;
+    }
+    return withParcelBuildability(
+      layerData['parcels'] ?? null,
+      buildableOverlay.geojson.features[0] as PolyFeature,
+    );
+  }, [activeLayers, buildableOverlay, layerData]);
+
   const mapLayers = MAP_LAYERS.map((cfg) => {
     const suppressed =
       bothZoningAndSoilActive &&
       (cfg.id === 'zoning' || cfg.id === 'soil-suitability');
     return {
       id: cfg.id,
-      geojson: suppressed ? null : (layerData[cfg.id] ?? null),
+      geojson: suppressed
+        ? null
+        : cfg.id === 'parcels'
+          ? parcelsWithBuildability
+          : (layerData[cfg.id] ?? null),
       visible: !suppressed && activeLayers.has(cfg.id),
     };
   });

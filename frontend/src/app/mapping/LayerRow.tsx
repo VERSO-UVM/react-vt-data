@@ -1,9 +1,17 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { Switch, Group, Text, Box, LoadingOverlay } from '@mantine/core';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Switch,
+  Group,
+  Text,
+  Box,
+  LoadingOverlay,
+  SegmentedControl,
+} from '@mantine/core';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 import { useMapLayer } from './UseMapLayer';
+import { recolorParcels, type ParcelColorMode } from './layerColors';
 import type { MapLayerConfig } from '@/app/mapping/MapLayers';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import type { FeatureCollection } from 'geojson';
@@ -53,13 +61,24 @@ export default function LayerRow({
     townBBox,
   );
 
+  // Parcels can be recolored by attribute (Category or Assessed Value)
+  // without a re-fetch — purely a client-side restyle of the geojson already
+  // on hand. Irrelevant for every other layer, which keeps its server/
+  // recolorLayer color untouched.
+  const [parcelColorMode, setParcelColorMode] =
+    useState<ParcelColorMode>('category');
+  const displayGeojson = useMemo(() => {
+    if (config.id !== 'parcels' || !geojson) return geojson;
+    return recolorParcels(geojson, parcelColorMode);
+  }, [config.id, geojson, parcelColorMode]);
+
   // Push this layer's geojson up to the map whenever it changes, and clear
   // it from the map immediately when the layer is switched off (data stays
   // cached in the hook so re-enabling doesn't require a re-fetch).
   useEffect(() => {
-    onDataChange(config.id, active ? geojson : null);
+    onDataChange(config.id, active ? displayGeojson : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geojson, active]);
+  }, [displayGeojson, active]);
 
   useEffect(() => {
     onBaselineChange(config.id, active ? unfilteredGeojson : null);
@@ -106,6 +125,24 @@ export default function LayerRow({
           color={config.color}
         />
       </Group>
+
+      {active && config.id === 'parcels' && (
+        <Box mt="sm">
+          <Text size="xs" c="dimmed" mb={4}>
+            Color by
+          </Text>
+          <SegmentedControl
+            fullWidth
+            size="xs"
+            value={parcelColorMode}
+            onChange={(v) => setParcelColorMode(v as ParcelColorMode)}
+            data={[
+              { label: 'Category', value: 'category' },
+              { label: 'Assessed Value', value: 'value' },
+            ]}
+          />
+        </Box>
+      )}
 
       {active && config.filterList.length > 0 && (
         <Box mt="sm">

@@ -48,7 +48,7 @@ async def employment_by_sector(request: FilterRequest):
             SELECT year, quarter, quarter_label, sector, employment_4qma
             FROM qcew_sectorEmployment_timeseries
             WHERE sector != 'Total'
-            AND County = ?
+            AND county = ?
             ORDER BY year, quarter, sector
         """
         rows: pd.DataFrame = DB.execute(query, [county]).df()
@@ -100,9 +100,9 @@ async def employment_by_sector(request: FilterRequest):
 def _load_export_table() -> pd.DataFrame:
     return DB.execute(
         """--sql
-        SELECT year, quarter, quarter_label, County, sector, employment, employment_4qma
+        SELECT year, quarter, quarter_label, county AS County, sector, employment, employment_4qma
         FROM qcew_sectorEmployment_timeseries
-        ORDER BY year, quarter, County, sector
+        ORDER BY year, quarter, county, sector
         """
     ).df()
 

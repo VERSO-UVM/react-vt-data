@@ -15,15 +15,14 @@ FROM (
                 'rgba_color', '[44, 160, 44, 180]'::JSON,
                 'tooltip', json_object(
                     '__title__', 'Wastewater Service Areas',
-                    'Regional Planning Commission', i.RPC,
-                    'County', i.County,
-                    'Town Name', i.TownName,
-                    'System Name', i.SystemName,
-                    'System Owner', i.SystemOwner
+                    'Regional Planning Commission', i.rpc,
+                    'County', i.county,
+                    'Town Name', i.town,
+                    'System Name', i.system_name
                 )
             )
         ) AS feature
     FROM VersoWastewater_serviceAreas_info AS i
-    INNER JOIN VersoWastewater_serviceAreas_geom AS g USING (Area_ID)
+    INNER JOIN VersoWastewater_serviceAreas_geom AS g USING (area_id)
     {{ join_filter_block }}
 ) AS features

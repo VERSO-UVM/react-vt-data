@@ -95,7 +95,7 @@ concern — use `functools.lru_cache` on the serialized JSON or HTTP
 class APIResponse(BaseModel):
     data: dict | list
     tableData: dict | list | None = None
-    metadata: dict                       # no longer optional
+    metadata: dict  # no longer optional
 ```
 
 Every route returns `APIResponse` via `make_response(...)`. Includes the
@@ -104,16 +104,19 @@ current GET map routes and the housing snapshot.
 ### Request models (split)
 
 ```python
-class FilterRequest(BaseModel):           # qcew, census/{category}, census subcategory
+class FilterRequest(BaseModel):  # qcew, census/{category}, census subcategory
     filters: dict[str, list[str]] = {}
 
-class MapFilterRequest(FilterRequest):    # zoning
+
+class MapFilterRequest(FilterRequest):  # zoning
     format: str | None = "geojson"
 
-class SnapshotRequest(FilterRequest):     # census/housing/snapshot
+
+class SnapshotRequest(FilterRequest):  # census/housing/snapshot
     include: list[str] | None = []
 
-class ACSTidyRequest(BaseModel):          # all 5 tidy_* endpoints
+
+class ACSTidyRequest(BaseModel):  # all 5 tidy_* endpoints
     name: str
     year_min: int = 2010
     year_max: int = 2023

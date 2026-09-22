@@ -4,6 +4,7 @@ from api.core_functions import request_to_source, spec_to_source
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, FilterSpec, make_response
 from query.zoning import (
+    get_building_footprints,
     get_unzoned_geojson,
     get_zoning_aggregated_acres,
     get_zoning_allowances,
@@ -63,11 +64,12 @@ async def zoning_unzoned():
     return Response(content=data, media_type="application/json")
 
 
-@router.post("/load/mapping/zoning/standard")
-async def zoning_geojson_info(request: FilterRequest):
-    source = request_to_source(request, "VersoZoning_info", "default")
-    data = get_zoning_geojson([source])
-    return Response(content=data, media_type="application/json")
+# Unused by the frontend (it calls standard_new); disabled pending removal.
+# @router.post("/load/mapping/zoning/standard")
+# async def zoning_geojson_info(request: FilterRequest):
+#     source = request_to_source(request, "VersoZoning_info", "default")
+#     data = get_zoning_geojson([source])
+#     return Response(content=data, media_type="application/json")
 
 
 @router.post("/load/data/zoning/aggregated")
@@ -81,6 +83,17 @@ async def acreage_response(request: FilterRequest):
 async def zoning_allowances(request: FilterRequest):
     source = request_to_source(request, "VersoZoning_info", "default")
     agg, table = get_zoning_allowances([source])
+    return make_response(
+        data=agg,
+        metadata=get_metadata("zoning"),
+        tableData=table,
+    )
+
+
+@router.post("/load/data/zoning/building-footprints")
+async def building_footprints(request: FilterRequest):
+    source = request_to_source(request, "VCGI_buildingFootprints_geom", "default")
+    agg, table = get_building_footprints([source])
     return make_response(
         data=agg,
         metadata=get_metadata("zoning"),

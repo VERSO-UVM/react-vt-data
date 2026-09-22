@@ -4,148 +4,143 @@
 **Created**:
     2026-07-13
 **Description**:
-    Data cleaning script for the raw `historic_population` table in the DuckLake
+    Data cleaning script for the raw `historic_population` table in the
+    DuckLake (decennial census town populations).
+
+    Produces two long-format timeseries tables:
+
+    - Population by town, with county and state aggregations appended.
+    - Decade-over-decade percent change for each geography:
+      (Population_t - Population_t-1) / Population_t-1 * 100
+      (each geography's first census year is dropped).
+
+    Town names come from `lake.RAW.vt_town_lines`; county_fips is the first
+    five digits of the (FIPS-derived) geoid.
 **Run with**:
-python -m data_cleaning.clean_historic_population
+python run_data_cleaning.py clean_historic_population
 """
 
+import re
+
 import duckdb
-import pandas as pd
+
+from data_cleaning.geo_lookup import write_table
+
+POPULATION_TABLE = "VCGI_historicPopulation_timeseries"
+PCT_CHANGE_TABLE = "VCGI_historicPopulation_pctChange_timeseries"
 
 
-def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    raw_df = con.execute(
-        """--sql
-        SELECT * 
-        FROM lake.RAW.historic_population
+def population_sql(con: duckdb.DuckDBPyConnection) -> str:
+    """
+    Town rows melted to long format, plus county and state sum aggregations.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+
+    Returns:
+        str: SQL query creating the historic population table
+    """
+    # Year columns are the raw columns that contain a digit (e.g. "year1790")
+    raw_cols = con.execute("DESCRIBE lake.RAW.historic_population").df()["column_name"]
+    year_cols = ", ".join(f'"{c}"' for c in raw_cols if re.search(r"\d", c))
+
+    return f"""--sql
+        WITH melted AS (
+            SELECT
+                LPAD(CAST(_GEOID AS VARCHAR), 10, '0') AS geoid,
+                county,
+                CAST(REGEXP_REPLACE(LOWER(year_col), '^year', '') AS INTEGER) AS year,
+                Population
+            FROM (
+                UNPIVOT lake.RAW.historic_population
+                ON {year_cols}
+                INTO NAME year_col VALUE Population
+            )
+        ),
+        town AS (
+            SELECT
+                l.year,
+                t.NAME AS name,
+                l.geoid,
+                LEFT(l.geoid, 5) AS county_fips,
+                l.county,
+                l.Population,
+                'town' AS geo_type
+            FROM melted AS l
+            LEFT JOIN (
+                SELECT DISTINCT GEOID, NAME FROM lake.RAW.vt_town_lines
+            ) AS t
+                ON l.geoid = LPAD(CAST(t.GEOID AS VARCHAR), 10, '0')
+        )
+        SELECT * FROM town
+        UNION ALL
+        
+        SELECT
+            year,
+            MODE(county) || ' County, Vermont',
+            county_fips,
+            county_fips,
+            MODE(county),
+            SUM(Population),
+            'county'
+        FROM town
+        GROUP BY year, county_fips
+        UNION ALL
+        SELECT
+            year,
+            'Vermont',
+            '50',
+            CAST(NULL AS VARCHAR),
+            CAST(NULL AS VARCHAR),
+            SUM(Population),
+            'state'
+        FROM town
+        GROUP BY year
         """
-    ).df()
-
-    return raw_df
 
 
-def clean_column_names(df: pd.DataFrame) -> None:
+def pct_change_sql() -> str:
     """
-    Cleans historic_population data column names
+    Town rows melted to long format, plus county and state sum aggregations.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+
+    Returns:
+        str: SQL query creating the historic population change table
     """
-    # Make all column names lowercase
-    df.columns = df.columns.str.lower()
-    # Strip "year" from column names
-    df.columns = df.columns.str.replace("^year", "", regex=True)
-    # Rename geoid column
-    df.rename(columns={"_geoid": "geoid"}, inplace=True)
-    # Add a geo_type column for aggregation
-    df["geo_type"] = "town"
-
-
-def long_format(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Turns raw historic_population estimates data into long_format
-    """
-    year_cols = df.columns[df.columns.astype(str).str.contains(r"\d")]
-
-    df_long = pd.melt(
-        df,
-        id_vars=["geoid", "town", "county", "geo_type"],
-        value_vars=year_cols,
-        var_name="year",
-        value_name="Population",
-    )
-    df_long["year"] = df_long["year"].astype(int)
-
-    return df_long
-
-
-def add_NAME_column(long_df: pd.DataFrame) -> pd.DataFrame:
-    import requests
-
-    json_file = "https://raw.githubusercontent.com/VERSO-UVM/react-vt-data/refs/heads/main/frontend/public/data/municipalites.json"
-    response = requests.get(json_file)
-    geo = response.json()
-
-    long_df["geoid"] = long_df["geoid"].astype(str).str.zfill(10)
-    geo_lookup = {
-        str(feat["properties"]["GEOID"]).zfill(10): feat["properties"]["NAME"]
-        for feat in geo["features"]
-    }
-
-    long_df["NAME"] = long_df["geoid"].map(geo_lookup)
-
-    return long_df
-
-
-def add_population_aggregations(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Aggregates town-level population to county and state levels,
-    and appends them as additional rows in the long-format dataframe.
-    """
-    df["county_geoid"] = df["geoid"].astype(str).str[:5]
-    # County-level aggregation. Grouped by county_geoid (FIPS-derived, authoritative)
-    # rather than the free-text "county" column: a handful of towns carry the wrong
-    # county label in the source data (e.g. "Warren's Gore" is tagged "Washington"
-    # despite its geoid belonging to Essex), which would otherwise splinter a single
-    # county's towns into two mismatched aggregation groups sharing one geoid.
-    county_df = df.groupby(["county_geoid", "year"], as_index=False).agg(
-        Population=("Population", "sum"),
-        county=("county", lambda s: s.mode().iat[0]),
-    )
-    county_df["NAME"] = county_df["county"] + " County, Vermont"
-    county_df["geo_type"] = "county"
-    county_df = county_df.rename(columns={"county_geoid": "geoid"})
-
-    # State-level aggregation
-    state_df = df.groupby("year", as_index=False)["Population"].sum()
-    state_df["NAME"] = "Vermont"
-    state_df["geoid"] = "50"  # Vermont's state FIPS code
-    state_df["geo_type"] = "state"
-
-    # Align columns before concatenating
-    cols = ["geoid", "NAME", "year", "Population", "geo_type"]
-
-    town_df = df[cols]
-    county_df = county_df[cols]
-    state_df = state_df[cols]
-
-    combined = pd.concat([town_df, county_df, state_df], ignore_index=True)
-
-    return combined
-
-
-def clean(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
-    # Get raw dataframe from DuckLake RAW tables
-    raw_df = read_raw_data(con)
-    # Clean column names
-    clean_column_names(raw_df)
-    # Melt DataFrame into long format (Cols: "geoid", "NAME", "year", "Population", "geo_type")
-    df_long = long_format(raw_df)
-    # Add a census-style "NAME" column for easier filtering
-    df_long_clean = add_NAME_column(df_long)
-    # Reorder columns
-    column_order = ["geoid", "NAME", "county", "town", "year", "Population", "geo_type"]
-    df = df_long_clean[column_order]
-    # Append county + state aggregations (total sum)
-    df = add_population_aggregations(df)
-
-    return df
-
-
-def add_to_lake(con: duckdb.DuckDBPyConnection, clean_df: pd.DataFrame) -> None:
-    """
-    Writes the cleaned, long-format historic population dataframe
-    to the CLEANED schema in DuckLake.
-    """
-    con.execute(
-        """--sql
-        CREATE OR REPLACE TABLE lake.CLEANED.VCGI_historicPopulation_timeseries AS
-        SELECT * FROM clean_df
+    return f"""--sql
+        SELECT
+            year,
+            name,
+            geoid,
+            county_fips,
+            county,
+            Population,
+            Pct_Population_Change,
+            geo_type
+        FROM (
+            SELECT
+                *,
+                ROUND(
+                    (
+                        CAST(Population AS DOUBLE)
+                        / NULLIF(
+                            LAG(CAST(Population AS DOUBLE)) OVER (
+                                PARTITION BY geoid ORDER BY year
+                            ),
+                            0
+                        )
+                        - 1
+                    ) * 100,
+                    1
+                ) AS Pct_Population_Change
+            FROM lake.CLEANED.{POPULATION_TABLE}
+        )
+        WHERE Pct_Population_Change IS NOT NULL
         """
-    )
 
 
 def main(con: duckdb.DuckDBPyConnection):
-    clean_df = clean(con)
-    add_to_lake(con, clean_df)
-
-
-if __name__ == "__main__":
-    main()
+    write_table(con, POPULATION_TABLE, population_sql(con))
+    write_table(con, PCT_CHANGE_TABLE, pct_change_sql())

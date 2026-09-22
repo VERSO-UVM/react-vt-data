@@ -16,8 +16,9 @@ import xycmap
 from matplotlib import pyplot as plt
 
 from api.models import FilterSource
-from app_utils.sql_render import compile_where, sql_filter_block
+from query.core_functions import to_export_geo
 from query.production_db import get_db
+from query.sql_render import compile_where, sql_filter_block
 
 DB = get_db()
 
@@ -56,10 +57,10 @@ def single_var_geojson(sources: list[FilterSource]):
 
 
 def widen_dual_var(df, measures):
-    cols = ["locationid", "geometry", "data_value", "bin", "natl_pct", "CountyName"]
+    cols = ["geoid", "geometry", "data_value", "bin", "natl_pct", "county"]
     m1 = df[df.measure == measures[0]][[c for c in cols if c in df.columns]]
-    m2 = df[df.measure == measures[1]][["locationid", "data_value", "bin"]]
-    wide = m1.merge(m2, on="locationid", suffixes=("_1", "_2"))
+    m2 = df[df.measure == measures[1]][["geoid", "data_value", "bin"]]
+    wide = m1.merge(m2, on="geoid", suffixes=("_1", "_2"))
     return wide
 
 
@@ -82,7 +83,7 @@ def to_rgba(r, cmap):
 def _measure_cutpoints(measures: list[str]) -> tuple[list[float], list[float]]:
     """Bin edges for each measure from the precomputed cdc_edges table."""
     params: list = []
-    where_string = compile_where({"Measure": measures}, params)
+    where_string = compile_where({"measure": measures}, params)
     sql = f"SELECT * FROM cdc_edges_county {where_string}"
     edges = DB.execute(sql, params).df()
     edges_x = (
@@ -102,14 +103,14 @@ def dual_var_comparison(
     Returns (geojson, legend). Both are derived from the SAME cmap in one pass,
     so the legend grid always matches the map's fill colors.
     """
-    measures = [m for source in sources for m in source.filters.get("Measure", [])]
+    measures = [m for source in sources for m in source.filters.get("measure", [])]
     if len(measures) != 2:
         raise ValueError(f"expected exactly 2 measures, got: {measures}")
 
     # Both measures ride in one merged FilterSource so the shared places.sql
     # template serves the single- and dual-variable cases alike.
     table = "cdc_places_county" if geoLevel == "county_places" else "cdc_places_tract"
-    merged = FilterSource(filter_table=table, filters={"Measure": measures})
+    merged = FilterSource(filter_table=table, filters={"measure": measures})
     sql_path = sql_dir / f"{geoLevel}.sql"
 
     sql, params = sql_filter_block(sql_path, [merged])
@@ -123,14 +124,13 @@ def dual_var_comparison(
         color = to_rgba({"bin_1": r.bin_1, "bin_2": r.bin_2}, cmap)
         tooltip = {
             "__title__": "Variable Comparison",
-            # "County": r.CountyName,
             f"{measures[0]}": r.data_value_1,
             f"{measures[1]}": r.data_value_2,
             "National Percentage": r.natl_pct,
         }
         ## add in County Name if we're in county space.
-        if "CountyName" in df.columns:
-            tooltip["County"] = r.CountyName
+        if "county" in df.columns:
+            tooltip["County"] = r.county
         features.append(
             {
                 "type": "Feature",
@@ -161,7 +161,7 @@ def get_cdc_places_tidy(sources: list[FilterSource]) -> pd.DataFrame:
     for source in sources:
         source.filters = {
             **source.filters,
-            "Data_Value_Type": ["Age-adjusted prevalence"],
+            "data_value_type": ["Age-adjusted prevalence"],
         }
 
     sql, params = sql_filter_block(sql_dir / "places_tidy.sql", sources)
@@ -180,10 +180,10 @@ def get_cdc_county_pca():
         SELECT
             i.LocationID,
             ROUND(i.pca_score, 2) AS "Health Burden",
-            c.CountyName
+            c.county AS CountyName
         FROM cdc_pca_county AS i
         LEFT JOIN vt_county_lines_geom AS c
-            ON i.LocationID = c.CountyFIPS
+            ON i.LocationID = c.geoid
         """
     ).df()
 
@@ -193,12 +193,7 @@ def get_cdc_county_pca():
     return df[["CountyName", "Health Burden"]].to_dict(orient="records")
 
 
-def get_cdc_export_table(table: str, county_col: str) -> pd.DataFrame:
-    """Load a full CDC PLACES table for CSV export.
-
-    Renames `county_col` (the table's county-name column) to `County` so it
-    lines up with the county-filter column name used by every other export
-    source.
-    """
-    df = DB.execute(f'SELECT * FROM "{table}"').df()
-    return df.rename(columns={county_col: "County"})
+def get_cdc_export_table(table: str) -> pd.DataFrame:
+    """Load a full CDC PLACES table for CSV export, with the county column
+    named `County` like every other export source."""
+    return to_export_geo(DB.execute(f'SELECT * FROM "{table}"').df())
