@@ -205,7 +205,7 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
                 WHEN ((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) 
                     THEN 'True'
                 ELSE 'False'
-            END AS vacant_land
+            END AS vacant_land,
             --((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) AS vacant_land, --Old code in case doesn't work
             (COALESCE(p.stgl_final, 'VT') <> 'VT') AS out_of_state_owner,
             p.EDITOR AS editor,
