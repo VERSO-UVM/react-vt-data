@@ -200,7 +200,12 @@ def build_parcels_full(con: duckdb.DuckDBPyConnection) -> None:
                 p.CAT IN ('R1', 'R2', 'MHL', 'MHU')
                 AND (p.HSDECL IS NULL OR p.HSDECL = 'N')
             ) AS investment_property,
-            ((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) AS vacant_land,
+            
+            CASE
+                WHEN ((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) 
+                    THEN 'True'
+                ELSE 'False'
+            --((p.LAND_LV > 0) AND (COALESCE(p.IMPRV_LV, 0) = 0)) AS vacant_land, --Old code in case doesn't work
             (COALESCE(p.stgl_final, 'VT') <> 'VT') AS out_of_state_owner,
             p.EDITOR AS editor,
             p.EDITDATE AS edit_date,
