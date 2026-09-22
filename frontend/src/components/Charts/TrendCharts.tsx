@@ -696,6 +696,7 @@ export const HousingIncomeBurdenChart = <TData,>({
     {
       valueField: 'Percent',
       format: 'percent',
+      nameSuffix: false,
       series: [
         {
           key: 'All Households',
@@ -711,7 +712,7 @@ export const HousingIncomeBurdenChart = <TData,>({
         {
           key: 'Owners without a Mortgage',
           matchVariable: 'Owners without a mortgage',
-          color: '#154734',
+          color: '#2f9e44',
         },
       ],
     },
