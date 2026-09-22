@@ -12,4 +12,4 @@ LEFT JOIN (
     FROM vt_county_lines_geom
  ) AS c
     ON p.geoid = c.geoid
-WHERE TRUE
+{{ where_string }}
