@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import {
+  Alert,
   Box,
   Button,
   Container,
@@ -29,7 +30,7 @@ import {
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
 import { DataRow } from '@/types/cachedCharts';
-import { IconDownload } from '@tabler/icons-react';
+import { IconDownload, IconInfoCircle } from '@tabler/icons-react';
 import { exportReport } from '@/utils/exportReport';
 import { DashboardSection, TOPIC_SLUGS, topicPath } from './topics';
 
@@ -69,6 +70,9 @@ interface SectionConfig {
   // no town-level rows) — always filters by location.county, even for a
   // town-type selection, instead of trying (and failing) to filter by town.
   countyOnly?: boolean;
+  // Source name used in the notes shown when the report can't use the
+  // profile's own areas (see geographyNotes).
+  sourceLabel?: string;
 }
 
 const SECTIONS: Record<string, SectionConfig> = {
@@ -150,8 +154,65 @@ const SECTIONS: Record<string, SectionConfig> = {
     locationFilterKey: 'County',
     countyOnly: true,
     hasYearDimension: false,
+    sourceLabel: 'CDC PLACES',
   },
 };
+
+// A profile saved as "Town" before a town was picked (the profile form now
+// requires one) has no town and the placeholder name "Unknown". Show its
+// county instead, so every section can filter and label it, and say so.
+function resolveLocation(l: Location): { location: Location; note?: string } {
+  if (l.type !== 'town' || l.town || !l.county) return { location: l };
+  return {
+    location: {
+      ...l,
+      type: 'county',
+      town: null,
+      name: `${l.county} County, Vermont`,
+    },
+    note: `Your profile has Town selected but no town picked, so ${l.county} County is shown instead.`,
+  };
+}
+
+// Plain-language notes for each profile area this section can't show as-is
+// (e.g. a town shown with its county's numbers), so the substitution is
+// visible at the top of the report rather than only in chart footnotes.
+function geographyNotes(
+  cfg: SectionConfig,
+  primary: Location,
+  comparison: Location,
+): string[] {
+  if (!cfg.countyOnly) return [];
+  const source = cfg.sourceLabel ?? 'This data';
+  const noteFor = (l: Location) => {
+    switch (l.type) {
+      case 'county':
+        return null;
+      case 'town':
+        return l.county
+          ? `${source} doesn't publish town-level estimates, so ${l.town ?? l.name} shows ${l.county} County's numbers.`
+          : `${source} doesn't publish town-level estimates for ${l.name}.`;
+      case 'state':
+        return `${source} doesn't publish a statewide figure, so Vermont shows the average of its county estimates, weighted by adult population.`;
+      default:
+        return `${source} has no estimates for ${l.name}, so it has no data on this page.`;
+    }
+  };
+  const notes = [noteFor(primary), noteFor(comparison)];
+  const countyOf = (l: Location) =>
+    l.type === 'town' || l.type === 'county' ? l.county : null;
+  const shared = countyOf(primary);
+  if (
+    shared &&
+    shared === countyOf(comparison) &&
+    primary.name !== comparison.name
+  ) {
+    notes.push(
+      `Both areas use ${shared} County's numbers, so their values are the same.`,
+    );
+  }
+  return Array.from(new Set(notes.filter((n): n is string => !!n)));
+}
 
 // county_town_names.json (the profile's town picker) stores Census-style
 // subdivision names — e.g. location.town is "Burlington city" or "Addison
@@ -427,7 +488,22 @@ export default function ReportsByTopic({
 }: {
   section: DashboardSection;
 }) {
-  const { myLocation, comparison, yearMax: profileYearMax } = useProfile();
+  const {
+    myLocation: profileLocation,
+    comparison: profileComparison,
+    yearMax: profileYearMax,
+  } = useProfile();
+  // Everything below uses the resolved areas (see resolveLocation).
+  const primaryPick = useMemo(
+    () => resolveLocation(profileLocation),
+    [profileLocation],
+  );
+  const comparisonPick = useMemo(
+    () => resolveLocation(profileComparison),
+    [profileComparison],
+  );
+  const myLocation = primaryPick.location;
+  const comparison = comparisonPick.location;
   const router = useRouter();
   const setSection = (value: string) => {
     if (!(value in TOPIC_SLUGS) || value === section) return;
@@ -614,6 +690,14 @@ export default function ReportsByTopic({
   };
 
   const Dashboard = dashboards[section];
+  const areaNotes = Array.from(
+    new Set([
+      ...[primaryPick.note, comparisonPick.note].filter(
+        (n): n is string => !!n,
+      ),
+      ...geographyNotes(SECTIONS[section], myLocation, comparison),
+    ]),
+  );
 
   const handleExportPdf = async () => {
     setIsExporting(true);
@@ -645,6 +729,24 @@ export default function ReportsByTopic({
       />
       <Container size="xl" mb="xl" mt="xl">
         {error && <Text c="red">{error}</Text>}
+        {areaNotes.length > 0 && (
+          <Alert
+            color="orange"
+            variant="light"
+            radius="md"
+            mb="lg"
+            icon={<IconInfoCircle />}
+            title="Some areas differ from your profile"
+          >
+            <Stack gap={4}>
+              {areaNotes.map((note) => (
+                <Text size="sm" key={note}>
+                  {note}
+                </Text>
+              ))}
+            </Stack>
+          </Alert>
+        )}
         {loading ? (
           <Paper radius="lg" p={60} withBorder>
             <Stack align="center">
