@@ -71,15 +71,16 @@ def filter_options(
         rows = db.execute(f'SELECT DISTINCT "{col}" FROM {table} ORDER BY 1').fetchall()
         values = [r[0] for r in rows if r[0] is not None]
         order = CUSTOM_OPTION_ORDER.get(col)
-    if order:
-        unranked_values = [v for v in values if v not in order]
-        if unranked_values:
-            logger.warning(
-                "Values missing from CUSTOM_OPTION_ORDER[%r]: %s", col, unranked_values
-            )
-        ranked_values = [v for v in order if v in values] + unranked_values
-
-        options[label] = ranked_values
+        if order:
+            unranked_values = [v for v in values if v not in order]
+            if unranked_values:
+                logger.warning(
+                    "Values missing from CUSTOM_OPTION_ORDER[%r]: %s",
+                    col,
+                    unranked_values,
+                )
+            values = [v for v in order if v in values] + unranked_values
+        options[label] = values
     return FilterResponse(labels=labels, options=options)
 
 
@@ -96,7 +97,11 @@ def filter_ranges(rangemap: dict, table: str, db=DB) -> FilterResponse:
 
 
 def filter_tree(
-    colmap: dict, tree_labels: list[str], table: str, db=DB, rangemap: dict = {} | None
+    colmap: dict,
+    tree_labels: list[str],
+    table: str,
+    db=DB,
+    rangemap: dict | None = None,
 ) -> FilterResponse:
     """
     Info for cascading filter UI.
