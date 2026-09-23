@@ -2,6 +2,7 @@
 
 import base64
 import json
+from pathlib import Path
 
 import duckdb
 import pytest
@@ -506,7 +507,8 @@ def test_provenance_identifies_the_current_served_pipeline_without_guessing_code
     assert home["source_columns"]["median_home_value"]["census_codes"] == [
         "B25077_001E"
     ]
-    assert "older build/acs5.py" in home["source_code_note"]
+    assert "backend/data_cleaning/clean_acs5_timeseries.py" in home["transformations"]
+    assert "retired build/acs5.py" in home["source_code_note"]
     assert "not a certificate" in home["source_code_note"]
     burden = provenance_metadata(get_dataset("acs5_ts_income_burden"))
     assert burden["source_columns"]["Value"]["census_codes"] == []
@@ -514,6 +516,21 @@ def test_provenance_identifies_the_current_served_pipeline_without_guessing_code
     assert set(burden["source_columns"]) == {"Value", "Total", "Percent"}
     assert "Percent Estimate" in burden["source_code_note"]
     assert "backend/data_cleaning/clean_acs5_timeseries.py" in burden["transformations"]
+
+
+@pytest.mark.parametrize("dataset_id", sorted(DATASETS))
+def test_provenance_references_files_that_exist(dataset_id):
+    # Lineage paths are hand-maintained; a renamed or consolidated cleaner
+    # would otherwise leave the MCP pointing at code that no longer exists.
+    repo_root = Path(__file__).resolve().parents[2]
+    lineage = provenance_metadata(get_dataset(dataset_id))
+    paths = list(lineage["transformations"]) + [
+        col["code_reference"]
+        for col in lineage["source_columns"].values()
+        if "code_reference" in col
+    ]
+    missing = [p for p in paths if not (repo_root / p).is_file()]
+    assert not missing, f"{dataset_id} lineage references missing files: {missing}"
 
 
 def test_percent_total_units_are_conservative_but_true_percent_brackets_survive():

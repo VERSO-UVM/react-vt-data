@@ -82,6 +82,15 @@ def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
         """
     ).df()
 
+    # Source text carries stray outer whitespace (nearly every Municipal_Name
+    # ends in a space). Strip it here so every table built from zoning_raw --
+    # wide and rules, not just info -- agrees on exact text filters. Only str
+    # values are touched, so geometry bytes pass through unchanged.
+    str_cols = raw_df.select_dtypes(include=["object", "str"]).columns
+    raw_df[str_cols] = raw_df[str_cols].apply(
+        lambda c: c.map(lambda v: v.strip() if isinstance(v, str) else v)
+    )
+
     con.register("zoning_raw", raw_df)
 
     return raw_df
