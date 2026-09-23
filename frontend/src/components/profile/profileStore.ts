@@ -58,6 +58,26 @@ export const useProfile = create<ProfileStore>()(
       openProfileModal: () => set({ profileModalOpen: true }),
       closeProfileModal: () => set({ profileModalOpen: false }),
     }),
-    { name: 'location-storage' },
+    {
+      name: 'location-storage',
+      // Only the preferences. Whether the dialog is open is UI state;
+      // persisting it reopened the dialog on every reload after it was left
+      // open.
+      partialize: ({
+        myLocation,
+        comparison,
+        interests,
+        yearMin,
+        yearMax,
+        profileSet,
+      }) => ({
+        myLocation,
+        comparison,
+        interests,
+        yearMin,
+        yearMax,
+        profileSet,
+      }),
+    },
   ),
 );

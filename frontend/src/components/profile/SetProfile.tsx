@@ -43,6 +43,15 @@ const getName = (
   return 'Unknown';
 };
 
+// A county or town area isn't usable until its county (and town) is picked;
+// saving it early stored the placeholder name "Unknown".
+const isComplete = (l: Location) =>
+  l.type === 'town'
+    ? !!(l.county && l.town)
+    : l.type === 'county'
+      ? !!l.county
+      : true;
+
 interface ProfileLocationSelectProps {
   title: string;
   location: Location;
@@ -157,6 +166,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         <Select
           label="Pick a county"
           value={location.county || ''}
+          error={!location.county ? 'Pick a county' : undefined}
           radius="md"
           onChange={(value) =>
             value &&
@@ -175,6 +185,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         <Select
           label="Pick a town"
           value={location.town || ''}
+          error={!location.town ? 'Pick a town' : undefined}
           radius="md"
           onChange={(value) =>
             value &&
@@ -239,8 +250,11 @@ export const ProfileModal: React.FC = () => {
   }, []);
 
   // Open automatically once hydrated if the user hasn't saved a profile yet.
+  // Read the live store: during the first client render useProfile() still
+  // returns the server snapshot (profileSet: false), which reopened the
+  // dialog on every load even for users with a saved profile.
   useEffect(() => {
-    if (hydrated && !profileSet) openProfileModal();
+    if (hydrated && !useProfile.getState().profileSet) openProfileModal();
   }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
@@ -251,14 +265,22 @@ export const ProfileModal: React.FC = () => {
     yearMax,
   ]);
 
-  const handleOpen = () => {
-    // Sync temp state from store each time the modal opens
-    setTempMyLocation(myLocation);
-    setTempComparison(comparison);
-    setTempInterests(interests);
-    setTempYearRange([yearMin, yearMax]);
-    openProfileModal();
-  };
+  // Copy the saved profile into the form each time the dialog opens, however
+  // it was opened (this button, a page's own profile button, or the
+  // first-visit auto-open), so it never shows stale or pre-hydration values
+  // that Save would then write over the real profile.
+  const [formOpen, setFormOpen] = useState(opened);
+  if (opened !== formOpen) {
+    setFormOpen(opened);
+    if (opened) {
+      setTempMyLocation(myLocation);
+      setTempComparison(comparison);
+      setTempInterests(interests);
+      setTempYearRange([yearMin, yearMax]);
+    }
+  }
+
+  const handleOpen = () => openProfileModal();
 
   const handleSave = () => {
     setLocation(tempMyLocation);
@@ -474,6 +496,9 @@ export const ProfileModal: React.FC = () => {
                 size="md"
                 color={COLORS.spruce}
                 onClick={handleSave}
+                disabled={
+                  !isComplete(tempMyLocation) || !isComplete(tempComparison)
+                }
                 style={{
                   fontFamily: FONTS.body,
                   fontWeight: 600,
