@@ -5,6 +5,7 @@ Only tests judge compatibility; collecting the snapshot never rejects drift.
 """
 
 import copy
+import dataclasses
 import json
 import re
 from pathlib import Path
@@ -13,7 +14,7 @@ import duckdb
 import pytest
 
 import run_data_loading
-from data_tools.catalog import get_dataset
+from data_tools.catalog import DATASETS, get_dataset
 from warehouse_schema import snapshot_schema, write_schema_snapshot
 
 SNAPSHOT_PATH = Path(__file__).resolve().parents[1] / "Data" / "warehouse.schema.json"
@@ -22,24 +23,69 @@ NUMERIC_TYPE = re.compile(
     r"DECIMAL\(\d+,\s*\d+\))"
 )
 
+# Known, deliberate gaps between the catalog and the warehouse. Anything not
+# listed here must match exactly; test_contract_exceptions_still_apply keeps
+# this list from going stale.
+TEXT_MEASURES = {
+    # DP profile values mix numbers, Census sentinels, and '(X)'.
+    ("acs5_dp", "value"),
+    # Stored as text by the wastewater cleaner.
+    ("wastewater_treatment_facilities", "design_hydraulic_capacity_mgd"),
+    # Text since the ETL standardization (#97): clean_cdc converts only
+    # data_value to a number. These were DOUBLE before.
+    ("cdc_places_county", "low_confidence_limit"),
+    ("cdc_places_county", "high_confidence_limit"),
+    ("cdc_places_tract", "low_confidence_limit"),
+    ("cdc_places_tract", "high_confidence_limit"),
+}
+UNEXPOSED_COLUMNS = {
+    # Population counts stored as text, and map geometry.
+    "cdc_places_county": {"geometry", "total_pop_18plus", "total_population"},
+    "cdc_places_tract": {"geometry", "total_pop_18plus", "total_population"},
+    # Map-only geometry and display color.
+    "flood_hazard": {"geometry", "rgba_color"},
+}
 
-def _zoning_contract_errors(snapshot):
-    dataset = get_dataset("zoning_bylaws")
+
+def _declared_columns(dataset):
+    identity = (
+        dataset.year_column,
+        dataset.name_column,
+        dataset.geo_type_column,
+        dataset.id_column,
+    )
+    return (
+        set(dataset.filter_columns)
+        | set(dataset.value_columns)
+        | set(dataset.variable_columns)
+        | {column for column in identity if column}
+    )
+
+
+def _contract_errors(dataset, snapshot):
+    """Differences between a catalog dataset and its built warehouse table."""
     columns = snapshot["tables"].get(dataset.table)
     if columns is None:
         return [f"Missing table: {dataset.table}"]
-    expected = set(dataset.filter_columns) | set(dataset.value_columns)
+    expected = _declared_columns(dataset)
     errors = []
     if missing := expected - columns.keys():
         errors.append(f"Missing catalog fields: {', '.join(sorted(missing))}")
-    if added := columns.keys() - expected:
+    added = columns.keys() - expected - UNEXPOSED_COLUMNS.get(dataset.id, set())
+    if added:
         errors.append(f"Unmapped warehouse fields: {', '.join(sorted(added))}")
     for name in sorted(dataset.value_columns.keys() & columns.keys()):
+        if (dataset.id, name) in TEXT_MEASURES:
+            continue
         if not NUMERIC_TYPE.fullmatch(columns[name]):
             errors.append(
                 f"Numeric measure {name} has incompatible type {columns[name]}"
             )
     return errors
+
+
+def _zoning_contract_errors(snapshot):
+    return _contract_errors(get_dataset("zoning_bylaws"), snapshot)
 
 
 @pytest.fixture
@@ -76,6 +122,81 @@ def test_contract_detects_source_schema_changes(built_schema, change):
     errors = _zoning_contract_errors(changed)
     assert errors
     assert "prd_" in " ".join(errors) or "Missing table" in errors[0]
+
+
+@pytest.mark.parametrize("dataset_id", sorted(DATASETS))
+def test_catalog_dataset_matches_built_warehouse_schema(built_schema, dataset_id):
+    errors = _contract_errors(DATASETS[dataset_id], built_schema)
+    assert not errors, (
+        f"Built warehouse and MCP catalog disagree for {dataset_id}:\n"
+        + "\n".join(errors)
+        + "\nUpdate the catalog (data_tools/catalog.py) or the cleaner so they "
+        "match, then rebuild and commit Data/warehouse.schema.json. Do not "
+        "hand-edit the snapshot to hide a mismatch."
+    )
+
+
+def test_contract_exceptions_still_apply(built_schema):
+    tables = built_schema["tables"]
+    for dataset_id, column in TEXT_MEASURES:
+        dataset = DATASETS[dataset_id]
+        column_type = tables[dataset.table][column]
+        assert column in dataset.value_columns
+        assert not NUMERIC_TYPE.fullmatch(column_type), (
+            f"{dataset_id}.{column} is now {column_type}; remove it from TEXT_MEASURES"
+        )
+    for dataset_id, unexposed in UNEXPOSED_COLUMNS.items():
+        dataset = DATASETS[dataset_id]
+        stale = unexposed - (tables[dataset.table].keys() - _declared_columns(dataset))
+        assert not stale, (
+            f"{dataset_id} no longer has unexposed {sorted(stale)}; "
+            "remove them from UNEXPOSED_COLUMNS"
+        )
+
+
+# The housing cost burden table changed from one wide measure to a tidy table
+# by tenure (#127). Either half of that change landing alone must fail.
+OLD_BURDEN_COLUMNS = {
+    "county_fips": "VARCHAR",
+    "geo_type": "VARCHAR",
+    "geoid": "VARCHAR",
+    "name": "VARCHAR",
+    "pct_housing_burden": "DOUBLE",
+    "year": "BIGINT",
+}
+NEW_BURDEN_MEASURES = {"Percent", "Total", "Value", "Variable"}
+
+
+def _error_columns(errors, prefix):
+    """Column names listed in the error that starts with `prefix`."""
+    for error in errors:
+        if error.startswith(prefix):
+            return set(error.removeprefix(prefix).split(", "))
+    return set()
+
+
+def test_contract_catches_catalog_not_updated_for_new_table(built_schema):
+    stale_catalog = dataclasses.replace(
+        get_dataset("acs5_ts_income_burden"),
+        kind="wide",
+        variable_columns=(),
+        value_columns={"pct_housing_burden": "percent"},
+        filter_columns=("year", "name", "geo_type"),
+    )
+    errors = _contract_errors(stale_catalog, built_schema)
+
+    assert _error_columns(errors, "Missing catalog fields: ") == {"pct_housing_burden"}
+    assert NEW_BURDEN_MEASURES <= _error_columns(errors, "Unmapped warehouse fields: ")
+
+
+def test_contract_catches_table_not_rebuilt_for_new_catalog(built_schema):
+    stale_schema = copy.deepcopy(built_schema)
+    table = get_dataset("acs5_ts_income_burden").table
+    stale_schema["tables"][table] = dict(OLD_BURDEN_COLUMNS)
+    errors = _contract_errors(get_dataset("acs5_ts_income_burden"), stale_schema)
+
+    assert _error_columns(errors, "Missing catalog fields: ") == NEW_BURDEN_MEASURES
+    assert "pct_housing_burden" in _error_columns(errors, "Unmapped warehouse fields: ")
 
 
 def test_snapshot_is_metadata_only_and_ignores_attached_databases(tmp_path):

@@ -35,10 +35,21 @@ from data_cleaning.geo_lookup import (
 # Raw identifier columns every base query must expose (see `acs_geo_sql`)
 KEYS = "year, NAME, geo_type, state, county"
 
-# For filtering the housing cost burden table
-MORTGAGE_SUBCATEGORY = (
-    "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)"
-)
+# Housing cost burden: DP04 subcategory -> tenure label in the Variable column
+BURDEN_FIRST_YEAR = 2013
+BURDEN_TENURES = {
+    "Occupied units paying rent (excluding units where GRAPI cannot be computed)": (
+        "Renters"
+    ),
+    "Housing units with a mortgage (excluding units where SMOCAPI cannot be computed)": (
+        "Owners with a mortgage"
+    ),
+    "Housing unit without a mortgage (excluding units where SMOCAPI cannot be computed)": (
+        "Owners without a mortgage"
+    ),
+}
+BURDEN_ALL_HOUSEHOLDS = "All households"
+BURDEN_BRACKETS = ["30.0 to 34.9 percent", "35.0 percent or more"]
 
 
 # A TimeSeries data class for
@@ -199,6 +210,109 @@ def age_dependency_ratio_sql() -> str:
         """
 
 
+def housing_cost_burden_sql(source: str = "lake.RAW.acs5_housing") -> str:
+    """
+    Share of households spending 30% or more of income on housing, by tenure.
+
+    Renters come from GRAPI and both owner groups from SMOCAPI (DP04). For each
+    tenure, the 30.0-34.9% and 35.0%+ household counts (Measure = 'Estimate')
+    are summed and divided by the tenure's Total (households where the
+    percentage can be computed). Counts are used rather than the published
+    percentages because their labels are stable across years (percentages are
+    'Percent Estimate' in 2017-2018) and because they can be summed into an
+    "All households" row.
+
+    Every negative Census sentinel and any non-numeric value is NULL before
+    summing, so two missing brackets never add up to a value. A tenure row is
+    NULL unless both brackets and the Total are present exactly once; "All
+    households" is NULL unless all three tenures are complete. Percent is NULL
+    when the universe is 0 (no households of that tenure).
+
+    Starts in 2013: earlier DP04 layouts differ, and 2010-2012 do not separate
+    owners with and without a mortgage.
+
+    Args:
+        source: Raw DP04 table (overridable for tests).
+
+    Returns:
+        str: SELECT of KEYS, Variable, Value (burdened households),
+            Total (universe), and Percent.
+    """
+    tenure_cases = "\n".join(
+        f"WHEN '{subcategory}' THEN '{label}'"
+        for subcategory, label in BURDEN_TENURES.items()
+    )
+    return f"""--sql
+        WITH src AS (
+            SELECT
+                {KEYS},
+                CASE Subcategory {tenure_cases} END AS tenure,
+                Variable,
+                CASE
+                    WHEN TRY_CAST(Value AS DOUBLE) >= 0
+                        THEN TRY_CAST(Value AS DOUBLE)
+                END AS v
+            FROM {source}
+            WHERE year >= {BURDEN_FIRST_YEAR}
+                AND Measure = 'Estimate'
+                AND Subcategory IN ({in_list(list(BURDEN_TENURES))})
+                AND Variable IN ({in_list(BURDEN_BRACKETS)}, 'Total')
+        ),
+
+        by_tenure AS (
+            SELECT
+                {KEYS},
+                tenure,
+                SUM(v) FILTER (WHERE Variable <> 'Total') AS burdened,
+                COUNT(v) FILTER (WHERE Variable <> 'Total') AS n_brackets,
+                COUNT(*) FILTER (WHERE Variable <> 'Total') AS n_bracket_rows,
+                MAX(v) FILTER (WHERE Variable = 'Total') AS total,
+                COUNT(v) FILTER (WHERE Variable = 'Total') AS n_totals,
+                COUNT(*) FILTER (WHERE Variable = 'Total') AS n_total_rows
+            FROM src
+            GROUP BY {KEYS}, tenure
+        ),
+
+        tenure_rows AS (
+            SELECT
+                {KEYS},
+                tenure AS Variable,
+                CASE
+                    WHEN n_brackets = 2 AND n_bracket_rows = 2 THEN burdened
+                END AS "Value",
+                CASE WHEN n_totals = 1 AND n_total_rows = 1 THEN total END AS Total
+            FROM by_tenure
+        ),
+
+        all_rows AS (
+            SELECT
+                {KEYS},
+                '{BURDEN_ALL_HOUSEHOLDS}' AS Variable,
+                CASE WHEN COUNT("Value") = 3 THEN SUM("Value") END AS "Value",
+                CASE WHEN COUNT(Total) = 3 THEN SUM(Total) END AS Total
+            FROM tenure_rows
+            GROUP BY {KEYS}
+        ),
+
+        combined AS (
+            SELECT * FROM tenure_rows
+            UNION ALL
+            SELECT * FROM all_rows
+        )
+
+        SELECT
+            {KEYS},
+            Variable,
+            "Value",
+            Total,
+            CASE
+                WHEN "Value" IS NOT NULL AND Total > 0
+                    THEN ROUND(100 * "Value" / Total, 1)
+            END AS Percent
+        FROM combined
+        """
+
+
 # Define a dictionary of defined TimeSeries objects
 CONFIGS: dict[str, TimeSeries] = {
     # Median age
@@ -293,23 +407,11 @@ CONFIGS: dict[str, TimeSeries] = {
         columns=("Variable", "Value"),
         with_county=False,
     ),
-    # Housing Cost Burden (>30% of income on housing)
+    # Housing Cost Burden (30%+ of income on housing), by tenure
     "housing_cost_burden": TimeSeries(
         table="acs5Housing_incomeBurden_timeseries",
-        base=f"""--sql
-            SELECT
-                {KEYS},
-                NULLIF(SUM(TRY_CAST(Value AS DOUBLE)), {UNAVAILABLE})
-                    AS pct_housing_burden
-            FROM lake.RAW.acs5_housing
-            WHERE Category LIKE
-                    '%SELECTED MONTHLY OWNER COSTS AS A PERCENTAGE OF HOUSEHOLD INCOME%'
-                AND Subcategory = '{MORTGAGE_SUBCATEGORY}'
-                AND Variable IN ('30.0 to 34.9 percent', '35.0 percent or more')
-                AND Measure = 'Percent'
-            GROUP BY {KEYS}
-            """,
-        columns=("pct_housing_burden",),
+        base=housing_cost_burden_sql(),
+        columns=("Variable", "Value", "Total", "Percent"),
         with_county=False,
     ),
 }

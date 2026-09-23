@@ -406,11 +406,9 @@ export const MultiSeriesTrendChart = <TData,>({
               <Line
                 key={`${s.key}-cmp`}
                 dataKey={`${s.key} (cmp)`}
-                name={
-                  nameSuffix
-                    ? `${s.key} (${labels?.[1] ?? 'Comparison'})`
-                    : undefined
-                }
+                // Always named: without one the tooltip falls back to the
+                // internal "(cmp)" dataKey. legendType="none" hides it from the legend.
+                name={`${s.key} (${labels?.[1] ?? 'Comparison'})`}
                 stroke={s.color}
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
@@ -691,15 +689,30 @@ export const HousingIncomeBurdenChart = <TData,>({
   view?: 'gallery' | 'report';
   onPlotData?: (rows: DataRow[]) => void;
 }) =>
-  single(
+  multi(
     chart,
     {
-      seriesKey: null,
-      valueField: 'pct_housing_burden',
-      displayName: 'Cost-Burdened Owners with a Mortgage (%)',
+      valueField: 'Percent',
       format: 'percent',
-      decimals: 1,
-      showHelperText: false,
+      nameSuffix: false,
+      series: [
+        {
+          key: 'All Households',
+          matchVariable: 'All households',
+          color: '#222222',
+        },
+        { key: 'Renters', color: '#d62828' },
+        {
+          key: 'Owners with a Mortgage',
+          matchVariable: 'Owners with a mortgage',
+          color: '#1c7ed6',
+        },
+        {
+          key: 'Owners without a Mortgage',
+          matchVariable: 'Owners without a mortgage',
+          color: '#2f9e44',
+        },
+      ],
     },
     view,
     onPlotData,
