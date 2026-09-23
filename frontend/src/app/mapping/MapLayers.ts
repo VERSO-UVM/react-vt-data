@@ -11,7 +11,6 @@ import {
   flood_filtering,
   soil_suitability_filtering,
   zoning_filtering,
-  // ambulance_filtering, // ambulance layer disabled for now, see MAP_LAYERS below
   parcels_filtering,
 } from '@/components/FilterRedux/filterDefs';
 
@@ -112,17 +111,6 @@ export const MAP_LAYERS: MapLayerConfig[] = [
       label: 'Jurisdiction',
     },
   },
-  // Ambulance service areas disabled for now.
-  // {
-  //   id: 'ambulance',
-  //   title: 'Ambulance Service Areas',
-  //   dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
-  //   method: 'POST',
-  //   filterList: ambulance_filtering,
-  //   legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
-  //   responseShape: 'direct',
-  //   color: '#fd7e14',
-  // },
   {
     id: 'parcels',
     title: 'Parcels',
