@@ -18,10 +18,12 @@ import { COLORS } from '@/app/theme';
 import { FILTER_GLOSSARY } from './glossary';
 
 /** A term's display text, with an (i) tooltip appended when a plain-language
- *  definition exists for it in FILTER_GLOSSARY. Clicks on the icon are
- *  swallowed so they don't toggle the checkbox/accordion item it sits in. */
-function TermLabel({ text }: { text: string }) {
-  const definition = FILTER_GLOSSARY[text];
+ *  definition exists for it in this table's FILTER_GLOSSARY entry. Clicks and
+ *  Enter/Space on the icon are swallowed so they don't toggle the checkbox/
+ *  accordion item it sits in. It's a focusable span, not a button, because it
+ *  sits inside the accordion's button and the checkbox's label. */
+function TermLabel({ text, table }: { text: string; table: string }) {
+  const definition = FILTER_GLOSSARY[table]?.[text];
   if (!definition) return <>{text}</>;
 
   return (
@@ -39,9 +41,17 @@ function TermLabel({ text }: { text: string }) {
           variant="transparent"
           size="xs"
           c="gray"
+          tabIndex={0}
+          aria-label={`What does "${text}" mean?`}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+            }
           }}
         >
           <IconInfoCircle size={14} />
@@ -126,7 +136,7 @@ export function CheckboxFilter(params: apiFilterParams) {
             <Accordion.Control>
               <Group justify="space-between" wrap="nowrap" pr="xs">
                 <Text size="md" fw={600} c="gray.8" truncate>
-                  <TermLabel text={label} />
+                  <TermLabel text={label} table={spec.filter_table} />
                 </Text>
 
                 <Text size="sm" c={noneSelected ? 'red.6' : 'gray.5'} fw={500}>
@@ -187,7 +197,7 @@ export function CheckboxFilter(params: apiFilterParams) {
                   {options.map((opt) => (
                     <Checkbox
                       key={opt}
-                      label={<TermLabel text={opt} />}
+                      label={<TermLabel text={opt} table={spec.filter_table} />}
                       checked={current.includes(opt)}
                       color={COLORS.spruce}
                       onChange={() => {
