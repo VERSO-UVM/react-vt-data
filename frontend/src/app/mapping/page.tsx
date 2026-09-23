@@ -40,6 +40,7 @@ import { area } from '@turf/area';
 
 import VTMap from '@/components/mapping';
 import LayerPanel from './LayerPanel';
+import type { LayerStats } from './UseMapLayer';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
 import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
 import { jurisdictionCandidates } from './jurisdictionMatch';
@@ -107,11 +108,8 @@ function MapExplorerContent() {
   const [layerData, setLayerData] = useState<
     Record<string, FeatureCollection | null>
   >({});
-  // Zoning's unfiltered baseline (everything the selected town has, ignoring
-  // active checkbox/range filters) — denominator for the "% of this town's
-  // zoned area matches your filters" report stat.
-  const [zoningBaseline, setZoningBaseline] =
-    useState<FeatureCollection | null>(null);
+  // Zoning's server-computed area stats — see LayerStats.
+  const [zoningStats, setZoningStats] = useState<LayerStats | null>(null);
   const [presetFilters, setPresetFilters] = useState<
     Record<string, FilterSpec[]>
   >({});
@@ -236,7 +234,7 @@ function MapExplorerContent() {
         // while the rescoped fetch is in flight.
         setSelectedTown(match);
         setLayerData({});
-        setZoningBaseline(null);
+        setZoningStats(null);
         setScopeVersion((v) => v + 1);
       }
     },
@@ -263,7 +261,7 @@ function MapExplorerContent() {
     });
     if (!active) {
       setLayerData((prev) => ({ ...prev, [id]: null }));
-      if (id === 'zoning') setZoningBaseline(null);
+      if (id === 'zoning') setZoningStats(null);
     }
     // Manual toggling breaks out of "preset" mode so the picker no longer
     // shows a preset as selected.
@@ -280,7 +278,7 @@ function MapExplorerContent() {
   const handlePresetClear = useCallback(() => {
     setActiveLayers(new Set());
     setLayerData({});
-    setZoningBaseline(null);
+    setZoningStats(null);
     setPresetFilters({});
     setActivePresetId(null);
   }, []);
@@ -302,9 +300,9 @@ function MapExplorerContent() {
     [],
   );
 
-  const handleBaselineChange = useCallback(
-    (id: string, geojson: FeatureCollection | null) => {
-      if (id === 'zoning') setZoningBaseline(geojson);
+  const handleStatsChange = useCallback(
+    (id: string, stats: LayerStats | null) => {
+      if (id === 'zoning') setZoningStats(stats);
     },
     [],
   );
@@ -424,48 +422,6 @@ function MapExplorerContent() {
     });
   }, [layerData, activeLayers]);
 
-  const zoningDistrictComposition = useMemo(() => {
-    const fc = layerData['zoning'];
-    if (!activeLayers.has('zoning') || !fc?.features?.length) return null;
-
-    const acresByDistrict = new Map<string, number>();
-    const colorByDistrict = new Map<string, string>();
-    let totalAcres = 0;
-
-    for (const feature of fc.features) {
-      const district = String(
-        feature.properties?.['District Type'] ?? 'Unknown',
-      );
-      const acres = Number(feature.properties?.Acres) || 0;
-      acresByDistrict.set(
-        district,
-        (acresByDistrict.get(district) ?? 0) + acres,
-      );
-      totalAcres += acres;
-
-      if (!colorByDistrict.has(district)) {
-        const rgba = feature.properties?.rgba_color as number[] | undefined;
-        colorByDistrict.set(
-          district,
-          Array.isArray(rgba) && rgba.length >= 3
-            ? `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`
-            : '#64748b',
-        );
-      }
-    }
-
-    if (totalAcres === 0) return null;
-
-    return Array.from(acresByDistrict.entries())
-      .map(([district, acres]) => ({
-        district,
-        acres,
-        pct: (acres / totalAcres) * 100,
-        color: colorByDistrict.get(district) ?? '#64748b',
-      }))
-      .sort((a, b) => b.acres - a.acres);
-  }, [layerData, activeLayers]);
-
   const treatmentFacilityCapacity = useMemo(() => {
     const fc = layerData['treatment-facilities'];
     if (!activeLayers.has('treatment-facilities') || !fc?.features?.length) {
@@ -490,23 +446,59 @@ function MapExplorerContent() {
     return { totalMgd, reporting, total: fc.features.length };
   }, [layerData, activeLayers]);
 
-  // % of this town's own zoned area (not the county's, see zoningBaseline)
-  // that matches the active filters.
+  // % of this town's zoned area that matches the active filters. Both sides
+  // are server-side unions (see LayerStats), so overlays aren't counted
+  // twice. Stats from a fetch scoped to a previous town are ignored.
   const zoningCoverage = useMemo(() => {
-    if (!activeLayers.has('zoning') || !zoningDistrictComposition) {
+    if (
+      !activeLayers.has('zoning') ||
+      !zoningStats ||
+      zoningStats.scope !== townCandidates ||
+      !townCandidates
+    ) {
       return null;
     }
-    const matchedAcres = zoningDistrictComposition.reduce(
-      (sum, d) => sum + d.acres,
-      0,
-    );
-    const totalAcres = (zoningBaseline?.features ?? []).reduce(
-      (sum, f) => sum + (Number(f.properties?.Acres) || 0),
-      0,
-    );
+    const candidates = new Set(townCandidates);
+    let matchedAcres = 0;
+    let totalAcres = 0;
+    for (const t of zoningStats.towns) {
+      if (!candidates.has(t.town)) continue;
+      matchedAcres += t.matched_acres;
+      totalAcres += t.total_acres;
+    }
     if (totalAcres === 0) return null;
     return { matchedAcres, totalAcres, pct: (matchedAcres / totalAcres) * 100 };
-  }, [activeLayers, zoningDistrictComposition, zoningBaseline]);
+  }, [activeLayers, zoningStats, townCandidates]);
+
+  // Matched area per district type, as a share of the matched zoned area.
+  // Overlays sit on top of base districts, so with overlays present the
+  // shares can add up to more than 100%.
+  const zoningDistrictComposition = useMemo(() => {
+    if (!zoningCoverage || !zoningStats?.districts.length) return null;
+    if (zoningCoverage.matchedAcres === 0) return null;
+
+    const colorByDistrict = new Map<string, string>();
+    for (const feature of layerData['zoning']?.features ?? []) {
+      const district = String(feature.properties?.['District Type']);
+      if (colorByDistrict.has(district)) continue;
+      const rgba = feature.properties?.rgba_color as number[] | undefined;
+      if (Array.isArray(rgba) && rgba.length >= 3) {
+        colorByDistrict.set(
+          district,
+          `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`,
+        );
+      }
+    }
+
+    return zoningStats.districts
+      .map(({ district_type, acres }) => ({
+        district: district_type ?? 'Unknown',
+        acres,
+        pct: (acres / zoningCoverage.matchedAcres) * 100,
+        color: colorByDistrict.get(district_type) ?? '#64748b',
+      }))
+      .sort((a, b) => b.acres - a.acres);
+  }, [zoningCoverage, zoningStats, layerData]);
 
   const serviceAreaSummary = useMemo(() => {
     const fc = layerData['service-areas'];
@@ -776,7 +768,7 @@ function MapExplorerContent() {
                   activeLayers={activeLayers}
                   onToggle={handleToggle}
                   onDataChange={handleDataChange}
-                  onBaselineChange={handleBaselineChange}
+                  onStatsChange={handleStatsChange}
                   presetFilters={presetFilters}
                   lockedLayerIds={lockedLayerIds}
                   townCandidates={townCandidates}
@@ -1053,6 +1045,14 @@ function MapExplorerContent() {
                         </Box>
                       ))}
                     </Stack>
+                    {zoningDistrictComposition.some(
+                      (d) => d.district === 'Overlay',
+                    ) && (
+                      <Text size="xs" c="dimmed" mt={6}>
+                        Overlays sit on top of base districts, so shares can add
+                        up to more than 100%.
+                      </Text>
+                    )}
                   </Paper>
                 )}
 

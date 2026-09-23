@@ -10,7 +10,7 @@ import {
   SegmentedControl,
 } from '@mantine/core';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
-import { useMapLayer } from './UseMapLayer';
+import { useMapLayer, type LayerStats } from './UseMapLayer';
 import { recolorParcels, type ParcelColorMode } from './layerColors';
 import type { MapLayerConfig } from '@/app/mapping/MapLayers';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
@@ -21,10 +21,9 @@ interface LayerRowProps {
   active: boolean;
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
-  /** This layer's most recent *unfiltered* data (everything for the
-   *  selected town, ignoring any checkbox/range filters) — a stable
-   *  denominator for "% of the total matches your filters" report metrics. */
-  onBaselineChange: (id: string, geojson: FeatureCollection | null) => void;
+  /** This layer's server-computed area stats (zoning only), or null when
+   *  the layer is off — feeds the report's coverage/composition cards. */
+  onStatsChange: (id: string, stats: LayerStats | null) => void;
   /** Initial filters to apply for this layer, e.g. from a use-case preset. */
   presetFilters?: FilterSpec[];
   /** Candidate spellings of the selected town's name, merged into every
@@ -48,14 +47,14 @@ export default function LayerRow({
   active,
   onToggle,
   onDataChange,
-  onBaselineChange,
+  onStatsChange,
   presetFilters,
   townCandidates,
   townBBox,
   locked,
   scopeVersion,
 }: LayerRowProps) {
-  const { geojson, unfilteredGeojson, loading, applyFilters } = useMapLayer(
+  const { geojson, stats, loading, applyFilters } = useMapLayer(
     config,
     townCandidates,
     townBBox,
@@ -81,9 +80,9 @@ export default function LayerRow({
   }, [displayGeojson, active]);
 
   useEffect(() => {
-    onBaselineChange(config.id, active ? unfilteredGeojson : null);
+    onStatsChange(config.id, active ? stats : null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unfilteredGeojson, active]);
+  }, [stats, active]);
 
   // (Re)fetch at most once per scopeVersion while active: once on first
   // activation, and again whenever a preset is (re)selected or the town

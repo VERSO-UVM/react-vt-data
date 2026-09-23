@@ -21,6 +21,26 @@ import { applyJurisdictionScope } from './jurisdictionMatch';
 import { recolorLayer } from './layerColors';
 import { cropToBBox } from './spatialScope';
 
+/** Union-based zoned-area totals from the zoning geo query. Unions (not
+ *  summed per-district acres) so overlays on top of base districts aren't
+ *  double counted. */
+export type TownAreaStat = {
+  town: string;
+  county: string;
+  matched_acres: number;
+  total_acres: number;
+};
+export type DistrictAreaStat = { district_type: string; acres: number };
+export type LayerStats = {
+  /** Every zoned town: its total, and how much of it matches the filters. */
+  towns: TownAreaStat[];
+  /** Matched area per district type, within the fetch's town scope. */
+  districts: DistrictAreaStat[];
+  /** The townCandidates the fetch was scoped to — lets consumers ignore
+   *  stats left over from a previously selected town. */
+  scope: string[] | null;
+};
+
 /** @param townCandidates - plausible spellings of the selected town's name
  *    (see jurisdictionCandidates), auto-merged into every fetch this layer
  *    makes so requests stay scoped to that town. Null/empty = unscoped.
@@ -36,13 +56,9 @@ export function useMapLayer(
 ) {
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
   const [legend, setLegend] = useState<LegendRow[]>([]);
-  // Snapshot of this layer's data from the most recent fetch that had no
-  // user-selected filters active (i.e. "everything this town has for this
-  // layer"), independent of whatever filters are applied afterwards. Used
-  // as a stable denominator for "% of the total that matches your filters"
-  // style report metrics.
-  const [unfilteredGeojson, setUnfilteredGeojson] =
-    useState<FeatureCollection | null>(null);
+  // Server-computed area stats that arrive alongside 'geojson-stats'
+  // responses (zoning). Null for every other layer.
+  const [stats, setStats] = useState<LayerStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -63,11 +79,6 @@ export function useMapLayer(
   const applyFilters = useCallback(
     async (specs: FilterSpec[]) => {
       setLoading(true);
-      // No filter the user has actually set (checkbox/range selections) —
-      // true both on first load and if they clear everything and re-apply.
-      // Either way, whatever comes back represents this layer's full total
-      // for the town, not a filtered subset.
-      const isUnfiltered = assemble(specs).length === 0;
       try {
         let fc: FeatureCollection;
         if (config.method === 'GET') {
@@ -105,10 +116,15 @@ export function useMapLayer(
             config.responseShape === 'geojson-stats' ? res.geojson : res
           ) as FeatureCollection;
           fc = cropToBBox(rawFc, townBBox);
+          if (config.responseShape === 'geojson-stats') {
+            setStats({
+              towns: res.town_stats ?? [],
+              districts: res.district_stats ?? [],
+              scope: townCandidates,
+            });
+          }
         }
-        const recolored = recolorLayer(config.id, fc);
-        setGeojson(recolored);
-        if (isUnfiltered) setUnfilteredGeojson(recolored);
+        setGeojson(recolorLayer(config.id, fc));
         setLoaded(true);
       } catch (e) {
         console.error(`data fetch failed for ${config.id}`, e);
@@ -131,7 +147,7 @@ export function useMapLayer(
   return {
     geojson,
     legend,
-    unfilteredGeojson,
+    stats,
     loading,
     applyFilters,
     loadInitial,
