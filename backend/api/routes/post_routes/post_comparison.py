@@ -56,10 +56,17 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
         other_filters = {k: v for k, v in src.filters.items() if k != var_col}
         if dataset == "cdc" and "data_value_type" not in other_filters:
             # CDC publishes both crude and age-adjusted prevalence for every
-            # measure; left unselected, both rows come back and double every
-            # geography once merged. Pin to age-adjusted, same default
-            # query/cdc.py uses for the same reason.
-            other_filters["data_value_type"] = ["Age-adjusted prevalence"]
+            # county-level measure; left unselected, both rows come back and
+            # double every geography once merged. Pin to age-adjusted at
+            # county, matching query/cdc.py's default for the same reason.
+            # Census tracts never get an age-adjusted estimate at all (CDC
+            # only computes it at the county/place level), so pin those to
+            # crude instead -- https://www.cdc.gov/places/faqs/using-data/
+            other_filters["data_value_type"] = (
+                ["Age-adjusted prevalence"]
+                if level == "county"
+                else ["Crude prevalence"]
+            )
         picks.append((dataset, values[0], other_filters))
 
     try:

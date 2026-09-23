@@ -101,10 +101,10 @@ DATASETS: dict[str, dict] = {
             "county": {
                 "sql": sql_dir / "cdc" / "county_places.sql",
                 "table": "cdc_places_county",
-                # Matches schema.json's cdc_places_county entry, which the
-                # canonical filter_table (used for both county and tract) is
-                # resolved against -- var_col must match the column name
-                # spec_to_source maps "Measure" onto.
+                # Matches schema.json's cdc_places_county entry -- var_col
+                # must match the column name spec_to_source maps "Measure"
+                # onto.
+                "filter_table": "cdc_places_county",
                 "var_col": "measure",
                 "value_col": "data_value",
                 "id_col": "geoid",
@@ -113,6 +113,14 @@ DATASETS: dict[str, dict] = {
             "tract": {
                 "sql": sql_dir / "cdc" / "tract_places.sql",
                 "table": "cdc_places_tract",
+                # CDC PLACES only computes age-adjusted prevalence at the
+                # county/place level -- census tracts publish crude
+                # prevalence only (too few people per age group to adjust).
+                # The Variable picker must read its tree from this table,
+                # not cdc_places_county, or it would keep offering
+                # "Age-adjusted prevalence" here against zero matching rows.
+                # https://www.cdc.gov/places/faqs/using-data/index.html
+                "filter_table": "cdc_places_tract",
                 "var_col": "measure",
                 "value_col": "data_value",
                 "id_col": "geoid",
@@ -134,6 +142,15 @@ def dataset_registry() -> dict:
             "label": cfg["label"],
             "filter_table": cfg["filter_table"],
             "levels": list(cfg["levels"].keys()),
+            # Usually the same table for every level -- CDC is the
+            # exception, since its Variable/Prevalence Measure options differ
+            # between county and tract (see the "tract" level's comment
+            # above). The frontend should prefer this over the flat
+            # `filter_table` above when building a level-specific picker.
+            "level_filter_tables": {
+                lvl: lvl_cfg.get("filter_table", cfg["filter_table"])
+                for lvl, lvl_cfg in cfg["levels"].items()
+            },
         }
         for key, cfg in DATASETS.items()
     }
@@ -146,11 +163,20 @@ def level_config(dataset: str, level: str) -> dict:
         raise ValueError(f"unknown dataset/level: {dataset}/{level}") from e
 
 
-# every dataset's canonical filter_table is unique, so a Cascade filter's
-# table name alone identifies which dataset it picked from.
-TABLE_TO_DATASET: dict[str, str] = {
-    cfg["filter_table"]: key for key, cfg in DATASETS.items()
-}
+# Every filter_table a Cascade filter could point at -- a dataset's canonical
+# one plus any level-specific override (e.g. CDC's tract table) -- is unique
+# across datasets, so a spec's table name alone identifies which dataset it
+# picked from.
+def _build_table_to_dataset() -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for key, cfg in DATASETS.items():
+        mapping[cfg["filter_table"]] = key
+        for lvl_cfg in cfg["levels"].values():
+            mapping[lvl_cfg.get("filter_table", cfg["filter_table"])] = key
+    return mapping
+
+
+TABLE_TO_DATASET: dict[str, str] = _build_table_to_dataset()
 
 
 def dataset_for_table(table: str) -> str:

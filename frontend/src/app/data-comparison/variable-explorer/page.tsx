@@ -50,6 +50,11 @@ type DatasetInfo = {
   label: string;
   filter_table: string;
   levels: string[];
+  // Usually the same table for every level; CDC is the exception, since its
+  // Variable/Prevalence Measure catalog differs between county and tract
+  // (tracts never get an age-adjusted estimate). Prefer this over the flat
+  // `filter_table` above when a level is already known.
+  level_filter_tables: Record<string, string>;
 };
 
 type DatasetRegistry = Record<string, DatasetInfo>;
@@ -59,6 +64,37 @@ const LEVEL_LABELS: Record<string, string> = {
   town: 'Town',
   tract: 'Census Tract',
 };
+
+// Matches the ValueErrors query/comparison.py raises (surfaced by FastAPI as
+// {detail: "..."}), so a known data-availability gap -- e.g. a measure with
+// no rows at the selected geography level -- gets a specific message instead
+// of the generic fallback below.
+const NO_DATA_RE = /^no data for [^/]+\/([^:]+): '(.+)'$/;
+const NO_OVERLAP_RE =
+  /^no shared geographies between [^/]+\/'(.+?)' and [^/]+\/'(.+?)' at the (\S+) level$/;
+
+function describeApplyError(e: unknown): string {
+  const detail =
+    axios.isAxiosError(e) && typeof e.response?.data?.detail === 'string'
+      ? e.response.data.detail
+      : null;
+
+  const noData = detail ? NO_DATA_RE.exec(detail) : null;
+  if (noData) {
+    const [, lvl, variable] = noData;
+    const levelLabel = LEVEL_LABELS[lvl] ?? lvl;
+    return `"${variable}" isn't available at the ${levelLabel} level — try a different variable or geography level.`;
+  }
+
+  const noOverlap = detail ? NO_OVERLAP_RE.exec(detail) : null;
+  if (noOverlap) {
+    const [, var1, var2, lvl] = noOverlap;
+    const levelLabel = LEVEL_LABELS[lvl] ?? lvl;
+    return `"${var1}" and "${var2}" don't share any geographies at the ${levelLabel} level — try a different pair or geography level.`;
+  }
+
+  return 'Could not compare those variables — try a different pair.';
+}
 
 const CELL = 34;
 const GAP = 2;
@@ -438,12 +474,10 @@ export default function VariableExplorer() {
       const res = await postRequest({ dataURL: url, payload });
       setGeojson(res.data);
       setLegend(res.metadata?.legend ?? null);
-    } catch {
+    } catch (e) {
       setGeojson(null);
       setLegend(null);
-      setApplyError(
-        'Could not compare those variables — try a different pair.',
-      );
+      setApplyError(describeApplyError(e));
     }
   };
 
@@ -618,13 +652,15 @@ export default function VariableExplorer() {
                   )}
                 </Paper>
 
-                {dataset1 && dataset2 && (
+                {dataset1 && dataset2 && level && (
                   <FilterWrap
-                    key={`${dataset1}-${dataset2}`}
+                    key={`${dataset1}-${dataset2}-${level}`}
                     handleApply={handleApply}
                     filterList={variableFilterDefs(
-                      registry[dataset1].filter_table,
-                      registry[dataset2].filter_table,
+                      registry[dataset1].level_filter_tables[level] ??
+                        registry[dataset1].filter_table,
+                      registry[dataset2].level_filter_tables[level] ??
+                        registry[dataset2].filter_table,
                     )}
                   />
                 )}

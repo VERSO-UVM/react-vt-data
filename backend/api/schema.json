@@ -88,6 +88,18 @@
         "Prevalence Measure": "data_value_type"
       }
     },
+    "cdc_places_tract": {
+      "join_key": "geoid",
+      "join_type": "inner",
+      "value_col": "data_value",
+      "var_col": "measure",
+      "columns": {
+        "Population Health Indicator": "sme_highlight",
+        "Category": "category",
+        "Measure": "measure",
+        "Prevalence Measure": "data_value_type"
+      }
+    },
     "acs5_demographics_tidy": {
       "join_key": "geoid",
       "join_type": "inner",
