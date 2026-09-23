@@ -476,7 +476,12 @@ function MapExplorerContent() {
     let reporting = 0;
     for (const feature of fc.features) {
       const raw = feature.properties?.['Design Hydraulic Capacity'];
+      if (raw === null || raw === undefined || String(raw).trim() === '') {
+        continue;
+      }
+
       const mgd = Number(raw);
+
       if (Number.isFinite(mgd)) {
         totalMgd += mgd;
         reporting += 1;
