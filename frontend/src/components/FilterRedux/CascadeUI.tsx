@@ -16,10 +16,21 @@ import {
   Stack,
   Group,
   ActionIcon,
+  Badge,
   Tooltip as MantineTooltip,
 } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import { COLORS, FONTS } from '@/app/theme';
+
+// Short tag shown next to a Measure flagged as a key health indicator
+// (this project's curated "SME" list drawn from CDC PLACES/BRFSS notes),
+// instead of forcing everyone through a separate True/False cascade level
+// just to spot them.
+const BADGE_TOOLTIPS: Record<string, string> = {
+  Measure:
+    'One of this dataset’s curated Population Health Indicators — ' +
+    'a key measure drawn from CDC PLACES/BRFSS notes.',
+};
 
 // CDC publishes exactly one "Crude prevalence" and one "Age-adjusted
 // prevalence" row per measure -- leaving this level at "All" doesn't mean
@@ -56,6 +67,7 @@ export function CascadeFilter(params: apiFilterParams) {
   const { spec, setValue } = params;
   const [tree, setTree] = useState<FilterTree>({});
   const [labels, setLabels] = useState<string[]>([]);
+  const [badges, setBadges] = useState<Record<string, string[]>>({});
   const filterURL = `${BASE_API_URL}/filters/tree?filter_table=${spec.filter_table}`;
 
   // fetch the raw info for the filter tree.
@@ -66,6 +78,7 @@ export function CascadeFilter(params: apiFilterParams) {
       .then((r) => {
         setTree(r.data.tree);
         setLabels(r.data.labels || []);
+        setBadges(r.data.badges || {});
       })
       .catch((e) => console.error('tree fetch failed', e));
   }, [filterURL]);
@@ -115,83 +128,117 @@ export function CascadeFilter(params: apiFilterParams) {
 
   return (
     <Stack gap={18}>
-      {labels.map((label, i) => (
-        <Select
-          key={label}
-          label={
-            TOOLTIPS[label] ? (
-              <Group gap={4} wrap="nowrap">
-                <span>{label}</span>
-                <MantineTooltip
-                  label={TOOLTIPS[label]}
-                  multiline
-                  w={260}
-                  withArrow
-                >
-                  <ActionIcon
-                    variant="transparent"
-                    size="xs"
-                    c={COLORS.slate}
-                    style={{ cursor: 'help' }}
+      {labels.map((label, i) => {
+        const flagged = new Set(badges[label] ?? []);
+        return (
+          <Select
+            key={label}
+            label={
+              TOOLTIPS[label] ? (
+                <Group gap={4} wrap="nowrap">
+                  <span>{label}</span>
+                  <MantineTooltip
+                    label={TOOLTIPS[label]}
+                    multiline
+                    w={260}
+                    withArrow
                   >
-                    <IconInfoCircle size={14} stroke={1.5} />
-                  </ActionIcon>
-                </MantineTooltip>
-              </Group>
-            ) : (
-              label
-            )
-          }
-          data={getOptions(label)}
-          value={
-            (spec.filters?.[label] as string[])?.[0] ??
-            (NO_ALL_LABELS.has(label) ? null : 'All')
-          }
-          onChange={(v) => handleSelect(label, v!)}
-          disabled={i > 0 && spec.filters?.[labels[i - 1]] == null}
-          searchable
-          radius="sm"
-          size="md"
-          styles={{
-            label: {
-              fontFamily: FONTS.body,
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: COLORS.ink,
-              marginBottom: 7,
-            },
+                    <ActionIcon
+                      variant="transparent"
+                      size="xs"
+                      c={COLORS.slate}
+                      style={{ cursor: 'help' }}
+                    >
+                      <IconInfoCircle size={14} stroke={1.5} />
+                    </ActionIcon>
+                  </MantineTooltip>
+                </Group>
+              ) : (
+                label
+              )
+            }
+            data={getOptions(label)}
+            value={
+              (spec.filters?.[label] as string[])?.[0] ??
+              (NO_ALL_LABELS.has(label) ? null : 'All')
+            }
+            onChange={(v) => handleSelect(label, v!)}
+            disabled={i > 0 && spec.filters?.[labels[i - 1]] == null}
+            renderOption={
+              flagged.size
+                ? ({ option }) => (
+                    <Group
+                      gap={6}
+                      justify="space-between"
+                      flex={1}
+                      wrap="nowrap"
+                    >
+                      <span>{option.label}</span>
+                      {flagged.has(option.value) && (
+                        <MantineTooltip
+                          label={BADGE_TOOLTIPS[label]}
+                          multiline
+                          w={220}
+                          withArrow
+                        >
+                          <Badge
+                            size="xs"
+                            variant="light"
+                            color={COLORS.spruce}
+                            style={{ flexShrink: 0 }}
+                          >
+                            Health Indicator
+                          </Badge>
+                        </MantineTooltip>
+                      )}
+                    </Group>
+                  )
+                : undefined
+            }
+            searchable
+            radius="sm"
+            size="md"
+            styles={{
+              label: {
+                fontFamily: FONTS.body,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: COLORS.ink,
+                marginBottom: 7,
+              },
 
-            input: {
-              backgroundColor: COLORS.birch,
-              border: `1px solid ${COLORS.line}`,
-              color: COLORS.ink,
-              fontFamily: FONTS.body,
-              fontSize: '0.9rem',
-              minHeight: 42,
-              transition: 'border-color 150ms ease',
-            },
+              input: {
+                backgroundColor: COLORS.birch,
+                border: `1px solid ${COLORS.line}`,
+                color: COLORS.ink,
+                fontFamily: FONTS.body,
+                fontSize: '0.9rem',
+                minHeight: 42,
+                transition: 'border-color 150ms ease',
+              },
 
-            section: {
-              color: COLORS.slate,
-            },
+              section: {
+                color: COLORS.slate,
+              },
 
-            dropdown: {
-              backgroundColor: COLORS.birch,
-              border: `1px solid ${COLORS.line}`,
-              borderRadius: 6,
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
-              overflow: 'hidden',
-            },
+              dropdown: {
+                backgroundColor: COLORS.birch,
+                border: `1px solid ${COLORS.line}`,
+                borderRadius: 6,
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+                overflow: 'hidden',
+              },
 
-            option: {
-              fontFamily: FONTS.body,
-              fontSize: '0.875rem',
-              color: COLORS.ink,
-              padding: '9px 12px',
-            },
-          }}
-        />
-      ))}
+              option: {
+                fontFamily: FONTS.body,
+                fontSize: '0.875rem',
+                color: COLORS.ink,
+                padding: '9px 12px',
+              },
+            }}
+          />
+        );
+      })}
     </Stack>
   );
 }

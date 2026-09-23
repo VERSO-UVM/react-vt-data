@@ -61,6 +61,22 @@ def filter_options(
     return FilterResponse(labels=labels, options=options)
 
 
+def filter_badges(
+    badgemap: dict, colmap: dict, table: str, db=DB
+) -> dict[str, list[str]]:
+    """{label: [values]} for a tree level whose rows should carry an
+    informational tag, e.g. which Measure values are a "Population Health
+    Indicator" -- badgemap maps that label to its boolean flag column."""
+    badges = {}
+    for label, flag_col in badgemap.items():
+        col = colmap[label]
+        rows = db.execute(
+            f'SELECT DISTINCT "{col}" FROM {table} WHERE "{flag_col}"'
+        ).fetchall()
+        badges[label] = [r[0] for r in rows if r[0] is not None]
+    return badges
+
+
 def filter_ranges(rangemap: dict, table: str, db=DB) -> FilterResponse:
     """Min/max bounds for one or more numeric columns, for slider-style filters."""
     ranges = []
@@ -74,7 +90,12 @@ def filter_ranges(rangemap: dict, table: str, db=DB) -> FilterResponse:
 
 
 def filter_tree(
-    colmap: dict, tree_labels: list[str], table: str, db=DB, rangemap: dict = {}
+    colmap: dict,
+    tree_labels: list[str],
+    table: str,
+    db=DB,
+    rangemap: dict = {},
+    badgemap: dict = {},
 ) -> FilterResponse:
     """
     Info for cascading filter UI.
@@ -89,13 +110,13 @@ def filter_tree(
         f"SELECT DISTINCT {select} FROM {table} ORDER BY {order}"
     ).fetchall()
     tree = _nest(rows)
+    badges = filter_badges(badgemap, colmap, table, db) if badgemap else {}
+    ranges = []
     if rangemap:
-        ranges = []
         range_label, range_col = next(iter(rangemap.items()))
         res = db.execute(
             f'SELECT MIN("{range_col}"), MAX("{range_col}") FROM {table}'
         ).fetchone()
         if res and res[0] is not None:
             ranges.append(RangeDescriptor(label=range_label, col=range_col, bounds=res))
-            return FilterResponse(tree=tree, labels=tree_labels, ranges=ranges)
-    return FilterResponse(tree=tree, labels=tree_labels)
+    return FilterResponse(tree=tree, labels=tree_labels, ranges=ranges, badges=badges)

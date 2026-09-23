@@ -82,10 +82,12 @@
       "value_col": "data_value",
       "var_col": "measure",
       "columns": {
-        "Population Health Indicator": "sme_highlight",
         "Category": "category",
         "Measure": "measure",
         "Prevalence Measure": "data_value_type"
+      },
+      "badges": {
+        "Measure": "sme_highlight"
       }
     },
     "cdc_places_tract": {
@@ -94,10 +96,12 @@
       "value_col": "data_value",
       "var_col": "measure",
       "columns": {
-        "Population Health Indicator": "sme_highlight",
         "Category": "category",
         "Measure": "measure",
         "Prevalence Measure": "data_value_type"
+      },
+      "badges": {
+        "Measure": "sme_highlight"
       }
     },
     "acs5_demographics_tidy": {

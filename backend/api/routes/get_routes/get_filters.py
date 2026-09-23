@@ -45,7 +45,10 @@ async def filter_tree_endpoint(filter_table: str, target_table: str = "default")
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]
     rangemap: dict = meta.get("range", {})
-    return filter_tree(colmap, list(colmap.keys()), filter_table, rangemap=rangemap)
+    badgemap: dict = meta.get("badges", {})
+    return filter_tree(
+        colmap, list(colmap.keys()), filter_table, rangemap=rangemap, badgemap=badgemap
+    )
 
 
 @router.get("/filters/options")
