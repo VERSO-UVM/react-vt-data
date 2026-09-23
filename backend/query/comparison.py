@@ -95,7 +95,7 @@ def _acs5_dataset(table: str, label: str) -> dict:
 
 DATASETS: dict[str, dict] = {
     "cdc": {
-        "label": "Community Health (CDC Places)",
+        "label": "Community Health",
         "filter_table": "cdc_places_county",
         "levels": {
             "county": {

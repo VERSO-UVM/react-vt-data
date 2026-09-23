@@ -83,6 +83,33 @@ export function CascadeFilter(params: apiFilterParams) {
       .catch((e) => console.error('tree fetch failed', e));
   }, [filterURL]);
 
+  // Whenever the tree changes -- e.g. the geography level toggle swaps CDC's
+  // filter table between county and tract, which changes what Prevalence
+  // Measure offers but leaves Category/Measure untouched -- keep whatever
+  // picks are still valid instead of wiping the whole chain. Only the first
+  // level whose selected value doesn't exist in the new tree (and everything
+  // below it) gets cleared, the same as picking a new value by hand does.
+  useEffect(() => {
+    if (!labels.length) return;
+    let node: FilterTree = tree;
+    let staleFrom = -1;
+    for (let i = 0; i < labels.length; i++) {
+      const sel = spec.filters?.[labels[i]];
+      const selVal = Array.isArray(sel) ? sel[0] : undefined;
+      if (selVal == null) break; // nothing picked at/after this level yet
+      if (node?.[selVal] == null) {
+        staleFrom = i;
+        break;
+      }
+      node = node[selVal] ?? {};
+    }
+    if (staleFrom === -1) return;
+    const newFilters = { ...spec.filters };
+    labels.slice(staleFrom).forEach((col) => delete newFilters[col]);
+    setValue(newFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tree, labels]);
+
   // what happens when we select a value in the box
   // (we update our filters and push them up to parent)
   const handleSelect = (label: string, value: string) => {
