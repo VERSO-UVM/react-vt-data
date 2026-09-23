@@ -767,12 +767,12 @@ export default function VariableExplorer() {
                         <BigStat
                           label="Pearson's R"
                           value={pairStats.r.toFixed(2)}
-                          description="Pearson's correlation coefficient measures the overall strenth and direction between both variables."
+                          description="The strength and direction of the relationship, from -1 to 1. R = 0.8 is a strong positive relationship (both rise together); R = -0.8 is a strong negative one; R near 0 means little to no relationship."
                         />
                         <BigStat
                           label="R²"
                           value={pairStats.r2.toFixed(2)}
-                          description="R² describes the extent to which the variation seen in a variable can be attributed to the change of the other variable."
+                          description="The share of one variable's variation that is associated with the other, from 0 to 1. R² = 0.64 means 64% of the variation aligns between the two variables."
                         />
                       </SimpleGrid>
                     )}
