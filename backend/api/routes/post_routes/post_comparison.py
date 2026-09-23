@@ -54,6 +54,12 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
         # fetch the same way -- dropping it here would let unrelated rows
         # for that variable (Crude vs. Age-adjusted prevalence, etc.) back in.
         other_filters = {k: v for k, v in src.filters.items() if k != var_col}
+        if dataset == "cdc" and "data_value_type" not in other_filters:
+            # CDC publishes both crude and age-adjusted prevalence for every
+            # measure; left unselected, both rows come back and double every
+            # geography once merged. Pin to age-adjusted, same default
+            # query/cdc.py uses for the same reason.
+            other_filters["data_value_type"] = ["Age-adjusted prevalence"]
         picks.append((dataset, values[0], other_filters))
 
     try:
