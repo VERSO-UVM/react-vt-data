@@ -2,7 +2,7 @@
  * @description
  *   Computes the actual "buildable" shape for the Buildable Areas preset:
  *   Permitted zoning allowances, intersected with well/moderately suited soil,
- *   minus flood hazard areas.
+ *   minus FEMA special flood hazard areas.
  *
  *   WHAT COUNTS AS BUILDABLE — this file only owns the geometry (the soil-
  *   suited ∩ zoning-permitted ∩ outside-flood combination, plus the
@@ -69,6 +69,17 @@ function excludeConservationDistricts(fc: PolyFC | null): PolyFC | null {
   if (!fc) return null;
   const kept = fc.features.filter(
     (f) => !/conservation/i.test(String(f.properties?.['District Name'] ?? '')),
+  );
+  return kept.length > 0 ? { type: 'FeatureCollection', features: kept } : null;
+}
+
+/** Only FEMA's Special Flood Hazard Areas (the A/AE/AH/AO zones) rule land
+ *  out. Zone X (moderate/minimal risk) covers most of the state, so
+ *  subtracting it would erase nearly every buildable acre. */
+function specialFloodHazardAreas(fc: PolyFC | null): PolyFC | null {
+  if (!fc) return null;
+  const kept = fc.features.filter(
+    (f) => f.properties?.special_flood_hazard_zone === true,
   );
   return kept.length > 0 ? { type: 'FeatureCollection', features: kept } : null;
 }
@@ -170,7 +181,7 @@ export function computeBuildableOverlay(
     let buildable = intersect(pairFC(zoningUnion, soilUnion));
     if (!buildable) return null;
 
-    const flood = asPolygonFC(floodFc);
+    const flood = specialFloodHazardAreas(asPolygonFC(floodFc));
     let floodExcluded = false;
     if (flood) {
       const floodUnion = union(flood);

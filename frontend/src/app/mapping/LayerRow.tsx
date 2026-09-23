@@ -89,12 +89,13 @@ export default function LayerRow({
   // changes (both bump scopeVersion). Re-toggling the layer off/on in
   // between doesn't re-fetch, so it never clobbers the user's own filter
   // tweaks made via the Apply button below.
+  const initialSpecs = presetFilters ?? config.defaultFilters;
   const appliedVersion = useRef<number | null>(null);
   useEffect(() => {
     if (!active) return;
     if (appliedVersion.current === scopeVersion) return;
     appliedVersion.current = scopeVersion;
-    applyFilters(presetFilters ?? []);
+    applyFilters(initialSpecs ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, scopeVersion]);
 
@@ -156,7 +157,7 @@ export default function LayerRow({
             key={scopeVersion}
             filterList={config.filterList}
             handleApply={applyFilters}
-            initialSpecs={presetFilters}
+            initialSpecs={initialSpecs}
             locked={locked}
           />
         </Box>

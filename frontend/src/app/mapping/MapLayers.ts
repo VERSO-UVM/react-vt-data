@@ -6,7 +6,10 @@
  */
 
 import { BASE_API_URL } from '@/config';
-import { filterDef } from '@/components/FilterRedux/filterTypes';
+import type {
+  FilterSpec,
+  filterDef,
+} from '@/components/FilterRedux/filterTypes';
 import {
   flood_filtering,
   soil_suitability_filtering,
@@ -43,6 +46,8 @@ export type MapLayerConfig = {
   method: 'GET' | 'POST';
   filterList: filterDef[];
   legendURL?: string;
+  /** Filters applied on first load when no preset supplies its own. */
+  defaultFilters?: FilterSpec[];
   responseShape: ResponseShape;
   color: string;
   jurisdiction?: JurisdictionScope;
@@ -55,6 +60,15 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     dataURL: `${BASE_API_URL}/load/mapping/flood_legal`,
     method: 'POST',
     filterList: flood_filtering,
+    // Zone X (Moderate/Minimal risk) covers most of the state and renders
+    // transparent anyway, so leave it out of the default download.
+    defaultFilters: [
+      {
+        filter_table: 'FEMA_floodHazard_geom',
+        filters: { 'Flood Risk': ['High', 'Undetermined'] },
+        cols: ['Flood Risk'],
+      },
+    ],
     responseShape: 'direct',
     color: '#3b6cff',
   },

@@ -94,17 +94,28 @@ export function useMapLayer(
 
           // Zoning and parcels can filter across multiple source tables at
           // once (e.g. parcels' info + tax tables), so they need the full
-          // specs list [...]; single-source wastewater endpoints require a
-          // bare object {...}.
+          // specs list [...]; single-source endpoints (wastewater, flood)
+          // require a bare object {...}, so merge every spec's filters on
+          // that one table (flood has two checkbox groups on one table).
           let formattedPayload: unknown;
           if (config.id === 'zoning' || config.id === 'parcels') {
             formattedPayload = Array.isArray(assembledPayload)
               ? assembledPayload
               : [assembledPayload];
           } else {
-            formattedPayload = Array.isArray(assembledPayload)
-              ? (assembledPayload[0] ?? {})
-              : assembledPayload;
+            const [first, ...rest] = assembledPayload;
+            formattedPayload = first
+              ? {
+                  ...first,
+                  filters: Object.assign(
+                    {},
+                    first.filters,
+                    ...rest
+                      .filter((s) => s.filter_table === first.filter_table)
+                      .map((s) => s.filters),
+                  ),
+                }
+              : {};
           }
 
           const res = await postRequest({
