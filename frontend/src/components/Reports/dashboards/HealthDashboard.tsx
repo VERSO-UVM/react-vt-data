@@ -12,7 +12,6 @@ import {
 import {
   HEALTH_CATEGORY_ORDER,
   buildIndicatorRows,
-  indicatorFootnote,
   indicatorPlace,
 } from '@/components/Reports/health/indicatorRows';
 
@@ -94,11 +93,6 @@ export default function HealthDashboard({ data }: DashboardProps) {
               : { name: comparison.name }
           }
           rows={buildIndicatorRows(primary.current, comparison.current)}
-          footnote={
-            primary.location && comparison.location
-              ? indicatorFootnote(primary.location, comparison.location)
-              : undefined
-          }
           categoryOrder={HEALTH_CATEGORY_ORDER}
         />
       </Grid.Col>

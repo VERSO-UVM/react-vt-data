@@ -8,7 +8,7 @@
  *   CDC PLACES only publishes county estimates; the report hands this the
  *   place the data describes (a town arrives as its county) and explains the
  *   substitution above the report. Vermont is the API's population-weighted
- *   average of all counties, whose interval is an approximation.
+ *   average of all counties.
  */
 
 import type { Location } from '@/components/profile/profileStore';
@@ -115,16 +115,4 @@ export function indicatorPlace(
     default:
       return { name, note: 'CDC PLACES has no estimates for this area' };
   }
-}
-
-export function indicatorFootnote(
-  primary: Location,
-  comparison: Location,
-): string | undefined {
-  if (primary.type !== 'state' && comparison.type !== 'state') return;
-  return (
-    "Vermont's interval is approximate: it combines the county intervals " +
-    'assuming the county estimates are independent. They come from one ' +
-    'shared CDC model, so the true uncertainty is likely larger.'
-  );
 }

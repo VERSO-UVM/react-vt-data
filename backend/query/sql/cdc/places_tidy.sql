@@ -4,9 +4,10 @@
 --   * one county: that county's own estimate and 95% interval, unchanged;
 --   * no county filter (a statewide pick): a Vermont estimate, the county
 --     values averaged and weighted by each county's adult population. Its
---     interval is approximate: the county intervals combined as a root sum of
---     squares, which assumes independent county estimates. PLACES estimates
---     come from one shared model, so this likely understates the uncertainty.
+--     interval is conservative: PLACES estimates come from one shared model,
+--     so their errors are far from independent, and assuming they move
+--     together makes the half-width the adult-weighted average of the county
+--     half-widths (an upper bound; the true interval is somewhat narrower).
 -- Returning one row per county instead left callers to take whichever came
 -- first and label it Vermont. If any selected county lacks a value or an
 -- adult population for a measure, Value is NULL rather than an average of
@@ -55,10 +56,10 @@ combined AS (
         AND COUNT(*) FILTER (WHERE f.adults > 0) = COUNT(*) AS complete,
         COUNT(f.low) = COUNT(*) AND COUNT(f.high) = COUNT(*) AS has_intervals,
         SUM(f.data_value * f.adults) / SUM(f.adults) AS value,
-        -- 95% half-width of the weighted mean: sqrt(sum((w_i * h_i)^2)) with
-        -- w_i = adults_i / total adults and h_i each county's half-width.
-        SQRT(SUM(POW(f.adults * (f.high - f.low) / 2, 2)))
-        / SUM(f.adults) AS half_width,
+        -- 95% half-width of the weighted mean with fully correlated errors:
+        -- sum(w_i * h_i), w_i = adults_i / total adults and h_i each
+        -- county's half-width.
+        SUM(f.adults * (f.high - f.low) / 2) / SUM(f.adults) AS half_width,
         ANY_VALUE(f.low) AS low,
         ANY_VALUE(f.high) AS high
     FROM filtered AS f

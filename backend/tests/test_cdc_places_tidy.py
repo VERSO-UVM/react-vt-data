@@ -8,7 +8,6 @@ showed whichever county came first as "Vermont".
 """
 
 import importlib
-import math
 
 import duckdb
 import pandas as pd
@@ -107,15 +106,17 @@ def test_statewide_is_adult_weighted_average_not_first_county(cdc):
     assert result.loc[SMOKING, "Value"] == 9.4
 
 
-def test_statewide_interval_combines_county_intervals(cdc):
+def test_statewide_interval_assumes_correlated_county_errors(cdc):
     result = fetch(cdc, {})
 
-    # Half-widths 2, 1, 4 weighted by adults, combined as a root sum of
-    # squares: sqrt((30k*2)^2 + (150k*1)^2 + (5k*4)^2) / 185k = 0.88.
+    # PLACES counties share one model, so their errors move together: the
+    # half-widths 2, 1, 4 add linearly, weighted by adults,
+    # (30k*2 + 150k*1 + 5k*4) / 185k = 1.24. Treating them as independent
+    # (a root sum of squares, 0.88) would overstate the precision.
     value = (10 * 30_000 + 9 * 150_000 + 17 * 5_000) / 185_000
-    half = math.hypot(30_000 * 2, 150_000 * 1, 5_000 * 4) / 185_000
-    assert result.loc[SMOKING, "Low"] == round(value - half, 1) == 8.5
-    assert result.loc[SMOKING, "High"] == round(value + half, 1) == 10.3
+    half = (30_000 * 2 + 150_000 * 1 + 5_000 * 4) / 185_000
+    assert result.loc[SMOKING, "Low"] == round(value - half, 1) == 8.1
+    assert result.loc[SMOKING, "High"] == round(value + half, 1) == 10.6
 
 
 def test_statewide_interval_null_when_a_county_has_none(cdc):
