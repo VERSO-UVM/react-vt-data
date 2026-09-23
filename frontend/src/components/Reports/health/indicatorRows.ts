@@ -5,9 +5,10 @@
  *   props. All the CDC- and geography-specific knowledge lives here so the
  *   table itself stays presentational.
  *
- *   CDC PLACES only publishes county estimates, so a town is shown with its
- *   county's numbers, and Vermont with the API's population-weighted average
- *   of all counties (whose interval is an approximation).
+ *   CDC PLACES only publishes county estimates; the report hands this the
+ *   place the data describes (a town arrives as its county) and explains the
+ *   substitution above the report. Vermont is the API's population-weighted
+ *   average of all counties, whose interval is an approximation.
  */
 
 import type { Location } from '@/components/profile/profileStore';
@@ -95,42 +96,25 @@ export function buildIndicatorRows(
   });
 }
 
-/** The table header for a location, noting where its numbers come from. */
+/** The table header for a location, noting where its numbers come from.
+ *  The report passes the place the data describes (a town arrives as its
+ *  county), and says so above the report. */
 export function indicatorPlace(
   location: Location,
   name: string,
 ): IndicatorPlace {
   switch (location.type) {
-    case 'town':
-      return location.county
-        ? { name, note: `Uses ${location.county} County estimates` }
-        : { name };
     case 'state':
       return {
         name,
         note: 'Average of county estimates, weighted by adult population',
       };
     case 'county':
+    case 'town':
       return { name };
     default:
       return { name, note: 'CDC PLACES has no estimates for this area' };
   }
-}
-
-/** Explains identical numbers when both places resolve to one county. */
-export function indicatorNotice(
-  primary: Location,
-  comparison: Location,
-): string | undefined {
-  const countyOf = (l: Location) =>
-    l.type === 'town' || l.type === 'county' ? l.county : null;
-  const a = countyOf(primary);
-  if (!a || a !== countyOf(comparison)) return undefined;
-  if (primary.type === 'county' && comparison.type === 'county') return;
-  return (
-    `Both places are in ${a} County, and CDC PLACES only publishes ` +
-    'county-level estimates, so their numbers are the same.'
-  );
 }
 
 export function indicatorFootnote(

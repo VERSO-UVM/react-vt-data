@@ -158,20 +158,33 @@ const SECTIONS: Record<string, SectionConfig> = {
   },
 };
 
+// The county area containing a town-type location.
+function countyArea(l: Location, county: string): Location {
+  return {
+    ...l,
+    type: 'county',
+    town: null,
+    name: `${county} County, Vermont`,
+  };
+}
+
 // A profile saved as "Town" before a town was picked (the profile form now
 // requires one) has no town and the placeholder name "Unknown". Show its
 // county instead, so every section can filter and label it, and say so.
 function resolveLocation(l: Location): { location: Location; note?: string } {
   if (l.type !== 'town' || l.town || !l.county) return { location: l };
   return {
-    location: {
-      ...l,
-      type: 'county',
-      town: null,
-      name: `${l.county} County, Vermont`,
-    },
+    location: countyArea(l, l.county),
     note: `Your profile has Town selected but no town picked, so ${l.county} County is shown instead.`,
   };
+}
+
+// The place a section's data actually describes for a profile area: a
+// county-only source (CDC PLACES) shows a town's county. Other areas are
+// shown as picked (Vermont is still Vermont, just a computed figure).
+function dataLocation(cfg: SectionConfig, l: Location): Location {
+  if (!cfg.countyOnly || l.type !== 'town' || !l.county) return l;
+  return countyArea(l, l.county);
 }
 
 // Plain-language notes for each profile area this section can't show as-is
@@ -625,37 +638,43 @@ export default function ReportsByTopic({
       ? compareData
       : compareData.filter((r) => String(r.year) === yearStr);
 
-  const dashboardData = useMemo(
-    () => ({
+  // Charts are labeled with the place the section's data actually describes
+  // (e.g. a town's county on Community Health), not the profile's choice;
+  // the notes above the report explain any substitution.
+  const dashboardData = useMemo(() => {
+    const cfg = SECTIONS[section];
+    const primaryPlace = dataLocation(cfg, myLocation);
+    const comparisonPlace = dataLocation(cfg, comparison);
+    return {
       year,
 
       primary: {
         current: primaryForYear,
         history: primaryData,
-        name: myLocation.name,
-        location: myLocation,
+        name: primaryPlace.name,
+        location: primaryPlace,
       },
 
       comparison: {
         current: compareForYear,
         history: compareData,
-        name: comparison.name,
-        location: comparison,
+        name: comparisonPlace.name,
+        location: comparisonPlace,
       },
 
       timeseries: timeseriesData,
-    }),
-    [
-      year,
-      primaryForYear,
-      compareForYear,
-      primaryData,
-      compareData,
-      timeseriesData,
-      myLocation,
-      comparison,
-    ],
-  );
+    };
+  }, [
+    section,
+    year,
+    primaryForYear,
+    compareForYear,
+    primaryData,
+    compareData,
+    timeseriesData,
+    myLocation,
+    comparison,
+  ]);
 
   interface DashboardData {
     year: number;
