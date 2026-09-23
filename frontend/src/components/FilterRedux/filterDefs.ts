@@ -41,15 +41,6 @@ export const soil_suitability_filtering: filterDef[] = [
   },
 ];
 
-export const ambulance_filtering: filterDef[] = [
-  {
-    filter_table: 'VCGI_ambulanceService_info',
-    filter_style: 'Checkbox',
-    label: 'Certification Level',
-    cols: ['Certification Level'],
-  },
-];
-
 export const flood_filtering: filterDef[] = [
   {
     filter_table: 'FEMA_floodHazard_geom',
