@@ -1,22 +1,33 @@
 import { Grid, Text } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
+import type { Location } from '@/components/profile/profileStore';
 import {
   SmokingRateCard,
   UninsuredRateCard,
   ChronicDiseaseChart,
   DisabilityChart,
   HealthStatusChart,
+  IndicatorTable,
 } from '@/components/Reports/health';
+import {
+  HEALTH_CATEGORY_ORDER,
+  buildIndicatorRows,
+  indicatorFootnote,
+  indicatorNotice,
+  indicatorPlace,
+} from '@/components/Reports/health/indicatorRows';
 
 export interface DashboardData {
   year: number;
   primary: {
     name: string;
+    location?: Location;
     current: DataRow[];
     history: DataRow[];
   };
   comparison: {
     name: string;
+    location?: Location;
     current: DataRow[];
     history: DataRow[];
   };
@@ -69,6 +80,32 @@ export default function HealthDashboard({ data }: DashboardProps) {
           comparison={comparison.current}
           primaryName={primary.name}
           comparisonName={comparison.name}
+        />
+      </Grid.Col>
+      <Grid.Col span={12}>
+        <IndicatorTable
+          primary={
+            primary.location
+              ? indicatorPlace(primary.location, primary.name)
+              : { name: primary.name }
+          }
+          comparison={
+            comparison.location
+              ? indicatorPlace(comparison.location, comparison.name)
+              : { name: comparison.name }
+          }
+          rows={buildIndicatorRows(primary.current, comparison.current)}
+          notice={
+            primary.location && comparison.location
+              ? indicatorNotice(primary.location, comparison.location)
+              : undefined
+          }
+          footnote={
+            primary.location && comparison.location
+              ? indicatorFootnote(primary.location, comparison.location)
+              : undefined
+          }
+          categoryOrder={HEALTH_CATEGORY_ORDER}
         />
       </Grid.Col>
       <Grid.Col span={12}>

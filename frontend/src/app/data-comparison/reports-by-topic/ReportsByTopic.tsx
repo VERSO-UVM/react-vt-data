@@ -178,15 +178,20 @@ const titledTownName = (town: string) =>
 // filter to — this naturally falls back to the full dataset). A town pick
 // filters BOTH Jurisdiction and County — Vermont has same-named towns in
 // different counties, so Jurisdiction alone can be ambiguous.
+// Returns null when the section has no data for that kind of location.
 function buildLocationFilters(
   cfg: SectionConfig,
   location: Location,
-): Record<string, string[]> {
+): Record<string, string[]> | null {
   if (!cfg.locationFilterKey) {
     return { Location: [location.name] };
   }
   if (cfg.countyOnly) {
-    return location.county ? { County: [location.county] } : {};
+    if (location.county) return { County: [location.county] };
+    // No county filter means "all counties", which the API combines into a
+    // Vermont estimate: right for a statewide pick, but an RPC or national
+    // pick has no county-grain equivalent and would be mislabeled.
+    return location.type === 'state' ? {} : null;
   }
   if (location.type === 'town' && location.town) {
     // `town` columns hold the Census-style name as-is ("Rockingham town");
@@ -450,11 +455,13 @@ export default function ReportsByTopic({
     setLoading(true);
     setError(null);
 
-    const fetchFrom = (url: string, location: Location) =>
-      axios
+    const fetchFrom = (url: string, location: Location) => {
+      const locationFilters = buildLocationFilters(cfg, location);
+      if (!locationFilters) return Promise.resolve({ data: [] });
+      return axios
         .post(url, {
           filters: {
-            ...buildLocationFilters(cfg, location),
+            ...locationFilters,
             year: {
               min: cfg.yearMin,
               max: cfg.yearMax,
@@ -464,6 +471,7 @@ export default function ReportsByTopic({
         })
         .then((r) => r.data)
         .catch(() => ({ data: [] }));
+    };
 
     const timeseriesKeys = Object.keys(cfg.timeseries ?? {});
 
@@ -549,12 +557,14 @@ export default function ReportsByTopic({
         current: primaryForYear,
         history: primaryData,
         name: myLocation.name,
+        location: myLocation,
       },
 
       comparison: {
         current: compareForYear,
         history: compareData,
         name: comparison.name,
+        location: comparison,
       },
 
       timeseries: timeseriesData,
@@ -566,8 +576,8 @@ export default function ReportsByTopic({
       primaryData,
       compareData,
       timeseriesData,
-      myLocation.name,
-      comparison.name,
+      myLocation,
+      comparison,
     ],
   );
 
@@ -575,11 +585,13 @@ export default function ReportsByTopic({
     year: number;
     primary: {
       name: string;
+      location?: Location;
       current: DataRow[];
       history: DataRow[];
     };
     comparison: {
       name: string;
+      location?: Location;
       current: DataRow[];
       history: DataRow[];
     };
