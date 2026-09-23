@@ -6,13 +6,14 @@
  */
 
 import { BASE_API_URL } from '@/config';
-import { filterDef } from '@/components/FilterRedux/filterTypes';
+import type {
+  FilterSpec,
+  filterDef,
+} from '@/components/FilterRedux/filterTypes';
 import {
+  flood_filtering,
   soil_suitability_filtering,
-  treatment_facility_filtering,
-  service_area_filtering,
   zoning_filtering,
-  ambulance_filtering,
   parcels_filtering,
 } from '@/components/FilterRedux/filterDefs';
 
@@ -45,6 +46,8 @@ export type MapLayerConfig = {
   method: 'GET' | 'POST';
   filterList: filterDef[];
   legendURL?: string;
+  /** Filters applied on first load when no preset supplies its own. */
+  defaultFilters?: FilterSpec[];
   responseShape: ResponseShape;
   color: string;
   jurisdiction?: JurisdictionScope;
@@ -55,14 +58,23 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     id: 'flood-legal',
     title: 'Flood Insurance',
     dataURL: `${BASE_API_URL}/load/mapping/flood_legal`,
-    method: 'GET',
-    filterList: [],
+    method: 'POST',
+    filterList: flood_filtering,
+    // Zone X (Moderate/Minimal risk) covers most of the state and renders
+    // transparent anyway, so leave it out of the default download.
+    defaultFilters: [
+      {
+        filter_table: 'FEMA_floodHazard_geom',
+        filters: { 'Flood Risk': ['High', 'Undetermined'] },
+        cols: ['Flood Risk'],
+      },
+    ],
     responseShape: 'direct',
     color: '#3b6cff',
   },
   {
     id: 'soil-suitability',
-    title: 'Soil Suitability',
+    title: 'Soil Suitability for Septic Systems',
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/septic_soil_suitability`,
     method: 'POST',
     filterList: soil_suitability_filtering,
@@ -79,7 +91,7 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     title: 'Wastewater Treatment Facilities',
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility`,
     method: 'POST',
-    filterList: treatment_facility_filtering,
+    filterList: [],
     responseShape: 'direct',
     color: '#2bb673',
     jurisdiction: {
@@ -92,7 +104,7 @@ export const MAP_LAYERS: MapLayerConfig[] = [
     title: 'Wastewater Service Areas',
     dataURL: `${BASE_API_URL}/load/mapping/wastewater/service_area`,
     method: 'POST',
-    filterList: service_area_filtering,
+    filterList: [],
     responseShape: 'direct',
     color: '#8a5bd6',
     jurisdiction: {
@@ -112,16 +124,6 @@ export const MAP_LAYERS: MapLayerConfig[] = [
       filterTable: 'VersoZoning_info',
       label: 'Jurisdiction',
     },
-  },
-  {
-    id: 'ambulance',
-    title: 'Ambulance Service Areas',
-    dataURL: `${BASE_API_URL}/load/mapping/ambulance/service_area`,
-    method: 'POST',
-    filterList: ambulance_filtering,
-    legendURL: `${BASE_API_URL}/load/mapping/ambulance/ambulance_legend`,
-    responseShape: 'direct',
-    color: '#fd7e14',
   },
   {
     id: 'parcels',

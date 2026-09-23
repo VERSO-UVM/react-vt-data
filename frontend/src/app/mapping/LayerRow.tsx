@@ -10,7 +10,7 @@ import {
   SegmentedControl,
 } from '@mantine/core';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
-import { useMapLayer } from './UseMapLayer';
+import { useMapLayer, type LayerStats } from './UseMapLayer';
 import { recolorParcels, type ParcelColorMode } from './layerColors';
 import type { MapLayerConfig } from '@/app/mapping/MapLayers';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
@@ -21,6 +21,9 @@ interface LayerRowProps {
   active: boolean;
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
+  /** This layer's server-computed area stats (zoning only), or null when
+   *  the layer is off — feeds the report's coverage/composition cards. */
+  onStatsChange: (id: string, stats: LayerStats | null) => void;
   /** Initial filters to apply for this layer, e.g. from a use-case preset. */
   presetFilters?: FilterSpec[];
   /** Candidate spellings of the selected town's name, merged into every
@@ -44,13 +47,14 @@ export default function LayerRow({
   active,
   onToggle,
   onDataChange,
+  onStatsChange,
   presetFilters,
   townCandidates,
   townBBox,
   locked,
   scopeVersion,
 }: LayerRowProps) {
-  const { geojson, loading, applyFilters } = useMapLayer(
+  const { geojson, stats, loading, applyFilters } = useMapLayer(
     config,
     townCandidates,
     townBBox,
@@ -75,17 +79,23 @@ export default function LayerRow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayGeojson, active]);
 
+  useEffect(() => {
+    onStatsChange(config.id, active ? stats : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stats, active]);
+
   // (Re)fetch at most once per scopeVersion while active: once on first
   // activation, and again whenever a preset is (re)selected or the town
   // changes (both bump scopeVersion). Re-toggling the layer off/on in
   // between doesn't re-fetch, so it never clobbers the user's own filter
   // tweaks made via the Apply button below.
+  const initialSpecs = presetFilters ?? config.defaultFilters;
   const appliedVersion = useRef<number | null>(null);
   useEffect(() => {
     if (!active) return;
     if (appliedVersion.current === scopeVersion) return;
     appliedVersion.current = scopeVersion;
-    applyFilters(presetFilters ?? []);
+    applyFilters(initialSpecs ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, scopeVersion]);
 
@@ -147,7 +157,7 @@ export default function LayerRow({
             key={scopeVersion}
             filterList={config.filterList}
             handleApply={applyFilters}
-            initialSpecs={presetFilters}
+            initialSpecs={initialSpecs}
             locked={locked}
           />
         </Box>

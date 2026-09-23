@@ -40,7 +40,8 @@ export const BUILDABLE_AREAS_DEFINITION =
   '(Nonresidential, Overlay, and conservation-named districts are excluded) ' +
   'and permits 1-4 family housing, either Permitted outright or by Public ' +
   'Hearing; its soil is Well or Moderately Suited for on-site septic; and ' +
-  "it falls outside FEMA's mapped flood hazard area.";
+  "it falls outside FEMA's Special Flood Hazard Area (the high-risk, " +
+  '1%-annual-chance floodplain).';
 
 export const MAP_PRESETS: MapPreset[] = [
   {
@@ -72,6 +73,15 @@ export const MAP_PRESETS: MapPreset[] = [
             'Soil Suitability Level': ['Well Suited', 'Moderately Suited'],
           },
           cols: ['Soil Suitability Level'],
+        },
+      ],
+      // Locked to the high-risk zones the overlay subtracts (see
+      // buildableOverlay.ts), so the user can't quietly filter them away.
+      'flood-legal': [
+        {
+          filter_table: 'FEMA_floodHazard_geom',
+          filters: { 'Flood Risk': ['High'] },
+          cols: ['Flood Risk'],
         },
       ],
     },

@@ -109,7 +109,7 @@ def _acs_tidy(key: str, label: str, description: str, table: str) -> Dataset:
             "geo_type",
             "county",
             "county_fips",
-            "GEOID",
+            "geoid",
             "section",
             "variable",
         ),

@@ -43,7 +43,7 @@
       "state": "VARCHAR",
       "town": "VARCHAR",
       "town_name": "VARCHAR",
-      "vacant_land": "BOOLEAN"
+      "vacant_land": "VARCHAR"
     },
     "VCGIParcels_tax": {
       "current_use_homestead_reduction_amount": "BIGINT",
@@ -465,10 +465,10 @@
       "year": "VARCHAR"
     },
     "acs5_demographics_tidy": {
-      "GEOID": "VARCHAR",
       "county": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
+      "geoid": "VARCHAR",
       "name": "VARCHAR",
       "percent": "DOUBLE",
       "section": "VARCHAR",
@@ -490,10 +490,10 @@
       "year": "BIGINT"
     },
     "acs5_economics_tidy": {
-      "GEOID": "VARCHAR",
       "county": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
+      "geoid": "VARCHAR",
       "name": "VARCHAR",
       "percent": "DOUBLE",
       "section": "VARCHAR",
@@ -502,10 +502,10 @@
       "year": "VARCHAR"
     },
     "acs5_education_tidy": {
-      "GEOID": "VARCHAR",
       "county": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
+      "geoid": "VARCHAR",
       "name": "VARCHAR",
       "percent": "DOUBLE",
       "section": "VARCHAR",
@@ -514,22 +514,22 @@
       "year": "VARCHAR"
     },
     "acs5_housing_tidy": {
-      "GEOID": "VARCHAR",
       "county": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
+      "geoid": "VARCHAR",
       "name": "VARCHAR",
       "percent": "DOUBLE",
       "section": "VARCHAR",
-      "value": "DOUBLE",
+      "value": "BIGINT",
       "variable": "VARCHAR",
       "year": "VARCHAR"
     },
     "acs5_snapshot_indicators_tidy": {
-      "GEOID": "VARCHAR",
       "county": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
+      "geoid": "VARCHAR",
       "name": "VARCHAR",
       "percent": "DOUBLE",
       "section": "VARCHAR",

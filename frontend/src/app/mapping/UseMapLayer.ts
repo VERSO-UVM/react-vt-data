@@ -21,6 +21,26 @@ import { applyJurisdictionScope } from './jurisdictionMatch';
 import { recolorLayer } from './layerColors';
 import { cropToBBox } from './spatialScope';
 
+/** Union-based zoned-area totals from the zoning geo query. Unions (not
+ *  summed per-district acres) so overlays on top of base districts aren't
+ *  double counted. */
+export type TownAreaStat = {
+  town: string;
+  county: string;
+  matched_acres: number;
+  total_acres: number;
+};
+export type DistrictAreaStat = { district_type: string; acres: number };
+export type LayerStats = {
+  /** Every zoned town: its total, and how much of it matches the filters. */
+  towns: TownAreaStat[];
+  /** Matched area per district type, within the fetch's town scope. */
+  districts: DistrictAreaStat[];
+  /** The townCandidates the fetch was scoped to — lets consumers ignore
+   *  stats left over from a previously selected town. */
+  scope: string[] | null;
+};
+
 /** @param townCandidates - plausible spellings of the selected town's name
  *    (see jurisdictionCandidates), auto-merged into every fetch this layer
  *    makes so requests stay scoped to that town. Null/empty = unscoped.
@@ -36,6 +56,9 @@ export function useMapLayer(
 ) {
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
   const [legend, setLegend] = useState<LegendRow[]>([]);
+  // Server-computed area stats that arrive alongside 'geojson-stats'
+  // responses (zoning). Null for every other layer.
+  const [stats, setStats] = useState<LayerStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -57,10 +80,10 @@ export function useMapLayer(
     async (specs: FilterSpec[]) => {
       setLoading(true);
       try {
-        if (config.method === 'GET' || config.filterList.length === 0) {
+        let fc: FeatureCollection;
+        if (config.method === 'GET') {
           const res = await axios.get(config.dataURL);
-          const fc = cropToBBox(res.data as FeatureCollection, townBBox);
-          setGeojson(recolorLayer(config.id, fc));
+          fc = cropToBBox(res.data as FeatureCollection, townBBox);
         } else {
           const scopedSpecs = applyJurisdictionScope(
             config,
@@ -71,17 +94,28 @@ export function useMapLayer(
 
           // Zoning and parcels can filter across multiple source tables at
           // once (e.g. parcels' info + tax tables), so they need the full
-          // specs list [...]; single-source wastewater endpoints require a
-          // bare object {...}.
+          // specs list [...]; single-source endpoints (wastewater, flood)
+          // require a bare object {...}, so merge every spec's filters on
+          // that one table (flood has two checkbox groups on one table).
           let formattedPayload: unknown;
           if (config.id === 'zoning' || config.id === 'parcels') {
             formattedPayload = Array.isArray(assembledPayload)
               ? assembledPayload
               : [assembledPayload];
           } else {
-            formattedPayload = Array.isArray(assembledPayload)
-              ? (assembledPayload[0] ?? {})
-              : assembledPayload;
+            const [first, ...rest] = assembledPayload;
+            formattedPayload = first
+              ? {
+                  ...first,
+                  filters: Object.assign(
+                    {},
+                    first.filters,
+                    ...rest
+                      .filter((s) => s.filter_table === first.filter_table)
+                      .map((s) => s.filters),
+                  ),
+                }
+              : {};
           }
 
           const res = await postRequest({
@@ -92,9 +126,16 @@ export function useMapLayer(
           const rawFc = (
             config.responseShape === 'geojson-stats' ? res.geojson : res
           ) as FeatureCollection;
-          const fc = cropToBBox(rawFc, townBBox);
-          setGeojson(recolorLayer(config.id, fc));
+          fc = cropToBBox(rawFc, townBBox);
+          if (config.responseShape === 'geojson-stats') {
+            setStats({
+              towns: res.town_stats ?? [],
+              districts: res.district_stats ?? [],
+              scope: townCandidates,
+            });
+          }
         }
+        setGeojson(recolorLayer(config.id, fc));
         setLoaded(true);
       } catch (e) {
         console.error(`data fetch failed for ${config.id}`, e);
@@ -114,5 +155,13 @@ export function useMapLayer(
     fetchLegend();
   }, [loaded, applyFilters, fetchLegend]);
 
-  return { geojson, legend, loading, applyFilters, loadInitial, fetchLegend };
+  return {
+    geojson,
+    legend,
+    stats,
+    loading,
+    applyFilters,
+    loadInitial,
+    fetchLegend,
+  };
 }

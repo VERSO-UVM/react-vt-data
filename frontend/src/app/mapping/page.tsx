@@ -36,9 +36,12 @@ import {
 } from '@tabler/icons-react';
 
 import { Search } from 'lucide-react';
+import { area } from '@turf/area';
 
 import VTMap from '@/components/mapping';
 import LayerPanel from './LayerPanel';
+import DistributionCard from './DistributionCard';
+import type { LayerStats } from './UseMapLayer';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
 import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
 import { jurisdictionCandidates } from './jurisdictionMatch';
@@ -56,6 +59,18 @@ const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   'buildable-areas': IconBuildingCommunity,
   infrastructure: IconDroplet,
 };
+
+// In rank order, best to worst. Mirrors the backend's filter option order
+// (CUSTOM_OPTION_ORDER in query/core_functions.py) — keep the two in sync.
+const SOIL_SUITABILITY_COLORS: Record<string, string> = {
+  'Well Suited': '#2ca02c',
+  'Moderately Suited': '#ffcc00',
+  'Marginally Suited': '#fd7e14',
+  'Not Suited': '#dc3545',
+  'Not Rated': '#6c757d',
+};
+
+const ACRES_PER_SQM = 1 / 4046.8564224;
 
 export default function MapExplorerPage() {
   return (
@@ -89,6 +104,8 @@ function MapExplorerContent() {
   const [layerData, setLayerData] = useState<
     Record<string, FeatureCollection | null>
   >({});
+  // Zoning's server-computed area stats — see LayerStats.
+  const [zoningStats, setZoningStats] = useState<LayerStats | null>(null);
   const [presetFilters, setPresetFilters] = useState<
     Record<string, FilterSpec[]>
   >({});
@@ -213,6 +230,7 @@ function MapExplorerContent() {
         // while the rescoped fetch is in flight.
         setSelectedTown(match);
         setLayerData({});
+        setZoningStats(null);
         setScopeVersion((v) => v + 1);
       }
     },
@@ -239,6 +257,7 @@ function MapExplorerContent() {
     });
     if (!active) {
       setLayerData((prev) => ({ ...prev, [id]: null }));
+      if (id === 'zoning') setZoningStats(null);
     }
     // Manual toggling breaks out of "preset" mode so the picker no longer
     // shows a preset as selected.
@@ -255,6 +274,7 @@ function MapExplorerContent() {
   const handlePresetClear = useCallback(() => {
     setActiveLayers(new Set());
     setLayerData({});
+    setZoningStats(null);
     setPresetFilters({});
     setActivePresetId(null);
   }, []);
@@ -272,6 +292,13 @@ function MapExplorerContent() {
   const handleDataChange = useCallback(
     (id: string, geojson: FeatureCollection | null) => {
       setLayerData((prev) => ({ ...prev, [id]: geojson }));
+    },
+    [],
+  );
+
+  const handleStatsChange = useCallback(
+    (id: string, stats: LayerStats | null) => {
+      if (id === 'zoning') setZoningStats(stats);
     },
     [],
   );
@@ -357,6 +384,140 @@ function MapExplorerContent() {
       return sum + (Number.isFinite(acres) ? acres : 0);
     }, 0);
   }, [buildableOverlay, layerData, activeLayers, bothZoningAndSoilActive]);
+
+  const soilSuitabilityDistribution = useMemo(() => {
+    const fc = layerData['soil-suitability'];
+    if (!activeLayers.has('soil-suitability') || !fc?.features?.length) {
+      return null;
+    }
+
+    // Acreage-weighted, not feature-count-weighted: suitability polygons are
+    // dissolved/merged per rating class upstream, so a handful of large
+    // polygons can outweigh many small ones — counting features would
+    // misrepresent how much land is actually in each class.
+    const acresByClass = new Map<string, number>();
+    let totalAcres = 0;
+    for (const feature of fc.features) {
+      const key = String(feature.properties?.Suitability ?? 'Not Rated');
+      const acres = Number(feature.properties?.Acres) || 0;
+      acresByClass.set(key, (acresByClass.get(key) ?? 0) + acres);
+      totalAcres += acres;
+    }
+    if (totalAcres === 0) return null;
+
+    return Object.keys(SOIL_SUITABILITY_COLORS)
+      .filter((label) => acresByClass.has(label))
+      .map((label) => {
+        const acres = acresByClass.get(label) ?? 0;
+        return {
+          label,
+          acres,
+          pct: (acres / totalAcres) * 100,
+          color: SOIL_SUITABILITY_COLORS[label],
+        };
+      });
+  }, [layerData, activeLayers]);
+
+  const treatmentFacilityCapacity = useMemo(() => {
+    const fc = layerData['treatment-facilities'];
+    if (!activeLayers.has('treatment-facilities') || !fc?.features?.length) {
+      return null;
+    }
+
+    let totalMgd = 0;
+    let reporting = 0;
+    for (const feature of fc.features) {
+      const raw = feature.properties?.['Design Hydraulic Capacity'];
+      if (raw === null || raw === undefined || String(raw).trim() === '') {
+        continue;
+      }
+
+      const mgd = Number(raw);
+
+      if (Number.isFinite(mgd)) {
+        totalMgd += mgd;
+        reporting += 1;
+      }
+    }
+    return { totalMgd, reporting, total: fc.features.length };
+  }, [layerData, activeLayers]);
+
+  // % of this town's zoned area that matches the active filters. Both sides
+  // are server-side unions (see LayerStats), so overlays aren't counted
+  // twice. Stats from a fetch scoped to a previous town are ignored.
+  const zoningCoverage = useMemo(() => {
+    if (
+      !activeLayers.has('zoning') ||
+      !zoningStats ||
+      zoningStats.scope !== townCandidates ||
+      !townCandidates
+    ) {
+      return null;
+    }
+    const candidates = new Set(townCandidates);
+    let matchedAcres = 0;
+    let totalAcres = 0;
+    for (const t of zoningStats.towns) {
+      if (!candidates.has(t.town)) continue;
+      matchedAcres += t.matched_acres;
+      totalAcres += t.total_acres;
+    }
+    if (totalAcres === 0) return null;
+    return { matchedAcres, totalAcres, pct: (matchedAcres / totalAcres) * 100 };
+  }, [activeLayers, zoningStats, townCandidates]);
+
+  // Matched area per district type, as a share of the matched zoned area.
+  // Overlays sit on top of base districts, so with overlays present the
+  // shares can add up to more than 100%.
+  const zoningDistrictComposition = useMemo(() => {
+    if (!zoningCoverage || !zoningStats?.districts.length) return null;
+    if (zoningCoverage.matchedAcres === 0) return null;
+
+    const colorByDistrict = new Map<string, string>();
+    for (const feature of layerData['zoning']?.features ?? []) {
+      const district = String(feature.properties?.['District Type']);
+      if (colorByDistrict.has(district)) continue;
+      const rgba = feature.properties?.rgba_color as number[] | undefined;
+      if (Array.isArray(rgba) && rgba.length >= 3) {
+        colorByDistrict.set(
+          district,
+          `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`,
+        );
+      }
+    }
+
+    return zoningStats.districts
+      .map(({ district_type, acres }) => ({
+        label: district_type ?? 'Unknown',
+        acres,
+        pct: (acres / zoningCoverage.matchedAcres) * 100,
+        color: colorByDistrict.get(district_type) ?? '#64748b',
+      }))
+      .sort((a, b) => b.acres - a.acres);
+  }, [zoningCoverage, zoningStats, layerData]);
+
+  const serviceAreaSummary = useMemo(() => {
+    const fc = layerData['service-areas'];
+    if (!activeLayers.has('service-areas') || !fc?.features?.length) {
+      return null;
+    }
+
+    let totalAcres = 0;
+    const systems = new Set<string>();
+    const owners = new Set<string>();
+    for (const feature of fc.features) {
+      try {
+        totalAcres += area(feature) * ACRES_PER_SQM;
+      } catch {
+        // Malformed geometry shouldn't block the rest of the summary.
+      }
+      const systemName = feature.properties?.['System Name'];
+      const systemOwner = feature.properties?.['System Owner'];
+      if (systemName) systems.add(String(systemName));
+      if (systemOwner) owners.add(String(systemOwner));
+    }
+    return { totalAcres, systemCount: systems.size, ownerCount: owners.size };
+  }, [layerData, activeLayers]);
 
   return (
     <Box
@@ -603,6 +764,7 @@ function MapExplorerContent() {
                   activeLayers={activeLayers}
                   onToggle={handleToggle}
                   onDataChange={handleDataChange}
+                  onStatsChange={handleStatsChange}
                   presetFilters={presetFilters}
                   lockedLayerIds={lockedLayerIds}
                   townCandidates={townCandidates}
@@ -742,6 +904,31 @@ function MapExplorerContent() {
                   )}
                 </Paper>
 
+                {zoningCoverage && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
+                  >
+                    <Text size="sm" c="dimmed" fw={600}>
+                      Zoning Match Coverage
+                    </Text>
+                    <Text fw={700} size="xl" c={COLORS.spruce}>
+                      {zoningCoverage.pct.toFixed(1)}%
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {Math.round(zoningCoverage.matchedAcres).toLocaleString()}{' '}
+                      of{' '}
+                      {Math.round(zoningCoverage.totalAcres).toLocaleString()}{' '}
+                      zoned acres in{' '}
+                      {selectedTown?.properties.NAME.split(',')[0] ??
+                        'this town'}{' '}
+                      match your filters
+                    </Text>
+                  </Paper>
+                )}
+
                 <Paper
                   withBorder
                   p="xs"
@@ -789,31 +976,71 @@ function MapExplorerContent() {
                   )}
                 </Paper>
 
-                <Paper
-                  withBorder
-                  p="xs"
-                  radius="sm"
-                  bg="var(--mantine-color-body)"
-                >
-                  <Text size="sm" c="dimmed" fw={600} mb={4}>
-                    Regional Findings
-                  </Text>
-                  <Box
-                    mt="xs"
-                    h={70}
-                    style={{
-                      border: '1px dashed var(--mantine-color-default-border)',
-                      borderRadius: theme.radius.sm,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                {soilSuitabilityDistribution && (
+                  <DistributionCard
+                    title="Soil Suitability Distribution"
+                    rows={soilSuitabilityDistribution}
+                  />
+                )}
+
+                {zoningDistrictComposition && (
+                  <DistributionCard
+                    title="Zoning District Composition"
+                    rows={zoningDistrictComposition}
+                    footnote={
+                      zoningDistrictComposition.some(
+                        (d) => d.label === 'Overlay',
+                      ) &&
+                      'Overlays sit on top of base districts, so shares can add up to more than 100%.'
+                    }
+                  />
+                )}
+
+                {serviceAreaSummary && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
                   >
-                    <Text size="xs" c="dimmed">
-                      Chart Canvas / Spatial Distribution Plot
+                    <Text size="sm" c="dimmed" fw={600}>
+                      Service Area Coverage
                     </Text>
-                  </Box>
-                </Paper>
+                    <Text fw={700} size="xl" c={COLORS.spruce}>
+                      {Math.round(
+                        serviceAreaSummary.totalAcres,
+                      ).toLocaleString()}{' '}
+                      ac
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {serviceAreaSummary.systemCount} system
+                      {serviceAreaSummary.systemCount === 1 ? '' : 's'},{' '}
+                      {serviceAreaSummary.ownerCount} owner
+                      {serviceAreaSummary.ownerCount === 1 ? '' : 's'}
+                    </Text>
+                  </Paper>
+                )}
+
+                {treatmentFacilityCapacity && (
+                  <Paper
+                    withBorder
+                    p="xs"
+                    radius="sm"
+                    bg="var(--mantine-color-body)"
+                  >
+                    <Text size="sm" c="dimmed" fw={600}>
+                      Treatment Capacity
+                    </Text>
+                    <Text fw={700} size="xl" c={COLORS.spruce}>
+                      {treatmentFacilityCapacity.totalMgd.toFixed(2)} MGD
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {treatmentFacilityCapacity.reporting} of{' '}
+                      {treatmentFacilityCapacity.total} facilities report design
+                      capacity
+                    </Text>
+                  </Paper>
+                )}
               </SimpleGrid>
             </Box>
           </Collapse>

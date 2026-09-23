@@ -31,11 +31,15 @@ def build_flood(con: duckdb.DuckDBPyConnection) -> None:
                 ELSE CAST(STATIC_BFE AS VARCHAR)
             END AS base_flood_elevation,
             CASE FLD_ZONE -- Flood zone color column (rgb)
+                -- 'X' is FEMA's "outside the special flood hazard area" zone
+                -- and covers most of the state's land area — leaving it
+                -- uncolored (NULL) keeps the layer legible instead of
+                -- painting nearly all of Vermont a single flat color.
                 WHEN 'A'  THEN [255,140,0,195]
                 WHEN 'AE' THEN [230,60,0,205]
                 WHEN 'AH' THEN [200,20,0,195]
                 WHEN 'AO' THEN [255,110,0,195]
-                WHEN 'X' THEN [255,195,0,195]
+                WHEN 'X' THEN NULL
                 WHEN 'D' THEN [70,50,255,195]
                 WHEN 'OPEN WATER' THEN [70,50,255,195]
                 ELSE [220,220,220,195]

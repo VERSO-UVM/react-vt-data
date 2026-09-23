@@ -3,6 +3,7 @@
 import { Stack, Divider } from '@mantine/core';
 import { MAP_LAYERS } from '@/app/mapping/MapLayers';
 import LayerRow from './LayerRow';
+import type { LayerStats } from './UseMapLayer';
 import type { FeatureCollection } from 'geojson';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 
@@ -10,6 +11,7 @@ interface LayerPanelProps {
   activeLayers: Set<string>;
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
+  onStatsChange: (id: string, stats: LayerStats | null) => void;
   presetFilters?: Record<string, FilterSpec[]>;
   lockedLayerIds: Set<string>;
   townCandidates: string[] | null;
@@ -21,6 +23,7 @@ export default function LayerPanel({
   activeLayers,
   onToggle,
   onDataChange,
+  onStatsChange,
   presetFilters,
   lockedLayerIds,
   townCandidates,
@@ -37,6 +40,7 @@ export default function LayerPanel({
             active={activeLayers.has(cfg.id)}
             onToggle={onToggle}
             onDataChange={onDataChange}
+            onStatsChange={onStatsChange}
             presetFilters={presetFilters?.[cfg.id]}
             locked={lockedLayerIds.has(cfg.id)}
             townCandidates={townCandidates}
