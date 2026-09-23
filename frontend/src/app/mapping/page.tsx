@@ -40,6 +40,7 @@ import { area } from '@turf/area';
 
 import VTMap from '@/components/mapping';
 import LayerPanel from './LayerPanel';
+import DistributionCard from './DistributionCard';
 import type { LayerStats } from './UseMapLayer';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
 import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
@@ -59,13 +60,8 @@ const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   infrastructure: IconDroplet,
 };
 
-const SOIL_SUITABILITY_ORDER = [
-  'Well Suited',
-  'Moderately Suited',
-  'Marginally Suited',
-  'Not Suited',
-  'Not Rated',
-];
+// In rank order, best to worst. Mirrors the backend's filter option order
+// (CUSTOM_OPTION_ORDER in query/core_functions.py) — keep the two in sync.
 const SOIL_SUITABILITY_COLORS: Record<string, string> = {
   'Well Suited': '#2ca02c',
   'Moderately Suited': '#ffcc00',
@@ -409,17 +405,17 @@ function MapExplorerContent() {
     }
     if (totalAcres === 0) return null;
 
-    return SOIL_SUITABILITY_ORDER.filter((label) =>
-      acresByClass.has(label),
-    ).map((label) => {
-      const acres = acresByClass.get(label) ?? 0;
-      return {
-        label,
-        acres,
-        pct: (acres / totalAcres) * 100,
-        color: SOIL_SUITABILITY_COLORS[label],
-      };
-    });
+    return Object.keys(SOIL_SUITABILITY_COLORS)
+      .filter((label) => acresByClass.has(label))
+      .map((label) => {
+        const acres = acresByClass.get(label) ?? 0;
+        return {
+          label,
+          acres,
+          pct: (acres / totalAcres) * 100,
+          color: SOIL_SUITABILITY_COLORS[label],
+        };
+      });
   }, [layerData, activeLayers]);
 
   const treatmentFacilityCapacity = useMemo(() => {
@@ -492,7 +488,7 @@ function MapExplorerContent() {
 
     return zoningStats.districts
       .map(({ district_type, acres }) => ({
-        district: district_type ?? 'Unknown',
+        label: district_type ?? 'Unknown',
         acres,
         pct: (acres / zoningCoverage.matchedAcres) * 100,
         color: colorByDistrict.get(district_type) ?? '#64748b',
@@ -981,79 +977,23 @@ function MapExplorerContent() {
                 </Paper>
 
                 {soilSuitabilityDistribution && (
-                  <Paper
-                    withBorder
-                    p="xs"
-                    radius="sm"
-                    bg="var(--mantine-color-body)"
-                  >
-                    <Text size="sm" c="dimmed" fw={600} mb="xs">
-                      Soil Suitability Distribution
-                    </Text>
-                    <Stack gap={6}>
-                      {soilSuitabilityDistribution.map((d) => (
-                        <Box key={d.label}>
-                          <Group justify="space-between" mb={2}>
-                            <Text size="sm" fw={500} lineClamp={1}>
-                              {d.label}
-                            </Text>
-                            <Text size="sm" c="dimmed">
-                              {Math.round(d.acres).toLocaleString()} ac (
-                              {d.pct.toFixed(1)}%)
-                            </Text>
-                          </Group>
-                          <Progress
-                            value={d.pct}
-                            color={d.color}
-                            size="xs"
-                            radius="xl"
-                          />
-                        </Box>
-                      ))}
-                    </Stack>
-                  </Paper>
+                  <DistributionCard
+                    title="Soil Suitability Distribution"
+                    rows={soilSuitabilityDistribution}
+                  />
                 )}
 
                 {zoningDistrictComposition && (
-                  <Paper
-                    withBorder
-                    p="xs"
-                    radius="sm"
-                    bg="var(--mantine-color-body)"
-                  >
-                    <Text size="sm" c="dimmed" fw={600} mb="xs">
-                      Zoning District Composition
-                    </Text>
-                    <Stack gap={6}>
-                      {zoningDistrictComposition.map((d) => (
-                        <Box key={d.district}>
-                          <Group justify="space-between" mb={2}>
-                            <Text size="sm" fw={500} lineClamp={1}>
-                              {d.district}
-                            </Text>
-                            <Text size="sm" c="dimmed">
-                              {Math.round(d.acres).toLocaleString()} ac (
-                              {d.pct.toFixed(1)}%)
-                            </Text>
-                          </Group>
-                          <Progress
-                            value={d.pct}
-                            color={d.color}
-                            size="xs"
-                            radius="xl"
-                          />
-                        </Box>
-                      ))}
-                    </Stack>
-                    {zoningDistrictComposition.some(
-                      (d) => d.district === 'Overlay',
-                    ) && (
-                      <Text size="xs" c="dimmed" mt={6}>
-                        Overlays sit on top of base districts, so shares can add
-                        up to more than 100%.
-                      </Text>
-                    )}
-                  </Paper>
+                  <DistributionCard
+                    title="Zoning District Composition"
+                    rows={zoningDistrictComposition}
+                    footnote={
+                      zoningDistrictComposition.some(
+                        (d) => d.label === 'Overlay',
+                      ) &&
+                      'Overlays sit on top of base districts, so shares can add up to more than 100%.'
+                    }
+                  />
                 )}
 
                 {serviceAreaSummary && (
