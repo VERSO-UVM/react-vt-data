@@ -154,6 +154,11 @@ def dual_var_comparison(
 def get_cdc_places_tidy(sources: list[FilterSource]) -> pd.DataFrame:
     """Tidy CDC PLACES rows (one per measure) for the given county filter.
 
+    One county returns its own estimates. With no county filter (a statewide
+    pick), each measure is an adult-population-weighted average of all
+    counties, since CDC publishes no Vermont-wide PLACES estimate; see
+    places_tidy.sql.
+
     Pinned to age-adjusted prevalence — CDC PLACES publishes both crude and
     age-adjusted estimates per measure, and mixing them would double every
     row and isn't comparable across counties with different age structures.
