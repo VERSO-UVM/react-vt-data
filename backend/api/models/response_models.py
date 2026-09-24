@@ -44,6 +44,9 @@ class FilterResponse(BaseModel):
         labels -- what to call the columns we'll filter on
         ranges -- a list of ranges (see RangeDescriptor). For now, this list has a length of zero or one.
         options -- a dictionary of {column: [optionA, optionB, etc.]} objects for checkboxes.
+        badges -- {label: [values]} annotations for a tree level, e.g. which
+            Measure values should carry a "Population Health Indicator" tag --
+            informational only, never part of the cascade itself.
 
 
     Args:
@@ -54,6 +57,7 @@ class FilterResponse(BaseModel):
     tree: dict = {}
     ranges: list[RangeDescriptor] = []
     options: dict[str, list[str]] = {}
+    badges: dict[str, list[str]] = {}
 
 
 def make_response(

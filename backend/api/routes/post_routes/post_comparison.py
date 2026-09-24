@@ -5,7 +5,12 @@ from fastapi import APIRouter, HTTPException
 from api.core_functions import spec_to_source
 from api.models import APIResponse, FilterSpec, make_response
 from query import compare_variables, composite_index, dataset_registry
-from query.comparison import dataset_for_table, level_config
+from query.comparison import (
+    NoDataError,
+    NoOverlapError,
+    dataset_for_table,
+    level_config,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,6 +59,19 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
         # fetch the same way -- dropping it here would let unrelated rows
         # for that variable (Crude vs. Age-adjusted prevalence, etc.) back in.
         other_filters = {k: v for k, v in src.filters.items() if k != var_col}
+        if dataset == "cdc" and "data_value_type" not in other_filters:
+            # CDC publishes both crude and age-adjusted prevalence for every
+            # county-level measure; left unselected, both rows come back and
+            # double every geography once merged. Pin to age-adjusted at
+            # county, matching query/cdc.py's default for the same reason.
+            # Census tracts never get an age-adjusted estimate at all (CDC
+            # only computes it at the county/place level), so pin those to
+            # crude instead -- https://www.cdc.gov/places/faqs/using-data/
+            other_filters["data_value_type"] = (
+                ["Age-adjusted prevalence"]
+                if level == "county"
+                else ["Crude prevalence"]
+            )
         picks.append((dataset, values[0], other_filters))
 
     try:
@@ -61,6 +79,21 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
         geojson, legend = compare_variables(
             dataset1, level, var1, dataset2, var2, filters1, filters2
         )
+    except NoDataError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "no_data", "level": e.level, "variable": e.variable},
+        ) from e
+    except NoOverlapError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "no_overlap",
+                "level": e.level,
+                "variable_1": e.var1,
+                "variable_2": e.var2,
+            },
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
