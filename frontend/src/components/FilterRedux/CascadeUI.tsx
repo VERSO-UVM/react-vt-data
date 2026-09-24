@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { FilterTree, apiFilterParams } from './filterTypes';
+import { FilterTree, FilterValue, apiFilterParams } from './filterTypes';
 import axios from 'axios';
 import { BASE_API_URL } from '@/config';
 import {
@@ -63,6 +63,35 @@ const TOOLTIPS: Record<string, string> = {
     'every age group the adjustment needs.',
 };
 
+// Drop the first selected level (and everything below it) whose value no
+// longer exists in `tree` -- e.g. the geography level toggle swaps CDC's
+// filter table between county and tract, which changes what Prevalence
+// Measure offers but leaves Category/Measure untouched. Returns the same
+// `filters` reference when nothing is stale, so callers can check for a
+// change with `!==` instead of a deep comparison.
+function removeStaleFilters(
+  tree: FilterTree,
+  labels: string[],
+  filters: Record<string, FilterValue>,
+): Record<string, FilterValue> {
+  let node: FilterTree = tree;
+  let staleFrom = -1;
+  for (let i = 0; i < labels.length; i++) {
+    const sel = filters[labels[i]];
+    const selVal = Array.isArray(sel) ? sel[0] : undefined;
+    if (selVal == null) break; // nothing picked at/after this level yet
+    if (node?.[selVal] == null) {
+      staleFrom = i;
+      break;
+    }
+    node = node[selVal] ?? {};
+  }
+  if (staleFrom === -1) return filters;
+  const newFilters = { ...filters };
+  labels.slice(staleFrom).forEach((col) => delete newFilters[col]);
+  return newFilters;
+}
+
 export function CascadeFilter(params: apiFilterParams) {
   const { spec, setValue } = params;
   const [tree, setTree] = useState<FilterTree>({});
@@ -83,31 +112,14 @@ export function CascadeFilter(params: apiFilterParams) {
       .catch((e) => console.error('tree fetch failed', e));
   }, [filterURL]);
 
-  // Whenever the tree changes -- e.g. the geography level toggle swaps CDC's
-  // filter table between county and tract, which changes what Prevalence
-  // Measure offers but leaves Category/Measure untouched -- keep whatever
-  // picks are still valid instead of wiping the whole chain. Only the first
-  // level whose selected value doesn't exist in the new tree (and everything
-  // below it) gets cleared, the same as picking a new value by hand does.
+  // Keep whatever picks are still valid instead of wiping the whole chain
+  // when the tree changes underneath the current selection. The pruning
+  // itself is pure (see removeStaleFilters); this effect only syncs the
+  // result up to the parent when it actually differs.
   useEffect(() => {
     if (!labels.length) return;
-    let node: FilterTree = tree;
-    let staleFrom = -1;
-    for (let i = 0; i < labels.length; i++) {
-      const sel = spec.filters?.[labels[i]];
-      const selVal = Array.isArray(sel) ? sel[0] : undefined;
-      if (selVal == null) break; // nothing picked at/after this level yet
-      if (node?.[selVal] == null) {
-        staleFrom = i;
-        break;
-      }
-      node = node[selVal] ?? {};
-    }
-    if (staleFrom === -1) return;
-    const newFilters = { ...spec.filters };
-    labels.slice(staleFrom).forEach((col) => delete newFilters[col]);
-    setValue(newFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const removed = removeStaleFilters(tree, labels, spec.filters ?? {});
+    if (removed !== spec.filters) setValue(removed);
   }, [tree, labels]);
 
   // what happens when we select a value in the box
