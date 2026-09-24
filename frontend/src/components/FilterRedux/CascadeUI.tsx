@@ -8,17 +8,99 @@
  */
 
 import { useEffect, useState } from 'react';
-import { FilterTree, apiFilterParams } from './filterTypes';
+import { FilterTree, FilterValue, apiFilterParams } from './filterTypes';
 import axios from 'axios';
 import { BASE_API_URL } from '@/config';
-import { Select, Stack } from '@mantine/core';
+import {
+  Select,
+  Stack,
+  Group,
+  ActionIcon,
+  Badge,
+  Tooltip as MantineTooltip,
+} from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { COLORS, FONTS } from '@/app/theme';
 
+// Short tag shown next to a Measure flagged as a key health indicator
+// (this project's curated "SME" list drawn from CDC PLACES/BRFSS notes),
+// instead of forcing everyone through a separate True/False cascade level
+// just to spot them.
+const BADGE_TOOLTIPS: Record<string, string> = {
+  Measure:
+    'One of this dataset’s curated Population Health Indicators — ' +
+    'a key measure drawn from CDC PLACES/BRFSS notes.',
+};
+
+// CDC publishes exactly one "Crude prevalence" and one "Age-adjusted
+// prevalence" row per measure -- leaving this level at "All" doesn't mean
+// "no restriction", it means both rows come back and get merged as if they
+// were independent geographies. So this level skips "All" and instead
+// defaults to age-adjusted, matching the backend's own fallback.
+const NO_ALL_LABELS = new Set(['Prevalence Measure']);
+const DEFAULT_VALUES: Record<string, string> = {
+  'Prevalence Measure': 'Age-adjusted prevalence',
+};
+
+// Wording sourced directly from CDC/NCHS:
+// - "Age Adjustment" (Health, United States, sources & definitions):
+//   https://www.cdc.gov/nchs/hus/sources-definitions/age-adjustment.htm
+//   ("removes the effects of age when comparing populations with different
+//   age distributions... using the projected year 2000 U.S. standard
+//   population")
+// - PLACES "Using the Data" FAQ, on why smaller geographies use crude rates:
+//   https://www.cdc.gov/places/faqs/using-data/index.html
+//   ("age-adjusted estimates are only available at the county and
+//   place-level"; tract/ZCTA lack population for every age group the
+//   adjustment needs)
+const TOOLTIPS: Record<string, string> = {
+  'Prevalence Measure':
+    'Crude prevalence is the rate actually observed. Age-adjusted prevalence ' +
+    'reweights it to the 2000 U.S. standard population, per CDC/NCHS, so an ' +
+    "area's rate isn't just reflecting an older or younger population. CDC " +
+    'PLACES publishes age-adjusted estimates at the county level; smaller ' +
+    'areas use crude prevalence because they lack population counts for ' +
+    'every age group the adjustment needs.',
+};
+
+// Drop the first selected level (and everything below it) whose value no
+// longer exists in `tree` -- e.g. the geography level toggle swaps CDC's
+// filter table between county and tract, which changes what Prevalence
+// Measure offers but leaves Category/Measure untouched. Returns the same
+// `filters` reference when nothing is stale, so callers can check for a
+// change with `!==` instead of a deep comparison.
+function removeStaleFilters(
+  tree: FilterTree,
+  labels: string[],
+  filters: Record<string, FilterValue>,
+): Record<string, FilterValue> {
+  let node: FilterTree = tree;
+  let staleFrom = -1;
+  for (let i = 0; i < labels.length; i++) {
+    const sel = filters[labels[i]];
+    const selVal = Array.isArray(sel) ? sel[0] : undefined;
+    if (selVal == null) break; // nothing picked at/after this level yet
+    if (node?.[selVal] == null) {
+      staleFrom = i;
+      break;
+    }
+    node = node[selVal] ?? {};
+  }
+  if (staleFrom === -1) return filters;
+  const newFilters = { ...filters };
+  labels.slice(staleFrom).forEach((col) => delete newFilters[col]);
+  return newFilters;
+}
+
 export function CascadeFilter(params: apiFilterParams) {
-  const { spec, setValue } = params;
+  const { spec, setValue, onLabelsChange, excludeLabels } = params;
   const [tree, setTree] = useState<FilterTree>({});
   const [labels, setLabels] = useState<string[]>([]);
-  const filterURL = `${BASE_API_URL}/filters/tree?filter_table=${spec.filter_table}`;
+  const [badges, setBadges] = useState<Record<string, string[]>>({});
+  const excludeParams = (excludeLabels ?? [])
+    .map((label) => `&exclude_cols=${encodeURIComponent(label)}`)
+    .join('');
+  const filterURL = `${BASE_API_URL}/filters/tree?filter_table=${spec.filter_table}${excludeParams}`;
 
   // fetch the raw info for the filter tree.
   useEffect(() => {
@@ -28,9 +110,27 @@ export function CascadeFilter(params: apiFilterParams) {
       .then((r) => {
         setTree(r.data.tree);
         setLabels(r.data.labels || []);
+        setBadges(r.data.badges || {});
       })
       .catch((e) => console.error('tree fetch failed', e));
   }, [filterURL]);
+
+  // Hand the current level set up to the caller whenever it changes -- only
+  // `labels` (not `onLabelsChange`'s identity) should retrigger this.
+  useEffect(() => {
+    onLabelsChange?.(labels);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labels]);
+
+  // Keep whatever picks are still valid instead of wiping the whole chain
+  // when the tree changes underneath the current selection. The pruning
+  // itself is pure (see removeStaleFilters); this effect only syncs the
+  // result up to the parent when it actually differs.
+  useEffect(() => {
+    if (!labels.length) return;
+    const removed = removeStaleFilters(tree, labels, spec.filters ?? {});
+    if (removed !== spec.filters) setValue(removed);
+  }, [tree, labels]);
 
   // what happens when we select a value in the box
   // (we update our filters and push them up to parent)
@@ -54,62 +154,140 @@ export function CascadeFilter(params: apiFilterParams) {
       if (selVal == null || node?.[selVal] == null) return [];
       node = node[selVal];
     }
-    return ['All', ...Object.keys(node ?? {})];
+    const keys = Object.keys(node ?? {});
+    return NO_ALL_LABELS.has(label) ? keys : ['All', ...keys];
   };
+
+  // levels that skip "All" need an explicit pick as soon as they become
+  // available -- otherwise they'd render with no selection at all.
+  useEffect(() => {
+    labels.forEach((label, i) => {
+      if (!NO_ALL_LABELS.has(label)) return;
+      if (spec.filters?.[label]) return;
+      const parent = labels[i - 1];
+      if (parent && spec.filters?.[parent] == null) return;
+      const options = getOptions(label);
+      const fallback = DEFAULT_VALUES[label];
+      const preferred =
+        fallback && options.includes(fallback) ? fallback : options[0];
+      if (preferred) handleSelect(label, preferred);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tree, labels, spec.filters]);
 
   return (
     <Stack gap={18}>
-      {labels.map((label, i) => (
-        <Select
-          key={label}
-          label={label}
-          data={getOptions(label)}
-          value={(spec.filters?.[label] as string[])?.[0] ?? 'All'}
-          onChange={(v) => handleSelect(label, v!)}
-          disabled={i > 0 && spec.filters?.[labels[i - 1]] == null}
-          searchable
-          radius="sm"
-          size="md"
-          styles={{
-            label: {
-              fontFamily: FONTS.body,
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: COLORS.ink,
-              marginBottom: 7,
-            },
+      {labels.map((label, i) => {
+        const flagged = new Set(badges[label] ?? []);
+        return (
+          <Select
+            key={label}
+            label={
+              TOOLTIPS[label] ? (
+                <Group gap={4} wrap="nowrap">
+                  <span>{label}</span>
+                  <MantineTooltip
+                    label={TOOLTIPS[label]}
+                    multiline
+                    w={260}
+                    withArrow
+                  >
+                    <ActionIcon
+                      variant="transparent"
+                      size="xs"
+                      c={COLORS.slate}
+                      style={{ cursor: 'help' }}
+                    >
+                      <IconInfoCircle size={14} stroke={1.5} />
+                    </ActionIcon>
+                  </MantineTooltip>
+                </Group>
+              ) : (
+                label
+              )
+            }
+            data={getOptions(label)}
+            value={
+              (spec.filters?.[label] as string[])?.[0] ??
+              (NO_ALL_LABELS.has(label) ? null : 'All')
+            }
+            onChange={(v) => handleSelect(label, v!)}
+            disabled={i > 0 && spec.filters?.[labels[i - 1]] == null}
+            renderOption={
+              flagged.size
+                ? ({ option }) => (
+                    <Group
+                      gap={6}
+                      justify="space-between"
+                      flex={1}
+                      wrap="nowrap"
+                    >
+                      <span>{option.label}</span>
+                      {flagged.has(option.value) && (
+                        <MantineTooltip
+                          label={BADGE_TOOLTIPS[label]}
+                          multiline
+                          w={220}
+                          withArrow
+                        >
+                          <Badge
+                            size="xs"
+                            variant="light"
+                            color={COLORS.spruce}
+                            style={{ flexShrink: 0 }}
+                          >
+                            Health Indicator
+                          </Badge>
+                        </MantineTooltip>
+                      )}
+                    </Group>
+                  )
+                : undefined
+            }
+            searchable
+            radius="sm"
+            size="md"
+            styles={{
+              label: {
+                fontFamily: FONTS.body,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: COLORS.ink,
+                marginBottom: 7,
+              },
 
-            input: {
-              backgroundColor: COLORS.birch,
-              border: `1px solid ${COLORS.line}`,
-              color: COLORS.ink,
-              fontFamily: FONTS.body,
-              fontSize: '0.9rem',
-              minHeight: 42,
-              transition: 'border-color 150ms ease',
-            },
+              input: {
+                backgroundColor: COLORS.birch,
+                border: `1px solid ${COLORS.line}`,
+                color: COLORS.ink,
+                fontFamily: FONTS.body,
+                fontSize: '0.9rem',
+                minHeight: 42,
+                transition: 'border-color 150ms ease',
+              },
 
-            section: {
-              color: COLORS.slate,
-            },
+              section: {
+                color: COLORS.slate,
+              },
 
-            dropdown: {
-              backgroundColor: COLORS.birch,
-              border: `1px solid ${COLORS.line}`,
-              borderRadius: 6,
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
-              overflow: 'hidden',
-            },
+              dropdown: {
+                backgroundColor: COLORS.birch,
+                border: `1px solid ${COLORS.line}`,
+                borderRadius: 6,
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+                overflow: 'hidden',
+              },
 
-            option: {
-              fontFamily: FONTS.body,
-              fontSize: '0.875rem',
-              color: COLORS.ink,
-              padding: '9px 12px',
-            },
-          }}
-        />
-      ))}
+              option: {
+                fontFamily: FONTS.body,
+                fontSize: '0.875rem',
+                color: COLORS.ink,
+                padding: '9px 12px',
+              },
+            }}
+          />
+        );
+      })}
     </Stack>
   );
 }

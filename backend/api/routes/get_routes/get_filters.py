@@ -28,7 +28,11 @@ async def get_schema(target_table: str) -> dict:
 
 
 @router.get("/filters/tree")
-async def filter_tree_endpoint(filter_table: str, target_table: str = "default"):
+async def filter_tree_endpoint(
+    filter_table: str,
+    target_table: str = "default",
+    exclude_cols: Annotated[list[str] | None, Query()] = None,
+):
     """
     Get the JSON for a cascading filter on the target_table WITH the 'filter_table' as filter dataset.
     For now, the primary dataset is 'defauilt', which is the fallback for all non-specified datasets.
@@ -37,6 +41,10 @@ async def filter_tree_endpoint(filter_table: str, target_table: str = "default")
     Args:
         filter_table (str): The dataset *doing the filtering*.
         target_table (str): The dataset to be filtered.
+        exclude_cols (list[str] | None): Cascade labels to leave out of the
+            tree for this call only -- the schema's own "columns" map (and
+            therefore every other consumer, e.g. request_to_source/
+            spec_to_source filtering on that same label) is untouched.
 
     Returns:
         dict: a JSON dictionary of format
@@ -44,8 +52,17 @@ async def filter_tree_endpoint(filter_table: str, target_table: str = "default")
     """
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]
+    if exclude_cols:
+        colmap = {
+            label: column
+            for label, column in colmap.items()
+            if label not in exclude_cols
+        }
     rangemap: dict = meta.get("range", {})
-    return filter_tree(colmap, list(colmap.keys()), filter_table, rangemap=rangemap)
+    badgemap: dict = meta.get("badges", {})
+    return filter_tree(
+        colmap, list(colmap.keys()), filter_table, rangemap=rangemap, badgemap=badgemap
+    )
 
 
 @router.get("/filters/options")
