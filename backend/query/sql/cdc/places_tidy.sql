@@ -22,7 +22,7 @@ WITH filtered AS (
         data_value,
         TRY_CAST(
             REPLACE(CAST(total_pop_18plus AS VARCHAR), ',', '') AS DOUBLE
-        ) AS adults
+        ) AS total_pop_18plus
     FROM {{ table }}
     {{ where_string }}
 ),
@@ -44,8 +44,8 @@ SELECT
             COUNT(*) = ANY_VALUE(s.n_counties)
             AND COUNT(DISTINCT f.county) = ANY_VALUE(s.n_counties)
             AND COUNT(f.data_value) = COUNT(*)
-            AND COUNT(*) FILTER (WHERE f.adults > 0) = COUNT(*)
-            THEN ROUND(SUM(f.data_value * f.adults) / SUM(f.adults), 1)
+            AND COUNT(*) FILTER (WHERE f.total_pop_18plus > 0) = COUNT(*)
+            THEN ROUND(SUM(f.data_value * f.total_pop_18plus) / SUM(f.total_pop_18plus), 1)
     END AS Value,
     f.data_value_unit AS Unit
 FROM filtered AS f
