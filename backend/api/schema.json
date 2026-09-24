@@ -177,6 +177,16 @@
         "Flood Zone Type": "flood_zone_type",
         "Flood Risk": "flood_risk"
       }
+    },
+    "acs5_tract_tidy": {
+      "join_key": "geoid",
+      "join_type": "inner",
+      "value_col": "value",
+      "var_col": "variable",
+      "columns": {
+        "Section": "section",
+        "Variable": "variable"
+      }
     }
   }
 }

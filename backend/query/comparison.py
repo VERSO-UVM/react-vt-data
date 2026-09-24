@@ -124,6 +124,22 @@ DATASETS: dict[str, dict] = {
     "housing": _acs5_dataset("acs5_housing_tidy", "Housing"),
     "education": _acs5_dataset("acs5_education_tidy", "Education"),
     "economics": _acs5_dataset("acs5_economics_tidy", "Economics"),
+    # Experimental: tract-level ACS context, so poverty and insurance can be
+    # compared with CDC PLACES tracts within a county.
+    "tract_context": {
+        "label": "Poverty & Health Insurance (tracts)",
+        "filter_table": "acs5_tract_tidy",
+        "levels": {
+            "tract": {
+                "sql": sql_dir / "acs5" / "acs5_tract_compare.sql",
+                "table": "acs5_tract_tidy",
+                "var_col": "variable",
+                "value_col": "value",
+                "id_col": "geoid",
+                "name_col": "name",
+            },
+        },
+    },
 }
 
 
