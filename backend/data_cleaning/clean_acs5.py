@@ -27,18 +27,18 @@ COUNTY_GEOIDS = {
 }
 
 # All census "unavailable" data values
-# TODO: make this a dictionary with the exact meanings of each sentinal
-DP_UNAVAILABLE = [
-    "-666666666",
-    "-666666666.0",
-    "-666666666.00",
-    "-888888888",
-    "-888888888.0",
-    "-888888888.00",
-    "-999999999",
-    "-999999999.0",
-    "-999999999.00",
-]
+# Source: https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
+DP_UNAVAILABLE = {
+    "-666666666": "The estimate could not be computed because there were an insufficient number of sample observations.",
+    "-666666666.0": "The estimate could not be computed because there were an insufficient number of sample observations.",
+    "-666666666.00": "The estimate could not be computed because there were an insufficient number of sample observations.",
+    "-888888888": "The estimate is not applicable or not available.",
+    "-888888888.0": "The estimate is not applicable or not available.",
+    "-888888888.00": "The estimate is not applicable or not available.",
+    "-999999999": "The estimate cannot be displayed because there were an insufficient number of sample cases in the selected geographic area.",
+    "-999999999.0": "The estimate cannot be displayed because there were an insufficient number of sample cases in the selected geographic area.",
+    "-999999999.00": "The estimate cannot be displayed because there were an insufficient number of sample cases in the selected geographic area.",
+}
 
 
 def _dp_select_sql(dp: str, raw_table_name: str) -> str:
