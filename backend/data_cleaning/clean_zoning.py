@@ -93,7 +93,7 @@ def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
 
     # Hardcoded fix for Burlington's "Residential - High Density" zoning district
     # Changes overlay status to "No"
-    raw_df.loc[raw_df["OBJECT_ID"] == 1045, "Overlay_District", "No"]
+    raw_df.loc[raw_df["OBJECT_ID"] == 1045, "Overlay_District"] = "No"
 
     con.register("zoning_raw", raw_df)
 
