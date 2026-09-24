@@ -3,8 +3,8 @@ import logging
 from fastapi import APIRouter, Response
 
 from query import (
-    get_soil_suit_legend,
     get_ambulance_legend,
+    get_soil_suit_legend,
 )
 
 logger = logging.getLogger(__name__)

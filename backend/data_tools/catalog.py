@@ -109,7 +109,7 @@ def _acs_tidy(key: str, label: str, description: str, table: str) -> Dataset:
             "geo_type",
             "county",
             "county_fips",
-            "GEOID",
+            "geoid",
             "section",
             "variable",
         ),
@@ -903,27 +903,27 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
         ),
     }
     cleaners = {
-        "acs5_demographics": "demographics",
-        "acs5_economics": "economic",
-        "acs5_housing": "housing",
-        "acs5_education": "education",
-        "acs5_snapshot": "snapshot",
+        "acs5_demographics": "acs5_tidy",
+        "acs5_economics": "acs5_tidy",
+        "acs5_housing": "acs5_tidy",
+        "acs5_education": "acs5_tidy",
+        "acs5_snapshot": "acs5_tidy",
         "acs5_dp": "acs5",
-        "acs5_ts_age_dependency_ratio": "dependency_ratio",
-        "acs5_ts_population_change": "population_change",
+        "acs5_ts_age_dependency_ratio": "acs5_timeseries",
+        "acs5_ts_population_change": "acs5_timeseries",
         "acs5_ts_historic_population": "historic_population",
-        "acs5_ts_historic_population_change": "historic_population_change",
-        "acs5_ts_median_earnings": "median_earnings",
-        "acs5_ts_health_insurance": "health_insurance_coverage",
+        "acs5_ts_historic_population_change": "historic_population",
+        "acs5_ts_median_earnings": "acs5_timeseries",
+        "acs5_ts_health_insurance": "acs5_timeseries",
         "acs5_ts_income_burden": "acs5_timeseries",
-        "acs5_ts_vacancy_rates": "derived_time_series",
+        "acs5_ts_vacancy_rates": "acs5_timeseries",
         "qcew_employment_by_sector": "qcew",
         "ambulance_service_areas": "ambulance",
         "flood_hazard": "flood",
     }
     cleaner = cleaners.get(dataset.id)
     if dataset.id in simple_series:
-        cleaner = "derived_time_series"
+        cleaner = "acs5_timeseries"
     elif dataset.id.startswith("wastewater_"):
         cleaner = "wastewater"
     elif dataset.id.startswith("zoning_"):
@@ -956,7 +956,7 @@ def dataset_lineage(dataset: Dataset) -> dict[str, Any]:
         result["transformations"].insert(0, f"backend/data_collection/{source}.py")
         if dataset.id == "acs5_ts_median_home_value":
             result["source_code_note"] += (
-                " The served table is built by clean_derived_time_series.py; the older "
+                " The served table is built by clean_acs5_timeseries.py; the retired "
                 "build/acs5.py median-home-value CSV path is not this declared pipeline."
             )
     elif dataset.id == "acs5_ts_income_burden":

@@ -186,6 +186,14 @@
         "Zip Code": "zip_code",
         "City or Town": "city"
       }
+    },
+    "FEMA_floodHazard_geom": {
+      "join_key": "rowid",
+      "join_type": "inner",
+      "columns": {
+        "Flood Zone Type": "flood_zone_type",
+        "Flood Risk": "flood_risk"
+      }
     }
   }
 }

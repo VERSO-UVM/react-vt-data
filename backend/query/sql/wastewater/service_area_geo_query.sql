@@ -10,6 +10,8 @@ FROM (
             'type', 'Feature',
             'geometry', ST_AsGeoJSON(ST_Simplify(g.geometry, 0.0001))::JSON,
             'properties', json_object(
+                'System Name', i.system_name,
+                'System Owner', i.system_owner,
                 'rgba_color', '[44, 160, 44, 180]'::JSON,
                 'tooltip', json_object(
                     '__title__', 'Wastewater Service Areas',
