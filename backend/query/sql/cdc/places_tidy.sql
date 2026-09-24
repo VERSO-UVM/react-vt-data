@@ -30,7 +30,7 @@ WITH filtered AS (
         TRY_CAST(high_confidence_limit AS DOUBLE) AS high,
         TRY_CAST(
             REPLACE(CAST(total_pop_18plus AS VARCHAR), ',', '') AS DOUBLE
-        ) AS adults
+        ) AS total_pop_18plus
     FROM {{ table }}
     {{ where_string }}
 ),
@@ -53,13 +53,14 @@ combined AS (
         COUNT(*) = ANY_VALUE(s.n_counties)
         AND COUNT(DISTINCT f.county) = ANY_VALUE(s.n_counties)
         AND COUNT(f.data_value) = COUNT(*)
-        AND COUNT(*) FILTER (WHERE f.adults > 0) = COUNT(*) AS complete,
+        AND COUNT(*) FILTER (WHERE f.total_pop_18plus > 0) = COUNT(*) AS complete,
         COUNT(f.low) = COUNT(*) AND COUNT(f.high) = COUNT(*) AS has_intervals,
-        SUM(f.data_value * f.adults) / SUM(f.adults) AS value,
+        SUM(f.data_value * f.total_pop_18plus) / SUM(f.total_pop_18plus) AS value,
         -- 95% half-width of the weighted mean with fully correlated errors:
-        -- sum(w_i * h_i), w_i = adults_i / total adults and h_i each
-        -- county's half-width.
-        SUM(f.adults * (f.high - f.low) / 2) / SUM(f.adults) AS half_width,
+        -- sum(w_i * h_i), w_i each county's share of total_pop_18plus and h_i
+        -- its half-width.
+        SUM(f.total_pop_18plus * (f.high - f.low) / 2)
+        / SUM(f.total_pop_18plus) AS half_width,
         ANY_VALUE(f.low) AS low,
         ANY_VALUE(f.high) AS high
     FROM filtered AS f
