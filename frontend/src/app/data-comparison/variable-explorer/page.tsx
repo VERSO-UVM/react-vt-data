@@ -66,32 +66,31 @@ const LEVEL_LABELS: Record<string, string> = {
   tract: 'Census Tract',
 };
 
-// Matches the ValueErrors query/comparison.py raises (surfaced by FastAPI as
-// {detail: "..."}), so a known data-availability gap -- e.g. a measure with
-// no rows at the selected geography level -- gets a specific message instead
-// of the generic fallback below.
-const NO_DATA_RE = /^no data for [^/]+\/([^:]+): '(.+)'$/;
-const NO_OVERLAP_RE =
-  /^no shared geographies between [^/]+\/'(.+?)' and [^/]+\/'(.+?)' at the (\S+) level$/;
+type NoDataDetail = { code: 'no_data'; level: string; variable: string };
+type NoOverlapDetail = {
+  code: 'no_overlap';
+  level: string;
+  variable_1: string;
+  variable_2: string;
+};
+type ApplyErrorDetail = NoDataDetail | NoOverlapDetail;
 
-function describeApplyError(e: unknown): string {
+function describeApplyError(error: unknown): string {
   const detail =
-    axios.isAxiosError(e) && typeof e.response?.data?.detail === 'string'
-      ? e.response.data.detail
+    axios.isAxiosError(error) &&
+    error.response?.data?.detail &&
+    typeof error.response.data.detail === 'object'
+      ? (error.response.data.detail as ApplyErrorDetail)
       : null;
 
-  const noData = detail ? NO_DATA_RE.exec(detail) : null;
-  if (noData) {
-    const [, lvl, variable] = noData;
-    const levelLabel = LEVEL_LABELS[lvl] ?? lvl;
-    return `"${variable}" isn't available at the ${levelLabel} level — try a different variable or geography level.`;
+  if (detail?.code === 'no_data') {
+    const levelLabel = LEVEL_LABELS[detail.level] ?? detail.level;
+    return `"${detail.variable}" isn't available at the ${levelLabel} level — try a different variable or geography level.`;
   }
 
-  const noOverlap = detail ? NO_OVERLAP_RE.exec(detail) : null;
-  if (noOverlap) {
-    const [, var1, var2, lvl] = noOverlap;
-    const levelLabel = LEVEL_LABELS[lvl] ?? lvl;
-    return `"${var1}" and "${var2}" don't share any geographies at the ${levelLabel} level — try a different pair or geography level.`;
+  if (detail?.code === 'no_overlap') {
+    const levelLabel = LEVEL_LABELS[detail.level] ?? detail.level;
+    return `"${detail.variable_1}" and "${detail.variable_2}" don't share any geographies at the ${levelLabel} level — try a different pair or geography level.`;
   }
 
   return 'Could not compare those variables — try a different pair.';

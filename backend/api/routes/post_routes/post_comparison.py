@@ -5,7 +5,12 @@ from fastapi import APIRouter, HTTPException
 from api.core_functions import spec_to_source
 from api.models import APIResponse, FilterSpec, make_response
 from query import compare_variables, composite_index, dataset_registry
-from query.comparison import dataset_for_table, level_config
+from query.comparison import (
+    NoDataError,
+    NoOverlapError,
+    dataset_for_table,
+    level_config,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -74,6 +79,21 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
         geojson, legend = compare_variables(
             dataset1, level, var1, dataset2, var2, filters1, filters2
         )
+    except NoDataError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "no_data", "level": e.level, "variable": e.variable},
+        ) from e
+    except NoOverlapError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "no_overlap",
+                "level": e.level,
+                "variable_1": e.var1,
+                "variable_2": e.var2,
+            },
+        ) from e
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

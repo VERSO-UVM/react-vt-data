@@ -38,6 +38,26 @@ ACS_SENTINEL = -666666666
 MAX_YEAR = datetime.now().year - 2
 
 
+class NoDataError(ValueError):
+    def __init__(self, dataset: str, variable: str, level: str):
+        super().__init__(f"No data for {dataset}/{level}: {variable!r}")
+        self.dataset = dataset
+        self.variable = variable
+        self.level = level
+
+
+class NoOverlapError(ValueError):
+    def __init__(self, dataset1: str, var1: str, dataset2: str, var2: str, level: str):
+        super().__init__(
+            f"{var1} and {var2} don't share any geographies at the {level} level — try a different pair or geography level."
+        )
+        self.dataset1 = dataset1
+        self.var1 = var1
+        self.dataset2 = dataset2
+        self.var2 = var2
+        self.level = level
+
+
 def _latest_year(table: str) -> str:
     """Most recent `year` in `table` at or before MAX_YEAR.
 
@@ -232,7 +252,7 @@ def _single_variable(
     # producing a bogus cross product of geometry-less, name-less features.
     sub = sub.dropna(subset=["geoid"])
     if sub.empty:
-        raise ValueError(f"no data for {dataset}/{level}: {var!r}")
+        raise NoDataError(dataset=dataset, variable=var, level=level)
     return sub
 
 
@@ -271,9 +291,8 @@ def compare_variables(
         subset=["bin_1", "bin_2"]
     )
     if wide.empty:
-        raise ValueError(
-            f"no shared geographies between {dataset1}/{var1!r} and "
-            f"{dataset2}/{var2!r} at the {level} level"
+        raise NoOverlapError(
+            dataset1=dataset1, var1=var1, dataset2=dataset2, var2=var2, level=level
         )
 
     cmap = build_cmap()
