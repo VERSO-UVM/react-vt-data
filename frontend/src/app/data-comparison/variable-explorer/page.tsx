@@ -33,7 +33,10 @@ import { COLORS, FONTS } from '@/app/theme';
 import VTMap from '@/components/mapping';
 import VariableScatter from '@/components/Charts/MapCorrespondentScatter';
 import { CascadeFilter } from '@/components/FilterRedux/CascadeUI';
-import { assemble } from '@/components/FilterRedux/apiHelpers';
+import {
+  assemble,
+  isFilterComplete,
+} from '@/components/FilterRedux/apiHelpers';
 import { postRequest } from '@/components/FilterRedux/filterRequest';
 import { FilterSpec, FilterValue } from '@/components/FilterRedux/filterTypes';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
@@ -341,6 +344,8 @@ function VariableCard({
   filterTable,
   filters,
   setFilters,
+  onLabelsChange,
+  excludeLabels,
 }: {
   title: string;
   dataset: string | null;
@@ -349,6 +354,8 @@ function VariableCard({
   filterTable: string | null;
   filters: Record<string, FilterValue>;
   setFilters: (f: Record<string, FilterValue>) => void;
+  onLabelsChange: (labels: string[]) => void;
+  excludeLabels?: string[];
 }) {
   return (
     <Paper
@@ -378,6 +385,8 @@ function VariableCard({
         <CascadeFilter
           spec={{ filter_table: filterTable, filters }}
           setValue={setFilters}
+          onLabelsChange={onLabelsChange}
+          excludeLabels={excludeLabels}
         />
       )}
     </Paper>
@@ -396,6 +405,11 @@ export default function VariableExplorer() {
   const [level, setLevel] = useState<string | null>(null);
   const [filters1, setFilters1] = useState<Record<string, FilterValue>>({});
   const [filters2, setFilters2] = useState<Record<string, FilterValue>>({});
+  // Each cascade's own ordered level set, reported by CascadeFilter via
+  // onLabelsChange -- used with isFilterComplete to know when a side has a
+  // full variable picked (see VariableCard's onLabelsChange prop below).
+  const [labels1, setLabels1] = useState<string[]>([]);
+  const [labels2, setLabels2] = useState<string[]>([]);
 
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
   const [legend, setLegend] = useState<Legend | null>(null);
@@ -579,6 +593,12 @@ export default function VariableExplorer() {
         registry[dataset2].filter_table)
       : null;
 
+  const isFormValid =
+    Boolean(filterTable1) &&
+    Boolean(filterTable2) &&
+    isFilterComplete(filters1, labels1) &&
+    isFilterComplete(filters2, labels2);
+
   // Shared {x, y} extraction for the relationship/distribution stat cards —
   // mirrors what VariableScatter derives internally from the same geojson.
   const points: Point[] = useMemo(() => {
@@ -723,6 +743,8 @@ export default function VariableExplorer() {
                     filterTable={filterTable1}
                     filters={filters1}
                     setFilters={setFilters1}
+                    onLabelsChange={setLabels1}
+                    excludeLabels={dataset1 === 'cdc' ? ['County'] : undefined}
                   />
                   <VariableCard
                     title="Variable 2"
@@ -732,6 +754,8 @@ export default function VariableExplorer() {
                     filterTable={filterTable2}
                     filters={filters2}
                     setFilters={setFilters2}
+                    onLabelsChange={setLabels2}
+                    excludeLabels={dataset2 === 'cdc' ? ['County'] : undefined}
                   />
                 </Stack>
 
@@ -739,7 +763,11 @@ export default function VariableExplorer() {
                   <Button variant="default" onClick={handleResetClick}>
                     Reset
                   </Button>
-                  <Button color={COLORS.spruce} onClick={handleApplyClick}>
+                  <Button
+                    color={COLORS.spruce}
+                    onClick={handleApplyClick}
+                    disabled={!isFormValid}
+                  >
                     Apply
                   </Button>
                 </Group>

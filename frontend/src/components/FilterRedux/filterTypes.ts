@@ -30,6 +30,11 @@ export type FilterTree = { [key: string]: FilterTree | null };
 export type apiFilterParams = {
   spec: FilterSpec;
   setValue: (v: Record<string, FilterValue>) => void;
+  onLabelsChange?: (labels: string[]) => void;
+  // Cascade levels to hide from this instance only -- passed through to
+  // /filters/tree's exclude_cols, so the underlying schema column (and any
+  // other page/route still filtering on that label) is unaffected.
+  excludeLabels?: string[];
 };
 
 // type to define a cascade/checkbox filter, etc.

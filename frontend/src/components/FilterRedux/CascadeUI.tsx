@@ -93,11 +93,14 @@ function removeStaleFilters(
 }
 
 export function CascadeFilter(params: apiFilterParams) {
-  const { spec, setValue } = params;
+  const { spec, setValue, onLabelsChange, excludeLabels } = params;
   const [tree, setTree] = useState<FilterTree>({});
   const [labels, setLabels] = useState<string[]>([]);
   const [badges, setBadges] = useState<Record<string, string[]>>({});
-  const filterURL = `${BASE_API_URL}/filters/tree?filter_table=${spec.filter_table}`;
+  const excludeParams = (excludeLabels ?? [])
+    .map((label) => `&exclude_cols=${encodeURIComponent(label)}`)
+    .join('');
+  const filterURL = `${BASE_API_URL}/filters/tree?filter_table=${spec.filter_table}${excludeParams}`;
 
   // fetch the raw info for the filter tree.
   useEffect(() => {
@@ -111,6 +114,13 @@ export function CascadeFilter(params: apiFilterParams) {
       })
       .catch((e) => console.error('tree fetch failed', e));
   }, [filterURL]);
+
+  // Hand the current level set up to the caller whenever it changes -- only
+  // `labels` (not `onLabelsChange`'s identity) should retrigger this.
+  useEffect(() => {
+    onLabelsChange?.(labels);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [labels]);
 
   // Keep whatever picks are still valid instead of wiping the whole chain
   // when the tree changes underneath the current selection. The pruning
