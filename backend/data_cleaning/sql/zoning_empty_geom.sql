@@ -19,7 +19,7 @@ WITH covered AS (
     SELECT
         GEO_ID,
         ST_UNION_AGG(ST_MAKEVALID(ST_GeomFromWKB(geometry))) AS geom
-    FROM lake.RAW.zoning
+    FROM zoning_raw
     GROUP BY GEO_ID
 ),
 
