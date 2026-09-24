@@ -63,7 +63,7 @@ interface IndicatorTableProps {
 const PRIMARY_COLOR = '#5474B4';
 const COMPARISON_COLOR = '#c0c5cf';
 
-type Verdict = 'different' | 'similar' | 'unknown';
+export type Verdict = 'different' | 'similar' | 'unknown';
 
 function hasInterval(
   e: IndicatorEstimate,
@@ -79,7 +79,10 @@ const standardError = (e: { low: number; high: number }) =>
  *  intervals, a two-sided z-test on the difference (checking for overlapping
  *  intervals instead would miss real differences); with one, whether the
  *  other value falls outside it. Without any interval there's no basis. */
-function compare(a: IndicatorEstimate, b: IndicatorEstimate): Verdict {
+export function compareEstimates(
+  a: IndicatorEstimate,
+  b: IndicatorEstimate,
+): Verdict {
   if (a.value == null || b.value == null) return 'unknown';
   if (hasInterval(a) && hasInterval(b)) {
     const se = Math.hypot(standardError(a), standardError(b));
@@ -96,7 +99,7 @@ function compare(a: IndicatorEstimate, b: IndicatorEstimate): Verdict {
   return 'unknown';
 }
 
-function formatValue(value: number | null, unit = '%') {
+export function formatValue(value: number | null, unit = '%') {
   return value == null ? '—' : `${value.toFixed(1)}${unit}`;
 }
 
@@ -234,7 +237,7 @@ function DifferenceCell({ row }: { row: IndicatorRow }) {
   const { primary: p, comparison: c } = row;
   if (p.value == null || c.value == null) return <Text size="sm">—</Text>;
   const diff = p.value - c.value;
-  const verdict = compare(p, c);
+  const verdict = compareEstimates(p, c);
   return (
     <Stack gap={0}>
       <Text size="sm" fw={verdict === 'different' ? 700 : 400}>

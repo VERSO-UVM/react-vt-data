@@ -2,14 +2,12 @@ import { Grid, Text } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
 import type { Location } from '@/components/profile/profileStore';
 import {
-  SmokingRateCard,
-  UninsuredRateCard,
-  ChronicDiseaseChart,
-  DisabilityChart,
-  HealthStatusChart,
   IndicatorTable,
+  KeyIndicatorTiles,
+  PovertyUninsuredTrends,
 } from '@/components/Reports/health';
 import {
+  AT_A_GLANCE_MEASURES,
   HEALTH_CATEGORY_ORDER,
   buildIndicatorRows,
   indicatorPlace,
@@ -29,6 +27,9 @@ export interface DashboardData {
     current: DataRow[];
     history: DataRow[];
   };
+  // Extra endpoints declared in reports-by-topic's SECTIONS (e.g.
+  // "povertyUninsured").
+  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
 }
 
 export interface DashboardProps {
@@ -36,46 +37,29 @@ export interface DashboardProps {
 }
 
 export default function HealthDashboard({ data }: DashboardProps) {
-  const { primary, comparison } = data;
+  const { primary, comparison, timeseries } = data;
+  const rows = buildIndicatorRows(primary.current, comparison.current);
+  const dataYear = Math.max(
+    0,
+    ...[...primary.current, ...comparison.current].map(
+      (r) => Number(r.Year) || 0,
+    ),
+  );
 
   return (
     <Grid gap="lg">
-      <Grid.Col span={{ base: 12, md: 6 }}>
-        <SmokingRateCard
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 6 }}>
-        <UninsuredRateCard
-          primary={primary.current}
-          comparison={comparison.current}
+      <Grid.Col span={12}>
+        <KeyIndicatorTiles
+          rows={rows}
+          measures={AT_A_GLANCE_MEASURES}
           primaryName={primary.name}
           comparisonName={comparison.name}
         />
       </Grid.Col>
       <Grid.Col span={12}>
-        <ChronicDiseaseChart
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      <Grid.Col span={12}>
-        <DisabilityChart
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      <Grid.Col span={12}>
-        <HealthStatusChart
-          primary={primary.current}
-          comparison={comparison.current}
+        <PovertyUninsuredTrends
+          primary={timeseries?.povertyUninsured?.primary ?? []}
+          comparison={timeseries?.povertyUninsured?.comparison ?? []}
           primaryName={primary.name}
           comparisonName={comparison.name}
         />
@@ -92,13 +76,16 @@ export default function HealthDashboard({ data }: DashboardProps) {
               ? indicatorPlace(comparison.location, comparison.name)
               : { name: comparison.name }
           }
-          rows={buildIndicatorRows(primary.current, comparison.current)}
+          rows={rows}
           categoryOrder={HEALTH_CATEGORY_ORDER}
         />
       </Grid.Col>
       <Grid.Col span={12}>
         <Text size="xs" c="dimmed">
-          Source: CDC PLACES, age-adjusted estimates. CDC does not publish a
+          Source: CDC PLACES
+          {dataYear ? ` estimates for ${dataYear}` : ''}, age-adjusted. These
+          are model-based estimates from CDC&apos;s Behavioral Risk Factor
+          Surveillance System survey, not direct counts. CDC does not publish a
           statewide figure, so Vermont values are the county estimates averaged
           by each county&apos;s adult population.
         </Text>

@@ -46,6 +46,10 @@ type YField = 'Percent' | 'Value';
 // component as `data.timeseries[key]`.
 interface TimeseriesEndpoint {
   url: string;
+  // Filter by the profile place's ACS name (the Location filter) instead of
+  // the section's own location filter -- for ACS context on a county-only
+  // section, since ACS publishes the town itself.
+  byPlaceName?: boolean;
 }
 
 interface SectionConfig {
@@ -155,6 +159,13 @@ const SECTIONS: Record<string, SectionConfig> = {
     countyOnly: true,
     hasYearDimension: false,
     sourceLabel: 'CDC PLACES',
+    timeseries: {
+      // CDC PLACES is a single snapshot; Census rates show the change.
+      povertyUninsured: {
+        url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/poverty-uninsured`,
+        byPlaceName: true,
+      },
+    },
   },
 };
 
@@ -544,8 +555,14 @@ export default function ReportsByTopic({
     setLoading(true);
     setError(null);
 
-    const fetchFrom = (url: string, location: Location) => {
-      const locationFilters = buildLocationFilters(cfg, location);
+    const fetchFrom = (
+      url: string,
+      location: Location,
+      endpoint?: TimeseriesEndpoint,
+    ) => {
+      const locationFilters = endpoint?.byPlaceName
+        ? { Location: [location.name] }
+        : buildLocationFilters(cfg, location);
       if (!locationFilters) return Promise.resolve({ data: [] });
       return axios
         .post(url, {
@@ -568,10 +585,10 @@ export default function ReportsByTopic({
       fetchFrom(cfg.url, myLocation),
       fetchFrom(cfg.url, comparison),
       ...timeseriesKeys.map((key) =>
-        fetchFrom(cfg.timeseries![key].url, myLocation),
+        fetchFrom(cfg.timeseries![key].url, myLocation, cfg.timeseries![key]),
       ),
       ...timeseriesKeys.map((key) =>
-        fetchFrom(cfg.timeseries![key].url, comparison),
+        fetchFrom(cfg.timeseries![key].url, comparison, cfg.timeseries![key]),
       ),
     ])
       .then(([primary, comp, ...tsResults]) => {
