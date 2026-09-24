@@ -26,6 +26,11 @@ import pandas as pd
 UNAVAILABLE = -666666666.0
 
 
+def inline_sql_unavailable(missing_values: list[str]) -> str:
+    in_list = ", ".join(f"'{v}'" for v in missing_values)
+    return in_list
+
+
 def load_initcap(con: duckdb.DuckDBPyConnection):
     """
     Manual creation of the `INITCAP` keyword (Not available in DuckDB)

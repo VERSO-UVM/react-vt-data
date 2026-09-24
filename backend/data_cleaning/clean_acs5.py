@@ -1,5 +1,7 @@
 import duckdb
 
+from data_cleaning.geo_lookup import inline_sql_unavailable
+
 DP_TABLES = {
     "DP02": ("acs5_social", "dp_social"),
     "DP03": ("acs5_economic", "dp_economic"),
@@ -23,6 +25,20 @@ COUNTY_GEOIDS = {
     "Windham County, Vermont": 50025,
     "Windsor County, Vermont": 50027,
 }
+
+# All census "unavailable" data values
+# TODO: make this a dictionary with the exact meanings of each sentinal
+DP_UNAVAILABLE = [
+    "-666666666",
+    "-666666666.0",
+    "-666666666.00",
+    "-888888888",
+    "-888888888.0",
+    "-888888888.00",
+    "-999999999",
+    "-999999999.0",
+    "-999999999.00",
+]
 
 
 def _dp_select_sql(dp: str, raw_table_name: str) -> str:
@@ -61,7 +77,12 @@ def _dp_select_sql(dp: str, raw_table_name: str) -> str:
                 n.Subcategory AS subcategory,
                 n.Variable AS variable,
                 n.Measure AS measure,
-                n.Value AS value,
+                CAST(
+                    CASE 
+                        WHEN n.Value IN ({inline_sql_unavailable(DP_UNAVAILABLE)}) THEN NULL 
+                        ELSE n.Value 
+                    END AS FLOAT
+                ) AS "value", 
                 '{dp}' AS "table",
                 n.geo_type_norm AS geo_type,
                 CASE
