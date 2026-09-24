@@ -1,4 +1,4 @@
-import { Grid } from '@mantine/core';
+import { Grid, Text } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
 import {
   SmokingRateCard,
@@ -70,6 +70,13 @@ export default function HealthDashboard({ data }: DashboardProps) {
           primaryName={primary.name}
           comparisonName={comparison.name}
         />
+      </Grid.Col>
+      <Grid.Col span={12}>
+        <Text size="xs" c="dimmed">
+          Source: CDC PLACES, age-adjusted estimates. CDC does not publish a
+          statewide figure, so Vermont values are the county estimates averaged
+          by each county&apos;s adult population.
+        </Text>
       </Grid.Col>
     </Grid>
   );
