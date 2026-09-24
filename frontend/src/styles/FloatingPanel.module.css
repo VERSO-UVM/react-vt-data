@@ -1,0 +1,28 @@
+/* For components floating over the mapping page */
+.floatingPanel {
+  position: absolute;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+}
+
+/* Page positioning */
+.topRight {
+  top: 16px;
+  right: 16px;
+}
+
+.topLeft {
+  top: 16px;
+  left: 16px;
+}
+
+.bottomRight {
+  bottom: 16px;
+  right: 16px;
+}
+
+.bottomLeft {
+  bottom: 16px;
+  left: 16px;
+}

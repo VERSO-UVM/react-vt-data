@@ -38,6 +38,7 @@ import { postRequest } from '@/components/FilterRedux/filterRequest';
 import { FilterSpec, FilterValue } from '@/components/FilterRedux/filterTypes';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { SamePerXBarChart } from '@/components/Charts';
+import panelClasses from '@/styles/FloatingPanel.module.css';
 
 type Legend = {
   grid: number[][][];
@@ -645,22 +646,13 @@ export default function VariableExplorer() {
         />
       </Box>
 
-      {/* Geography level -- lives outside the collapsible sidebar since it
-          applies to both variables and should stay visible either way. */}
       {levelOptions.length > 1 && (
         <Paper
+          className={`${panelClasses.floatingPanel} ${panelClasses.topRight}`}
           shadow="md"
           radius="md"
           p="xs"
           withBorder
-          style={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            zIndex: 10,
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(8px)',
-          }}
         >
           <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6} ta="center">
             Geography Level
