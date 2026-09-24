@@ -84,7 +84,8 @@
       "columns": {
         "Category": "category",
         "Measure": "measure",
-        "Prevalence Measure": "data_value_type"
+        "Prevalence Measure": "data_value_type",
+        "County": "county"
       },
       "badges": {
         "Measure": "sme_highlight"
@@ -98,7 +99,8 @@
       "columns": {
         "Category": "category",
         "Measure": "measure",
-        "Prevalence Measure": "data_value_type"
+        "Prevalence Measure": "data_value_type",
+        "County": "county"
       },
       "badges": {
         "Measure": "sme_highlight"
