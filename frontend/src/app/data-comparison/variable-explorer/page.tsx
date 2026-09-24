@@ -32,12 +32,16 @@ import { BASE_API_URL } from '@/config';
 import { COLORS, FONTS } from '@/app/theme';
 import VTMap from '@/components/mapping';
 import VariableScatter from '@/components/Charts/MapCorrespondentScatter';
-import { FilterWrap } from '@/components/FilterRedux/filterWrap';
-import { assemble } from '@/components/FilterRedux/apiHelpers';
+import { CascadeFilter } from '@/components/FilterRedux/CascadeUI';
+import {
+  assemble,
+  isFilterComplete,
+} from '@/components/FilterRedux/apiHelpers';
 import { postRequest } from '@/components/FilterRedux/filterRequest';
-import { FilterSpec, filterDef } from '@/components/FilterRedux/filterTypes';
+import { FilterSpec, FilterValue } from '@/components/FilterRedux/filterTypes';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { SamePerXBarChart } from '@/components/Charts';
+import panelClasses from '@/styles/FloatingPanel.module.css';
 
 type Legend = {
   grid: number[][][];
@@ -50,6 +54,11 @@ type DatasetInfo = {
   label: string;
   filter_table: string;
   levels: string[];
+  // Usually the same table for every level; CDC is the exception, since its
+  // Variable/Prevalence Measure catalog differs between county and tract
+  // (tracts never get an age-adjusted estimate). Prefer this over the flat
+  // `filter_table` above when a level is already known.
+  level_filter_tables: Record<string, string>;
 };
 
 type DatasetRegistry = Record<string, DatasetInfo>;
@@ -59,6 +68,36 @@ const LEVEL_LABELS: Record<string, string> = {
   town: 'Town',
   tract: 'Census Tract',
 };
+
+type NoDataDetail = { code: 'no_data'; level: string; variable: string };
+type NoOverlapDetail = {
+  code: 'no_overlap';
+  level: string;
+  variable_1: string;
+  variable_2: string;
+};
+type ApplyErrorDetail = NoDataDetail | NoOverlapDetail;
+
+function describeApplyError(error: unknown): string {
+  const detail =
+    axios.isAxiosError(error) &&
+    error.response?.data?.detail &&
+    typeof error.response.data.detail === 'object'
+      ? (error.response.data.detail as ApplyErrorDetail)
+      : null;
+
+  if (detail?.code === 'no_data') {
+    const levelLabel = LEVEL_LABELS[detail.level] ?? detail.level;
+    return `"${detail.variable}" isn't available at the ${levelLabel} level — try a different variable or geography level.`;
+  }
+
+  if (detail?.code === 'no_overlap') {
+    const levelLabel = LEVEL_LABELS[detail.level] ?? detail.level;
+    return `"${detail.variable_1}" and "${detail.variable_2}" don't share any geographies at the ${levelLabel} level — try a different pair or geography level.`;
+  }
+
+  return 'Could not compare those variables — try a different pair.';
+}
 
 const CELL = 34;
 const GAP = 2;
@@ -283,13 +322,6 @@ function BivariateLegend({ legend }: { legend: Legend }) {
   );
 }
 
-function variableFilterDefs(table1: string, table2: string): filterDef[] {
-  return [
-    { filter_table: table1, filter_style: 'Cascade', label: 'Variable 1' },
-    { filter_table: table2, filter_style: 'Cascade', label: 'Variable 2' },
-  ];
-}
-
 const selectStyles = {
   label: {
     fontFamily: FONTS.body,
@@ -299,6 +331,67 @@ const selectStyles = {
   },
   input: { borderRadius: 8 },
 };
+
+// One variable's whole pick, source dataset through cascade, together in one
+// card -- so choosing a source doesn't require leaving this card to a
+// separate, shared dataset picker before its own Category/Measure controls
+// even appear.
+function VariableCard({
+  title,
+  dataset,
+  datasetOptions,
+  onDatasetChange,
+  filterTable,
+  filters,
+  setFilters,
+  onLabelsChange,
+  excludeLabels,
+}: {
+  title: string;
+  dataset: string | null;
+  datasetOptions: { value: string; label: string }[];
+  onDatasetChange: (value: string | null) => void;
+  filterTable: string | null;
+  filters: Record<string, FilterValue>;
+  setFilters: (f: Record<string, FilterValue>) => void;
+  onLabelsChange: (labels: string[]) => void;
+  excludeLabels?: string[];
+}) {
+  return (
+    <Paper
+      withBorder
+      radius="md"
+      p="sm"
+      style={{ borderColor: COLORS.line, backgroundColor: COLORS.birch }}
+    >
+      <Text
+        size="sm"
+        fw={700}
+        mb="sm"
+        style={{ fontFamily: FONTS.body, color: COLORS.ink }}
+      >
+        {title}
+      </Text>
+      <Select
+        label="Topic"
+        data={datasetOptions}
+        value={dataset}
+        onChange={onDatasetChange}
+        allowDeselect={false}
+        mb="sm"
+        styles={selectStyles}
+      />
+      {filterTable && (
+        <CascadeFilter
+          spec={{ filter_table: filterTable, filters }}
+          setValue={setFilters}
+          onLabelsChange={onLabelsChange}
+          excludeLabels={excludeLabels}
+        />
+      )}
+    </Paper>
+  );
+}
 
 export default function VariableExplorer() {
   const theme = useMantineTheme();
@@ -310,6 +403,13 @@ export default function VariableExplorer() {
   const [dataset1, setDataset1] = useState<string | null>(null);
   const [dataset2, setDataset2] = useState<string | null>(null);
   const [level, setLevel] = useState<string | null>(null);
+  const [filters1, setFilters1] = useState<Record<string, FilterValue>>({});
+  const [filters2, setFilters2] = useState<Record<string, FilterValue>>({});
+  // Each cascade's own ordered level set, reported by CascadeFilter via
+  // onLabelsChange -- used with isFilterComplete to know when a side has a
+  // full variable picked (see VariableCard's onLabelsChange prop below).
+  const [labels1, setLabels1] = useState<string[]>([]);
+  const [labels2, setLabels2] = useState<string[]>([]);
 
   const [geojson, setGeojson] = useState<FeatureCollection | null>(null);
   const [legend, setLegend] = useState<Legend | null>(null);
@@ -407,6 +507,7 @@ export default function VariableExplorer() {
   const handleSelectDataset1 = (value: string | null) => {
     if (!value || !registry || !dataset2) return;
     setDataset1(value);
+    setFilters1({}); // old Category/Measure picks don't exist in the new dataset
     const shared = sharedLevels(value, dataset2, registry);
     setLevel((prev) => (prev && shared.includes(prev) ? prev : shared[0]));
     resetComparison();
@@ -415,6 +516,7 @@ export default function VariableExplorer() {
   const handleSelectDataset2 = (value: string | null) => {
     if (!value || !registry || !dataset1) return;
     setDataset2(value);
+    setFilters2({});
     const shared = sharedLevels(dataset1, value, registry);
     setLevel((prev) => (prev && shared.includes(prev) ? prev : shared[0]));
     resetComparison();
@@ -422,6 +524,10 @@ export default function VariableExplorer() {
 
   const handleSelectLevel = (value: string) => {
     setLevel(value);
+    // Category/Measure picks stay put -- CascadeFilter itself drops only the
+    // level(s) that don't exist in the new table (e.g. tract has no
+    // "Age-adjusted prevalence") and re-defaults just that one, so switching
+    // county <-> tract doesn't throw away an otherwise-still-valid pick.
     resetComparison();
   };
 
@@ -438,13 +544,25 @@ export default function VariableExplorer() {
       const res = await postRequest({ dataURL: url, payload });
       setGeojson(res.data);
       setLegend(res.metadata?.legend ?? null);
-    } catch {
+    } catch (e) {
       setGeojson(null);
       setLegend(null);
-      setApplyError(
-        'Could not compare those variables — try a different pair.',
-      );
+      setApplyError(describeApplyError(e));
     }
+  };
+
+  const handleApplyClick = () => {
+    if (!filterTable1 || !filterTable2) return;
+    handleApply([
+      { filter_table: filterTable1, filters: filters1 },
+      { filter_table: filterTable2, filters: filters2 },
+    ]);
+  };
+
+  const handleResetClick = () => {
+    setFilters1({});
+    setFilters2({});
+    resetComparison();
   };
 
   const datasetOptions = registry
@@ -460,6 +578,26 @@ export default function VariableExplorer() {
       dataset2 &&
       sharedLevels(dataset1, dataset2, registry)) ||
     [];
+
+  // Each variable's cascade reads from its own dataset's filter table for the
+  // currently selected level -- CDC's differs between county and tract (see
+  // DatasetInfo.level_filter_tables), everything else uses one table for both.
+  const filterTable1 =
+    registry && dataset1 && level
+      ? (registry[dataset1].level_filter_tables[level] ??
+        registry[dataset1].filter_table)
+      : null;
+  const filterTable2 =
+    registry && dataset2 && level
+      ? (registry[dataset2].level_filter_tables[level] ??
+        registry[dataset2].filter_table)
+      : null;
+
+  const isFormValid =
+    Boolean(filterTable1) &&
+    Boolean(filterTable2) &&
+    isFilterComplete(filters1, labels1) &&
+    isFilterComplete(filters2, labels2);
 
   // Shared {x, y} extraction for the relationship/distribution stat cards —
   // mirrors what VariableScatter derives internally from the same geojson.
@@ -527,6 +665,32 @@ export default function VariableExplorer() {
         />
       </Box>
 
+      {levelOptions.length > 1 && (
+        <Paper
+          className={`${panelClasses.floatingPanel} ${panelClasses.topRight}`}
+          shadow="md"
+          radius="md"
+          p="xs"
+          withBorder
+        >
+          <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb={6} ta="center">
+            Geography Level
+          </Text>
+          <SegmentedControl
+            autoContrast
+            color={COLORS.spruce}
+            radius="md"
+            data={levelOptions.map((lvl) => ({
+              label: LEVEL_LABELS[lvl] ?? lvl,
+              value: lvl,
+            }))}
+            value={level ?? levelOptions[0]}
+            onChange={handleSelectLevel}
+            style={{ fontFamily: FONTS.mono }}
+          />
+        </Paper>
+      )}
+
       {/* Floating sidebar */}
       <Box
         style={{
@@ -570,64 +734,43 @@ export default function VariableExplorer() {
               <Loader size="sm" my="md" color="green" />
             ) : (
               <>
-                <Paper
-                  withBorder
-                  radius="md"
-                  p="sm"
-                  mb="md"
-                  style={{
-                    borderColor: COLORS.line,
-                    backgroundColor: COLORS.birch,
-                  }}
-                >
-                  <Select
-                    label="Variable 1 — Dataset"
-                    data={datasetOptions}
-                    value={dataset1}
-                    onChange={handleSelectDataset1}
-                    allowDeselect={false}
-                    mb="sm"
-                    styles={selectStyles}
+                <Stack gap="md">
+                  <VariableCard
+                    title="Variable 1"
+                    dataset={dataset1}
+                    datasetOptions={datasetOptions}
+                    onDatasetChange={handleSelectDataset1}
+                    filterTable={filterTable1}
+                    filters={filters1}
+                    setFilters={setFilters1}
+                    onLabelsChange={setLabels1}
+                    excludeLabels={dataset1 === 'cdc' ? ['County'] : undefined}
                   />
-                  <Select
-                    label="Variable 2 — Dataset"
-                    data={datasetOptions}
-                    value={dataset2}
-                    onChange={handleSelectDataset2}
-                    allowDeselect={false}
-                    mb={levelOptions.length > 1 ? 'sm' : 0}
-                    styles={selectStyles}
+                  <VariableCard
+                    title="Variable 2"
+                    dataset={dataset2}
+                    datasetOptions={datasetOptions}
+                    onDatasetChange={handleSelectDataset2}
+                    filterTable={filterTable2}
+                    filters={filters2}
+                    setFilters={setFilters2}
+                    onLabelsChange={setLabels2}
+                    excludeLabels={dataset2 === 'cdc' ? ['County'] : undefined}
                   />
+                </Stack>
 
-                  {levelOptions.length > 1 && (
-                    <SegmentedControl
-                      fullWidth
-                      autoContrast
-                      color={COLORS.spruce}
-                      radius="md"
-                      data={levelOptions.map((lvl) => ({
-                        label: LEVEL_LABELS[lvl] ?? lvl,
-                        value: lvl,
-                      }))}
-                      value={level ?? levelOptions[0]}
-                      onChange={handleSelectLevel}
-                      style={{
-                        fontFamily: FONTS.mono,
-                      }}
-                    />
-                  )}
-                </Paper>
-
-                {dataset1 && dataset2 && (
-                  <FilterWrap
-                    key={`${dataset1}-${dataset2}`}
-                    handleApply={handleApply}
-                    filterList={variableFilterDefs(
-                      registry[dataset1].filter_table,
-                      registry[dataset2].filter_table,
-                    )}
-                  />
-                )}
+                <Group grow mt="md">
+                  <Button variant="default" onClick={handleResetClick}>
+                    Reset
+                  </Button>
+                  <Button
+                    color={COLORS.spruce}
+                    onClick={handleApplyClick}
+                    disabled={!isFormValid}
+                  >
+                    Apply
+                  </Button>
+                </Group>
 
                 {applyError && (
                   <Text size="xs" c="red" mt="sm">
@@ -767,12 +910,12 @@ export default function VariableExplorer() {
                         <BigStat
                           label="Pearson's R"
                           value={pairStats.r.toFixed(2)}
-                          description="Pearson's correlation coefficient measures the overall strenth and direction between both variables."
+                          description="The strength and direction of the relationship, from -1 to 1. R = 0.8 is a strong positive relationship (both rise together); R = -0.8 is a strong negative one; R near 0 means little to no relationship."
                         />
                         <BigStat
                           label="R²"
                           value={pairStats.r2.toFixed(2)}
-                          description="R² describes the extent to which the variation seen in a variable can be attributed to the change of the other variable."
+                          description="The share of one variable's variation that is associated with the other, from 0 to 1. R² = 0.64 means 64% of the variation aligns between the two variables."
                         />
                       </SimpleGrid>
                     )}

@@ -38,6 +38,26 @@ ACS_SENTINEL = -666666666
 MAX_YEAR = datetime.now().year - 2
 
 
+class NoDataError(ValueError):
+    def __init__(self, dataset: str, variable: str, level: str):
+        super().__init__(f"No data for {dataset}/{level}: {variable!r}")
+        self.dataset = dataset
+        self.variable = variable
+        self.level = level
+
+
+class NoOverlapError(ValueError):
+    def __init__(self, dataset1: str, var1: str, dataset2: str, var2: str, level: str):
+        super().__init__(
+            f"{var1} and {var2} don't share any geographies at the {level} level — try a different pair or geography level."
+        )
+        self.dataset1 = dataset1
+        self.var1 = var1
+        self.dataset2 = dataset2
+        self.var2 = var2
+        self.level = level
+
+
 def _latest_year(table: str) -> str:
     """Most recent `year` in `table` at or before MAX_YEAR.
 
@@ -95,16 +115,16 @@ def _acs5_dataset(table: str, label: str) -> dict:
 
 DATASETS: dict[str, dict] = {
     "cdc": {
-        "label": "Community Health (CDC Places)",
+        "label": "Community Health",
         "filter_table": "cdc_places_county",
         "levels": {
             "county": {
                 "sql": sql_dir / "cdc" / "county_places.sql",
                 "table": "cdc_places_county",
-                # Matches schema.json's cdc_places_county entry, which the
-                # canonical filter_table (used for both county and tract) is
-                # resolved against -- var_col must match the column name
-                # spec_to_source maps "Measure" onto.
+                # Matches schema.json's cdc_places_county entry -- var_col
+                # must match the column name spec_to_source maps "Measure"
+                # onto.
+                "filter_table": "cdc_places_county",
                 "var_col": "measure",
                 "value_col": "data_value",
                 "id_col": "geoid",
@@ -113,6 +133,14 @@ DATASETS: dict[str, dict] = {
             "tract": {
                 "sql": sql_dir / "cdc" / "tract_places.sql",
                 "table": "cdc_places_tract",
+                # CDC PLACES only computes age-adjusted prevalence at the
+                # county/place level -- census tracts publish crude
+                # prevalence only (too few people per age group to adjust).
+                # The Variable picker must read its tree from this table,
+                # not cdc_places_county, or it would keep offering
+                # "Age-adjusted prevalence" here against zero matching rows.
+                # https://www.cdc.gov/places/faqs/using-data/index.html
+                "filter_table": "cdc_places_tract",
                 "var_col": "measure",
                 "value_col": "data_value",
                 "id_col": "geoid",
@@ -150,6 +178,15 @@ def dataset_registry() -> dict:
             "label": cfg["label"],
             "filter_table": cfg["filter_table"],
             "levels": list(cfg["levels"].keys()),
+            # Usually the same table for every level -- CDC is the
+            # exception, since its Variable/Prevalence Measure options differ
+            # between county and tract (see the "tract" level's comment
+            # above). The frontend should prefer this over the flat
+            # `filter_table` above when building a level-specific picker.
+            "level_filter_tables": {
+                lvl: lvl_cfg.get("filter_table", cfg["filter_table"])
+                for lvl, lvl_cfg in cfg["levels"].items()
+            },
         }
         for key, cfg in DATASETS.items()
     }
@@ -162,11 +199,20 @@ def level_config(dataset: str, level: str) -> dict:
         raise ValueError(f"unknown dataset/level: {dataset}/{level}") from e
 
 
-# every dataset's canonical filter_table is unique, so a Cascade filter's
-# table name alone identifies which dataset it picked from.
-TABLE_TO_DATASET: dict[str, str] = {
-    cfg["filter_table"]: key for key, cfg in DATASETS.items()
-}
+# Every filter_table a Cascade filter could point at -- a dataset's canonical
+# one plus any level-specific override (e.g. CDC's tract table) -- is unique
+# across datasets, so a spec's table name alone identifies which dataset it
+# picked from.
+def _build_table_to_dataset() -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for key, cfg in DATASETS.items():
+        mapping[cfg["filter_table"]] = key
+        for lvl_cfg in cfg["levels"].values():
+            mapping[lvl_cfg.get("filter_table", cfg["filter_table"])] = key
+    return mapping
+
+
+TABLE_TO_DATASET: dict[str, str] = _build_table_to_dataset()
 
 
 def dataset_for_table(table: str) -> str:
@@ -222,7 +268,7 @@ def _single_variable(
     # producing a bogus cross product of geometry-less, name-less features.
     sub = sub.dropna(subset=["geoid"])
     if sub.empty:
-        raise ValueError(f"no data for {dataset}/{level}: {var!r}")
+        raise NoDataError(dataset=dataset, variable=var, level=level)
     return sub
 
 
@@ -261,9 +307,8 @@ def compare_variables(
         subset=["bin_1", "bin_2"]
     )
     if wide.empty:
-        raise ValueError(
-            f"no shared geographies between {dataset1}/{var1!r} and "
-            f"{dataset2}/{var2!r} at the {level} level"
+        raise NoOverlapError(
+            dataset1=dataset1, var1=var1, dataset2=dataset2, var2=var2, level=level
         )
 
     cmap = build_cmap()
