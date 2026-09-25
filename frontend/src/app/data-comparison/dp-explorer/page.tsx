@@ -34,6 +34,7 @@ import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
+import { distinguishingParts } from '@/components/Charts/seriesLines';
 import county_town_names from '@/data/county_town_names.json';
 import { DataRow } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
@@ -594,16 +595,43 @@ export default function DPExplorerPage() {
     },
   });
 
-  // Selected-year point values
-  const pointA = sideAData.find((r) => r.year === sideA.year);
-  const pointB = sideBData.find((r) => r.year === sideB.year);
+  // Selected-year values. A side can have several rows in a year (issue
+  // #106, e.g. owner costs with and without a mortgage under one label):
+  // show them all, and skip the difference, which would compare arbitrary
+  // picks. The chart draws each as its own line.
+  const pointsA = sideAData.filter((r) => r.year === sideA.year);
+  const pointsB = sideBData.filter((r) => r.year === sideB.year);
   const isPercent = !!measure?.toLowerCase().includes('percent');
   const fmtVal = (v: number | null) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
+  const fmtPoints = (points: DataRow[]) =>
+    points.length
+      ? points.map((p) => fmtVal((p.Value as number) ?? null)).join(' · ')
+      : '—';
 
-  const valueA = (pointA?.Value as number | undefined) ?? null;
-  const valueB = (pointB?.Value as number | undefined) ?? null;
+  const valueA =
+    pointsA.length === 1 ? ((pointsA[0].Value as number) ?? null) : null;
+  const valueB =
+    pointsB.length === 1 ? ((pointsB[0].Value as number) ?? null) : null;
   const diff = valueA != null && valueB != null ? valueA - valueB : null;
+  const multiValueNotes = [
+    { side: sideA, points: pointsA },
+    { side: sideB, points: pointsB },
+  ]
+    .filter(({ points }) => points.length > 1)
+    .map(({ side, points }) => {
+      const labels = points.every((p) => p.source_label)
+        ? distinguishingParts(points.map((p) => String(p.source_label)))
+        : null;
+      const values = points
+        .map((p, i) =>
+          labels
+            ? `${labels[i]}: ${fmtVal(p.Value as number)}`
+            : fmtVal(p.Value as number),
+        )
+        .join('; ');
+      return `${makeLabel(side)} has ${points.length} values (${values}).`;
+    });
 
   // ---------------------------------------------------------------------------
   // Render
@@ -919,20 +947,22 @@ export default function DPExplorerPage() {
                   <ValueCard
                     label="Location A"
                     location={makeLabel(sideA)}
-                    value={fmtVal(valueA)}
+                    value={fmtPoints(pointsA)}
                     accent={COLORS.spruce}
                   />
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, sm: 2 }}>
                   <Center>
-                    <DeltaBadge diff={diff} isPercent={isPercent} />
+                    {multiValueNotes.length === 0 && (
+                      <DeltaBadge diff={diff} isPercent={isPercent} />
+                    )}
                   </Center>
                 </Grid.Col>
                 <Grid.Col span={{ base: 12, sm: 5 }}>
                   <ValueCard
                     label="Location B"
                     location={makeLabel(sideB)}
-                    value={fmtVal(valueB)}
+                    value={fmtPoints(pointsB)}
                     accent={COLORS.amber}
                   />
                 </Grid.Col>
@@ -947,6 +977,11 @@ export default function DPExplorerPage() {
                 >
                   {table} › {category} › {subcategory} › {variable} › {measure}
                 </Text>
+                {multiValueNotes.map((note) => (
+                  <Text key={note} size="xs" c="orange.7" ta="center">
+                    {note} The chart draws each as its own line.
+                  </Text>
+                ))}
                 {availableYears.length > 0 && availableYears.length < 10 && (
                   <Text size="xs" c="orange.7" ta="center">
                     Data available for {availableYears.length} year
