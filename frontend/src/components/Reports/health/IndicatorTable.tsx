@@ -266,8 +266,8 @@ function DifferenceCell({ row }: { row: IndicatorRow }) {
         {`${diff > 0 ? '+' : ''}${diff.toFixed(1)} pts`}
       </Text>
       {verdict !== 'unknown' && (
-        <Text size="xs" c="dimmed">
-          {verdict === 'different' ? 'outside margin of error' : 'similar'}
+        <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+          {verdict === 'different' ? 'significant' : 'not significant'}
         </Text>
       )}
     </Stack>
@@ -327,7 +327,8 @@ function Legend({
       </Group>
       {showIntervals && (
         <Text size="xs" c="dimmed">
-          Lines show 95% confidence intervals
+          Lines show 95% confidence intervals; they can overlap and still differ
+          significantly.
         </Text>
       )}
     </Group>

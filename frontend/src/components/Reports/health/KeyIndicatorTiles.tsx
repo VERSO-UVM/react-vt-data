@@ -2,7 +2,7 @@ import { Card, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { IndicatorRow, compareEstimates, formatValue } from './IndicatorTable';
 
 // Presentational: a few chosen measures at a glance, each with the
-// comparison and whether the gap is outside the margin of error (the same
+// comparison and whether the gap is significant (the same
 // test as IndicatorTable). Neutral colors, like the table: for some measures
 // (routine checkups) higher is better, for others (smoking) it's worse.
 
@@ -93,8 +93,8 @@ function Tile({
         {verdict !== 'unknown' && (
           <Text size="xs" c="dimmed">
             {verdict === 'different'
-              ? 'Outside the margin of error'
-              : 'Within the margin of error'}
+              ? 'Significant difference'
+              : 'Not a significant difference'}
           </Text>
         )}
       </Stack>
