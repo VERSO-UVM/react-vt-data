@@ -27,9 +27,11 @@ export interface SeriesLines<T> {
 
 // Row fields that identify a Census observation, most readable first.
 // source_label and variable_code come from the DP profile tables. The label
-// doesn't always tell rows apart: in 2011-2012 the owner costs with and
-// without a mortgage (DP04_0100E, DP04_0107E) share one label word for word.
-const IDENTITY_FIELDS = ['source_label', 'variable_code'];
+// doesn't always tell rows apart: in 2010-2012 the owner costs with and
+// without a mortgage (DP04_0100E, DP04_0107E) share one label word for word,
+// so the API adds variable_name for such codes (backend
+// query/dp_variable_names.csv).
+const IDENTITY_FIELDS = ['variable_name', 'source_label', 'variable_code'];
 
 /** The most readable identity field that every row has and that tells apart
  *  the rows sharing each x value, or null if none does. */

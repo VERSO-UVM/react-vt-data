@@ -13,6 +13,7 @@ from query.acs5 import (
     get_poverty_uninsured_timeseries,
 )
 from query.core_functions import to_export_geo
+from query.dp_variable_names import add_variable_names
 from query.production_db import get_db
 
 DB = get_db()
@@ -439,7 +440,9 @@ async def dp_combined_tree():
 # Census identity columns (added to the DP tables by the pipeline) to pass
 # through when the warehouse has them: a label path can hold several
 # observations in a year (issue #106, e.g. owner costs with and without a
-# mortgage), and these let the chart draw and name one line for each.
+# mortgage), and these let the chart draw and name one line for each. Rows
+# also get a variable_name where the labels alone don't tell them apart
+# (see query/dp_variable_names.py).
 DP_IDENTITY_COLUMNS = ("variable_code", "source_label")
 
 
@@ -487,4 +490,6 @@ async def dp_combined_series(request: DPSeriesRequest):
             request.year_max,
         ],
     ).df()
+    if "variable_code" in identity:
+        rows = add_variable_names(rows)
     return make_response(data=rows, metadata=None)

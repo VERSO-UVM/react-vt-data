@@ -92,6 +92,34 @@ def test_identity_columns_name_rows_and_order_them_by_code(monkeypatch):
     assert "with a mortgage" in data[0]["source_label"]
 
 
+def test_rows_are_named_where_labels_repeat(monkeypatch):
+    # Real 2011-2012 Census labels are identical for these two codes, so the
+    # names come from query/dp_variable_names.csv.
+    data = (
+        _client(monkeypatch, with_identity=True)
+        .post("/load/acs5-db/dp-combined/series", json=REQUEST)
+        .json()["data"]
+    )
+    assert [(r["variable_code"], r["variable_name"]) for r in data[:2]] == [
+        ("DP04_0100E", "With a mortgage"),
+        ("DP04_0107E", "Without a mortgage"),
+    ]
+
+
+def test_unnamed_rows_serialize_with_a_null_name(monkeypatch):
+    # 2013 isn't in the names table, so its rows get a JSON null name.
+    request = {**REQUEST, "year_min": 2013, "year_max": 2013}
+    client = _client(monkeypatch, with_identity=True)
+    post_acs5_db.DB.execute(
+        "INSERT INTO acs5_dp_combined_tidy VALUES "
+        "(2013, ?, 'DP04', ?, 'Median (dollars)', 'Total', 'Estimate', '1832', "
+        "'DP04_0100E', 'Estimate!!SMOC!!Housing units with a mortgage')",
+        [BURLINGTON, SMOC],
+    )
+    data = client.post("/load/acs5-db/dp-combined/series", json=request).json()
+    assert data["data"][0]["variable_name"] is None
+
+
 def test_without_identity_columns_rows_keep_load_order(monkeypatch):
     data = (
         _client(monkeypatch, with_identity=False)
