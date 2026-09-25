@@ -266,15 +266,15 @@ build-lake:
 build-collection:
     podman build -t localhost/vdc-collection -f ETL/dockerfile.collect .
 
-[doc("Collect the data for a specified year and add to lake.RAW tables")]
+[doc("Collect the data for a specified year and add to lake.RAW tables (optionally pass only= to run a single scraper)")]
 [group("ETL Pipeline")]
 [working-directory("backend")]
-get-data start_year end_year: build-collection
+get-data start_year end_year only="": build-collection
     podman run --rm {{ podman_flags }} \
         -v "{{ DATA_DIR }}:/data:z" \
         -e DATA_DIR=/data \
         -e CENSUS_API_KEY="$CENSUS_API_KEY" \
-        localhost/vdc-collection {{ start_year }} {{ end_year }}
+        localhost/vdc-collection {{ start_year }} {{ end_year }} {{ if only == "" { "" } else { "--only " + only } }}
 
 # --------- 2. Data Cleaning (T) ---------------------
 [doc("Run each RAW table through it's data cleaning script (optionally pass a single script name to run only that one)")]

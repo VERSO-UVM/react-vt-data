@@ -78,6 +78,9 @@ def to_long(wide: pd.DataFrame, table: str, year: int) -> pd.DataFrame:
 def collect(years: range = YEARS) -> pd.DataFrame:
     frames = []
     for year in years:
+        if year < 2020:
+            # No data on 2020 census tracts before the 2020 ACS 5-year release.
+            continue
         for table in TABLES:
             print(f"  {table} / tracts / {year}...")
             frames.append(fetch_table(year, table))

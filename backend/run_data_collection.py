@@ -83,14 +83,29 @@ def run_scraper(
 def run_master_scrape(
     start_year: int = 2009,
     end_year: int = MAX_YEAR,
+    scraper_name: str | None = None,
 ):
-    """Run all data collection scrapers."""
+    """Run all data collection scrapers, or just one if `scraper_name` is given."""
     years = range(start_year, end_year + 1)
+
+    yearly_scrapers = YEARLY_SCRAPERS
+    static_scrapers = STATIC_SCRAPERS
+    if scraper_name:
+        yearly_scrapers = [
+            s for s in YEARLY_SCRAPERS if s.__name__.split(".")[-1] == scraper_name
+        ]
+        static_scrapers = [
+            s for s in STATIC_SCRAPERS if s.__name__.split(".")[-1] == scraper_name
+        ]
+        if not yearly_scrapers and not static_scrapers:
+            print(f"No scraper found matching '{scraper_name}'")
+            return
+
     con = get_connection()
     failed = []
 
     try:
-        for scraper in YEARLY_SCRAPERS:
+        for scraper in yearly_scrapers:
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=True, years=years)
@@ -98,7 +113,7 @@ def run_master_scrape(
                 failed.append(name)
                 print(f"FAILED {name}: {e}")
 
-        for scraper in STATIC_SCRAPERS:
+        for scraper in static_scrapers:
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=False)
@@ -121,6 +136,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("start_year", type=int)
     parser.add_argument("end_year", type=int)
+    parser.add_argument(
+        "--only",
+        default=None,
+        help="Name of a single scraper to run (e.g. acs5_tract). Omit to run all.",
+    )
     args = parser.parse_args()
 
     if args.start_year > args.end_year:
@@ -133,6 +153,7 @@ def main():
     run_master_scrape(
         start_year=args.start_year,
         end_year=args.end_year,
+        scraper_name=args.only,
     )
 
 
