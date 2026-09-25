@@ -1,4 +1,9 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   Button,
   Modal,
@@ -33,6 +38,7 @@ import {
   IconTags,
 } from '@tabler/icons-react';
 import { UserCircleIcon } from '@phosphor-icons/react';
+import classes from './SetProfile.module.css';
 import { COLORS, FONTS } from '@/app/theme';
 
 type CountyKey = keyof typeof county_town_names;
@@ -284,6 +290,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   const key = locationKey(location);
   const selected = PLACES.has(key) ? placeLabel(location) : '';
   const [search, setSearch] = useState(selected);
+  const listRef = useRef<HTMLDivElement>(null);
   // Bold what the user typed; nothing while the box still shows the pick.
   const query = search.trim() === selected ? '' : search.trim();
 
@@ -299,7 +306,15 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         // Select the current place on focus, so typing replaces it.
         onFocus={(e) => e.currentTarget.select()}
         searchValue={search}
-        onSearchChange={setSearch}
+        // As the search changes, start the list at the top and highlight the
+        // best match, so it's in view and Enter picks it.
+        onSearchChange={(value) => {
+          setSearch(value);
+          listRef.current?.scrollTo({ top: 0 });
+        }}
+        scrollAreaProps={{ viewportRef: listRef }}
+        classNames={{ option: classes.option }}
+        selectFirstOptionOnChange
         allowDeselect={false}
         maxDropdownHeight={320}
         nothingFoundMessage="No matching places"
