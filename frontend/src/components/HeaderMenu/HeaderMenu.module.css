@@ -1,8 +1,8 @@
 :global(:root) {
   --nav-accent: #dd9a2f;
-  --nav-accent-soft: #e7b563;
-  --nav-accent-text: #1b3a2f;
   --nav-hover-bg: rgba(64, 82, 90, 0.08);
+  --nav-surface: #f6f5ef; /* COLORS.birch */
+  --nav-active-bg: #1b3a2f; /* COLORS.spruce */
 }
 
 .header {
@@ -18,10 +18,7 @@
   transform: translateY(0);
   opacity: 1;
 
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  background: rgba(246, 245, 239, 0.86);
+  background: var(--nav-surface);
 }
 
 .hidden {
@@ -53,34 +50,19 @@
     transform 0.2s ease;
 }
 
+/* The pill shows hover and the current page; the site-wide a:hover
+   underline would only add noise. */
 .link:hover {
+  text-decoration: none;
   background: var(--nav-hover-bg);
   transform: translateY(-1px);
 }
 
-.active {
-  background: linear-gradient(
-    135deg,
-    rgba(221, 154, 47, 0.16),
-    rgba(221, 154, 47, 0.07)
-  );
-
-  color: var(--nav-accent-text);
+.active,
+.active:hover {
+  background: var(--nav-active-bg);
+  color: #fff;
   font-weight: 600;
-}
-
-.active::after {
-  content: '';
-  position: absolute;
-
-  left: 12px;
-  right: 12px;
-  bottom: -4px;
-
-  height: 3px;
-  border-radius: 999px;
-
-  background: linear-gradient(90deg, var(--nav-accent), var(--nav-accent-soft));
 }
 
 .linkLabel {
@@ -90,9 +72,7 @@
 }
 
 :global(.mantine-Menu-dropdown) {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background: rgba(246, 245, 239, 0.86);
+  background: var(--nav-surface);
 
   border: 1px solid rgba(27, 58, 47, 0.08);
   border-radius: 0 !important;
