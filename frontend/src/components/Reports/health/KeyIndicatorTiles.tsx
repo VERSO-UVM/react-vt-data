@@ -26,6 +26,8 @@ interface KeyIndicatorTilesProps {
   countyValues?: DataRow[];
   /** The county to rank, or none (e.g. for Vermont as a whole). */
   rankCounty?: string | null;
+  /** The comparison's county, marked alongside it if it's a different one. */
+  comparisonCounty?: string | null;
 }
 
 function valuesFor(rows: DataRow[], measure: string): CountyValue[] {
@@ -41,6 +43,7 @@ export default function KeyIndicatorTiles({
   comparisonName,
   countyValues = [],
   rankCounty,
+  comparisonCounty,
 }: KeyIndicatorTilesProps) {
   const tiles = measures
     .map((m) => rows.find((r) => r.measure === m))
@@ -57,6 +60,7 @@ export default function KeyIndicatorTiles({
           comparisonName={comparisonName}
           countyValues={rankCounty ? valuesFor(countyValues, row.measure) : []}
           rankCounty={rankCounty}
+          comparisonCounty={comparisonCounty}
         />
       ))}
     </SimpleGrid>
@@ -69,12 +73,14 @@ function Tile({
   comparisonName,
   countyValues,
   rankCounty,
+  comparisonCounty,
 }: {
   row: IndicatorRow;
   primaryName: string;
   comparisonName: string;
   countyValues: CountyValue[];
   rankCounty?: string | null;
+  comparisonCounty?: string | null;
 }) {
   const { primary: p, comparison: c } = row;
   const verdict = compareEstimates(p, c);
@@ -132,6 +138,7 @@ function Tile({
           <CountyRankStrip
             values={countyValues}
             county={rankCounty}
+            comparisonCounty={comparisonCounty}
             unit={row.unit}
           />
         </Box>

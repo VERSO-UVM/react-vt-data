@@ -1,8 +1,9 @@
 import { Box, Group, Stack, Text, Tooltip } from '@mantine/core';
-import { PRIMARY_COLOR, formatValue } from './IndicatorTable';
+import { COMPARISON_COLOR, PRIMARY_COLOR, formatValue } from './IndicatorTable';
 
 // Presentational: one measure's value in every county as a row of ticks,
-// with one county marked, and its rank in words. Ranks are neutral
+// with one county marked (and optionally the comparison county, in gray),
+// and the marked county's rank in words. Ranks are neutral
 // ("highest", never "best"): for some measures higher is better, for others
 // worse. The ticks show how bunched the counties are, since a rank alone
 // can't say whether 4th and 7th really differ.
@@ -14,8 +15,10 @@ export interface CountyValue {
 
 interface CountyRankStripProps {
   values: CountyValue[];
-  /** The county to mark, as named in `values`. */
+  /** The county to mark and rank, as named in `values`. */
   county: string;
+  /** A second county to mark in gray, e.g. the one it's compared with. */
+  comparisonCounty?: string | null;
   unit?: string;
 }
 
@@ -45,10 +48,15 @@ export function rankLabel(values: number[], value: number) {
 export default function CountyRankStrip({
   values,
   county,
+  comparisonCounty,
   unit = '%',
 }: CountyRankStripProps) {
   const own = values.find((v) => v.county === county);
   if (!own || values.length < 2) return null;
+  const other =
+    comparisonCounty !== county
+      ? values.find((v) => v.county === comparisonCounty)
+      : undefined;
 
   const all = values.map((v) => v.value);
   const min = Math.min(...all);
@@ -69,7 +77,7 @@ export default function CountyRankStrip({
           style={{ opacity: 0.5 }}
         />
         {values
-          .filter((v) => v !== own)
+          .filter((v) => v !== own && v !== other)
           .map((v) => (
             <Tooltip
               key={v.county}
@@ -93,24 +101,19 @@ export default function CountyRankStrip({
               </Box>
             </Tooltip>
           ))}
-        <Tooltip
-          label={`${own.county}: ${formatValue(own.value, unit)}`}
-          fz="xs"
-        >
-          <Box
-            pos="absolute"
-            w={DOT}
-            h={DOT}
-            bg={PRIMARY_COLOR}
-            style={{
-              left: pct(own.value),
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              borderRadius: '50%',
-              boxShadow: '0 0 0 2px white',
-            }}
+        {/* The comparison first, so the primary dot draws over it. */}
+        {other && (
+          <Marker
+            label={`${other.county}: ${formatValue(other.value, unit)}`}
+            left={pct(other.value)}
+            color={COMPARISON_COLOR}
           />
-        </Tooltip>
+        )}
+        <Marker
+          label={`${own.county}: ${formatValue(own.value, unit)}`}
+          left={pct(own.value)}
+          color={PRIMARY_COLOR}
+        />
       </Box>
       <Group justify="space-between" wrap="nowrap">
         <Text size="xs" c="dimmed">
@@ -124,5 +127,33 @@ export default function CountyRankStrip({
         </Text>
       </Group>
     </Stack>
+  );
+}
+
+function Marker({
+  label,
+  left,
+  color,
+}: {
+  label: string;
+  left: string;
+  color: string;
+}) {
+  return (
+    <Tooltip label={label} fz="xs">
+      <Box
+        pos="absolute"
+        w={DOT}
+        h={DOT}
+        bg={color}
+        style={{
+          left,
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '50%',
+          boxShadow: '0 0 0 2px white',
+        }}
+      />
+    </Tooltip>
   );
 }

@@ -49,10 +49,10 @@ export default function HealthDashboard({ data }: DashboardProps) {
   );
 
   // A county, or a town shown as its county; Vermont itself has no rank.
-  const rankCounty =
-    primary.location?.type === 'county' || primary.location?.type === 'town'
-      ? primary.location.county
-      : null;
+  const countyOf = (l?: Location) =>
+    l?.type === 'county' || l?.type === 'town' ? l.county : null;
+  const rankCounty = countyOf(primary.location);
+  const comparisonCounty = countyOf(comparison.location);
 
   return (
     <Grid gap="lg">
@@ -64,6 +64,7 @@ export default function HealthDashboard({ data }: DashboardProps) {
           comparisonName={comparison.name}
           countyValues={allAreas?.countyValues}
           rankCounty={rankCounty}
+          comparisonCounty={comparisonCounty}
         />
       </Grid.Col>
       <Grid.Col span={12}>
