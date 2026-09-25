@@ -7,9 +7,16 @@ import {
   Text,
   Title,
 } from '@mantine/core';
+import { COLORS } from '@/app/theme';
 import { DataRow } from '@/types/cachedCharts';
 import CountyRankStrip, { CountyValue } from './CountyRankStrip';
-import { IndicatorRow, compareEstimates, formatValue } from './IndicatorTable';
+import {
+  COMPARISON_COLOR,
+  IndicatorRow,
+  PRIMARY_COLOR,
+  compareEstimates,
+  formatValue,
+} from './IndicatorTable';
 
 // Presentational: a few chosen measures at a glance, each with the
 // comparison and whether the gap is significant (the same
@@ -89,13 +96,13 @@ function Tile({
   return (
     <Card radius="xl" padding="lg" withBorder style={{ height: '100%' }}>
       <Stack gap={2} mb="sm">
-        <Text size="xs" fw={700} tt="uppercase" c="dimmed" lineClamp={2}>
+        <Text size="xs" fw={700} tt="uppercase" c={COLORS.slate} lineClamp={2}>
           {row.label}
         </Text>
         {/* Names the place, which for a town is its county's estimate. */}
-        <Text size="xs" c="dimmed" lineClamp={1} mt={4}>
+        <PlaceName color={PRIMARY_COLOR} size="xs" mt={4}>
           {primaryName}
-        </Text>
+        </PlaceName>
         <Title order={3}>{formatValue(p.value, row.unit)}</Title>
         {p.low != null && p.high != null && (
           <Text size="xs" c="dimmed">
@@ -107,9 +114,9 @@ function Tile({
 
       <Stack gap={4}>
         <Group justify="space-between" wrap="nowrap">
-          <Text size="sm" c="dimmed" lineClamp={1}>
+          <PlaceName color={COMPARISON_COLOR} size="sm">
             {comparisonName}
-          </Text>
+          </PlaceName>
           <Text size="sm" fw={600}>
             {formatValue(c.value, row.unit)}
           </Text>
@@ -144,5 +151,33 @@ function Tile({
         </Box>
       )}
     </Card>
+  );
+}
+
+/** A place name led by its color's dot, matching the rank strip and charts.
+ *  Drops the ", Vermont" every name ends with, so it fits a narrow tile. */
+function PlaceName({
+  color,
+  size,
+  mt,
+  children,
+}: {
+  color: string;
+  size: 'xs' | 'sm';
+  mt?: number;
+  children: string;
+}) {
+  return (
+    <Group gap={6} wrap="nowrap" mt={mt} style={{ minWidth: 0 }}>
+      <Box
+        w={8}
+        h={8}
+        bg={color}
+        style={{ borderRadius: '50%', flexShrink: 0 }}
+      />
+      <Text size={size} c={COLORS.slate} lineClamp={1}>
+        {children.replace(/, Vermont$/, '')}
+      </Text>
+    </Group>
   );
 }

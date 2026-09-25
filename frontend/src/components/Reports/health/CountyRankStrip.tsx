@@ -1,4 +1,5 @@
 import { Box, Group, Stack, Text, Tooltip } from '@mantine/core';
+import { COLORS } from '@/app/theme';
 import { COMPARISON_COLOR, PRIMARY_COLOR, formatValue } from './IndicatorTable';
 
 // Presentational: one measure's value in every county as a row of ticks,
@@ -119,7 +120,7 @@ export default function CountyRankStrip({
         <Text size="xs" c="dimmed">
           {formatValue(min, unit)}
         </Text>
-        <Text size="xs" c="dimmed" ta="center">
+        <Text size="xs" c={COLORS.slate} fw={500} ta="center">
           {rankLabel(all, own.value)}
         </Text>
         <Text size="xs" c="dimmed">
