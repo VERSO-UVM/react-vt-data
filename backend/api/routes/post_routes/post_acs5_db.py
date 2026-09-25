@@ -426,15 +426,36 @@ async def dp_combined_tree():
     return make_response(data=rows, metadata=None)
 
 
+# Census identity columns (added to the DP tables by the pipeline) to pass
+# through when the warehouse has them: a label path can hold several
+# observations in a year (issue #106, e.g. owner costs with and without a
+# mortgage), and these let the chart draw and name one line for each.
+DP_IDENTITY_COLUMNS = ("variable_code", "source_label")
+
+
+def _dp_identity_columns() -> list[str]:
+    present = {
+        row[0] for row in DB.execute("DESCRIBE acs5_dp_combined_tidy").fetchall()
+    }
+    return [c for c in DP_IDENTITY_COLUMNS if c in present]
+
+
 @router.post("/load/acs5-db/dp-combined/series")
 async def dp_combined_series(request: DPSeriesRequest):
     """Return the annual time-series for a single
     (location, table, Category, Subcategory, Variable, Measure) selection.
+
+    A year can have several rows (see DP_IDENTITY_COLUMNS); all are returned,
+    in a stable order so each keeps its place across years: by variable code
+    when the warehouse has it, otherwise by load order.
     """
+    identity = _dp_identity_columns()
+    extra = "".join(f", {c}" for c in identity)
+    tiebreak = "variable_code" if "variable_code" in identity else "rowid"
     rows = DB.execute(
-        """--sql
+        f"""--sql
         SELECT CAST(year AS INTEGER) AS year,
-               CAST(value AS DOUBLE) AS Value
+               CAST(value AS DOUBLE) AS Value{extra}
         FROM acs5_dp_combined_tidy
         WHERE name = ?
           AND "table" = ?
@@ -443,7 +464,7 @@ async def dp_combined_series(request: DPSeriesRequest):
           AND variable = ?
           AND measure = ?
           AND CAST(year AS INTEGER) BETWEEN ? AND ?
-        ORDER BY year
+        ORDER BY year, {tiebreak}
         """,
         [
             request.name,
