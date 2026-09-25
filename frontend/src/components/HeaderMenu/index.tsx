@@ -301,9 +301,17 @@ export default function HeaderMenu() {
           >
             {items}
           </Group>
-          <ProfileModal />
-
-          <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
+          {/* Grouped so the button stays at the right edge when the nav
+              links are hidden on narrow screens. */}
+          <Group gap="sm" wrap="nowrap">
+            <ProfileModal />
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              size="sm"
+              hiddenFrom="md"
+            />
+          </Group>
         </div>
       </Container>
     </header>
