@@ -14,6 +14,8 @@ import {
 } from 'recharts';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
+import MultiRowNotice from './MultiRowNotice';
+import { lineName, splitIntoLines } from './seriesLines';
 
 // tidy ACS-style row consumed by the trend charts
 interface TrendRow extends DataRow {
@@ -150,12 +152,26 @@ export const SingleSeriesTrendChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     [string, string] | undefined;
 
-  const findValue = (rows: any[], year: number) => {
-    const row = seriesKey
-      ? rows.find((r) => r.year === year && r.Variable === seriesKey)
-      : rows.find((r) => r.year === year);
-    return row?.[valueField] ?? null;
-  };
+  // Each place's rows for this series, as one line per row in a year (see
+  // seriesLines.ts); normally a single line.
+  const own = useMemo(
+    () =>
+      splitIntoLines(
+        (data ?? []).filter((r) => !seriesKey || r.Variable === seriesKey),
+      ),
+    [data, seriesKey],
+  );
+  const other = useMemo(
+    () =>
+      splitIntoLines(
+        (compareData ?? []).filter(
+          (r) => !seriesKey || r.Variable === seriesKey,
+        ),
+      ),
+    [compareData, seriesKey],
+  );
+  const ownKey = (i: number) => lineKey(seriesName, i);
+  const otherKey = (i: number) => `${lineKey(seriesName, i)} (cmp)`;
 
   const years = useMemo(
     () => (data ? Array.from(new Set(data.map((r) => r.year))).sort() : []),
@@ -164,14 +180,21 @@ export const SingleSeriesTrendChart = <TData,>({
 
   const plotData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    return years.map((year) => ({
-      year,
-      [seriesName]: findValue(data, year),
-      ...(compareData && compareData.length > 0
-        ? { [`${seriesName} (cmp)`]: findValue(compareData, year) }
-        : {}),
-    }));
-  }, [years, data, compareData, seriesName]);
+    const valueAt = (rows: DataRow[], year: unknown) =>
+      rows.find((r) => r.year === year)?.[valueField] ?? null;
+    return years.map((year) => {
+      const pt: DataRow = { year };
+      own.lines.forEach((line, i) => {
+        pt[lineKey(seriesName, i)] = valueAt(line.rows, year);
+      });
+      if (compareData && compareData.length > 0) {
+        other.lines.forEach((line, i) => {
+          pt[`${lineKey(seriesName, i)} (cmp)`] = valueAt(line.rows, year);
+        });
+      }
+      return pt;
+    });
+  }, [years, data, compareData, own, other, seriesName, valueField]);
 
   useEffect(() => {
     onPlotData?.(plotData);
@@ -183,6 +206,10 @@ export const SingleSeriesTrendChart = <TData,>({
 
   return (
     <>
+      <MultiRowNotice
+        chartTitle={chart.title ?? seriesName}
+        maxPerYear={Math.max(own.maxPerX, other.maxPerX)}
+      />
       {showHelperText && !isGallery && (
         <Text size="xs" c="dimmed" mb={4}>
           Click legend items to show or hide locations.
@@ -221,37 +248,53 @@ export const SingleSeriesTrendChart = <TData,>({
               wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
             />
           )}
-          <Line
-            type="monotone"
-            dataKey={seriesName}
-            name={labels?.[0] ?? 'Main'}
-            stroke={color}
-            strokeWidth={lineWidth}
-            dot={false}
-            animationBegin={0}
-            isAnimationActive={!isGallery && !isPdfMode}
-            animationDuration={!isGallery ? 1500 : 0}
-            hide={hidden.has(seriesName)}
-          />
-          {compareData.length > 0 && (
+          {own.lines.map((_, i) => (
             <Line
+              key={ownKey(i)}
               type="monotone"
-              dataKey={`${seriesName} (cmp)`}
-              name={labels?.[1] ?? 'Comparison'}
-              stroke={compareColor}
+              dataKey={ownKey(i)}
+              name={lineName(labels?.[0] ?? 'Main', own, i)}
+              stroke={color}
               strokeWidth={lineWidth}
-              dot={false}
+              strokeDasharray={SPLIT_DASHES[i % SPLIT_DASHES.length]}
+              dot={own.lines.length > 1}
               animationBegin={0}
               isAnimationActive={!isGallery && !isPdfMode}
               animationDuration={!isGallery ? 1500 : 0}
-              hide={hidden.has(`${seriesName} (cmp)`)}
+              hide={hidden.has(ownKey(i))}
             />
-          )}
+          ))}
+          {compareData.length > 0 &&
+            other.lines.map((_, i) => (
+              <Line
+                key={otherKey(i)}
+                type="monotone"
+                dataKey={otherKey(i)}
+                name={lineName(labels?.[1] ?? 'Comparison', other, i)}
+                stroke={compareColor}
+                strokeWidth={lineWidth}
+                strokeDasharray={SPLIT_DASHES[i % SPLIT_DASHES.length]}
+                dot={other.lines.length > 1}
+                animationBegin={0}
+                isAnimationActive={!isGallery && !isPdfMode}
+                animationDuration={!isGallery ? 1500 : 0}
+                hide={hidden.has(otherKey(i))}
+              />
+            ))}
         </LineChart>
       </ResponsiveContainer>
     </>
   );
 };
+// A split series' plot key for its i-th line. The first keeps the plain
+// name, so the table view's column names only change when a series splits.
+const lineKey = (name: string, i: number) =>
+  i === 0 ? name : `${name} (${i + 1})`;
+
+// Line styles for a series that split into several lines (see seriesLines.ts):
+// the first stays solid, the rest get dashes so they read as the same series.
+const SPLIT_DASHES = [undefined, '8 4', '2 3', '12 4 2 4'];
+
 // ---------------------------------------------------------------------------
 // Multi-series trend chart
 // Covers: Demographics (Under 18 / 65+ w/ aggregation), Education, Earnings
@@ -305,6 +348,30 @@ export const MultiSeriesTrendChart = <TData,>({
   const labels = chart.chartParams?.legendLabels as
     [string, string] | undefined;
 
+  // Each series' rows per place, split into a line per row in a year (see
+  // seriesLines.ts). Summed series (aggregateFrom) stay one line; their
+  // extra rows only count toward the notice.
+  const splitSeries = useMemo(() => {
+    const split = (rows: DataRow[] | undefined, s: SeriesDef) =>
+      splitIntoLines(
+        (rows ?? []).filter((r) =>
+          s.aggregateFrom
+            ? s.aggregateFrom.includes(String(r.Variable))
+            : r.Variable === (s.matchVariable ?? s.key),
+        ),
+      );
+    return series.map((s) => ({
+      own: split(data, s),
+      other: split(compareData, s),
+    }));
+  }, [data, compareData, JSON.stringify(series)]);
+  const maxPerYear = Math.max(
+    0,
+    ...splitSeries.flatMap(({ own, other }) => [own.maxPerX, other.maxPerX]),
+  );
+  // Lines past a series' first, when it split; the first keeps s.key.
+  const extraKey = (s: SeriesDef, i: number) => `${s.key} (${i + 1})`;
+
   const getValue = (rows: any[], year: number, s: SeriesDef) => {
     if (s.aggregateFrom) {
       const sum = s.aggregateFrom.reduce((acc, label) => {
@@ -332,14 +399,33 @@ export const MultiSeriesTrendChart = <TData,>({
     if (!data || data.length === 0) return [];
     return years.map((year) => {
       const pt: Record<string, any> = { year };
-      for (const s of series) {
+      series.forEach((s, si) => {
         pt[s.key] = getValue(data, year, s);
         if (compareData && compareData.length > 0)
           pt[`${s.key} (cmp)`] = getValue(compareData, year, s);
-      }
+        if (s.aggregateFrom) return;
+        const { own, other } = splitSeries[si];
+        const at = (line: { rows: DataRow[] }) =>
+          line.rows.find((r) => r.year === year)?.[valueField] ?? null;
+        own.lines.forEach((line, i) => {
+          if (i === 0) pt[s.key] = at(line);
+          else pt[extraKey(s, i)] = at(line);
+        });
+        other.lines.forEach((line, i) => {
+          if (i === 0) pt[`${s.key} (cmp)`] = at(line);
+          else pt[`${extraKey(s, i)} (cmp)`] = at(line);
+        });
+      });
       return pt;
     });
-  }, [years, data, compareData, JSON.stringify(series), valueField]);
+  }, [
+    years,
+    data,
+    compareData,
+    JSON.stringify(series),
+    valueField,
+    splitSeries,
+  ]);
 
   useEffect(() => {
     onPlotData?.(plotData);
@@ -351,6 +437,10 @@ export const MultiSeriesTrendChart = <TData,>({
 
   return (
     <>
+      <MultiRowNotice
+        chartTitle={chart.title ?? 'Trend'}
+        maxPerYear={maxPerYear}
+      />
       {compareData.length > 0 && !isGallery && (
         <CompareNote name={labels?.[1] ?? 'Comparison'} />
       )}
@@ -401,6 +491,44 @@ export const MultiSeriesTrendChart = <TData,>({
               hide={hidden.has(s.key)}
             />
           ))}
+          {series.flatMap((s, si) =>
+            splitSeries[si].own.lines
+              .slice(1)
+              .map((line, j) => (
+                <Line
+                  key={extraKey(s, j + 1)}
+                  dataKey={extraKey(s, j + 1)}
+                  name={`${s.key} — ${line.label ?? `value ${j + 2}`} (${labels?.[0] ?? 'Main'})`}
+                  stroke={s.color}
+                  strokeWidth={2}
+                  strokeDasharray={SPLIT_DASHES[(j + 1) % SPLIT_DASHES.length]}
+                  dot
+                  isAnimationActive={!isGallery && !isPdfMode}
+                  animationDuration={!isGallery ? 1500 : 0}
+                  hide={hidden.has(extraKey(s, j + 1))}
+                />
+              )),
+          )}
+          {compareData.length > 0 &&
+            series.flatMap((s, si) =>
+              splitSeries[si].other.lines
+                .slice(1)
+                .map((line, j) => (
+                  <Line
+                    key={`${extraKey(s, j + 1)}-cmp`}
+                    dataKey={`${extraKey(s, j + 1)} (cmp)`}
+                    name={`${s.key} — ${line.label ?? `value ${j + 2}`} (${labels?.[1] ?? 'Comparison'})`}
+                    stroke={s.color}
+                    strokeWidth={1.5}
+                    strokeDasharray="2 3"
+                    legendType="none"
+                    dot
+                    isAnimationActive={!isGallery && !isPdfMode}
+                    animationDuration={!isGallery ? 1500 : 0}
+                    hide={hidden.has(s.key)}
+                  />
+                )),
+            )}
           {compareData.length > 0 &&
             series.map((s) => (
               <Line
@@ -844,62 +972,85 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
     ?.toLowerCase()
     .includes('percent');
 
+  // A side with several rows in a year (e.g. owner costs with and without a
+  // mortgage under one label) gets a line per row rather than the first.
+  const primary = splitIntoLines(data);
+  const compare = splitIntoLines(compareData);
+
   const allYears = Array.from(
     new Set([...data, ...compareData].map((r) => r.year)),
   ).sort((a, b) => Number(a) - Number(b));
 
-  const plotData = allYears.map((year) => ({
-    year,
-    primary: data.find((r) => r.year === year)?.Value ?? null,
-    compare: compareData.find((r) => r.year === year)?.Value ?? null,
-  }));
-
-  const fmt = (v: unknown) =>
-    v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
+  const plotData = allYears.map((year) => {
+    const pt: Record<string, unknown> = { year };
+    primary.lines.forEach((line, i) => {
+      pt[`primary${i}`] = line.rows.find((r) => r.year === year)?.Value ?? null;
+    });
+    compare.lines.forEach((line, i) => {
+      pt[`compare${i}`] = line.rows.find((r) => r.year === year)?.Value ?? null;
+    });
+    return pt;
+  });
 
   if (!data || data.length === 0) return null;
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart
-        data={plotData}
-        margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
-        <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-        <YAxis
-          tick={{ fontSize: 12 }}
-          tickFormatter={(v) =>
-            isPercent ? `${v}%` : Number(v).toLocaleString()
-          }
-          domain={['auto', 'auto']}
-        />
-        <Tooltip
-          formatter={(value) => {
-            return (Number(value) || 0).toLocaleString();
-          }}
-        />
-        <Legend />
-        <Line
-          type="monotone"
-          dataKey="primary"
-          name={primaryName}
-          stroke="#154734"
-          strokeWidth={2}
-          dot={false}
-        />
-        {compareData.length > 0 && (
-          <Line
-            type="monotone"
-            dataKey="compare"
-            name={compareName}
-            stroke="#8899aa"
-            strokeWidth={1.5}
-            strokeDasharray="6 4"
-            dot={false}
+    <>
+      <MultiRowNotice
+        chartTitle={chart.title ?? 'DP trend'}
+        maxPerYear={Math.max(primary.maxPerX, compare.maxPerX)}
+      />
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart
+          data={plotData}
+          margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#e0d8cc" />
+          <XAxis dataKey="year" tick={{ fontSize: 12 }} />
+          <YAxis
+            tick={{ fontSize: 12 }}
+            tickFormatter={(v) =>
+              isPercent ? `${v}%` : Number(v).toLocaleString()
+            }
+            domain={['auto', 'auto']}
           />
-        )}
-      </LineChart>
-    </ResponsiveContainer>
+          <Tooltip
+            formatter={(value) => {
+              return (Number(value) || 0).toLocaleString();
+            }}
+          />
+          <Legend />
+          {primary.lines.map((_, i) => (
+            <Line
+              key={`primary${i}`}
+              type="monotone"
+              dataKey={`primary${i}`}
+              name={lineName(primaryName, primary, i)}
+              stroke={PRIMARY_SHADES[i % PRIMARY_SHADES.length]}
+              strokeWidth={2}
+              dot={primary.lines.length > 1}
+            />
+          ))}
+          {compareData.length > 0 &&
+            compare.lines.map((_, i) => (
+              <Line
+                key={`compare${i}`}
+                type="monotone"
+                dataKey={`compare${i}`}
+                name={lineName(compareName, compare, i)}
+                stroke={COMPARE_SHADES[i % COMPARE_SHADES.length]}
+                strokeWidth={1.5}
+                strokeDasharray="6 4"
+                dot={compare.lines.length > 1}
+              />
+            ))}
+        </LineChart>
+      </ResponsiveContainer>
+    </>
   );
 };
+
+// Each side's lines when it splits: its own color first, then lighter and
+// darker shades of it, so the sides stay apart and every line is visible.
+const PRIMARY_SHADES = ['#154734', '#4f8a6a', '#8fbf9f', '#0b2a1f'];
+const COMPARE_SHADES = ['#8899aa', '#5d6f82', '#b3c0cc', '#3f4d5c'];

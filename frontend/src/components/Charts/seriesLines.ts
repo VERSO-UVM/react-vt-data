@@ -1,0 +1,96 @@
+// Trend charts used to draw one line per series by taking the first row for
+// each year, which silently hid data whenever a series had several rows in a
+// year: e.g. Burlington's 2011 median monthly owner costs with and without a
+// mortgage share one Census label path (issue #106), and the chart showed
+// whichever came back first. These helpers split such rows into one line
+// each, so every row is drawn and an unexpected flood of rows is visible.
+
+type Row = Record<string, unknown>;
+
+export interface SeriesLine<T> {
+  /** What sets this line apart from the series' other lines, e.g. "Housing
+   *  units with a mortgage"; null when the rows carry nothing to tell them
+   *  apart (the caller numbers them instead). */
+  label: string | null;
+  rows: T[];
+}
+
+export interface SeriesLines<T> {
+  lines: SeriesLine<T>[];
+  /** The most rows any single x value had; above 1 means the series split. */
+  maxPerX: number;
+}
+
+// Row fields that identify a Census observation, most readable first.
+// source_label and variable_code come from the DP profile tables.
+const IDENTITY_FIELDS = ['source_label', 'variable_code'];
+
+/** One line per distinct row at each x value, instead of the first row. */
+export function splitIntoLines<T extends Row>(
+  rows: T[],
+  x = 'year',
+): SeriesLines<T> {
+  const perX = new Map<string, number>();
+  for (const r of rows) {
+    const k = String(r[x]);
+    perX.set(k, (perX.get(k) ?? 0) + 1);
+  }
+  const maxPerX = Math.max(0, ...perX.values());
+  if (maxPerX <= 1) return { lines: [{ label: null, rows }], maxPerX };
+
+  // Group by the first identity field every row has, so a line keeps the
+  // same observation across years; rows still sharing an x within a group
+  // (or with no identity at all) are split by order of arrival.
+  const idField = IDENTITY_FIELDS.find((f) =>
+    rows.every((r) => r[f] != null && r[f] !== ''),
+  );
+  const groups = new Map<string, T[]>();
+  const seen = new Map<string, number>();
+  for (const r of rows) {
+    const id = idField ? String(r[idField]) : '';
+    const nth = seen.get(`${id}|${r[x]}`) ?? 0;
+    seen.set(`${id}|${r[x]}`, nth + 1);
+    const key = `${id}#${nth}`;
+    groups.set(key, [...(groups.get(key) ?? []), r]);
+  }
+
+  const keys = [...groups.keys()];
+  const ids = keys.map((k) => k.slice(0, k.lastIndexOf('#')));
+  const names =
+    idField === 'source_label' ? distinguishingParts(ids) : ids.map((id) => id);
+  const lines = keys.map((key, i) => {
+    const nth = Number(key.slice(key.lastIndexOf('#') + 1));
+    const name = names[i] || null;
+    return {
+      label: name && nth > 0 ? `${name} (${nth + 1})` : name,
+      rows: groups.get(key)!,
+    };
+  });
+  return { lines, maxPerX };
+}
+
+/** For Census labels like "Estimate!!SELECTED MONTHLY OWNER COSTS
+ *  (SMOC)!!Housing units with a mortgage!!Median (dollars)", the parts not
+ *  shared by every label, e.g. "Housing units with a mortgage". */
+export function distinguishingParts(labels: string[]): string[] {
+  const parts = labels.map((l) => l.split('!!'));
+  const shared = parts
+    .map((p) => new Set(p))
+    .reduce((a, b) => new Set([...a].filter((s) => b.has(s))));
+  return parts.map((p, i) => {
+    const own = p.filter((s) => !shared.has(s));
+    return own.length ? own.join(' › ') : labels[i];
+  });
+}
+
+/** A line's legend name: the series name, plus what sets the line apart
+ *  when the series split. */
+export function lineName<T>(
+  seriesName: string,
+  result: SeriesLines<T>,
+  index: number,
+): string {
+  if (result.lines.length === 1) return seriesName;
+  const label = result.lines[index].label ?? `value ${index + 1}`;
+  return `${seriesName} — ${label}`;
+}
