@@ -109,7 +109,7 @@ function Tile({
       withBorder
       style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
     >
-      <Group justify="space-between" align="center" wrap="nowrap" mb="sm">
+      <Group justify="space-between" align="center" wrap="nowrap" mb="lg">
         <Text size="xs" fw={700} tt="uppercase" c={COLORS.slate} lineClamp={2}>
           {row.label}
         </Text>

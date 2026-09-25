@@ -76,6 +76,9 @@ export default function CountyRankStrip({
 
   return (
     <Stack gap={4}>
+      <Text size="xs" fw={600} c={COLORS.slate} mb={4}>
+        Among Vermont&apos;s {values.length} counties
+      </Text>
       <Box pos="relative" h={STRIP_HEIGHT} mx={Math.ceil(DOT / 2)}>
         <Box
           pos="absolute"
@@ -130,9 +133,6 @@ export default function CountyRankStrip({
             </Text>
           </Group>
         ))}
-        <Text size="xs" c="dimmed">
-          of {values.length} counties
-        </Text>
       </Group>
     </Stack>
   );
