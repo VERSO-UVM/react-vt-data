@@ -1,26 +1,19 @@
-import {
-  Box,
-  Card,
-  Group,
-  SimpleGrid,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core';
+import { Box, Card, Group, SimpleGrid, Text, Title } from '@mantine/core';
 import { COLORS } from '@/app/theme';
 import { DataRow } from '@/types/cachedCharts';
 import CountyRankStrip, { CountyValue } from './CountyRankStrip';
 import {
   COMPARISON_COLOR,
+  IndicatorEstimate,
   IndicatorRow,
   PRIMARY_COLOR,
   compareEstimates,
   formatValue,
 } from './IndicatorTable';
 
-// Presentational: a few chosen measures at a glance, each with the
-// comparison and whether the gap is significant (the same
-// test as IndicatorTable). Neutral colors, like the table: for some measures
+// Presentational: a few chosen measures at a glance, both places side by
+// side, and whether the gap is significant (the same test as
+// IndicatorTable). Neutral colors, like the table: for some measures
 // (routine checkups) higher is better, for others (smoking) it's worse.
 
 interface KeyIndicatorTilesProps {
@@ -90,58 +83,54 @@ function Tile({
   comparisonCounty?: string | null;
 }) {
   const { primary: p, comparison: c } = row;
-  const verdict = compareEstimates(p, c);
-  const diff = p.value != null && c.value != null ? p.value - c.value : null;
+  const places = [
+    { name: primaryName, estimate: p, color: PRIMARY_COLOR },
+    { name: comparisonName, estimate: c, color: COMPARISON_COLOR },
+  ];
 
   return (
-    <Card radius="xl" padding="lg" withBorder style={{ height: '100%' }}>
-      <Stack gap={2} mb="sm">
-        <Text size="xs" fw={700} tt="uppercase" c={COLORS.slate} lineClamp={2}>
-          {row.label}
-        </Text>
-        {/* Names the place, which for a town is its county's estimate. */}
-        <PlaceName color={PRIMARY_COLOR} size="xs" mt={4}>
-          {primaryName}
-        </PlaceName>
-        <Title order={3}>{formatValue(p.value, row.unit)}</Title>
-        {p.low != null && p.high != null && (
-          <Text size="xs" c="dimmed">
-            95% CI {formatValue(p.low, row.unit)}–
-            {formatValue(p.high, row.unit)}
-          </Text>
-        )}
-      </Stack>
+    <Card
+      radius="xl"
+      padding="lg"
+      withBorder
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
+      <Text
+        size="xs"
+        fw={700}
+        tt="uppercase"
+        c={COLORS.slate}
+        lineClamp={2}
+        mb="sm"
+      >
+        {row.label}
+      </Text>
 
-      <Stack gap={4}>
-        <Group justify="space-between" wrap="nowrap">
-          <PlaceName color={COMPARISON_COLOR} size="sm">
-            {comparisonName}
+      {/* Both places the same way, filled row by row so the names, values
+          and margins line up even when one name wraps. For a town, the name
+          is its county, whose estimate this is. */}
+      <SimpleGrid cols={2} spacing="sm" verticalSpacing={2}>
+        {places.map((place) => (
+          <PlaceName key={place.color} color={place.color}>
+            {place.name}
           </PlaceName>
-          <Text size="sm" fw={600}>
-            {formatValue(c.value, row.unit)}
+        ))}
+        {places.map((place) => (
+          <Title key={place.color} order={3}>
+            {formatValue(place.estimate.value, row.unit)}
+          </Title>
+        ))}
+        {places.map((place) => (
+          <Text key={place.color} size="xs" c="dimmed">
+            {margin(place.estimate)}
           </Text>
-        </Group>
-        <Group justify="space-between" wrap="nowrap">
-          <Text size="sm" c="dimmed">
-            Difference
-          </Text>
-          <Text size="sm" fw={verdict === 'different' ? 700 : 500}>
-            {diff == null
-              ? '—'
-              : `${diff > 0 ? '+' : ''}${diff.toFixed(1)} pts`}
-          </Text>
-        </Group>
-        {verdict !== 'unknown' && (
-          <Text size="xs" c="dimmed">
-            {verdict === 'different'
-              ? 'Significant difference'
-              : 'Not a significant difference'}
-          </Text>
-        )}
-      </Stack>
+        ))}
+      </SimpleGrid>
+
+      <DifferenceLine row={row} />
 
       {rankCounty && countyValues.length > 1 && (
-        <Box mt="md">
+        <Box mt="auto" pt="md">
           <CountyRankStrip
             values={countyValues}
             county={rankCounty}
@@ -154,28 +143,49 @@ function Tile({
   );
 }
 
+/** "±3.5": half the 95% interval's width, blank without one. */
+function margin(e: IndicatorEstimate) {
+  return e.low != null && e.high != null
+    ? `±${((e.high - e.low) / 2).toFixed(1)}`
+    : '\u00a0';
+}
+
+/** "1.0 pts lower · not significant", the first place against the second. */
+function DifferenceLine({ row }: { row: IndicatorRow }) {
+  const { primary: p, comparison: c } = row;
+  if (p.value == null || c.value == null) return null;
+  const diff = p.value - c.value;
+  const verdict = compareEstimates(p, c);
+  const size = Math.abs(diff).toFixed(1);
+  return (
+    <Text size="sm" mt="sm" c={COLORS.slate}>
+      <Text span inherit fw={verdict === 'different' ? 700 : 500}>
+        {size === '0.0'
+          ? 'Same value'
+          : `${size} pts ${diff > 0 ? 'higher' : 'lower'}`}
+      </Text>
+      {verdict !== 'unknown' && (
+        <Text span inherit c="dimmed">
+          {verdict === 'different' ? ' · significant' : ' · not significant'}
+        </Text>
+      )}
+    </Text>
+  );
+}
+
 /** A place name led by its color's dot, matching the rank strip and charts.
  *  Drops the ", Vermont" every name ends with, so it fits a narrow tile. */
-function PlaceName({
-  color,
-  size,
-  mt,
-  children,
-}: {
-  color: string;
-  size: 'xs' | 'sm';
-  mt?: number;
-  children: string;
-}) {
+function PlaceName({ color, children }: { color: string; children: string }) {
   return (
-    <Group gap={6} wrap="nowrap" mt={mt} style={{ minWidth: 0 }}>
+    <Group gap={6} wrap="nowrap" align="flex-start" style={{ minWidth: 0 }}>
       <Box
         w={8}
         h={8}
+        mt={5}
         bg={color}
         style={{ borderRadius: '50%', flexShrink: 0 }}
       />
-      <Text size={size} c={COLORS.slate} lineClamp={1}>
+      <Text size="xs" c={COLORS.slate} lineClamp={2}>
         {children.replace(/, Vermont$/, '')}
       </Text>
     </Group>
