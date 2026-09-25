@@ -84,12 +84,12 @@ function ProfileButton({
       radius="xl"
       leftSection={<UserCircleIcon size={22} weight="light" />}
       aria-label={`Edit profile: ${lines.join(' ')}`}
+      classNames={{ root: classes.profileButton, section: classes.profileIcon }}
       styles={{
         root: {
           flexShrink: 0,
           height: 'auto',
           minHeight: 42,
-          maxWidth: 220,
           paddingBlock: 4,
         },
         label: {

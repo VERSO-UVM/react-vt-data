@@ -4,3 +4,19 @@
   background: var(--mantine-color-gray-1);
   color: inherit;
 }
+
+/* The header's profile button: narrower on phones, where the icon goes so
+   the place names keep the room. */
+.profileButton {
+  max-width: 220px;
+}
+
+@media (max-width: 36em) {
+  .profileButton {
+    max-width: 150px;
+  }
+
+  .profileIcon {
+    display: none;
+  }
+}

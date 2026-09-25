@@ -97,3 +97,48 @@
   padding-top: 4px;
   padding-bottom: 4px;
 }
+
+/* Narrow-screen menu (the Drawer behind the burger). */
+.drawerNav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+}
+
+.drawerSectionLabel {
+  padding: 0 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--nav-accent);
+}
+
+.drawerLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: inherit;
+  font-size: 16px;
+}
+
+.drawerLink:hover {
+  text-decoration: none;
+  background: var(--nav-hover-bg);
+}
+
+.drawerLinkActive,
+.drawerLinkActive:hover {
+  background: var(--nav-active-bg);
+  color: #fff;
+  font-weight: 600;
+}
