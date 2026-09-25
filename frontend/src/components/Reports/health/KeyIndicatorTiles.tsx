@@ -16,13 +16,12 @@ import {
   IndicatorEstimate,
   IndicatorRow,
   PRIMARY_COLOR,
-  compareEstimates,
   formatValue,
 } from './IndicatorTable';
 
 // Presentational: a few chosen measures at a glance, both places side by
-// side, and whether the gap is significant (the same test as
-// IndicatorTable). Neutral colors, like the table: for some measures
+// side with each county's rank; the All Indicators table below says whether
+// each gap is significant. Neutral colors, like the table: for some measures
 // (routine checkups) higher is better, for others (smoking) it's worse.
 
 interface KeyIndicatorTilesProps {
@@ -148,10 +147,8 @@ function Tile({
         ))}
       </SimpleGrid>
 
-      <DifferenceLine row={row} />
-
       {rankCounty && countyValues.length > 1 && (
-        <Box mt="auto" pt="md">
+        <Box mt="auto" pt="xl">
           <CountyRankStrip
             values={countyValues}
             county={rankCounty}
@@ -169,29 +166,6 @@ function margin(e: IndicatorEstimate) {
   return e.low != null && e.high != null
     ? `±${((e.high - e.low) / 2).toFixed(1)}`
     : '\u00a0';
-}
-
-/** "1.0 pts lower · not significant", the first place against the second. */
-function DifferenceLine({ row }: { row: IndicatorRow }) {
-  const { primary: p, comparison: c } = row;
-  if (p.value == null || c.value == null) return null;
-  const diff = p.value - c.value;
-  const verdict = compareEstimates(p, c);
-  const size = Math.abs(diff).toFixed(1);
-  return (
-    <Text size="sm" mt="sm" c={COLORS.slate}>
-      <Text span inherit fw={verdict === 'different' ? 700 : 500}>
-        {size === '0.0'
-          ? 'Same value'
-          : `${size} pts ${diff > 0 ? 'higher' : 'lower'}`}
-      </Text>
-      {verdict !== 'unknown' && (
-        <Text span inherit c="dimmed">
-          {verdict === 'different' ? ' · significant' : ' · not significant'}
-        </Text>
-      )}
-    </Text>
-  );
 }
 
 /** A place name led by its color's dot, matching the rank strip and charts.
