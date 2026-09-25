@@ -80,7 +80,7 @@ def relabel_census_cols(df):
     df_clean = df[df["Label"].str.contains("!!")].copy()
     # Reset index to avoid merging issues
     df_clean.reset_index(drop=True, inplace=True)
-    # Preserve the original census variable code (e.g. "DP05_0001E") under a
+    # Preserve the original census variable code (e.g. "DP05_0001E") and name it "Variable_Code"
     df_clean = df_clean.rename(columns={"Name": "Variable_Code"})
 
     splits = df_clean["Label"].apply(lambda x: list(split_to_cols(x, cols)))
