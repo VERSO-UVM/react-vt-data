@@ -45,6 +45,7 @@ def _dp_select_sql(dp: str, raw_table_name: str) -> str:
             CASE
                 WHEN g.geo_type IN ('county', 'town') THEN LEFT(g.geoid, 5)
             END AS county_fips,
+            g.variable_code,
             g.category,
             g.subcategory,
             g.variable,
@@ -57,6 +58,7 @@ def _dp_select_sql(dp: str, raw_table_name: str) -> str:
             SELECT
                 n.year,
                 n.NAME AS name,
+                n.Variable_Code AS variable_code,
                 n.Category AS category,
                 n.Subcategory AS subcategory,
                 n.Variable AS variable,
