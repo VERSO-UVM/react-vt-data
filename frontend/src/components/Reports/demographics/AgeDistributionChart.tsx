@@ -86,7 +86,7 @@ export default function AgeDistributionChart({
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
           <Bar dataKey={primaryName} fill="#5474B4" radius={[6, 6, 0, 0]} />
-          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[6, 6, 0, 0]} />
+          <Bar dataKey={comparisonName} fill="#868e96" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>
