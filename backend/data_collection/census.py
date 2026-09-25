@@ -112,7 +112,8 @@ def merge_census_cols(name_df, data_gdf, id_vars: list | None):
     # original census variable code - for downstream lineage)
     return (
         pd.merge(left=df_long, right=name_df, left_on="Code", right_on="Variable_Code")
-        .drop(columns=["Code", "Label"])
+        .rename(columns={"Label": "Source_Label"})
+        .drop(columns=["Code"])
     )
 
 
