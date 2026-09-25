@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from data_collection import (
     acs5,
+    acs5_tract,
     ambulance,
     building_footprints,
     cdc,
@@ -22,6 +23,7 @@ from lake_build import get_connection, insert_year, replace_table
 
 YEARLY_SCRAPERS = [
     acs5,
+    acs5_tract,
     demographics,
     economic,
     education,
