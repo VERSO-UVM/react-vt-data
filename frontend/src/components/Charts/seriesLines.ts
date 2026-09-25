@@ -26,8 +26,33 @@ export interface SeriesLines<T> {
 }
 
 // Row fields that identify a Census observation, most readable first.
-// source_label and variable_code come from the DP profile tables.
+// source_label and variable_code come from the DP profile tables. The label
+// doesn't always tell rows apart: in 2011-2012 the owner costs with and
+// without a mortgage (DP04_0100E, DP04_0107E) share one label word for word.
 const IDENTITY_FIELDS = ['source_label', 'variable_code'];
+
+/** The most readable identity field that every row has and that tells apart
+ *  the rows sharing each x value, or null if none does. */
+export function identityField(rows: Row[], x = 'year'): string | null {
+  return (
+    IDENTITY_FIELDS.find((f) => {
+      if (!rows.every((r) => r[f] != null && r[f] !== '')) return false;
+      const seen = new Set<string>();
+      return rows.every((r) => {
+        const key = `${r[x]}|${r[f]}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }) ?? null
+  );
+}
+
+/** Readable names for identity values: the differing part of each Census
+ *  label, or the variable code itself. */
+export function identityNames(ids: string[], field: string | null): string[] {
+  return field === 'source_label' ? distinguishingParts(ids) : ids;
+}
 
 /** One line per distinct row at each x value, instead of the first row. */
 export function splitIntoLines<T extends Row>(
@@ -45,12 +70,10 @@ export function splitIntoLines<T extends Row>(
   }
   const duplicates = countDuplicates(rows);
 
-  // Group by the first identity field every row has, so a line keeps the
-  // same observation across years; rows still sharing an x within a group
-  // (or with no identity at all) are split by order of arrival.
-  const idField = IDENTITY_FIELDS.find((f) =>
-    rows.every((r) => r[f] != null && r[f] !== ''),
-  );
+  // Group by an identity field that tells the rows apart, so a line keeps
+  // the same observation across years; without one, rows sharing an x are
+  // split by order of arrival (the API returns them in a stable order).
+  const idField = identityField(rows, x);
   const groups = new Map<string, T[]>();
   const seen = new Map<string, number>();
   for (const r of rows) {
@@ -63,8 +86,7 @@ export function splitIntoLines<T extends Row>(
 
   const keys = [...groups.keys()];
   const ids = keys.map((k) => k.slice(0, k.lastIndexOf('#')));
-  const names =
-    idField === 'source_label' ? distinguishingParts(ids) : ids.map((id) => id);
+  const names = identityNames(ids, idField);
   const lines = keys.map((key, i) => {
     const nth = Number(key.slice(key.lastIndexOf('#') + 1));
     const name = names[i] || null;

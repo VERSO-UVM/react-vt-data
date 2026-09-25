@@ -34,7 +34,7 @@ import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
-import { distinguishingParts } from '@/components/Charts/seriesLines';
+import { identityField, identityNames } from '@/components/Charts/seriesLines';
 import county_town_names from '@/data/county_town_names.json';
 import { DataRow } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
@@ -195,14 +195,20 @@ function pairValues(pointsA: DataRow[], pointsB: DataRow[]): ValueRow[] {
   if (pointsA.length <= 1 && pointsB.length <= 1) {
     return [{ label: null, a: pointsA[0], b: pointsB[0] }];
   }
-  const all = [...pointsA, ...pointsB];
-  if (all.every((p) => p.source_label)) {
-    const labels = Array.from(new Set(all.map((p) => String(p.source_label))));
-    const names = distinguishingParts(labels);
-    return labels.map((label, i) => ({
+  // Pair by an identity field that tells each place's values apart (the
+  // Census label, or the variable code where labels repeat).
+  const field = [identityField(pointsA), identityField(pointsB)].reduce(
+    (a, b) => (a === b ? a : null),
+  );
+  if (field) {
+    const ids = Array.from(
+      new Set([...pointsA, ...pointsB].map((p) => String(p[field]))),
+    );
+    const names = identityNames(ids, field);
+    return ids.map((id, i) => ({
       label: names[i],
-      a: pointsA.find((p) => p.source_label === label),
-      b: pointsB.find((p) => p.source_label === label),
+      a: pointsA.find((p) => String(p[field]) === id),
+      b: pointsB.find((p) => String(p[field]) === id),
     }));
   }
   return Array.from(
