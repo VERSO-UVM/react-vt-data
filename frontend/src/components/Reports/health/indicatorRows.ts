@@ -31,7 +31,7 @@ export const HEALTH_CATEGORY_ORDER = [
 // assessment typically leads with, spanning outcomes, behavior and access.
 export const AT_A_GLANCE_MEASURES = [
   'Depression among adults',
-  'Obesity among adults',
+  'Current cigarette smoking among adults',
   'Visits to doctor for routine checkup within the past year among adults',
   'Current lack of health insurance among adults aged 18-64 years',
 ];
