@@ -209,6 +209,7 @@ export const SingleSeriesTrendChart = <TData,>({
       <MultiRowNotice
         chartTitle={chart.title ?? seriesName}
         maxPerYear={Math.max(own.maxPerX, other.maxPerX)}
+        duplicates={own.duplicates + other.duplicates}
       />
       {showHelperText && !isGallery && (
         <Text size="xs" c="dimmed" mb={4}>
@@ -369,6 +370,10 @@ export const MultiSeriesTrendChart = <TData,>({
     0,
     ...splitSeries.flatMap(({ own, other }) => [own.maxPerX, other.maxPerX]),
   );
+  const duplicates = splitSeries.reduce(
+    (n, { own, other }) => n + own.duplicates + other.duplicates,
+    0,
+  );
   // Lines past a series' first, when it split; the first keeps s.key.
   const extraKey = (s: SeriesDef, i: number) => `${s.key} (${i + 1})`;
 
@@ -440,6 +445,7 @@ export const MultiSeriesTrendChart = <TData,>({
       <MultiRowNotice
         chartTitle={chart.title ?? 'Trend'}
         maxPerYear={maxPerYear}
+        duplicates={duplicates}
       />
       {compareData.length > 0 && !isGallery && (
         <CompareNote name={labels?.[1] ?? 'Comparison'} />
@@ -999,6 +1005,7 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
       <MultiRowNotice
         chartTitle={chart.title ?? 'DP trend'}
         maxPerYear={Math.max(primary.maxPerX, compare.maxPerX)}
+        duplicates={primary.duplicates + compare.duplicates}
       />
       <ResponsiveContainer width="100%" height="100%">
         <LineChart

@@ -19,6 +19,10 @@ export interface SeriesLines<T> {
   lines: SeriesLine<T>[];
   /** The most rows any single x value had; above 1 means the series split. */
   maxPerX: number;
+  /** Rows that exactly repeat another row (every field equal). Unlike two
+   *  different values under one label, a copy is never real data: it points
+   *  to a pipeline bug such as a join fan-out. */
+  duplicates: number;
 }
 
 // Row fields that identify a Census observation, most readable first.
@@ -36,7 +40,10 @@ export function splitIntoLines<T extends Row>(
     perX.set(k, (perX.get(k) ?? 0) + 1);
   }
   const maxPerX = Math.max(0, ...perX.values());
-  if (maxPerX <= 1) return { lines: [{ label: null, rows }], maxPerX };
+  if (maxPerX <= 1) {
+    return { lines: [{ label: null, rows }], maxPerX, duplicates: 0 };
+  }
+  const duplicates = countDuplicates(rows);
 
   // Group by the first identity field every row has, so a line keeps the
   // same observation across years; rows still sharing an x within a group
@@ -66,7 +73,22 @@ export function splitIntoLines<T extends Row>(
       rows: groups.get(key)!,
     };
   });
-  return { lines, maxPerX };
+  return { lines, maxPerX, duplicates };
+}
+
+function countDuplicates(rows: Row[]): number {
+  const seen = new Set<string>();
+  let copies = 0;
+  for (const r of rows) {
+    const key = JSON.stringify(
+      Object.keys(r)
+        .sort()
+        .map((k) => [k, r[k]]),
+    );
+    if (seen.has(key)) copies += 1;
+    else seen.add(key);
+  }
+  return copies;
 }
 
 /** For Census labels like "Estimate!!SELECTED MONTHLY OWNER COSTS
