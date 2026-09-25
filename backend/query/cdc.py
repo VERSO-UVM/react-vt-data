@@ -179,6 +179,21 @@ def get_cdc_places_tidy(sources: list[FilterSource]) -> pd.DataFrame:
     return result
 
 
+def get_cdc_places_by_county(sources: list[FilterSource]) -> pd.DataFrame:
+    """Each county's age-adjusted CDC PLACES value per measure (County,
+    Measure, Value), for ranking a county among the others. Pinned to
+    age-adjusted prevalence like get_cdc_places_tidy, so the values match the
+    report's."""
+    for source in sources:
+        source.filters = {
+            **source.filters,
+            "data_value_type": ["Age-adjusted prevalence"],
+        }
+
+    sql, params = sql_filter_block(sql_dir / "places_by_county.sql", sources)
+    return DB.execute(sql, params).df()
+
+
 def get_cdc_county_pca():
     df = DB.execute(
         """--sql

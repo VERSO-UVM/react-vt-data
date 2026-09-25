@@ -60,10 +60,10 @@ interface IndicatorTableProps {
 }
 
 // Same pair as the report's other comparison charts.
-const PRIMARY_COLOR = '#5474B4';
-const COMPARISON_COLOR = '#c0c5cf';
+export const PRIMARY_COLOR = '#5474B4';
+export const COMPARISON_COLOR = '#868e96';
 
-type Verdict = 'different' | 'similar' | 'unknown';
+export type Verdict = 'different' | 'similar' | 'unknown';
 
 function hasInterval(
   e: IndicatorEstimate,
@@ -79,7 +79,10 @@ const standardError = (e: { low: number; high: number }) =>
  *  intervals, a two-sided z-test on the difference (checking for overlapping
  *  intervals instead would miss real differences); with one, whether the
  *  other value falls outside it. Without any interval there's no basis. */
-function compare(a: IndicatorEstimate, b: IndicatorEstimate): Verdict {
+export function compareEstimates(
+  a: IndicatorEstimate,
+  b: IndicatorEstimate,
+): Verdict {
   if (a.value == null || b.value == null) return 'unknown';
   if (hasInterval(a) && hasInterval(b)) {
     const se = Math.hypot(standardError(a), standardError(b));
@@ -96,17 +99,25 @@ function compare(a: IndicatorEstimate, b: IndicatorEstimate): Verdict {
   return 'unknown';
 }
 
-function formatValue(value: number | null, unit = '%') {
+export function formatValue(value: number | null, unit = '%') {
   return value == null ? '—' : `${value.toFixed(1)}${unit}`;
 }
 
-function niceMax(rows: IndicatorRow[]) {
+/** A 0..max axis with round ticks: the smallest step giving at most five
+ *  intervals, and a max rounded up to a whole step. */
+function niceScale(rows: IndicatorRow[]): { max: number; ticks: number[] } {
   const values = rows.flatMap((r) =>
     [r.primary, r.comparison].flatMap((e) => [e.value, e.high]),
   );
-  const max = Math.max(0, ...values.filter((v): v is number => v != null));
-  return Math.max(5, Math.ceil(max / 5) * 5);
+  const top = Math.max(1, ...values.filter((v): v is number => v != null));
+  const step =
+    [1, 2, 5, 10, 20, 25, 50].find((s) => Math.ceil(top / s) <= 4) ?? 100;
+  const max = Math.ceil(top / step) * step;
+  const ticks = Array.from({ length: max / step + 1 }, (_, i) => i * step);
+  return { max, ticks };
 }
+
+const tickPct = (tick: number, max: number) => `${(tick / max) * 100}%`;
 
 function PlaceHeader({ place }: { place: IndicatorPlace }) {
   return (
@@ -204,14 +215,28 @@ function Mark({
 function RangePlot({
   row,
   max,
+  ticks,
   showIntervals,
 }: {
   row: IndicatorRow;
   max: number;
+  ticks: number[];
   showIntervals: boolean;
 }) {
   return (
     <Box pos="relative" h={PLOT_HEIGHT} miw={200}>
+      {/* Faint gridlines at the axis ticks, behind the marks. */}
+      {ticks.map((tick) => (
+        <Box
+          key={tick}
+          pos="absolute"
+          top={0}
+          bottom={0}
+          w={1}
+          bg={COLORS.line}
+          style={{ left: tickPct(tick, max) }}
+        />
+      ))}
       <Mark
         estimate={row.comparison}
         lane={20}
@@ -234,15 +259,15 @@ function DifferenceCell({ row }: { row: IndicatorRow }) {
   const { primary: p, comparison: c } = row;
   if (p.value == null || c.value == null) return <Text size="sm">—</Text>;
   const diff = p.value - c.value;
-  const verdict = compare(p, c);
+  const verdict = compareEstimates(p, c);
   return (
     <Stack gap={0}>
       <Text size="sm" fw={verdict === 'different' ? 700 : 400}>
         {`${diff > 0 ? '+' : ''}${diff.toFixed(1)} pts`}
       </Text>
       {verdict !== 'unknown' && (
-        <Text size="xs" c="dimmed">
-          {verdict === 'different' ? 'outside margin of error' : 'similar'}
+        <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+          {verdict === 'different' ? 'significant' : 'not significant'}
         </Text>
       )}
     </Stack>
@@ -302,7 +327,8 @@ function Legend({
       </Group>
       {showIntervals && (
         <Text size="xs" c="dimmed">
-          Lines show 95% confidence intervals
+          Lines show 95% confidence intervals; they can overlap and still differ
+          significantly.
         </Text>
       )}
     </Group>
@@ -385,7 +411,7 @@ export default function IndicatorTable({
                 <PlaceHeader place={comparison} />
               </Table.Th>
               <Table.Th>Difference</Table.Th>
-              <Table.Th visibleFrom="sm" miw={220} />
+              <Table.Th visibleFrom="sm" miw={220} w="36%" />
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -431,7 +457,7 @@ function CategoryRows({
   );
   // Each category gets its own 0..max scale: screening rates near 80% would
   // otherwise squash every 5-30% outcome into the left edge of the plot.
-  const max = niceMax(rows);
+  const { max, ticks } = niceScale(rows);
   return (
     <>
       <Table.Tr>
@@ -441,14 +467,31 @@ function CategoryRows({
           </Text>
         </Table.Td>
         <Table.Td visibleFrom="sm" pt="md" style={{ verticalAlign: 'bottom' }}>
-          <Group justify="space-between">
-            <Text size="xs" c="dimmed">
-              0%
-            </Text>
-            <Text size="xs" c="dimmed">
-              {max}%
-            </Text>
-          </Group>
+          {/* Tick labels, placed at the same positions as each row's
+              gridlines (the first and last kept inside the cell). */}
+          <Box pos="relative" h={16} miw={200}>
+            {ticks.map((tick, i) => (
+              <Text
+                key={tick}
+                size="xs"
+                c="dimmed"
+                pos="absolute"
+                top={0}
+                style={{
+                  left: tickPct(tick, max),
+                  transform:
+                    i === 0
+                      ? 'none'
+                      : i === ticks.length - 1
+                        ? 'translateX(-100%)'
+                        : 'translateX(-50%)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {tick}%
+              </Text>
+            ))}
+          </Box>
         </Table.Td>
       </Table.Tr>
       {sorted.map((row) => (
@@ -480,7 +523,12 @@ function CategoryRows({
             <DifferenceCell row={row} />
           </Table.Td>
           <Table.Td visibleFrom="sm">
-            <RangePlot row={row} max={max} showIntervals={showIntervals} />
+            <RangePlot
+              row={row}
+              max={max}
+              ticks={ticks}
+              showIntervals={showIntervals}
+            />
           </Table.Td>
         </Table.Tr>
       ))}

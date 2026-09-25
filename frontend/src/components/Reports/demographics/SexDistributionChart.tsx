@@ -25,7 +25,7 @@ function buildSexData(data: DataRow[]) {
     {
       name: 'Male',
       value: getValue(data, 'Male'),
-      fill: '#c0c5cf',
+      fill: '#868e96',
     },
   ];
 }
