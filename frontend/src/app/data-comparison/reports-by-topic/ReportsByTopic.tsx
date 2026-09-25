@@ -590,6 +590,10 @@ export default function ReportsByTopic({
     };
 
     const timeseriesKeys = Object.keys(cfg.timeseries ?? {});
+    // Ignore a response once the locations change again: the first fetch
+    // (made before the saved profile loads) can otherwise land last and
+    // show the default places' numbers under the profile's names.
+    let cancelled = false;
 
     Promise.all([
       fetchFrom(cfg.url, myLocation),
@@ -602,6 +606,7 @@ export default function ReportsByTopic({
       ),
     ])
       .then(([primary, comp, ...tsResults]) => {
+        if (cancelled) return;
         setPrimaryData(Array.isArray(primary.data) ? primary.data : []);
         setCompareData(Array.isArray(comp.data) ? comp.data : []);
 
@@ -619,8 +624,15 @@ export default function ReportsByTopic({
         });
         setTimeseriesData(nextTimeseries);
       })
-      .catch(() => setError('Failed to load data. Is the API running?'))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setError('Failed to load data. Is the API running?');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
     // .name changes whenever type/county/town does (it's derived from them),
     // so it's a reliable proxy for "the location changed" without needing
     // the whole objects in the dependency array.
