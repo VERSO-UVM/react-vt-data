@@ -13,6 +13,7 @@ import {
   Box,
   Alert,
   Group,
+  Highlight,
   SimpleGrid,
   type ComboboxData,
   type ComboboxItem,
@@ -168,22 +169,31 @@ function placeGroups(
 }
 
 // Matches a place's name or, for a town, its county ("addison" lists
-// Addison County and all its towns). Suggestions only show before typing,
-// since they repeat places listed below.
+// Addison County and all its towns). Within each group, names starting with
+// the search come first, then names containing it, then towns matched only
+// by county, so "essex" puts Essex town above Essex County's towns.
+// Suggestions only show before typing, since they repeat places below.
 const filterPlaces: OptionsFilter = ({ options, search }) => {
   const query = search.toLowerCase().trim();
   if (!query) return options;
-  const matches = (item: ComboboxItem) => {
+  // 0-2 for a match (lower is better), or null for none.
+  const rank = (item: ComboboxItem) => {
+    const label = item.label.toLowerCase();
+    if (label.startsWith(query)) return 0;
+    if (label.includes(query)) return 1;
     const county = PLACES.get(item.value)?.county ?? '';
-    return (
-      item.label.toLowerCase().includes(query) ||
-      county.toLowerCase().includes(query)
-    );
+    return county.toLowerCase().includes(query) ? 2 : null;
   };
+  const ranked = (items: ComboboxItem[]) =>
+    items
+      .map((item) => ({ item, rank: rank(item) }))
+      .filter((r): r is { item: ComboboxItem; rank: number } => r.rank != null)
+      .sort((a, b) => a.rank - b.rank) // stable: alphabetical within a rank
+      .map((r) => r.item);
   return options.flatMap<ComboboxParsedItem>((option) => {
-    if (!('group' in option)) return matches(option) ? [option] : [];
+    if (!('group' in option)) return rank(option) != null ? [option] : [];
     if (option.group === 'Suggested') return [];
-    const items = option.items.filter(matches);
+    const items = ranked(option.items);
     return items.length ? [{ ...option, items }] : [];
   });
 };
@@ -199,6 +209,14 @@ export function comparisonSuggestions(l: Location): Location[] {
   return [];
 }
 
+// Search matches in bold, rather than Mantine's default yellow mark.
+const MATCH_STYLE = {
+  backgroundColor: 'transparent',
+  color: 'inherit',
+  fontWeight: 700,
+  padding: 0,
+};
+
 const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   title,
   location,
@@ -207,6 +225,10 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   suggestions = [],
 }) => {
   const key = locationKey(location);
+  const selected = PLACES.has(key) ? placeLabel(location) : '';
+  const [search, setSearch] = useState(selected);
+  // Bold what the user typed; nothing while the box still shows the pick.
+  const query = search.trim() === selected ? '' : search.trim();
 
   return (
     <Stack gap="xs">
@@ -219,6 +241,8 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
         searchable
         // Select the current place on focus, so typing replaces it.
         onFocus={(e) => e.currentTarget.select()}
+        searchValue={search}
+        onSearchChange={setSearch}
         allowDeselect={false}
         maxDropdownHeight={320}
         nothingFoundMessage="No matching places"
@@ -243,12 +267,24 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
                   size={14}
                   style={{ visibility: checked ? 'visible' : 'hidden' }}
                 />
-                <Text size="sm">{option.label}</Text>
+                <Highlight
+                  size="sm"
+                  highlight={query}
+                  highlightStyles={MATCH_STYLE}
+                >
+                  {option.label}
+                </Highlight>
               </Group>
               {county && (
-                <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>
+                <Highlight
+                  size="xs"
+                  c="dimmed"
+                  highlight={query}
+                  highlightStyles={MATCH_STYLE}
+                  style={{ flexShrink: 0 }}
+                >
                   {county}
-                </Text>
+                </Highlight>
               )}
             </Group>
           );
