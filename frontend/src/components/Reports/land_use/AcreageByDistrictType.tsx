@@ -99,7 +99,7 @@ export default function DistrictTypeChart({
 
           <Bar dataKey={primaryName} radius={[0, 4, 4, 0]} fill="#a73c00" />
 
-          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[0, 4, 4, 0]} />
+          <Bar dataKey={comparisonName} fill="#868e96" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>

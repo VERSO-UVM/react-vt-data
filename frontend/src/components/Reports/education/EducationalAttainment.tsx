@@ -91,7 +91,7 @@ export default function EducationalAttainmentChart({
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
           <Bar dataKey={primaryName} fill="#e17800" radius={[0, 6, 6, 0]} />
-          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[0, 6, 6, 0]} />
+          <Bar dataKey={comparisonName} fill="#868e96" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>
