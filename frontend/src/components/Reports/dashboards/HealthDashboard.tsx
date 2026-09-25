@@ -30,6 +30,8 @@ export interface DashboardData {
   // Extra endpoints declared in reports-by-topic's SECTIONS (e.g.
   // "povertyUninsured").
   timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
+  // Section-wide endpoints (e.g. "countyValues"), not per location.
+  allAreas?: Record<string, DataRow[]>;
 }
 
 export interface DashboardProps {
@@ -37,7 +39,7 @@ export interface DashboardProps {
 }
 
 export default function HealthDashboard({ data }: DashboardProps) {
-  const { primary, comparison, timeseries } = data;
+  const { primary, comparison, timeseries, allAreas } = data;
   const rows = buildIndicatorRows(primary.current, comparison.current);
   const dataYear = Math.max(
     0,
@@ -45,6 +47,12 @@ export default function HealthDashboard({ data }: DashboardProps) {
       (r) => Number(r.Year) || 0,
     ),
   );
+
+  // A county, or a town shown as its county; Vermont itself has no rank.
+  const rankCounty =
+    primary.location?.type === 'county' || primary.location?.type === 'town'
+      ? primary.location.county
+      : null;
 
   return (
     <Grid gap="lg">
@@ -54,6 +62,8 @@ export default function HealthDashboard({ data }: DashboardProps) {
           measures={AT_A_GLANCE_MEASURES}
           primaryName={primary.name}
           comparisonName={comparison.name}
+          countyValues={allAreas?.countyValues}
+          rankCounty={rankCounty}
         />
       </Grid.Col>
       <Grid.Col span={12}>

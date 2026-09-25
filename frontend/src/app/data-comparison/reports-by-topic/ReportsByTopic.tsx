@@ -59,6 +59,10 @@ interface SectionConfig {
   yearMin: number;
   yearMax: number;
   timeseries?: Record<string, TimeseriesEndpoint>;
+  // Endpoints fetched once per section with no location filter, for data on
+  // every area (e.g. each county's values, to rank one among the rest).
+  // Handed to the topic's Dashboard component as `data.allAreas[key]`.
+  allAreas?: Record<string, string>;
   // Filter label sent as the location key (defaults to "Location", which
   // matches the ACS5 routes' NAME column). Zoning/wastewater tables have no
   // "Location" column in their filter schema — they use "Jurisdiction"
@@ -165,6 +169,9 @@ const SECTIONS: Record<string, SectionConfig> = {
         url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/poverty-uninsured`,
         byPlaceName: true,
       },
+    },
+    allAreas: {
+      countyValues: `${BASE_API_URL}/load/data/cdc/places/by-county`,
     },
   },
 };
@@ -538,6 +545,9 @@ export default function ReportsByTopic({
   const [timeseriesData, setTimeseriesData] = useState<
     Record<string, { primary: DataRow[]; comparison: DataRow[] }>
   >({});
+  const [allAreasData, setAllAreasData] = useState<Record<string, DataRow[]>>(
+    {},
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -617,6 +627,34 @@ export default function ReportsByTopic({
   }, [section, myLocation.name, comparison.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
+  // Section-wide data (cfg.allAreas) doesn't depend on the locations, so it's
+  // fetched once per section. Like timeseries, a failed endpoint falls back
+  // to no rows, since it's supplementary.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const endpoints = SECTIONS[section].allAreas ?? {};
+    const keys = Object.keys(endpoints);
+    let cancelled = false;
+    Promise.all(
+      keys.map((key) =>
+        axios
+          .post(endpoints[key], { filters: {}, include: [] })
+          .then((r) => (Array.isArray(r.data?.data) ? r.data.data : []))
+          .catch(() => []),
+      ),
+    ).then((results) => {
+      if (!cancelled) {
+        setAllAreasData(
+          Object.fromEntries(keys.map((key, i) => [key, results[i]])),
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [section]);
+
+  // ---------------------------------------------------------------------------
   // Derive available years from fetched data; default to profile yearMax
   // ---------------------------------------------------------------------------
   const availableYears: number[] = Array.from(
@@ -680,6 +718,7 @@ export default function ReportsByTopic({
       },
 
       timeseries: timeseriesData,
+      allAreas: allAreasData,
     };
   }, [
     section,
@@ -689,6 +728,7 @@ export default function ReportsByTopic({
     primaryData,
     compareData,
     timeseriesData,
+    allAreasData,
     myLocation,
     comparison,
   ]);
@@ -708,6 +748,7 @@ export default function ReportsByTopic({
       history: DataRow[];
     };
     timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
+    allAreas?: Record<string, DataRow[]>;
   }
 
   interface DashboardProps {

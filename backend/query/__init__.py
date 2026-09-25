@@ -16,6 +16,7 @@ _EXPORTS = {
         "dual_var_comparison",
         "get_cdc_county_pca",
         "get_cdc_export_table",
+        "get_cdc_places_by_county",
         "get_cdc_places_tidy",
         "single_var_geojson",
     ],

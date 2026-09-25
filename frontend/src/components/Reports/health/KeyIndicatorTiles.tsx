@@ -1,4 +1,14 @@
-import { Card, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import {
+  Box,
+  Card,
+  Group,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core';
+import { DataRow } from '@/types/cachedCharts';
+import CountyRankStrip, { CountyValue } from './CountyRankStrip';
 import { IndicatorRow, compareEstimates, formatValue } from './IndicatorTable';
 
 // Presentational: a few chosen measures at a glance, each with the
@@ -12,6 +22,16 @@ interface KeyIndicatorTilesProps {
   measures: string[];
   primaryName: string;
   comparisonName: string;
+  /** Every county's value per measure (County, Measure, Value), for ranking. */
+  countyValues?: DataRow[];
+  /** The county to rank, or none (e.g. for Vermont as a whole). */
+  rankCounty?: string | null;
+}
+
+function valuesFor(rows: DataRow[], measure: string): CountyValue[] {
+  return rows
+    .filter((r) => r.Measure === measure && r.Value != null)
+    .map((r) => ({ county: String(r.County), value: Number(r.Value) }));
 }
 
 export default function KeyIndicatorTiles({
@@ -19,6 +39,8 @@ export default function KeyIndicatorTiles({
   measures,
   primaryName,
   comparisonName,
+  countyValues = [],
+  rankCounty,
 }: KeyIndicatorTilesProps) {
   const tiles = measures
     .map((m) => rows.find((r) => r.measure === m))
@@ -33,6 +55,8 @@ export default function KeyIndicatorTiles({
           row={row}
           primaryName={primaryName}
           comparisonName={comparisonName}
+          countyValues={rankCounty ? valuesFor(countyValues, row.measure) : []}
+          rankCounty={rankCounty}
         />
       ))}
     </SimpleGrid>
@@ -43,10 +67,14 @@ function Tile({
   row,
   primaryName,
   comparisonName,
+  countyValues,
+  rankCounty,
 }: {
   row: IndicatorRow;
   primaryName: string;
   comparisonName: string;
+  countyValues: CountyValue[];
+  rankCounty?: string | null;
 }) {
   const { primary: p, comparison: c } = row;
   const verdict = compareEstimates(p, c);
@@ -98,6 +126,16 @@ function Tile({
           </Text>
         )}
       </Stack>
+
+      {rankCounty && countyValues.length > 1 && (
+        <Box mt="md">
+          <CountyRankStrip
+            values={countyValues}
+            county={rankCounty}
+            unit={row.unit}
+          />
+        </Box>
+      )}
     </Card>
   );
 }

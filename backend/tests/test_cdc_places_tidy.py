@@ -139,3 +139,27 @@ def test_key_indicator_is_looked_up_per_measure(cdc):
     # report shows still counts as a key indicator.
     assert bool(result.loc[SMOKING, "Key_Indicator"]) is True
     assert bool(result.loc[DEPRESSION, "Key_Indicator"]) is False
+
+
+def fetch_by_county(cdc, filters: dict) -> pd.DataFrame:
+    """Mirror the /load/data/cdc/places/by-county route."""
+    source = request_to_source(
+        FilterRequest(filters=filters), "cdc_places_county", "default"
+    )
+    return cdc.get_cdc_places_by_county([source])
+
+
+def test_by_county_returns_each_countys_age_adjusted_value(cdc):
+    result = fetch_by_county(cdc, {"Measure": [SMOKING]})
+    # One row per county, and never the crude 99.0 rows.
+    assert dict(zip(result["County"], result["Value"])) == {
+        "Addison": 10.0,
+        "Chittenden": 9.0,
+        "Essex": 17.0,
+    }
+
+
+def test_by_county_keeps_measures_apart(cdc):
+    result = fetch_by_county(cdc, {"Measure": [SMOKING, DEPRESSION]})
+    counts = result.groupby("Measure").size().to_dict()
+    assert counts == {SMOKING: 3, DEPRESSION: 2}

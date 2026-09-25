@@ -60,7 +60,7 @@ interface IndicatorTableProps {
 }
 
 // Same pair as the report's other comparison charts.
-const PRIMARY_COLOR = '#5474B4';
+export const PRIMARY_COLOR = '#5474B4';
 const COMPARISON_COLOR = '#868e96';
 
 export type Verdict = 'different' | 'similar' | 'unknown';
