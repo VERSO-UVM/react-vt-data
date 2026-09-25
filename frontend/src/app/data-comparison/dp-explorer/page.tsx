@@ -34,6 +34,7 @@ import { useProfile } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
+import { identityField, identityNames } from '@/components/Charts/seriesLines';
 import county_town_names from '@/data/county_town_names.json';
 import { DataRow } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
@@ -111,13 +112,11 @@ const makeLabel = (side: SideState) =>
 // ---------------------------------------------------------------------------
 
 const SideSelector = ({
-  title,
   accent,
   side,
   setSide,
   availableYears,
 }: {
-  title: string;
   accent: string;
   side: SideState;
   setSide: (s: SideState) => void;
@@ -128,17 +127,10 @@ const SideSelector = ({
 
   return (
     <Stack gap="xs">
-      <Text
-        size="xs"
-        fw={700}
-        tt="uppercase"
-        style={{
-          fontFamily: FONTS.mono,
-          letterSpacing: '0.08em',
-          color: accent,
-        }}
-      >
-        {title}
+      {/* The place picked so far, in its side's color, matching the value
+          cards below (instead of a "Location A/B" label). */}
+      <Text size="sm" fw={700} lineClamp={1} style={{ color: accent }}>
+        {makeName(side)}
       </Text>
       <Select
         label="County"
@@ -182,9 +174,6 @@ const SideSelector = ({
         disabled={availableYears.length === 0}
         styles={selectStyles}
       />
-      <Text size="xs" c="dimmed" mt={2} style={{ fontFamily: FONTS.mono }}>
-        {makeName(side)}
-      </Text>
     </Stack>
   );
 };
@@ -193,14 +182,50 @@ const SideSelector = ({
 // Sub-component: point-in-time value card
 // ---------------------------------------------------------------------------
 
+interface ValueRow {
+  /** What this value is, when a year has several (e.g. "Value 1", or the
+   *  differing part of the Census label); null for the usual single value. */
+  label: string | null;
+  a?: DataRow;
+  b?: DataRow;
+}
+
+/** Pair each place's values for the selected year into rows. */
+function pairValues(pointsA: DataRow[], pointsB: DataRow[]): ValueRow[] {
+  if (pointsA.length <= 1 && pointsB.length <= 1) {
+    return [{ label: null, a: pointsA[0], b: pointsB[0] }];
+  }
+  // Pair by an identity field that tells each place's values apart (the
+  // Census label, or the variable code where labels repeat).
+  const field = [identityField(pointsA), identityField(pointsB)].reduce(
+    (a, b) => (a === b ? a : null),
+  );
+  if (field) {
+    const ids = Array.from(
+      new Set([...pointsA, ...pointsB].map((p) => String(p[field]))),
+    );
+    const names = identityNames(ids, field);
+    return ids.map((id, i) => ({
+      label: names[i],
+      a: pointsA.find((p) => String(p[field]) === id),
+      b: pointsB.find((p) => String(p[field]) === id),
+    }));
+  }
+  return Array.from(
+    { length: Math.max(pointsA.length, pointsB.length) },
+    (_, i) => ({ label: `Value ${i + 1}`, a: pointsA[i], b: pointsB[i] }),
+  );
+}
+
 function ValueCard({
-  label,
   location,
+  valueLabel,
   value,
   accent,
 }: {
-  label: string;
   location: string;
+  /** Which of several values this is (see ValueRow). */
+  valueLabel?: string | null;
   value: string;
   accent: string;
 }) {
@@ -211,21 +236,22 @@ function ValueCard({
       p="lg"
       style={{ ...panelStyle, height: '100%' }}
     >
+      {/* The place, in its side's color (spruce for the first, amber for
+          the second), rather than a "Location A/B" label. */}
       <Text
-        size="xs"
+        size="sm"
         fw={700}
-        tt="uppercase"
-        style={{
-          fontFamily: FONTS.mono,
-          letterSpacing: '0.08em',
-          color: accent,
-        }}
+        mb={valueLabel ? 4 : 12}
+        lineClamp={1}
+        style={{ color: accent }}
       >
-        {label}
-      </Text>
-      <Text size="sm" c="dimmed" mt={2} mb={12} lineClamp={1}>
         {location}
       </Text>
+      {valueLabel && (
+        <Text size="sm" fw={600} c={COLORS.slate} mb={10} lineClamp={2}>
+          {valueLabel}
+        </Text>
+      )}
       <Text
         style={{
           fontFamily: FONTS.display,
@@ -594,16 +620,17 @@ export default function DPExplorerPage() {
     },
   });
 
-  // Selected-year point values
-  const pointA = sideAData.find((r) => r.year === sideA.year);
-  const pointB = sideBData.find((r) => r.year === sideB.year);
+  // Selected-year values, as rows of cards: normally one, but a side can
+  // have several values in a year (issue #106, e.g. owner costs with and
+  // without a mortgage under one label). Each value gets its own row, paired
+  // across the two places by Census label when the data has one, otherwise
+  // by position (the API returns them in the same order for every place).
+  const pointsA = sideAData.filter((r) => r.year === sideA.year);
+  const pointsB = sideBData.filter((r) => r.year === sideB.year);
   const isPercent = !!measure?.toLowerCase().includes('percent');
   const fmtVal = (v: number | null) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
-
-  const valueA = (pointA?.Value as number | undefined) ?? null;
-  const valueB = (pointB?.Value as number | undefined) ?? null;
-  const diff = valueA != null && valueB != null ? valueA - valueB : null;
+  const valueRows = pairValues(pointsA, pointsB);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -848,7 +875,6 @@ export default function DPExplorerPage() {
             <Grid align="start" gap="lg">
               <Grid.Col span={{ base: 12, sm: 5 }}>
                 <SideSelector
-                  title="Location A"
                   accent={COLORS.spruce}
                   side={sideA}
                   setSide={setSideA}
@@ -870,7 +896,6 @@ export default function DPExplorerPage() {
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 5 }}>
                 <SideSelector
-                  title="Location B"
                   accent={COLORS.amber}
                   side={sideB}
                   setSide={setSideB}
@@ -913,30 +938,41 @@ export default function DPExplorerPage() {
 
           {isComplete && !loading && sideAData.length > 0 && (
             <>
-              {/* Point-in-time comparison */}
-              <Grid align="center" gap="md">
-                <Grid.Col span={{ base: 12, sm: 5 }}>
-                  <ValueCard
-                    label="Location A"
-                    location={makeLabel(sideA)}
-                    value={fmtVal(valueA)}
-                    accent={COLORS.spruce}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 2 }}>
-                  <Center>
-                    <DeltaBadge diff={diff} isPercent={isPercent} />
-                  </Center>
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 5 }}>
-                  <ValueCard
-                    label="Location B"
-                    location={makeLabel(sideB)}
-                    value={fmtVal(valueB)}
-                    accent={COLORS.amber}
-                  />
-                </Grid.Col>
-              </Grid>
+              {/* Point-in-time comparison: a row per value (see pairValues) */}
+              <Stack gap="md">
+                {valueRows.map((row, i) => {
+                  const a = (row.a?.Value as number | undefined) ?? null;
+                  const b = (row.b?.Value as number | undefined) ?? null;
+                  return (
+                    <Grid key={row.label ?? i} align="center" gap="md">
+                      <Grid.Col span={{ base: 12, sm: 5 }}>
+                        <ValueCard
+                          location={makeLabel(sideA)}
+                          valueLabel={row.label}
+                          value={fmtVal(a)}
+                          accent={COLORS.spruce}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={{ base: 12, sm: 2 }}>
+                        <Center>
+                          <DeltaBadge
+                            diff={a != null && b != null ? a - b : null}
+                            isPercent={isPercent}
+                          />
+                        </Center>
+                      </Grid.Col>
+                      <Grid.Col span={{ base: 12, sm: 5 }}>
+                        <ValueCard
+                          location={makeLabel(sideB)}
+                          valueLabel={row.label}
+                          value={fmtVal(b)}
+                          accent={COLORS.amber}
+                        />
+                      </Grid.Col>
+                    </Grid>
+                  );
+                })}
+              </Stack>
 
               <Stack gap={4} align="center">
                 <Text
@@ -947,6 +983,13 @@ export default function DPExplorerPage() {
                 >
                   {table} › {category} › {subcategory} › {variable} › {measure}
                 </Text>
+                {valueRows.length > 1 && (
+                  <Text size="xs" c="orange.7" ta="center">
+                    This item has {valueRows.length} values for the selected
+                    year under the same Census label; each is shown on its own
+                    row above and as its own line in the chart.
+                  </Text>
+                )}
                 {availableYears.length > 0 && availableYears.length < 10 && (
                   <Text size="xs" c="orange.7" ta="center">
                     Data available for {availableYears.length} year
