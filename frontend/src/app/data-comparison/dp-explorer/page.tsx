@@ -194,14 +194,46 @@ const SideSelector = ({
 // Sub-component: point-in-time value card
 // ---------------------------------------------------------------------------
 
+interface ValueRow {
+  /** What this value is, when a year has several (e.g. "Value 1", or the
+   *  differing part of the Census label); null for the usual single value. */
+  label: string | null;
+  a?: DataRow;
+  b?: DataRow;
+}
+
+/** Pair each place's values for the selected year into rows. */
+function pairValues(pointsA: DataRow[], pointsB: DataRow[]): ValueRow[] {
+  if (pointsA.length <= 1 && pointsB.length <= 1) {
+    return [{ label: null, a: pointsA[0], b: pointsB[0] }];
+  }
+  const all = [...pointsA, ...pointsB];
+  if (all.every((p) => p.source_label)) {
+    const labels = Array.from(new Set(all.map((p) => String(p.source_label))));
+    const names = distinguishingParts(labels);
+    return labels.map((label, i) => ({
+      label: names[i],
+      a: pointsA.find((p) => p.source_label === label),
+      b: pointsB.find((p) => p.source_label === label),
+    }));
+  }
+  return Array.from(
+    { length: Math.max(pointsA.length, pointsB.length) },
+    (_, i) => ({ label: `Value ${i + 1}`, a: pointsA[i], b: pointsB[i] }),
+  );
+}
+
 function ValueCard({
   label,
   location,
+  valueLabel,
   value,
   accent,
 }: {
   label: string;
   location: string;
+  /** Which of several values this is (see ValueRow). */
+  valueLabel?: string | null;
   value: string;
   accent: string;
 }) {
@@ -224,9 +256,14 @@ function ValueCard({
       >
         {label}
       </Text>
-      <Text size="sm" c="dimmed" mt={2} mb={12} lineClamp={1}>
+      <Text size="sm" c="dimmed" mt={2} mb={valueLabel ? 4 : 12} lineClamp={1}>
         {location}
       </Text>
+      {valueLabel && (
+        <Text size="sm" fw={600} c={COLORS.slate} mb={10} lineClamp={2}>
+          {valueLabel}
+        </Text>
+      )}
       <Text
         style={{
           fontFamily: FONTS.display,
@@ -595,43 +632,17 @@ export default function DPExplorerPage() {
     },
   });
 
-  // Selected-year values. A side can have several rows in a year (issue
-  // #106, e.g. owner costs with and without a mortgage under one label):
-  // show them all, and skip the difference, which would compare arbitrary
-  // picks. The chart draws each as its own line.
+  // Selected-year values, as rows of cards: normally one, but a side can
+  // have several values in a year (issue #106, e.g. owner costs with and
+  // without a mortgage under one label). Each value gets its own row, paired
+  // across the two places by Census label when the data has one, otherwise
+  // by position (the API returns them in the same order for every place).
   const pointsA = sideAData.filter((r) => r.year === sideA.year);
   const pointsB = sideBData.filter((r) => r.year === sideB.year);
   const isPercent = !!measure?.toLowerCase().includes('percent');
   const fmtVal = (v: number | null) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
-  const fmtPoints = (points: DataRow[]) =>
-    points.length
-      ? points.map((p) => fmtVal((p.Value as number) ?? null)).join(' · ')
-      : '—';
-
-  const valueA =
-    pointsA.length === 1 ? ((pointsA[0].Value as number) ?? null) : null;
-  const valueB =
-    pointsB.length === 1 ? ((pointsB[0].Value as number) ?? null) : null;
-  const diff = valueA != null && valueB != null ? valueA - valueB : null;
-  const multiValueNotes = [
-    { side: sideA, points: pointsA },
-    { side: sideB, points: pointsB },
-  ]
-    .filter(({ points }) => points.length > 1)
-    .map(({ side, points }) => {
-      const labels = points.every((p) => p.source_label)
-        ? distinguishingParts(points.map((p) => String(p.source_label)))
-        : null;
-      const values = points
-        .map((p, i) =>
-          labels
-            ? `${labels[i]}: ${fmtVal(p.Value as number)}`
-            : fmtVal(p.Value as number),
-        )
-        .join('; ');
-      return `${makeLabel(side)} has ${points.length} values (${values}).`;
-    });
+  const valueRows = pairValues(pointsA, pointsB);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -941,32 +952,43 @@ export default function DPExplorerPage() {
 
           {isComplete && !loading && sideAData.length > 0 && (
             <>
-              {/* Point-in-time comparison */}
-              <Grid align="center" gap="md">
-                <Grid.Col span={{ base: 12, sm: 5 }}>
-                  <ValueCard
-                    label="Location A"
-                    location={makeLabel(sideA)}
-                    value={fmtPoints(pointsA)}
-                    accent={COLORS.spruce}
-                  />
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 2 }}>
-                  <Center>
-                    {multiValueNotes.length === 0 && (
-                      <DeltaBadge diff={diff} isPercent={isPercent} />
-                    )}
-                  </Center>
-                </Grid.Col>
-                <Grid.Col span={{ base: 12, sm: 5 }}>
-                  <ValueCard
-                    label="Location B"
-                    location={makeLabel(sideB)}
-                    value={fmtPoints(pointsB)}
-                    accent={COLORS.amber}
-                  />
-                </Grid.Col>
-              </Grid>
+              {/* Point-in-time comparison: a row per value (see pairValues) */}
+              <Stack gap="md">
+                {valueRows.map((row, i) => {
+                  const a = (row.a?.Value as number | undefined) ?? null;
+                  const b = (row.b?.Value as number | undefined) ?? null;
+                  return (
+                    <Grid key={row.label ?? i} align="center" gap="md">
+                      <Grid.Col span={{ base: 12, sm: 5 }}>
+                        <ValueCard
+                          label="Location A"
+                          location={makeLabel(sideA)}
+                          valueLabel={row.label}
+                          value={fmtVal(a)}
+                          accent={COLORS.spruce}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={{ base: 12, sm: 2 }}>
+                        <Center>
+                          <DeltaBadge
+                            diff={a != null && b != null ? a - b : null}
+                            isPercent={isPercent}
+                          />
+                        </Center>
+                      </Grid.Col>
+                      <Grid.Col span={{ base: 12, sm: 5 }}>
+                        <ValueCard
+                          label="Location B"
+                          location={makeLabel(sideB)}
+                          valueLabel={row.label}
+                          value={fmtVal(b)}
+                          accent={COLORS.amber}
+                        />
+                      </Grid.Col>
+                    </Grid>
+                  );
+                })}
+              </Stack>
 
               <Stack gap={4} align="center">
                 <Text
@@ -977,11 +999,13 @@ export default function DPExplorerPage() {
                 >
                   {table} › {category} › {subcategory} › {variable} › {measure}
                 </Text>
-                {multiValueNotes.map((note) => (
-                  <Text key={note} size="xs" c="orange.7" ta="center">
-                    {note} The chart draws each as its own line.
+                {valueRows.length > 1 && (
+                  <Text size="xs" c="orange.7" ta="center">
+                    This item has {valueRows.length} values for the selected
+                    year under the same Census label; each is shown on its own
+                    row above and as its own line in the chart.
                   </Text>
-                ))}
+                )}
                 {availableYears.length > 0 && availableYears.length < 10 && (
                   <Text size="xs" c="orange.7" ta="center">
                     Data available for {availableYears.length} year
