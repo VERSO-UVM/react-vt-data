@@ -7,6 +7,7 @@ import {
   PovertyUninsuredTrends,
 } from '@/components/Reports/health';
 import {
+  AT_A_GLANCE_ICONS,
   AT_A_GLANCE_MEASURES,
   HEALTH_CATEGORY_ORDER,
   buildIndicatorRows,
@@ -60,6 +61,7 @@ export default function HealthDashboard({ data }: DashboardProps) {
         <KeyIndicatorTiles
           rows={rows}
           measures={AT_A_GLANCE_MEASURES}
+          icons={AT_A_GLANCE_ICONS}
           primaryName={primary.name}
           comparisonName={comparison.name}
           countyValues={allAreas?.countyValues}

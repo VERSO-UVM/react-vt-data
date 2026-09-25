@@ -1,3 +1,10 @@
+import {
+  IconBrain,
+  IconSmoking,
+  IconStethoscope,
+  IconShieldOff,
+  type Icon,
+} from '@tabler/icons-react';
 /**
  * @description
  *   Turns the Community Health report's CDC PLACES rows (from
@@ -36,10 +43,21 @@ export const AT_A_GLANCE_MEASURES = [
   'Current lack of health insurance among adults aged 18-64 years',
 ];
 
+// Each tile's icon: plain symbols, not faces or judgments (a brain for
+// depression, a crossed-out shield for no coverage).
+export const AT_A_GLANCE_ICONS: Record<string, Icon> = {
+  'Depression among adults': IconBrain,
+  'Current cigarette smoking among adults': IconSmoking,
+  'Visits to doctor for routine checkup within the past year among adults':
+    IconStethoscope,
+  'Current lack of health insurance among adults aged 18-64 years':
+    IconShieldOff,
+};
+
 // Shorter labels where dropping "among adults" isn't enough.
 const SHORT_LABELS: Record<string, string> = {
   'Current lack of health insurance among adults aged 18-64 years':
-    'No health insurance (ages 18–64)',
+    'Uninsured (ages 18–64)',
   'Taking medicine to control high blood pressure among adults with high blood pressure':
     'Taking blood pressure medicine',
   'Visits to doctor for routine checkup within the past year among adults':

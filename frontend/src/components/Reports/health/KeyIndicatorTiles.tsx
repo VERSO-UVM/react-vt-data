@@ -1,4 +1,13 @@
-import { Box, Card, Group, SimpleGrid, Text, Title } from '@mantine/core';
+import {
+  Box,
+  Card,
+  Group,
+  SimpleGrid,
+  Text,
+  ThemeIcon,
+  Title,
+} from '@mantine/core';
+import type { Icon } from '@tabler/icons-react';
 import { COLORS } from '@/app/theme';
 import { DataRow } from '@/types/cachedCharts';
 import CountyRankStrip, { CountyValue } from './CountyRankStrip';
@@ -20,6 +29,8 @@ interface KeyIndicatorTilesProps {
   rows: IndicatorRow[];
   /** Measures to show, in order; missing ones are skipped. */
   measures: string[];
+  /** An icon per measure, shown in the tile's corner. */
+  icons?: Record<string, Icon>;
   primaryName: string;
   comparisonName: string;
   /** Every county's value per measure (County, Measure, Value), for ranking. */
@@ -39,6 +50,7 @@ function valuesFor(rows: DataRow[], measure: string): CountyValue[] {
 export default function KeyIndicatorTiles({
   rows,
   measures,
+  icons = {},
   primaryName,
   comparisonName,
   countyValues = [],
@@ -56,6 +68,7 @@ export default function KeyIndicatorTiles({
         <Tile
           key={row.measure}
           row={row}
+          icon={icons[row.measure]}
           primaryName={primaryName}
           comparisonName={comparisonName}
           countyValues={rankCounty ? valuesFor(countyValues, row.measure) : []}
@@ -69,6 +82,7 @@ export default function KeyIndicatorTiles({
 
 function Tile({
   row,
+  icon: TileIcon,
   primaryName,
   comparisonName,
   countyValues,
@@ -76,6 +90,7 @@ function Tile({
   comparisonCounty,
 }: {
   row: IndicatorRow;
+  icon?: Icon;
   primaryName: string;
   comparisonName: string;
   countyValues: CountyValue[];
@@ -95,16 +110,22 @@ function Tile({
       withBorder
       style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
     >
-      <Text
-        size="xs"
-        fw={700}
-        tt="uppercase"
-        c={COLORS.slate}
-        lineClamp={2}
-        mb="sm"
-      >
-        {row.label}
-      </Text>
+      <Group justify="space-between" align="flex-start" wrap="nowrap" mb="sm">
+        <Text size="xs" fw={700} tt="uppercase" c={COLORS.slate} lineClamp={2}>
+          {row.label}
+        </Text>
+        {TileIcon && (
+          <ThemeIcon
+            size={32}
+            radius="xl"
+            variant="light"
+            color="gray"
+            style={{ flexShrink: 0 }}
+          >
+            <TileIcon size={18} stroke={1.75} />
+          </ThemeIcon>
+        )}
+      </Group>
 
       {/* Both places the same way, filled row by row so the names, values
           and margins line up even when one name wraps. For a town, the name
