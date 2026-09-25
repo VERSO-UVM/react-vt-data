@@ -481,7 +481,9 @@ _DATASET_LIST = [
                 "Some profile rows share identical selectors but represent different "
                 "source observations, notably historical mortgage/non-mortgage costs. "
                 "Rows are preserved; do not arbitrarily deduplicate or sum them. "
-                "The warehouse lacks the source codes needed to resolve every collision."
+                "Each row also carries the original variable_code and source_label from "
+                "the Census API, which disambiguate colliding selectors within a year; "
+                "there is no crosswalk yet resolving them into one series across years."
             ),
         ),
         "dp",
@@ -499,6 +501,8 @@ _DATASET_LIST = [
             "subcategory",
             "variable",
             "measure",
+            "variable_code",
+            "source_label",
             "year",
         ),
     ),

@@ -56,6 +56,7 @@ def get_census_cols(year: int):
     df = pd.DataFrame(rows, columns=keys)
     df = df[["Name", "Label"]].copy()
     df.dropna(inplace=True)
+
     return df
 
 
@@ -75,12 +76,12 @@ def split_to_cols(s, cols):
 def relabel_census_cols(df):
     # Splits apart the labels so we can filter across them
     cols = ["Measure", "Category", "Subcategory", "Variable"]
-
     # Keep only rows where the label is structured by "!!" (Issues with "Geography" rows)
     df_clean = df[df["Label"].str.contains("!!")].copy()
-
     # Reset index to avoid merging issues
     df_clean.reset_index(drop=True, inplace=True)
+    # Preserve the original census variable code (e.g. "DP05_0001E") and name it "Variable_Code"
+    df_clean = df_clean.rename(columns={"Name": "Variable_Code"})
 
     splits = df_clean["Label"].apply(lambda x: list(split_to_cols(x, cols)))
     splits_df = pd.DataFrame(splits.tolist(), columns=cols)
@@ -96,12 +97,7 @@ def relabel_census_cols(df):
 
 
 def merge_census_cols(name_df, data_gdf, id_vars: list | None):
-    id_vars = id_vars or [
-        "GEOID",
-        "geometry",
-        "Jurisdiction",
-        "County",
-    ]
+    id_vars = id_vars or ["GEOID", "geometry", "Jurisdiction", "County"]
 
     # Melt the gdf into tidy format
     data_gdf[id_vars]
@@ -112,9 +108,12 @@ def merge_census_cols(name_df, data_gdf, id_vars: list | None):
         value_name="Value",
     )
 
-    # Merge to get the right names and drop the cols
-    return pd.merge(left=df_long, right=name_df, left_on="Code", right_on="Name").drop(
-        columns=["Code", "Name", "Label"]
+    # Merge to get the right names and drop the cols (keep Variable_Code - the
+    # original census variable code - for downstream lineage)
+    return (
+        pd.merge(left=df_long, right=name_df, left_on="Code", right_on="Variable_Code")
+        .rename(columns={"Label": "Source_Label"})
+        .drop(columns=["Code"])
     )
 
 

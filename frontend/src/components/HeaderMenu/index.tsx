@@ -6,6 +6,7 @@ import {
   Badge,
   Burger,
   Container,
+  Drawer,
   Group,
   Image,
   Menu,
@@ -160,10 +161,72 @@ function SubLinkMenuItem({ item }: { item: SubLink }) {
   );
 }
 
+const isCurrent = (pathname: string, link: string) =>
+  pathname === link || pathname.startsWith(link + '/');
+
+/** The nav for narrow screens, where the header's links are hidden: every
+ *  section and its pages in one list. */
+function MobileNav({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const item = (sub: SubLink) => {
+    if (sub.disabled) return null;
+    const Icon = sub.icon;
+    const content = (
+      <>
+        {Icon && <Icon size={16} />}
+        {sub.label}
+      </>
+    );
+    return sub.external ? (
+      <a
+        key={sub.link}
+        href={sub.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={classes.drawerLink}
+      >
+        {content}
+      </a>
+    ) : (
+      <Link
+        key={sub.link}
+        href={sub.link}
+        onClick={onNavigate}
+        className={`${classes.drawerLink} ${
+          isCurrent(pathname, sub.link) ? classes.drawerLinkActive : ''
+        }`}
+      >
+        {content}
+      </Link>
+    );
+  };
+
+  return (
+    <nav className={classes.drawerNav}>
+      {links.map((link) => {
+        const subLinks =
+          link.links ?? link.groups?.flatMap((group) => group.links);
+        if (!subLinks) return item(link);
+        return (
+          <div key={link.label} className={classes.drawerSection}>
+            <span className={classes.drawerSectionLabel}>{link.label}</span>
+            {subLinks.map(item)}
+          </div>
+        );
+      })}
+    </nav>
+  );
+}
+
 export default function HeaderMenu() {
   const pathname = usePathname(); /* Get the current pathname */
 
-  const [opened, { toggle }] = useDisclosure(false);
+  const [opened, { toggle, close }] = useDisclosure(false);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
@@ -271,7 +334,7 @@ export default function HeaderMenu() {
     <header className={`${classes.header} ${hidden ? classes.hidden : ''}`}>
       <Container size="xl">
         <div className={classes.inner}>
-          <Group gap="lg">
+          <Group gap="lg" wrap="nowrap">
             <Anchor href="/">
               <Image
                 src="/images/VDC_logo.jpg"
@@ -282,6 +345,7 @@ export default function HeaderMenu() {
               />
             </Anchor>
             <Badge
+              visibleFrom="xs"
               style={{
                 color: COLORS.birch,
                 background: COLORS.amber,
@@ -301,11 +365,33 @@ export default function HeaderMenu() {
           >
             {items}
           </Group>
-          <ProfileModal />
-
-          <Burger opened={opened} onClick={toggle} size="sm" hiddenFrom="md" />
+          {/* Grouped so the button stays at the right edge when the nav
+              links are hidden on narrow screens. */}
+          <Group gap="sm" wrap="nowrap">
+            <ProfileModal />
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              size="sm"
+              hiddenFrom="md"
+              aria-label={opened ? 'Close menu' : 'Open menu'}
+            />
+          </Group>
         </div>
       </Container>
+
+      <Drawer
+        opened={opened}
+        onClose={close}
+        position="right"
+        size={300}
+        title="Menu"
+        hiddenFrom="md"
+        // Above the sticky header (z-index 1000) and its menus.
+        zIndex={1100}
+      >
+        <MobileNav pathname={pathname} onNavigate={close} />
+      </Drawer>
     </header>
   );
 }

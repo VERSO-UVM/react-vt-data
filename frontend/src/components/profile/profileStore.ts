@@ -60,23 +60,18 @@ export const useProfile = create<ProfileStore>()(
     }),
     {
       name: 'location-storage',
-      // Only the preferences. Whether the dialog is open is UI state;
-      // persisting it reopened the dialog on every reload after it was left
-      // open.
-      partialize: ({
-        myLocation,
-        comparison,
-        interests,
-        yearMin,
-        yearMax,
-        profileSet,
-      }) => ({
-        myLocation,
-        comparison,
-        interests,
-        yearMin,
-        yearMax,
-        profileSet,
+      // Whether the dialog is open is per page view, not part of the saved
+      // profile; persisting it reopened the dialog on every reload after
+      // leaving it open. Ignore it in profiles saved before this, too.
+      partialize: (state) => {
+        const saved: Partial<ProfileStore> = { ...state };
+        delete saved.profileModalOpen;
+        return saved;
+      },
+      merge: (saved, current) => ({
+        ...current,
+        ...(saved as Partial<ProfileStore>),
+        profileModalOpen: false,
       }),
     },
   ),

@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import {
   Button,
-  Divider,
-  Paper,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -13,7 +16,12 @@ import {
   Box,
   Alert,
   Group,
+  Highlight,
   SimpleGrid,
+  type ComboboxData,
+  type ComboboxItem,
+  type ComboboxParsedItem,
+  type OptionsFilter,
 } from '@mantine/core';
 import {
   useProfile,
@@ -22,10 +30,15 @@ import {
   YEAR_MAX_OVERALL,
   Location,
 } from './profileStore';
-import * as motion from 'motion/react-client';
 import county_town_names from '@/data/county_town_names.json';
-import { IconMapPin, IconTags, IconCalendarStats } from '@tabler/icons-react';
+import {
+  IconCalendarStats,
+  IconCheck,
+  IconMapPin,
+  IconTags,
+} from '@tabler/icons-react';
 import { UserCircleIcon } from '@phosphor-icons/react';
+import classes from './SetProfile.module.css';
 import { COLORS, FONTS } from '@/app/theme';
 
 type CountyKey = keyof typeof county_town_names;
@@ -57,150 +70,307 @@ interface ProfileLocationSelectProps {
   location: Location;
   setLocation: (loc: Location) => void;
   showNational?: boolean;
+  /** Places listed first under their own heading, before the user types. */
+  suggestions?: { heading: string; places: Location[] };
 }
 
+// The header's way into the profile: it names the places being compared, as
+// a hint that this is where they change. Two lines when there's a
+// comparison; "My Profile" until the saved profile has loaded (so the static
+// page and the first client render match).
 function ProfileButton({
   onClick,
-  opened,
+  lines,
 }: {
   onClick: () => void;
-  opened: boolean;
+  lines: string[];
 }) {
   return (
-    <motion.button
+    <Button
       onClick={onClick}
-      initial="rest"
-      whileHover="hover"
-      whileTap={{ scale: 0.96 }}
-      animate={opened ? 'hover' : 'rest'}
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '10px 20px',
-        borderRadius: 999,
-        border: '1.5px solid var(--mantine-color-blue-6)',
-        background: 'transparent',
-        cursor: 'pointer',
-        fontWeight: 500,
-        fontSize: 16,
-        maxHeight: 45,
-        maxWidth: 170,
+      variant="outline"
+      color="blue"
+      radius="xl"
+      leftSection={<UserCircleIcon size={22} weight="light" />}
+      aria-label={`Edit profile: ${lines.join(' ')}`}
+      classNames={{ root: classes.profileButton, section: classes.profileIcon }}
+      styles={{
+        root: {
+          flexShrink: 0,
+          height: 'auto',
+          minHeight: 42,
+          paddingBlock: 4,
+        },
+        label: {
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          lineHeight: 1.25,
+          overflow: 'hidden',
+        },
       }}
     >
-      <motion.span
-        variants={{
-          rest: { scaleX: 0 },
-          hover: { scaleX: 1 },
-        }}
-        transition={{ duration: 0.4, ease: [0.65, 0, 0.35, 1] }}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'var(--mantine-color-blue-6)',
-          transformOrigin: 'left',
-          zIndex: 0,
-        }}
-      />
-      <motion.span
-        variants={{
-          rest: { color: 'var(--mantine-color-blue-6)' },
-          hover: { color: '#fff' },
-        }}
-        transition={{ duration: 0.25 }}
-        style={{
-          position: 'relative',
-          zIndex: 1,
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-        }}
-      >
-        <UserCircleIcon size={30} weight="light" />
-        My Profile
-      </motion.span>
-    </motion.button>
+      {lines.map((line, i) => (
+        <Text
+          key={i}
+          span
+          size={i === 0 ? 'sm' : 'xs'}
+          fw={i === 0 ? 600 : 400}
+          truncate
+          maw="100%"
+        >
+          {line}
+        </Text>
+      ))}
+    </Button>
   );
 }
+
+function profileButtonLines(
+  hydrated: boolean,
+  profileSet: boolean,
+  myLocation: Location,
+  comparison: Location,
+): string[] {
+  if (!hydrated) return ['My Profile'];
+  if (!profileSet) return ['Set your profile'];
+  const place = placeLabel(myLocation);
+  const other = placeLabel(comparison);
+  return other && other !== place ? [place, other] : [place];
+}
+
+// Every place a profile can pick, as one searchable list: the state (and the
+// nation, for comparisons), the 14 counties, and every town labeled with its
+// county. Option values encode the whole location, e.g. "town:Addison:
+// Middlebury town", so picking one needs no follow-up choices.
+
+const SUGGESTED_PREFIX = 'suggested:';
+
+function locationKey(l: Location): string {
+  if (l.type === 'national' || l.type === 'state') return l.type;
+  if (l.type === 'county') return `county:${l.county}`;
+  if (l.type === 'town') return `town:${l.county}:${l.town ?? ''}`;
+  return l.type;
+}
+
+function makeLocation(
+  type: Location['type'],
+  county: string | null = null,
+  town: string | null = null,
+): Location {
+  return {
+    type,
+    state: type === 'state',
+    county,
+    town,
+    name: getName(type, county, town),
+  };
+}
+
+const counties = Object.keys(county_town_names) as CountyKey[];
+
+// Each option's location, and for towns the county shown beside the name
+// and matched by the search.
+const PLACES = new Map<string, { location: Location; county?: string }>([
+  ['national', { location: makeLocation('national') }],
+  ['state', { location: makeLocation('state') }],
+  ...counties.map(
+    (c) => [`county:${c}`, { location: makeLocation('county', c) }] as const,
+  ),
+  ...counties.flatMap((c) =>
+    county_town_names[c].map(
+      (t) =>
+        [
+          `town:${c}:${t}`,
+          { location: makeLocation('town', c, t), county: `${c} County` },
+        ] as const,
+    ),
+  ),
+]);
+
+function placeLabel(l: Location): string {
+  if (l.type === 'national') return 'United States';
+  if (l.type === 'state') return 'Vermont';
+  if (l.type === 'county') return `${l.county} County`;
+  return l.town ?? l.name;
+}
+
+function placeGroups(
+  showNational: boolean,
+  suggestions?: { heading: string; places: Location[] },
+): ComboboxData {
+  const item = (l: Location, prefix = '') => ({
+    value: prefix + locationKey(l),
+    label: placeLabel(l),
+  });
+  const towns = counties
+    .flatMap((c) => county_town_names[c].map((t) => makeLocation('town', c, t)))
+    .sort((a, b) => (a.town ?? '').localeCompare(b.town ?? ''));
+  return [
+    ...(suggestions?.places.length
+      ? [
+          {
+            group: suggestions.heading,
+            items: suggestions.places.map((l) => item(l, SUGGESTED_PREFIX)),
+          },
+        ]
+      : []),
+    {
+      group: showNational ? 'State & nation' : 'State',
+      items: [
+        ...(showNational ? [item(makeLocation('national'))] : []),
+        item(makeLocation('state')),
+      ],
+    },
+    {
+      group: 'Counties',
+      items: counties.map((c) => item(makeLocation('county', c))),
+    },
+    { group: 'Towns', items: towns.map((l) => item(l)) },
+  ];
+}
+
+// Matches a place's name or, for a town, its county ("addison" lists
+// Addison County and all its towns). Within each group, names starting with
+// the search come first, then names containing it, then towns matched only
+// by county, so "essex" puts Essex town above Essex County's towns.
+// Suggestions only show before typing, since they repeat places below.
+const filterPlaces: OptionsFilter = ({ options, search }) => {
+  const query = search.toLowerCase().trim();
+  if (!query) return options;
+  // 0-2 for a match (lower is better), or null for none.
+  const rank = (item: ComboboxItem) => {
+    const label = item.label.toLowerCase();
+    if (label.startsWith(query)) return 0;
+    if (label.includes(query)) return 1;
+    const county = PLACES.get(item.value)?.county ?? '';
+    return county.toLowerCase().includes(query) ? 2 : null;
+  };
+  const ranked = (items: ComboboxItem[]) =>
+    items
+      .map((item) => ({ item, rank: rank(item) }))
+      .filter((r): r is { item: ComboboxItem; rank: number } => r.rank != null)
+      .sort((a, b) => a.rank - b.rank) // stable: alphabetical within a rank
+      .map((r) => r.item);
+  return options.flatMap<ComboboxParsedItem>((option) => {
+    if (!('group' in option)) return rank(option) != null ? [option] : [];
+    if (option.items.some((i) => i.value.startsWith(SUGGESTED_PREFIX))) {
+      return [];
+    }
+    const items = ranked(option.items);
+    return items.length ? [{ ...option, items }] : [];
+  });
+};
+
+// The places containing a location, offered first as comparisons: a town's
+// county, then Vermont (or the nation, when the location is Vermont itself).
+// They also appear in their own groups; the heading says why they're here.
+export function comparisonSuggestions(l: Location): {
+  heading: string;
+  places: Location[];
+} {
+  const heading = `Areas that include ${placeLabel(l)}`;
+  if (l.type === 'town' && l.county) {
+    return {
+      heading,
+      places: [makeLocation('county', l.county), makeLocation('state')],
+    };
+  }
+  if (l.type === 'county') return { heading, places: [makeLocation('state')] };
+  if (l.type === 'state')
+    return { heading, places: [makeLocation('national')] };
+  return { heading, places: [] };
+}
+
+// Search matches in bold, rather than Mantine's default yellow mark.
+const MATCH_STYLE = {
+  backgroundColor: 'transparent',
+  color: 'inherit',
+  fontWeight: 700,
+  padding: 0,
+};
 
 const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   title,
   location,
   setLocation,
   showNational = false,
+  suggestions,
 }) => {
-  const counties = Object.keys(county_town_names) as CountyKey[];
+  const key = locationKey(location);
+  const selected = PLACES.has(key) ? placeLabel(location) : '';
+  const [search, setSearch] = useState(selected);
+  const listRef = useRef<HTMLDivElement>(null);
+  // Bold what the user typed; nothing while the box still shows the pick.
+  const query = search.trim() === selected ? '' : search.trim();
 
   return (
     <Stack gap="xs">
       <Title order={3}>{title}</Title>
 
       <Select
-        label="Area type"
+        aria-label={title}
+        placeholder="Search towns and counties"
         radius="md"
-        value={location.type}
-        onChange={(value) => {
-          if (!value) return;
-          const newType = value as Location['type'];
-          setLocation({
-            type: newType,
-            state: newType === 'state',
-            county: newType === 'town' ? location.county : null,
-            town: null,
-            name: getName(newType, newType === 'town' ? location.county : null),
-          });
+        searchable
+        // Select the current place on focus, so typing replaces it.
+        onFocus={(e) => e.currentTarget.select()}
+        searchValue={search}
+        // As the search changes, start the list at the top and highlight the
+        // best match, so it's in view and Enter picks it.
+        onSearchChange={(value) => {
+          setSearch(value);
+          listRef.current?.scrollTo({ top: 0 });
         }}
-        data={[
-          ...(showNational
-            ? [{ value: 'national', label: 'All of The United States' }]
-            : []),
-          { value: 'state', label: 'All of Vermont' },
-          { value: 'county', label: 'County' },
-          { value: 'town', label: 'Town' },
-        ]}
+        scrollAreaProps={{ viewportRef: listRef }}
+        classNames={{ option: classes.option }}
+        selectFirstOptionOnChange
+        allowDeselect={false}
+        maxDropdownHeight={320}
+        nothingFoundMessage="No matching places"
+        value={PLACES.has(key) ? key : null}
+        onChange={(value) => {
+          const place = value
+            ? PLACES.get(value.replace(SUGGESTED_PREFIX, ''))
+            : undefined;
+          if (place) setLocation(place.location);
+        }}
+        data={placeGroups(showNational, suggestions)}
+        filter={filterPlaces}
+        renderOption={({ option, checked }) => {
+          const county = PLACES.get(
+            option.value.replace(SUGGESTED_PREFIX, ''),
+          )?.county;
+          return (
+            <Group justify="space-between" wrap="nowrap" w="100%" gap="sm">
+              <Group gap={6} wrap="nowrap">
+                {/* Mantine's check mark, which a custom option drops. */}
+                <IconCheck
+                  size={14}
+                  style={{ visibility: checked ? 'visible' : 'hidden' }}
+                />
+                <Highlight
+                  size="sm"
+                  highlight={query}
+                  highlightStyles={MATCH_STYLE}
+                >
+                  {option.label}
+                </Highlight>
+              </Group>
+              {county && (
+                <Highlight
+                  size="xs"
+                  c="dimmed"
+                  highlight={query}
+                  highlightStyles={MATCH_STYLE}
+                  style={{ flexShrink: 0 }}
+                >
+                  {county}
+                </Highlight>
+              )}
+            </Group>
+          );
+        }}
       />
-
-      {(location.type === 'county' || location.type === 'town') && (
-        <Select
-          label="Pick a county"
-          value={location.county || ''}
-          error={!location.county ? 'Pick a county' : undefined}
-          radius="md"
-          onChange={(value) =>
-            value &&
-            setLocation({
-              ...location,
-              county: value,
-              town: null,
-              name: getName(location.type, value, null),
-            })
-          }
-          data={counties.map((c) => ({ value: c, label: c }))}
-        />
-      )}
-
-      {location.type === 'town' && location.county && (
-        <Select
-          label="Pick a town"
-          value={location.town || ''}
-          error={!location.town ? 'Pick a town' : undefined}
-          radius="md"
-          onChange={(value) =>
-            value &&
-            setLocation({
-              ...location,
-              town: value,
-              name: getName(location.type, location.county, value),
-            })
-          }
-          data={county_town_names[location.county as CountyKey].map((t) => ({
-            value: t,
-            label: t,
-          }))}
-        />
-      )}
     </Stack>
   );
 };
@@ -240,14 +410,16 @@ export const ProfileModal: React.FC = () => {
 
   const opened = profileModalOpen;
 
-  // Profile is not automatically opened each reload
-  const [hydrated, setHydrated] = useState(
-    () => typeof window !== 'undefined' && useProfile.persist.hasHydrated(),
+  // Whether the saved profile has loaded. False on the server and during
+  // React's first client render, when the store still reports its defaults
+  // (profileSet false); reading persist.hasHydrated() directly said true
+  // there, which opened the dialog on every load and made the header text
+  // differ from the server's.
+  const hydrated = useSyncExternalStore(
+    (onChange) => useProfile.persist.onFinishHydration(onChange),
+    () => useProfile.persist.hasHydrated(),
+    () => false,
   );
-
-  useEffect(() => {
-    return useProfile.persist.onFinishHydration(() => setHydrated(true));
-  }, []);
 
   // Open automatically once hydrated if the user hasn't saved a profile yet.
   // Read the live store: during the first client render useProfile() still
@@ -293,7 +465,10 @@ export const ProfileModal: React.FC = () => {
 
   return (
     <>
-      <ProfileButton onClick={handleOpen} opened={opened} />
+      <ProfileButton
+        onClick={handleOpen}
+        lines={profileButtonLines(hydrated, profileSet, myLocation, comparison)}
+      />
       <Modal
         opened={opened}
         onClose={closeProfileModal}
@@ -382,6 +557,7 @@ export const ProfileModal: React.FC = () => {
                 location={tempComparison}
                 setLocation={setTempComparison}
                 showNational
+                suggestions={comparisonSuggestions(tempMyLocation)}
               />
             </SimpleGrid>
           </Box>
