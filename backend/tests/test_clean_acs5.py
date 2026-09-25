@@ -107,9 +107,7 @@ def test_assert_unique_observations_catches_a_real_collision():
     con = _base_con()
     # Two rows sharing the same variable_code for the same (name, year, table).
     con.execute(
-        _housing_rows(
-            [(2011, "DP04_0100E", "1731"), (2011, "DP04_0100E", "9999")]
-        )
+        _housing_rows([(2011, "DP04_0100E", "1731"), (2011, "DP04_0100E", "9999")])
     )
     build_dp_combined(con)
 

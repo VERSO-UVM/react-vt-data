@@ -56,7 +56,7 @@ def get_census_cols(year: int):
     df = pd.DataFrame(rows, columns=keys)
     df = df[["Name", "Label"]].copy()
     df.dropna(inplace=True)
-    
+
     return df
 
 
