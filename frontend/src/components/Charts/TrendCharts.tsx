@@ -242,6 +242,7 @@ export const SingleSeriesTrendChart = <TData,>({
           )}
           {!isGallery && (
             <Legend
+              iconSize={LEGEND_ICON_SIZE}
               align="right"
               verticalAlign="bottom"
               onClick={(e: any) => toggleSeries(e.dataKey)}
@@ -251,6 +252,7 @@ export const SingleSeriesTrendChart = <TData,>({
           )}
           {own.lines.map((_, i) => (
             <Line
+              legendType="plainline"
               key={ownKey(i)}
               type="monotone"
               dataKey={ownKey(i)}
@@ -268,6 +270,7 @@ export const SingleSeriesTrendChart = <TData,>({
           {compareData.length > 0 &&
             other.lines.map((_, i) => (
               <Line
+                legendType="plainline"
                 key={otherKey(i)}
                 type="monotone"
                 dataKey={otherKey(i)}
@@ -287,6 +290,10 @@ export const SingleSeriesTrendChart = <TData,>({
     </>
   );
 };
+// Legend icons are plain lines (legendType="plainline") that repeat each
+// line's dash pattern; at Recharts' default 14px the dashes read as dots.
+const LEGEND_ICON_SIZE = 28;
+
 // A split series' plot key for its i-th line. The first keeps the plain
 // name, so the table view's column names only change when a series splits.
 const lineKey = (name: string, i: number) =>
@@ -475,6 +482,7 @@ export const MultiSeriesTrendChart = <TData,>({
           {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v)} />}
           {!isGallery && (
             <Legend
+              iconSize={LEGEND_ICON_SIZE}
               align="right"
               verticalAlign="bottom"
               onClick={(e: any) => toggleSeries(e.dataKey)}
@@ -484,6 +492,7 @@ export const MultiSeriesTrendChart = <TData,>({
           )}
           {series.map((s) => (
             <Line
+              legendType="plainline"
               key={s.key}
               dataKey={s.key}
               name={
@@ -502,6 +511,7 @@ export const MultiSeriesTrendChart = <TData,>({
               .slice(1)
               .map((line, j) => (
                 <Line
+                  legendType="plainline"
                   key={extraKey(s, j + 1)}
                   dataKey={extraKey(s, j + 1)}
                   name={`${s.key} — ${line.label ?? `value ${j + 2}`} (${labels?.[0] ?? 'Main'})`}
@@ -1026,9 +1036,10 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
               return (Number(value) || 0).toLocaleString();
             }}
           />
-          <Legend />
+          <Legend iconSize={LEGEND_ICON_SIZE} />
           {primary.lines.map((_, i) => (
             <Line
+              legendType="plainline"
               key={`primary${i}`}
               type="monotone"
               dataKey={`primary${i}`}
@@ -1041,6 +1052,7 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
           {compareData.length > 0 &&
             compare.lines.map((_, i) => (
               <Line
+                legendType="plainline"
                 key={`compare${i}`}
                 type="monotone"
                 dataKey={`compare${i}`}
