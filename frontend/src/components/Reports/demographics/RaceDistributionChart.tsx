@@ -90,7 +90,7 @@ export default function RaceDistributionChart({
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
           <Bar dataKey={primaryName} fill="#5474B4" radius={[0, 6, 6, 0]} />
-          <Bar dataKey={comparisonName} fill="#c0c5cf" radius={[0, 6, 6, 0]} />
+          <Bar dataKey={comparisonName} fill="#868e96" radius={[0, 6, 6, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </Card>

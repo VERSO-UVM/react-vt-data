@@ -119,7 +119,7 @@ export default function PovertyUninsuredTrends({
                   type="monotone"
                   dataKey="comparison"
                   name={second}
-                  stroke="#c0c5cf"
+                  stroke="#868e96"
                   strokeWidth={2}
                   dot={false}
                   connectNulls={false}
