@@ -154,7 +154,7 @@ function placeGroups(
         ]
       : []),
     {
-      group: 'State',
+      group: showNational ? 'State & nation' : 'State',
       items: [
         ...(showNational ? [item(makeLocation('national'))] : []),
         item(makeLocation('state')),
