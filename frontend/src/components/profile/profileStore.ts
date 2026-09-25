@@ -58,6 +58,21 @@ export const useProfile = create<ProfileStore>()(
       openProfileModal: () => set({ profileModalOpen: true }),
       closeProfileModal: () => set({ profileModalOpen: false }),
     }),
-    { name: 'location-storage' },
+    {
+      name: 'location-storage',
+      // Whether the dialog is open is per page view, not part of the saved
+      // profile; persisting it reopened the dialog on every reload after
+      // leaving it open. Ignore it in profiles saved before this, too.
+      partialize: (state) => {
+        const saved: Partial<ProfileStore> = { ...state };
+        delete saved.profileModalOpen;
+        return saved;
+      },
+      merge: (saved, current) => ({
+        ...current,
+        ...(saved as Partial<ProfileStore>),
+        profileModalOpen: false,
+      }),
+    },
   ),
 );

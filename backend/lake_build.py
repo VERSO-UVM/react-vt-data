@@ -107,6 +107,26 @@ def insert_year(
         # Transaction prevents half-deleted/half-inserted errors
         con.execute("BEGIN TRANSACTION")
 
+        # Widen the table if the incoming frame has new columns (schema evolution)
+        existing_cols = {
+            row[0]
+            for row in con.execute(
+                """--sql
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_catalog = 'lake'
+                  AND table_schema = ?
+                  AND table_name = ?
+                """,
+                [schema, table],
+            ).fetchall()
+        }
+        for col_name, col_type, *_ in con.execute("DESCRIBE tmp_df").fetchall():
+            if col_name not in existing_cols:
+                con.execute(
+                    f'ALTER TABLE lake.{schema}.{table} ADD COLUMN "{col_name}" {col_type}'
+                )
+
         con.execute(
             f"""--sql
             DELETE FROM lake.{schema}.{table}

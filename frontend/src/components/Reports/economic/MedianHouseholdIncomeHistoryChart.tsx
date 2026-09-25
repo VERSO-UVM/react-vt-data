@@ -93,7 +93,7 @@ export default function MedianHouseholdIncomeHistoryChart({
           <Line
             type="monotone"
             dataKey={comparisonName}
-            stroke="#c0c5cf"
+            stroke="#868e96"
             strokeWidth={2}
             dot={false}
           />

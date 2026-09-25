@@ -56,8 +56,9 @@ def fetch_table(year, table, for_clause, in_clause):
         r = requests.get(BASE_URL.format(year=year), params=params, timeout=30)
         r.raise_for_status()
         data = r.json()
+        # List of DP table columns ['NAME', Variable_Codes, 'GEO_ID', 'state', 'county']
         headers = data[0]
-        # deduplicate column names
+        # Deduplicate column names
         seen = {}
         deduped = []
         for h in headers:
@@ -68,6 +69,7 @@ def fetch_table(year, table, for_clause, in_clause):
                 seen[h] = 0
                 deduped.append(h)
         df = pd.DataFrame(data[1:], columns=deduped)
+        # Add year and table id columns
         df["year"] = year
         df["table"] = table
         return df
@@ -90,18 +92,13 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
             for table in TABLES:
                 print(f"  {table} / {geo_label}...")
 
-                df = fetch_table(
-                    year,
-                    table,
-                    for_clause,
-                    in_clause,
-                )
+                df = fetch_table(year, table, for_clause, in_clause)
 
                 if df is not None:
                     df["geo_type"] = geo_label
                     all_frames[table].append(df)
 
-                time.sleep(0.1)
+                time.sleep(0.01)
 
     results = {}
 
@@ -113,28 +110,18 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
 
         label = TABLES[table]
 
-        combined = pd.concat(
-            frames,
-            ignore_index=True,
-            sort=False,
-        )
+        combined = pd.concat(frames, ignore_index=True, sort=False)
 
         # Key columns to front
         front = [c for c in ID_VARS if c in combined.columns]
         rest = [c for c in combined.columns if c not in front]
 
         combined = combined[front + rest]
-
-        combined.sort_values(
-            ["year", "geo_type", "NAME"],
-            inplace=True,
-        )
-
+        combined.sort_values(["year", "geo_type", "NAME"], inplace=True)
         combined.reset_index(drop=True, inplace=True)
 
         # Tidy: run per-year so column labels are year-accurate
         tidy_frames = []
-
         for year in sorted(combined["year"].unique()):
             year_df = combined[combined["year"] == year]
 
@@ -142,12 +129,7 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
                 continue
 
             try:
-                tidy_year = tidy_census(
-                    year_df,
-                    year=year,
-                    id_vars=ID_VARS,
-                )
-
+                tidy_year = tidy_census(year_df, year=year, id_vars=ID_VARS)
                 tidy_year["table"] = table
                 tidy_frames.append(tidy_year)
 

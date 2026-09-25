@@ -483,10 +483,12 @@
       "geoid": "VARCHAR",
       "measure": "VARCHAR",
       "name": "VARCHAR",
+      "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
       "value": "VARCHAR",
       "variable": "VARCHAR",
+      "variable_code": "VARCHAR",
       "year": "BIGINT"
     },
     "acs5_economics_tidy": {
@@ -521,7 +523,7 @@
       "name": "VARCHAR",
       "percent": "DOUBLE",
       "section": "VARCHAR",
-      "value": "BIGINT",
+      "value": "DOUBLE",
       "variable": "VARCHAR",
       "year": "VARCHAR"
     },
@@ -634,10 +636,12 @@
       "geoid": "VARCHAR",
       "measure": "VARCHAR",
       "name": "VARCHAR",
+      "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
       "value": "VARCHAR",
       "variable": "VARCHAR",
+      "variable_code": "VARCHAR",
       "year": "BIGINT"
     },
     "dp_economic": {
@@ -647,10 +651,12 @@
       "geoid": "VARCHAR",
       "measure": "VARCHAR",
       "name": "VARCHAR",
+      "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
       "value": "VARCHAR",
       "variable": "VARCHAR",
+      "variable_code": "VARCHAR",
       "year": "BIGINT"
     },
     "dp_housing": {
@@ -660,10 +666,12 @@
       "geoid": "VARCHAR",
       "measure": "VARCHAR",
       "name": "VARCHAR",
+      "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
       "value": "VARCHAR",
       "variable": "VARCHAR",
+      "variable_code": "VARCHAR",
       "year": "BIGINT"
     },
     "dp_social": {
@@ -673,10 +681,12 @@
       "geoid": "VARCHAR",
       "measure": "VARCHAR",
       "name": "VARCHAR",
+      "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
       "value": "VARCHAR",
       "variable": "VARCHAR",
+      "variable_code": "VARCHAR",
       "year": "BIGINT"
     },
     "qcew_sectorEmployment_timeseries": {
