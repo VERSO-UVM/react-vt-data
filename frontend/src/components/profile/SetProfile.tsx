@@ -57,8 +57,8 @@ interface ProfileLocationSelectProps {
   location: Location;
   setLocation: (loc: Location) => void;
   showNational?: boolean;
-  /** Places listed first, before the user types. */
-  suggestions?: Location[];
+  /** Places listed first under their own heading, before the user types. */
+  suggestions?: { heading: string; places: Location[] };
 }
 
 function ProfileButton({ onClick }: { onClick: () => void }) {
@@ -135,7 +135,7 @@ function placeLabel(l: Location): string {
 
 function placeGroups(
   showNational: boolean,
-  suggestions: Location[],
+  suggestions?: { heading: string; places: Location[] },
 ): ComboboxData {
   const item = (l: Location, prefix = '') => ({
     value: prefix + locationKey(l),
@@ -145,11 +145,11 @@ function placeGroups(
     .flatMap((c) => county_town_names[c].map((t) => makeLocation('town', c, t)))
     .sort((a, b) => (a.town ?? '').localeCompare(b.town ?? ''));
   return [
-    ...(suggestions.length
+    ...(suggestions?.places.length
       ? [
           {
-            group: 'Suggested',
-            items: suggestions.map((l) => item(l, SUGGESTED_PREFIX)),
+            group: suggestions.heading,
+            items: suggestions.places.map((l) => item(l, SUGGESTED_PREFIX)),
           },
         ]
       : []),
@@ -192,21 +192,32 @@ const filterPlaces: OptionsFilter = ({ options, search }) => {
       .map((r) => r.item);
   return options.flatMap<ComboboxParsedItem>((option) => {
     if (!('group' in option)) return rank(option) != null ? [option] : [];
-    if (option.group === 'Suggested') return [];
+    if (option.items.some((i) => i.value.startsWith(SUGGESTED_PREFIX))) {
+      return [];
+    }
     const items = ranked(option.items);
     return items.length ? [{ ...option, items }] : [];
   });
 };
 
-// Places worth offering first as a comparison: the county a town sits in,
-// then Vermont (or the nation, when the location is Vermont itself).
-export function comparisonSuggestions(l: Location): Location[] {
+// The places containing a location, offered first as comparisons: a town's
+// county, then Vermont (or the nation, when the location is Vermont itself).
+// They also appear in their own groups; the heading says why they're here.
+export function comparisonSuggestions(l: Location): {
+  heading: string;
+  places: Location[];
+} {
+  const heading = `Areas that include ${placeLabel(l)}`;
   if (l.type === 'town' && l.county) {
-    return [makeLocation('county', l.county), makeLocation('state')];
+    return {
+      heading,
+      places: [makeLocation('county', l.county), makeLocation('state')],
+    };
   }
-  if (l.type === 'county') return [makeLocation('state')];
-  if (l.type === 'state') return [makeLocation('national')];
-  return [];
+  if (l.type === 'county') return { heading, places: [makeLocation('state')] };
+  if (l.type === 'state')
+    return { heading, places: [makeLocation('national')] };
+  return { heading, places: [] };
 }
 
 // Search matches in bold, rather than Mantine's default yellow mark.
@@ -222,7 +233,7 @@ const ProfileLocationSelect: React.FC<ProfileLocationSelectProps> = ({
   location,
   setLocation,
   showNational = false,
-  suggestions = [],
+  suggestions,
 }) => {
   const key = locationKey(location);
   const selected = PLACES.has(key) ? placeLabel(location) : '';
