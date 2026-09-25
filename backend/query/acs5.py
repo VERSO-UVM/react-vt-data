@@ -222,6 +222,61 @@ def get_acs5_timeseries(
     return result
 
 
+# DP03 rows that carry each rate. Their labels are stable across years, but
+# the measure is "Percent Estimate" in 2017-2018 and "Percent" otherwise.
+# Poverty covers 2010 on; uninsured 2013 on (2012 has two rows with these
+# same labels but different universes, so it can't be told apart).
+POVERTY_UNINSURED_SERIES = {
+    "Below poverty level": (
+        "%BELOW THE POVERTY LEVEL%",
+        "All people",
+        "Total",
+    ),
+    "No health insurance": (
+        "HEALTH INSURANCE COVERAGE%",
+        "Civilian noninstitutionalized population",
+        "No health insurance coverage",
+    ),
+}
+
+
+def get_poverty_uninsured_timeseries(
+    names: list[str], table: str = "dp_economic"
+) -> pd.DataFrame:
+    """Yearly poverty and uninsured rates (percent of people) for places named
+    as in the ACS NAME column, e.g. "Addison County, Vermont" or "Vermont".
+    Trend context for the Community Health report, whose CDC PLACES health
+    estimates are a single snapshot. Census sentinels (negative) are dropped.
+    """
+    cases = " ".join(
+        "WHEN category ILIKE ? AND subcategory = ? AND variable = ? THEN ?"
+        for _ in POVERTY_UNINSURED_SERIES
+    )
+    case_params = [
+        p
+        for label, selectors in POVERTY_UNINSURED_SERIES.items()
+        for p in (*selectors, label)
+    ]
+    placeholders = ", ".join("?" for _ in names)
+    sql = f"""--sql
+        SELECT year, name AS Location, Variable, pct AS Percent
+        FROM (
+            SELECT
+                CAST(year AS INTEGER) AS year,
+                name,
+                CASE {cases} END AS Variable,
+                TRY_CAST(value AS DOUBLE) AS pct
+            FROM {table}
+            WHERE measure ILIKE 'Percent%' AND name IN ({placeholders})
+        )
+        WHERE Variable IS NOT NULL AND pct >= 0
+        ORDER BY Variable, name, year
+    """
+    if not names:
+        return pd.DataFrame(columns=["year", "Location", "Variable", "Percent"])
+    return DB.execute(sql, [*case_params, *names]).df()
+
+
 # FIXME: Link to new database table name (broken for now)
 def get_acs5_filters():
     return filter_tree(ACS5_FILTER_COLS, ACS5_TREE_LABELS, "acs5_info")

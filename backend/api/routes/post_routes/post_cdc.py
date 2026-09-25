@@ -6,6 +6,7 @@ from query import (
     dual_var_comparison,
     get_cdc_county_pca,
     get_cdc_export_table,
+    get_cdc_places_by_county,
     get_cdc_places_tidy,
     single_var_geojson,
 )
@@ -52,6 +53,14 @@ async def cdc_single_geojson(request: FilterRequest):
 async def cdc_places_tidy(request: FilterRequest):
     source = request_to_source(request, "cdc_places_county", "default")
     rows = get_cdc_places_tidy([source])
+    return make_response(data=rows, metadata={})
+
+
+@router.post("/load/data/cdc/places/by-county")
+async def cdc_places_by_county(request: FilterRequest):
+    """Every county's value for the filtered measures, for rankings."""
+    source = request_to_source(request, "cdc_places_county", "default")
+    rows = get_cdc_places_by_county([source])
     return make_response(data=rows, metadata={})
 
 

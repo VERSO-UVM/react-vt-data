@@ -10,6 +10,7 @@ from query.acs5 import (
     QUERY_CONFIG,
     get_acs5_tidy,
     get_acs5_timeseries,
+    get_poverty_uninsured_timeseries,
 )
 from query.core_functions import to_export_geo
 from query.production_db import get_db
@@ -313,6 +314,15 @@ async def get_health_insurance(request: FilterRequest):
         category="economics", dataset="health_insurance", filters=request.filters
     )
     return make_response(data=rows, metadata=get_metadata("labor_force"))
+
+
+# Poverty and Uninsured Rates (DP03 profile), trend context for the Community
+# Health report. Filtered by `Location` (the ACS NAME), like the tidy routes.
+@router.post("/load/acs5-db/timeseries/economics/poverty-uninsured")
+async def get_poverty_uninsured(request: FilterRequest):
+    names = [str(n) for n in request.filters.get("Location", [])]
+    rows = get_poverty_uninsured_timeseries(names)
+    return make_response(data=rows, metadata=get_metadata("income"))
 
 
 # Median Household Income

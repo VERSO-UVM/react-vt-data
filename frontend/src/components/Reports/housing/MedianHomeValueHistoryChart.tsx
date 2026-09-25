@@ -92,7 +92,7 @@ export default function MedianHomeValueHistoryChart({
           <Line
             type="monotone"
             dataKey={comparisonName}
-            stroke="#c0c5cf"
+            stroke="#868e96"
             strokeWidth={2}
             dot={false}
           />
