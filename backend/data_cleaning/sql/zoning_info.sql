@@ -20,5 +20,5 @@ FROM (
                 true
             )
         ) / 4046.86 AS Acres
-    FROM lake.RAW.zoning
+    FROM zoning_raw
 ) AS with_acres;
