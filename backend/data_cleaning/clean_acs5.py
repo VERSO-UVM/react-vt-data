@@ -45,6 +45,8 @@ def _dp_select_sql(dp: str, raw_table_name: str) -> str:
             CASE
                 WHEN g.geo_type IN ('county', 'town') THEN LEFT(g.geoid, 5)
             END AS county_fips,
+            g.variable_code,
+            g.source_label,
             g.category,
             g.subcategory,
             g.variable,
@@ -57,6 +59,8 @@ def _dp_select_sql(dp: str, raw_table_name: str) -> str:
             SELECT
                 n.year,
                 n.NAME AS name,
+                n.Variable_Code AS variable_code,
+                n.Source_Label AS source_label,
                 n.Category AS category,
                 n.Subcategory AS subcategory,
                 n.Variable AS variable,
@@ -78,7 +82,9 @@ def _dp_select_sql(dp: str, raw_table_name: str) -> str:
                     END AS geo_type_norm
                 FROM lake.RAW.{raw_table_name} AS r
             ) AS n
-            LEFT JOIN lake.RAW.vt_town_lines AS t
+            LEFT JOIN (
+                SELECT DISTINCT GEOID, NAME FROM lake.RAW.vt_town_lines
+            ) AS t
                 ON n.NAME = t.NAME
         ) AS g
         """
@@ -118,6 +124,42 @@ def build_dp_combined(con: duckdb.DuckDBPyConnection):
     )
 
 
+def _assert_unique_observations(con: duckdb.DuckDBPyConnection) -> None:
+    """
+    Enforce the repaired, lossless observation key on the combined DP table:
+    (name, year, table, variable_code). Census guarantees variable_code is
+    unique within one geography/year/table's API response, so any duplicate
+    here means real row duplication (e.g. a join fan-out), not a legitimate
+    distinct observation. Fails loudly rather than silently dropping rows.
+
+    Args:
+        con: DuckDBPyConnection to the DuckLake
+    """
+    null_codes = con.execute(
+        """--sql
+        SELECT count(*) FROM lake.CLEANED.acs5_dp_combined_tidy
+        WHERE variable_code IS NULL
+        """
+    ).fetchone()[0]
+    if null_codes:
+        raise RuntimeError(
+            f"{null_codes} rows in acs5_dp_combined_tidy have a NULL variable_code"
+        )
+
+    dupes = con.execute(
+        """--sql
+        SELECT name, year, "table", variable_code, count(*) AS n
+        FROM lake.CLEANED.acs5_dp_combined_tidy
+        GROUP BY ALL HAVING count(*) > 1
+        """
+    ).fetchall()
+    if dupes:
+        raise RuntimeError(
+            f"{len(dupes)} duplicate (name, year, table, variable_code) "
+            f"groups in acs5_dp_combined_tidy: {dupes[:10]}"
+        )
+
+
 def build_county_geoids(con: duckdb.DuckDBPyConnection):
     """
     Create the county GEOID lookup table.
@@ -148,6 +190,7 @@ def build_county_geoids(con: duckdb.DuckDBPyConnection):
 def clean(con: duckdb.DuckDBPyConnection):
     add_dp_tables(con)
     build_dp_combined(con)
+    _assert_unique_observations(con)
     build_county_geoids(con)
 
 
