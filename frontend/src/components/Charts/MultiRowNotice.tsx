@@ -6,8 +6,9 @@ import { Badge, Text } from '@mantine/core';
 // Shown above a trend chart whose series had more than one row for some
 // year (see seriesLines.ts). Every row is drawn as its own line, so the
 // note just says why there are extra lines. In development it's louder: a
-// console error and a red badge, so a pipeline bug that floods a chart with
-// rows gets noticed right away.
+// console warning and a yellow badge, so a pipeline bug that floods a chart
+// with rows gets noticed right away. A warning, not an error: several rows
+// can be legitimate (e.g. owner costs with and without a mortgage).
 
 const IS_DEV = process.env.NODE_ENV !== 'production';
 
@@ -23,7 +24,7 @@ export default function MultiRowNotice({
 
   useEffect(() => {
     if (IS_DEV && split) {
-      console.error(
+      console.warn(
         `[trend chart] "${chartTitle}" got up to ${maxPerYear} rows for one ` +
           'year of a single series; each is drawn as its own line.',
       );
@@ -32,7 +33,7 @@ export default function MultiRowNotice({
 
   if (!split) return null;
   return IS_DEV ? (
-    <Badge color="red" variant="light" mb={4}>
+    <Badge color="yellow" variant="light" mb={4}>
       Dev: up to {maxPerYear} values per year in one series
     </Badge>
   ) : (
