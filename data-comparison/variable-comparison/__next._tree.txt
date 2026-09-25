@@ -7,4 +7,4 @@
 :HL["/_next/static/media/f8a66589f2577848-s.p.27yhq-axkaxx4.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/_next/static/chunks/3xoyqsn46j4ig.css","style"]
 :HL["/_next/static/chunks/02241r2g42_06.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"data-comparison","param":null,"prefetchHints":0,"slots":{"children":{"name":"variable-comparison","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"_-28Ab21H7PuHmkfObRVh"}
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"data-comparison","param":null,"prefetchHints":0,"slots":{"children":{"name":"variable-comparison","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}}}},"staleTime":300,"buildId":"vN0D9H1NHchakv99nAnMh"}
