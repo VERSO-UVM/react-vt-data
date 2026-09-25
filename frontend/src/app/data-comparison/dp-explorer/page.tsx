@@ -112,13 +112,11 @@ const makeLabel = (side: SideState) =>
 // ---------------------------------------------------------------------------
 
 const SideSelector = ({
-  title,
   accent,
   side,
   setSide,
   availableYears,
 }: {
-  title: string;
   accent: string;
   side: SideState;
   setSide: (s: SideState) => void;
@@ -129,17 +127,10 @@ const SideSelector = ({
 
   return (
     <Stack gap="xs">
-      <Text
-        size="xs"
-        fw={700}
-        tt="uppercase"
-        style={{
-          fontFamily: FONTS.mono,
-          letterSpacing: '0.08em',
-          color: accent,
-        }}
-      >
-        {title}
+      {/* The place picked so far, in its side's color, matching the value
+          cards below (instead of a "Location A/B" label). */}
+      <Text size="sm" fw={700} lineClamp={1} style={{ color: accent }}>
+        {makeName(side)}
       </Text>
       <Select
         label="County"
@@ -183,9 +174,6 @@ const SideSelector = ({
         disabled={availableYears.length === 0}
         styles={selectStyles}
       />
-      <Text size="xs" c="dimmed" mt={2} style={{ fontFamily: FONTS.mono }}>
-        {makeName(side)}
-      </Text>
     </Stack>
   );
 };
@@ -224,13 +212,11 @@ function pairValues(pointsA: DataRow[], pointsB: DataRow[]): ValueRow[] {
 }
 
 function ValueCard({
-  label,
   location,
   valueLabel,
   value,
   accent,
 }: {
-  label: string;
   location: string;
   /** Which of several values this is (see ValueRow). */
   valueLabel?: string | null;
@@ -244,19 +230,15 @@ function ValueCard({
       p="lg"
       style={{ ...panelStyle, height: '100%' }}
     >
+      {/* The place, in its side's color (spruce for the first, amber for
+          the second), rather than a "Location A/B" label. */}
       <Text
-        size="xs"
+        size="sm"
         fw={700}
-        tt="uppercase"
-        style={{
-          fontFamily: FONTS.mono,
-          letterSpacing: '0.08em',
-          color: accent,
-        }}
+        mb={valueLabel ? 4 : 12}
+        lineClamp={1}
+        style={{ color: accent }}
       >
-        {label}
-      </Text>
-      <Text size="sm" c="dimmed" mt={2} mb={valueLabel ? 4 : 12} lineClamp={1}>
         {location}
       </Text>
       {valueLabel && (
@@ -887,7 +869,6 @@ export default function DPExplorerPage() {
             <Grid align="start" gap="lg">
               <Grid.Col span={{ base: 12, sm: 5 }}>
                 <SideSelector
-                  title="Location A"
                   accent={COLORS.spruce}
                   side={sideA}
                   setSide={setSideA}
@@ -909,7 +890,6 @@ export default function DPExplorerPage() {
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 5 }}>
                 <SideSelector
-                  title="Location B"
                   accent={COLORS.amber}
                   side={sideB}
                   setSide={setSideB}
@@ -961,7 +941,6 @@ export default function DPExplorerPage() {
                     <Grid key={row.label ?? i} align="center" gap="md">
                       <Grid.Col span={{ base: 12, sm: 5 }}>
                         <ValueCard
-                          label="Location A"
                           location={makeLabel(sideA)}
                           valueLabel={row.label}
                           value={fmtVal(a)}
@@ -978,7 +957,6 @@ export default function DPExplorerPage() {
                       </Grid.Col>
                       <Grid.Col span={{ base: 12, sm: 5 }}>
                         <ValueCard
-                          label="Location B"
                           location={makeLabel(sideB)}
                           valueLabel={row.label}
                           value={fmtVal(b)}
