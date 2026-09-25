@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import {
   Button,
-  Divider,
-  Paper,
   Modal,
   MultiSelect,
   RangeSlider,
@@ -61,20 +59,68 @@ interface ProfileLocationSelectProps {
   suggestions?: { heading: string; places: Location[] };
 }
 
-function ProfileButton({ onClick }: { onClick: () => void }) {
+// The header's way into the profile: it names the places being compared, as
+// a hint that this is where they change. Two lines when there's a
+// comparison; "My Profile" until the saved profile has loaded (so the static
+// page and the first client render match).
+function ProfileButton({
+  onClick,
+  lines,
+}: {
+  onClick: () => void;
+  lines: string[];
+}) {
   return (
     <Button
       onClick={onClick}
       variant="outline"
       color="blue"
       radius="xl"
-      size="md"
-      leftSection={<UserCircleIcon size={26} weight="light" />}
-      style={{ flexShrink: 0, fontWeight: 500 }}
+      leftSection={<UserCircleIcon size={22} weight="light" />}
+      aria-label={`Edit profile: ${lines.join(' ')}`}
+      styles={{
+        root: {
+          flexShrink: 0,
+          height: 'auto',
+          minHeight: 42,
+          maxWidth: 220,
+          paddingBlock: 4,
+        },
+        label: {
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          lineHeight: 1.25,
+          overflow: 'hidden',
+        },
+      }}
     >
-      My Profile
+      {lines.map((line, i) => (
+        <Text
+          key={i}
+          span
+          size={i === 0 ? 'sm' : 'xs'}
+          fw={i === 0 ? 600 : 400}
+          truncate
+          maw="100%"
+        >
+          {line}
+        </Text>
+      ))}
     </Button>
   );
+}
+
+function profileButtonLines(
+  hydrated: boolean,
+  profileSet: boolean,
+  myLocation: Location,
+  comparison: Location,
+): string[] {
+  if (!hydrated) return ['My Profile'];
+  if (!profileSet) return ['Set your profile'];
+  const place = placeLabel(myLocation);
+  const other = placeLabel(comparison);
+  return other && other !== place ? [place, other] : [place];
 }
 
 // Every place a profile can pick, as one searchable list: the state (and the
@@ -340,14 +386,16 @@ export const ProfileModal: React.FC = () => {
 
   const opened = profileModalOpen;
 
-  // Profile is not automatically opened each reload
-  const [hydrated, setHydrated] = useState(
-    () => typeof window !== 'undefined' && useProfile.persist.hasHydrated(),
+  // Whether the saved profile has loaded. False on the server and during
+  // React's first client render, when the store still reports its defaults
+  // (profileSet false); reading persist.hasHydrated() directly said true
+  // there, which opened the dialog on every load and made the header text
+  // differ from the server's.
+  const hydrated = useSyncExternalStore(
+    (onChange) => useProfile.persist.onFinishHydration(onChange),
+    () => useProfile.persist.hasHydrated(),
+    () => false,
   );
-
-  useEffect(() => {
-    return useProfile.persist.onFinishHydration(() => setHydrated(true));
-  }, []);
 
   // Open automatically once hydrated if the user hasn't saved a profile yet.
   useEffect(() => {
@@ -382,7 +430,10 @@ export const ProfileModal: React.FC = () => {
 
   return (
     <>
-      <ProfileButton onClick={handleOpen} />
+      <ProfileButton
+        onClick={handleOpen}
+        lines={profileButtonLines(hydrated, profileSet, myLocation, comparison)}
+      />
       <Modal
         opened={opened}
         onClose={closeProfileModal}
