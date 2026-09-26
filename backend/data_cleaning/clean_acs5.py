@@ -1,5 +1,7 @@
 import duckdb
 
+from data_cleaning.geo_lookup import inline_sql_unavailable
+
 DP_TABLES = {
     "DP02": ("acs5_social", "dp_social"),
     "DP03": ("acs5_economic", "dp_economic"),
@@ -22,6 +24,20 @@ COUNTY_GEOIDS = {
     "Washington County, Vermont": 50023,
     "Windham County, Vermont": 50025,
     "Windsor County, Vermont": 50027,
+}
+
+# All census "unavailable" data values
+# Source: https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html
+DP_UNAVAILABLE = {
+    "-666666666": "The estimate could not be computed because there were an insufficient number of sample observations.",
+    "-666666666.0": "The estimate could not be computed because there were an insufficient number of sample observations.",
+    "-666666666.00": "The estimate could not be computed because there were an insufficient number of sample observations.",
+    "-888888888": "The estimate is not applicable or not available.",
+    "-888888888.0": "The estimate is not applicable or not available.",
+    "-888888888.00": "The estimate is not applicable or not available.",
+    "-999999999": "The estimate cannot be displayed because there were an insufficient number of sample cases in the selected geographic area.",
+    "-999999999.0": "The estimate cannot be displayed because there were an insufficient number of sample cases in the selected geographic area.",
+    "-999999999.00": "The estimate cannot be displayed because there were an insufficient number of sample cases in the selected geographic area.",
 }
 
 
@@ -65,7 +81,12 @@ def _dp_select_sql(dp: str, raw_table_name: str) -> str:
                 n.Subcategory AS subcategory,
                 n.Variable AS variable,
                 n.Measure AS measure,
-                n.Value AS value,
+                CAST(
+                    CASE 
+                        WHEN n.Value IN ({inline_sql_unavailable(DP_UNAVAILABLE)}) THEN NULL 
+                        ELSE n.Value 
+                    END AS FLOAT
+                ) AS "value", 
                 '{dp}' AS "table",
                 n.geo_type_norm AS geo_type,
                 CASE
