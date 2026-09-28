@@ -61,9 +61,9 @@ For Burlington's DP04 selected monthly owner costs, the selector
 both **1,731 and 699 in 2011**, and **1,764 and 737 in 2012**. The local wide source
 keeps them distinguishable as `DP04_0100E` and `DP04_0107E` respectively.
 
-**Cause boundary.** [The Census label utility](../backend/app_utils/census.py)
+**Cause boundary.** [The Census label utility](../../backend/app_utils/census.py)
 splits labels into a fixed hierarchy and drops `Code`, `Name`, and `Label` after
-melting. [The combined-profile cleaner](../backend/data_cleaning/clean_acs5.py)
+melting. [The combined-profile cleaner](../../backend/data_cleaning/clean_acs5.py)
 retains only the resulting labels, geography name, year, table, and value. Loss
 of source-code identity is confirmed; the exact contribution of each year's
 source-label hierarchy still needs a code/metadata crosswalk.
@@ -98,8 +98,8 @@ GROUP BY year ORDER BY year;
 
 **Next action and acceptance test.** Build a crosswalk from year-specific source
 codes and universes to stable indicator identities, retaining the original code
-and labels. [Collection](../backend/data_collection/acs5.py) already obtains labels
-per year; [the label utility](../backend/app_utils/census.py) is the place where
+and labels. [Collection](../../backend/data_collection/acs5.py) already obtains labels
+per year; [the label utility](../../backend/app_utils/census.py) is the place where
 identity is currently discarded. Normalizing measure spellings alone will not
 repair A1 or A5. Test a median-rent series across the three layouts and publish
 each variant's actual coverage; do not silently merge rows solely because their
@@ -109,7 +109,7 @@ labels look similar.
 
 **Confirmed.** `acs5Housing_incomeBurden_timeseries` contains 2013–2016 and
 2019–2024: 271 rows per year through 2022, then 272 in 2023 and 2024. It contains
-no 2017 or 2018 rows. [The cleaner](../backend/data_cleaning/clean_housing_cost_burden.py)
+no 2017 or 2018 rows. [The cleaner](../../backend/data_cleaning/clean_housing_cost_burden.py)
 requires `Measure = 'Percent'`; the corresponding source rows in those two years
 use `Percent Estimate`.
 
@@ -163,7 +163,7 @@ WHERE year = 2010 GROUP BY year, geo_type;
 ```
 
 **Next action and acceptance test.** Trace the collection inputs and archived
-geography requests in [the profile collector](../backend/data_collection/acs5.py),
+geography requests in [the profile collector](../../backend/data_collection/acs5.py),
 then verify source availability before backfilling. Publish observed coverage
 by geography and year, including genuine missing combinations. A regression
 test should distinguish an unavailable town-year from a valid zero value and
@@ -187,8 +187,8 @@ merely because they exceed 100. Conversely, some 2011 bracket percentages also
 have `Variable='Total'`, so that label alone cannot identify a universe count.
 
 **Next action and acceptance test.** Carry units and statistical role from
-year-specific source metadata through [the label utility](../backend/app_utils/census.py)
-and [combined-profile cleaning](../backend/data_cleaning/clean_acs5.py). Preserve
+year-specific source metadata through [the label utility](../../backend/app_utils/census.py)
+and [combined-profile cleaning](../../backend/data_cleaning/clean_acs5.py). Preserve
 the numeric count and label it as a universe/count where validated. Test these
 three cells alongside a true 2011 bracket percentage. Apply percentage-range
 checks only to indicators established to be percentages, not all `PE` codes or
@@ -215,7 +215,7 @@ WHERE pct_housing_burden < 0 GROUP BY pct_housing_burden;
 
 There is also a confirmed aggregation defect: **66 owner-burden rows equal
 −1,333,333,332**, the sum of two `-666666666` sentinels. Averill town in 2013 is
-one example. [The burden cleaner](../backend/data_cleaning/clean_housing_cost_burden.py)
+one example. [The burden cleaner](../../backend/data_cleaning/clean_housing_cost_burden.py)
 sums first, then replaces only the original single sentinel. The current MCP
 normalizes such values to null when serving them, but other consumers read the
 stored values directly.
@@ -223,7 +223,7 @@ stored values directly.
 **Next action and acceptance test.** Normalize documented Census sentinel and
 annotation forms before arithmetic, preserve missingness reasons/raw values,
 and provide a numeric cleaned measure. Review
-[profile cleaning](../backend/data_cleaning/clean_acs5.py) and all affected
+[profile cleaning](../../backend/data_cleaning/clean_acs5.py) and all affected
 derived cleaners. Tests should cover string and numeric forms, two missing
 components, one missing component, and a real zero. Do not reinterpret unknown
 text as a real zero or treat an incomplete sum as a complete observation.
@@ -242,7 +242,7 @@ LIMIT 5;
 ```
 
 **Next action and acceptance test.** After valid-input aggregation in
-[the cleaner](../backend/data_cleaning/clean_housing_cost_burden.py), choose and
+[the cleaner](../../backend/data_cleaning/clean_housing_cost_burden.py), choose and
 document decimal precision consistent with the source's one-decimal
 percentages. Verify representative sums and missing values. This presentation
 precision issue is separate from the invalid sentinel sums in A6.
@@ -257,18 +257,18 @@ actual pipeline's source.
 
 | Served dataset/table                                                          | Actual collection and derivation                                                                                                                                                                                                                                     |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `acs5_ts_median_home_value` / `acs5Housing_medianHomeValue_timeseries`        | `B25077_001E` in [housing collection](../backend/data_collection/housing.py), `lake.RAW.housing`, then [derived-series cleaning](../backend/data_cleaning/clean_derived_time_series.py).                                                                             |
-| `acs5_ts_household_income` / `acs5Economics_medianHouseholdIncome_timeseries` | `B19013_001E` in [economic collection](../backend/data_collection/economic.py), `lake.RAW.economic`, then the same derived-series cleaner.                                                                                                                           |
-| `acs5_ts_income_burden` / `acs5Housing_incomeBurden_timeseries`               | DP04 profile labels selected by [the burden cleaner](../backend/data_cleaning/clean_housing_cost_burden.py); the two bracket codes are `DP04_0114PE` and `DP04_0115PE` for the verified 2017–2018 examples. Code applicability across other years needs a crosswalk. |
+| `acs5_ts_median_home_value` / `acs5Housing_medianHomeValue_timeseries`        | `B25077_001E` in [housing collection](../../backend/data_collection/housing.py), `lake.RAW.housing`, then [derived-series cleaning](../../backend/data_cleaning/clean_derived_time_series.py).                                                                             |
+| `acs5_ts_household_income` / `acs5Economics_medianHouseholdIncome_timeseries` | `B19013_001E` in [economic collection](../../backend/data_collection/economic.py), `lake.RAW.economic`, then the same derived-series cleaner.                                                                                                                           |
+| `acs5_ts_income_burden` / `acs5Housing_incomeBurden_timeseries`               | DP04 profile labels selected by [the burden cleaner](../../backend/data_cleaning/clean_housing_cost_burden.py); the two bracket codes are `DP04_0114PE` and `DP04_0115PE` for the verified 2017–2018 examples. Code applicability across other years needs a crosswalk. |
 
 The served home-value table covers **2009–2024, 4,338 rows**. Its values match the
 `Median Home Value` rows of `acs5_housing_tidy` after the existing sentinel
-replacement. The legacy [build configuration](../backend/build/acs5.py) instead
+replacement. The legacy [build configuration](../../backend/build/acs5.py) instead
 reads `Data/Census/med_home_value_by_year.csv` into `median_home_value`; that local
 CSV covers **2009–2023, 3,826 rows**. Burlington's 2023 value is 400,200 in both
 paths; the served 2024 value is 444,800. The current
-[REST query configuration](../backend/query/acs5.py) and
-[MCP catalog](../backend/data_tools/catalog.py) select the newer named table.
+[REST query configuration](../../backend/query/acs5.py) and
+[MCP catalog](../../backend/data_tools/catalog.py) select the newer named table.
 
 **Next action and acceptance test.** Document or retire the legacy build path
 after checking its remaining callers. Maintain lineage from collection code,
@@ -291,9 +291,9 @@ thresholds, source tables, and geography coverage before adding series. In
 particular, owner burden with a mortgage is not renter burden, and a 30%+
 threshold is not a 35%+ threshold. Add known-place/year fixtures spanning source
 layout changes, missingness, and separate mortgage statuses. See
-[the legacy configuration](../backend/build/acs5.py),
-[current housing collection](../backend/data_collection/housing.py), and
-[the current catalog](../backend/data_tools/catalog.py).
+[the legacy configuration](../../backend/build/acs5.py),
+[current housing collection](../../backend/data_collection/housing.py), and
+[the current catalog](../../backend/data_tools/catalog.py).
 
 ## Zoning inventory
 
@@ -303,7 +303,7 @@ files, `backend/Data/zoning/vt_zoning.parquet` and
 `VersoZoning_info` by `OBJECT_ID` yields no GEOID differences and no municipality
 differences after trimming. This places the observed defects upstream of MCP;
 it does not establish the state of the latest remote inventory. The current
-[collector](../backend/data_collection/zoning.py) fetches the FlatGeobuf from the
+[collector](../../backend/data_collection/zoning.py) fetches the FlatGeobuf from the
 Vermont Zoning Atlas repository.
 
 ### B1 — P1: four city jurisdictions carry their town's GEOID
@@ -332,7 +332,7 @@ WHERE FIPS_ID IN ('5002303175','5001948850','5002161225','5001161675');
 
 **Next action and acceptance test.** Reconcile each affected source jurisdiction
 against authoritative geography, preserving the original ID and correction
-provenance. [Zoning cleaning](../backend/data_cleaning/clean_zoning.py) currently
+provenance. [Zoning cleaning](../../backend/data_cleaning/clean_zoning.py) currently
 passes `GEO_ID` through. Test these four explicit city/town pairs for separation.
 Do not impose global one-name-per-GEOID uniqueness: village zoning jurisdictions
 may intentionally use a parent town's Census subdivision ID, which needs an
@@ -361,8 +361,8 @@ records and geography, and represent multi-jurisdiction coverage explicitly.
 Keep unresolved records visible with a missing-ID reason; do not invent IDs or
 split composite names automatically. Add fixtures for South Burlington, an
 ambiguous composite, a village, and a blank name. Coordinate with
-[zoning collection](../backend/data_collection/zoning.py) and
-[cleaning](../backend/data_cleaning/clean_zoning.py).
+[zoning collection](../../backend/data_collection/zoning.py) and
+[cleaning](../../backend/data_cleaning/clean_zoning.py).
 
 ### B3 — P2: wide zoning municipality names retain trailing whitespace
 
@@ -376,8 +376,8 @@ SELECT count(*),
 FROM VersoZoning_wide;
 ```
 
-**Confirmed cause.** Both [current cleaning](../backend/data_cleaning/clean_zoning.py)
-and [legacy building](../backend/build/zoning.py) trim the info dataframe, while
+**Confirmed cause.** Both [current cleaning](../../backend/data_cleaning/clean_zoning.py)
+and [legacy building](../../backend/build/zoning.py) trim the info dataframe, while
 the wide view selects raw columns without that normalization.
 
 **Next action and acceptance test.** Normalize documented identifier/text fields
@@ -389,7 +389,7 @@ does not clean data consumed by SQL clients or notebooks.
 ### B4 — P2: classification normalization is applied to only one zoning table
 
 **Confirmed; the crosswalk is intentional code, not unexplained data drift.**
-[The info SQL](../backend/data_cleaning/sql/zoning_info.sql) maps source types;
+[The info SQL](../../backend/data_cleaning/sql/zoning_info.sql) maps source types;
 the wide view preserves them:
 
 | Wide/source type            | Info type        | Rows |
@@ -448,7 +448,7 @@ SELECT count(*), sum(Acres) FROM VersoZoning_info
 WHERE lower(trim(District_Mapped)) = 'no' AND Acres > 0;
 ```
 
-[The info SQL](../backend/data_cleaning/sql/zoning_info.sql) computes acreage from
+[The info SQL](../../backend/data_cleaning/sql/zoning_info.sql) computes acreage from
 geometry independently of `District_Mapped`. Thus a nonzero area is not proof
 that either field is wrong; the geometry may have a different interpretation
 than the inventory's mapping-status flag.
@@ -473,7 +473,7 @@ WHERE OBJECT_ID = 1415;
 **Next action and acceptance test.** Retain useful source notes with an explicit
 inventory/analyst-note label, provenance, and review status. Make long notes an
 intentional report choice rather than silently treating them as findings.
-[The cleaner](../backend/data_cleaning/clean_zoning.py) currently passes notes
+[The cleaner](../../backend/data_cleaning/clean_zoning.py) currently passes notes
 through. Test that quotations remain distinguishable from source law and that
 projection can omit notes without losing district identity.
 
@@ -484,8 +484,8 @@ for 7 of 19 Burlington districts and 9 of 14 Montpelier districts; it is null
 for **all 19 Rutland City districts**. Montpelier values include 0.5, 5, 7.26,
 8.71, 10.89, 14.52, and 29.04. Some are numerically consistent with dwelling units
 per acre derived from lot areas, such as `43560 / 1500 = 29.04`, but neither
-[the current cleaner](../backend/data_cleaning/clean_zoning.py) nor
-[the legacy builder](../backend/build/zoning.py) calculates this field: both pass
+[the current cleaner](../../backend/data_cleaning/clean_zoning.py) nor
+[the legacy builder](../../backend/build/zoning.py) calculates this field: both pass
 it through from the source.
 
 ```sql

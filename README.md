@@ -2,6 +2,8 @@
 
 A **React-based Website** for exploring, visualizing, and interpreting Vermont data. Users can upload one or more datasets and view tables, data summary reports, and custom plots through an interactive interface. The backend is based on https://github.com/iansargent/Data-Exploration-Tool-in-Python.
 
+New to the codebase? Read the [Codebase Primer](docs/Codebase_Primer.md); all other documentation is indexed in [docs/](docs/README.md).
+
 ---
 
 ## Prerequisites
@@ -138,7 +140,7 @@ It listens at `http://127.0.0.1:6768/api/mcp` and reads the existing warehouse.
 `just mcp-dev-auth` enables the documented development bearer token;
 `just test-mcp` runs fixture-based tests without production data.
 
-See [the MCP guide](docs/mcp.md) for Claude Code setup, all tools, multiple bearer
+See [the MCP guide](docs/guides/mcp.md) for Claude Code setup, all tools, multiple bearer
 tokens, internal-agent reuse, configuration, deployment, and acceptance checks.
 
 ---
@@ -162,7 +164,7 @@ The justfile loads this file automatically (`set dotenv-filename := ".env"`), so
 | `MCP_BEARER_TOKENS`                                                                                                    | bearer mode                     | Comma-separated tokens, one per consumer. Generate each with `just mcp-token`.                                                      |
 | `MCP_ALLOWED_HOSTS`, `MCP_ALLOWED_ORIGINS`                                                                             | deployed MCP                    | Explicit hostname and origin allowlists for the deployed endpoint.                                                                  |
 | `MCP_HOST`, `MCP_PORT`                                                                                                 | optional standalone MCP         | Default `127.0.0.1:6768`; local no-auth/development modes require loopback.                                                         |
-| `MCP_MAX_ROWS`, `MCP_MAX_BYTES`, `MCP_QUERY_TIMEOUT`, `MCP_MAX_CONCURRENCY`, `MCP_RATE_LIMIT`, `MCP_MAX_REQUEST_BYTES` | optional MCP limits             | Response, query, concurrency, and HTTP limits; see [MCP configuration](docs/mcp.md#configuration).                                  |
+| `MCP_MAX_ROWS`, `MCP_MAX_BYTES`, `MCP_QUERY_TIMEOUT`, `MCP_MAX_CONCURRENCY`, `MCP_RATE_LIMIT`, `MCP_MAX_REQUEST_BYTES` | optional MCP limits             | Response, query, concurrency, and HTTP limits; see [MCP configuration](docs/guides/mcp.md#configuration).                                  |
 
 Notes:
 
@@ -214,10 +216,10 @@ read-only warehouse volume.
 then run `just run-etl 2009 2024` before running `just dev` to update the database (This should take ~20-30 minutes). 
 
 
-Use the [MCP deployment runbook](docs/mcp.md#deployment-in-this-repository) for the
+Use the [MCP deployment runbook](docs/guides/mcp.md#deployment-in-this-repository) for the
 environment configuration, image build and rollout procedure, HTTPS proxy
 requirements, smoke checks, and rollback. The
-[containerization checklist](design/current/containerization.md) covers the
+[containerization checklist](docs/architecture/containers.md) covers the
 existing website stack as well.
 
 ## Credits
