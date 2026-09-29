@@ -1,5 +1,7 @@
 // TableView.tsx
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import {
   Box,
   Button,
@@ -11,6 +13,8 @@ import {
   SegmentedControl,
 } from '@mantine/core';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { COLORS, FONTS } from '@/app/theme';
+import { FileXlsIcon } from '@phosphor-icons/react';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
@@ -50,10 +54,42 @@ export const TableView = <TData extends DataRow>({
   const hasCompare =
     cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
 
+  async function handleExport() {
+    const data = rows;
+    // Create a new workbook and worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users Data');
+
+    // Generate a buffer allocation
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+    });
+
+    // 4. Create a Blob with the correct Excel MIME type
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    });
+
+    // Trigger the download using file-saver
+    saveAs(blob, `${chart.title}_data.xlsx`);
+  }
+
   // Render the comparison toggle header control
   const ComparisonToggleHeader = () =>
     hasCompare ? (
-      <Group mb="xs" gap="sm" align="center">
+      <Group mb="xs" gap="md" align="center">
+        <Button
+          size="xs"
+          color={COLORS.spruce}
+          leftSection={<FileXlsIcon size={20} />}
+          onClick={handleExport}
+        >
+          Export
+        </Button>
         <Button
           size="xs"
           variant={showCompare ? 'filled' : 'light'}
