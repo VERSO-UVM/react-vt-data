@@ -6,22 +6,6 @@ import { CheckIcon, XIcon } from '@phosphor-icons/react';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { COLORS } from '@/app/theme';
 
-// Toggle include/exclude for auto-populated working report charts
-interface ToggleProps {
-  defId: string;
-  isIncluded: boolean;
-  onToggle: () => void;
-}
-export function ToggleChart({ isIncluded, onToggle }: ToggleProps) {
-  const button_color = isIncluded ? COLORS.red : COLORS.spruce;
-
-  return (
-    <Button variant="filled" color={button_color} onClick={onToggle}>
-      {isIncluded ? 'Exclude from report' : 'Include in report'}
-    </Button>
-  );
-}
-
 // Save an externally-built chart (comparison pages, etc.) to the working report.
 // If defId is provided, marks it included in the auto-populated set instead of
 // storing a copy. Initial inclusion is determined by profile interests — charts

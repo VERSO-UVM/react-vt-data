@@ -4,23 +4,30 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
   ActionIcon,
+  Alert,
+  Anchor,
   Badge,
   Box,
   Button,
   Card,
+  Center,
+  Checkbox,
   Collapse,
   Container,
-  Divider,
+  Drawer,
   Grid,
   Group,
+  List,
+  Menu,
   Modal,
+  ScrollArea,
   SegmentedControl,
-  SimpleGrid,
   Stack,
   Text,
   Title,
+  UnstyledButton,
 } from '@mantine/core';
-import { ChartStack, ChartStackItem } from '@/components/Charts';
+import { ChartStackItem } from '@/components/Charts';
 import { useProfile } from '@/components/profile/profileStore';
 import {
   useApplyFilters,
@@ -30,11 +37,14 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import {
   PencilSimpleIcon,
+  EyeIcon,
   DownloadSimpleIcon,
   DotsSixVerticalIcon,
   CaretDownIcon,
   CaretRightIcon,
-  XIcon,
+  DotsThreeIcon,
+  ListBulletsIcon,
+  TrashIcon,
 } from '@phosphor-icons/react';
 import {
   DndContext,
@@ -69,26 +79,23 @@ import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { useItems } from '@/components/ItemsProvider';
 import { PdfModeContext } from '@/contexts/PdfModeContext';
 
+// Sticky offsets: --header-offset tracks the site header (0 while it hides
+// on scroll, see globals.css); the report toolbar is ~60px below it.
+const TOOLBAR_H = 60;
+const BELOW_TOOLBAR = `calc(var(--header-offset) + ${TOOLBAR_H + 16}px)`;
+
 function HeroSection({
   myLocation,
   comparison,
-  interests,
   yearMin,
   yearMax,
   openProfileModal,
-  isGenerating,
-  handleDownloadPdf,
-  handleClearReport,
 }: {
-  myLocation: any;
-  comparison: any;
-  interests: string[];
+  myLocation: { name?: string };
+  comparison: { name?: string };
   yearMin: number;
   yearMax: number;
   openProfileModal: () => void;
-  isGenerating: boolean;
-  handleDownloadPdf: () => void;
-  handleClearReport: () => void;
 }) {
   return (
     <Box
@@ -98,249 +105,301 @@ function HeroSection({
         width: '100vw',
         left: '50%',
         marginLeft: '-50vw',
+        marginTop: 'calc(-1 * var(--mantine-spacing-xl))',
         background: `linear-gradient(160deg, ${COLORS.spruceDeep} 0%, ${COLORS.spruce} 100%)`,
-        paddingTop: 70,
-        paddingBottom: 40,
+        paddingTop: 36,
+        paddingBottom: 28,
       }}
     >
       <Container size="xl">
-        <Grid gap="md" align="center">
-          <Grid.Col span={{ base: 12, md: 8 }}>
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Group>
-                <Text
-                  style={{
-                    fontFamily: FONTS.mono,
-                    fontSize: 12,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: COLORS.amberSoft,
-                  }}
-                >
-                  Working Report
-                </Text>
-                <Badge
-                  style={{
-                    color: COLORS.birchDim,
-                    background: COLORS.amber,
-                    fontFamily: FONTS.mono,
-                  }}
-                >
-                  Beta
-                </Badge>
-              </Group>
-            </motion.div>
-            <Title
-              order={1}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Group gap="xs" mb={10}>
+            <Text
               style={{
-                fontFamily: FONTS.display,
-                fontWeight: 600,
-                fontSize: 'clamp(2.3rem, 5.4vw, 3.7rem)',
-                lineHeight: 1.04,
-                color: COLORS.birch,
-                marginTop: 14,
-                maxWidth: 640,
+                fontFamily: FONTS.mono,
+                fontSize: 12,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: COLORS.amberSoft,
               }}
             >
-              {myLocation?.name || 'No Location Selected'}
-              {comparison?.name && (
-                <Text
-                  span
-                  style={{
-                    fontFamily: FONTS.display,
-                    fontWeight: 400,
-                    fontSize: '0.4em',
-                    color: 'rgba(246, 245, 239, 0.58)',
-                    display: 'block',
-                    marginTop: 8,
-                  }}
-                >
-                  compared to {comparison.name}
-                </Text>
-              )}
-            </Title>
-            <ReportActions
-              isGenerating={isGenerating}
-              onDownload={handleDownloadPdf}
-              onClear={handleClearReport}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 4 }}>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.7,
-                delay: 0.4,
-                ease: [0.22, 1, 0.36, 1],
+              Working Report
+            </Text>
+            <Badge
+              size="sm"
+              style={{
+                color: COLORS.birchDim,
+                background: COLORS.amber,
+                fontFamily: FONTS.mono,
               }}
             >
-              <Box
-                style={{
-                  background: 'rgba(246,245,239,0.07)',
-                  border: '1px solid rgba(246,245,239,0.18)',
-                  borderRadius: 14,
-                  padding: '16px 18px',
-                  backdropFilter: 'blur(6px)',
-                }}
-              >
-                <Group justify="space-between" align="center" mb={10}>
-                  <Text
-                    style={{
-                      fontFamily: FONTS.mono,
-                      color: COLORS.amberSoft,
-                      fontSize: 12,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Report Summary
-                  </Text>
-                  <Button
-                    size="compact-xs"
-                    variant="subtle"
-                    rightSection={<PencilSimpleIcon size={16} weight="bold" />}
-                    onClick={openProfileModal}
-                    styles={{ root: { color: COLORS.amberSoft } }}
-                  >
-                    Edit
-                  </Button>
-                </Group>
-                <Stack gap={10}>
-                  <ProfileField
-                    label="Location"
-                    value={myLocation?.name}
-                    small
-                  />
-                  <ProfileField
-                    label="Comparing to"
-                    value={comparison?.name}
-                    small
-                  />
-                  <ProfileField
-                    label="Years"
-                    value={`${yearMin}–${yearMax}`}
-                    small
-                  />
-                  <Box>
-                    <FieldLabel small>Interests</FieldLabel>
-                    {interests.length > 0 ? (
-                      <Text
-                        size="sm"
-                        style={{ color: COLORS.birch, fontWeight: 500 }}
-                      >
-                        {interests.join(' · ')}
-                      </Text>
-                    ) : (
-                      <Text
-                        size="sm"
-                        style={{ color: 'rgba(246,245,239,0.55)' }}
-                      >
-                        None selected
-                      </Text>
-                    )}
-                  </Box>
-                </Stack>
-              </Box>
-            </motion.div>
-          </Grid.Col>
-        </Grid>
+              Beta
+            </Badge>
+          </Group>
+          <Title
+            order={1}
+            style={{
+              fontFamily: FONTS.display,
+              fontWeight: 600,
+              fontSize: 'clamp(1.9rem, 4vw, 2.6rem)',
+              lineHeight: 1.1,
+              color: COLORS.birch,
+            }}
+          >
+            {myLocation?.name || 'No location selected'}
+          </Title>
+          <Group gap="xs" mt={8} wrap="wrap">
+            <Text style={{ color: 'rgba(246,245,239,0.72)' }}>
+              {comparison?.name ? `Compared to ${comparison.name} · ` : ''}
+              {yearMin}–{yearMax}
+            </Text>
+            <Button
+              size="compact-sm"
+              variant="subtle"
+              leftSection={<PencilSimpleIcon size={14} weight="bold" />}
+              onClick={openProfileModal}
+              styles={{ root: { color: COLORS.amberSoft } }}
+            >
+              Edit profile
+            </Button>
+          </Group>
+        </motion.div>
       </Container>
     </Box>
   );
 }
 
-function FieldLabel({
-  children,
-  small,
+function ReportToolbar({
+  includedCount,
+  sectionCount,
+  previewMode,
+  setPreviewMode,
+  isGenerating,
+  onDownload,
+  onEditProfile,
+  onClear,
+  onOpenContents,
 }: {
-  children: React.ReactNode;
-  small?: boolean;
+  includedCount: number;
+  sectionCount: number;
+  previewMode: boolean;
+  setPreviewMode: (v: boolean) => void;
+  isGenerating: boolean;
+  onDownload: () => void;
+  onEditProfile: () => void;
+  onClear: () => void;
+  onOpenContents: () => void;
 }) {
   return (
-    <Text
+    <Box
       style={{
-        fontFamily: FONTS.mono,
-        fontSize: small ? 10 : 11,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        color: 'rgba(246,245,239,0.5)',
-        marginBottom: 4,
+        position: 'sticky',
+        top: 'var(--header-offset)',
+        transition: 'top 250ms ease',
+        zIndex: 100,
+        minHeight: TOOLBAR_H,
+        // Full-bleed background and bottom rule without leaving the container
+        background: 'var(--background)',
+        boxShadow: `0 0 0 100vmax var(--background), 0 1px 0 100vmax ${COLORS.line}`,
+        clipPath: 'inset(0 -100vmax -1px)',
+        display: 'flex',
+        alignItems: 'center',
       }}
     >
-      {children}
-    </Text>
-  );
-}
-
-function ProfileField({
-  label,
-  value,
-  small,
-}: {
-  label: string;
-  value?: string;
-  small?: boolean;
-}) {
-  return (
-    <Box>
-      <FieldLabel small={small}>{label}</FieldLabel>
-      <Text
-        size={small ? 'sm' : 'md'}
-        style={{ color: COLORS.birch, fontWeight: 500 }}
-      >
-        {value || '—'}
-      </Text>
+      <Group justify="space-between" w="100%" py="xs" gap="sm">
+        <Group gap="sm">
+          <Button
+            hiddenFrom="md"
+            size="xs"
+            variant="default"
+            leftSection={<ListBulletsIcon size={14} />}
+            onClick={onOpenContents}
+          >
+            Contents
+          </Button>
+          <Text size="sm" c="dimmed">
+            <Text span fw={700} c={COLORS.ink}>
+              {includedCount}
+            </Text>{' '}
+            {includedCount === 1 ? 'chart' : 'charts'}
+            {sectionCount > 0 && (
+              <>
+                {' in '}
+                <Text span fw={700} c={COLORS.ink}>
+                  {sectionCount}
+                </Text>{' '}
+                {sectionCount === 1 ? 'section' : 'sections'}
+              </>
+            )}
+          </Text>
+        </Group>
+        <Group gap="sm">
+          <SegmentedControl
+            size="xs"
+            value={previewMode ? 'preview' : 'edit'}
+            onChange={(v) => setPreviewMode(v === 'preview')}
+            data={[
+              {
+                label: (
+                  <Center style={{ gap: 10 }}>
+                    <PencilSimpleIcon size={16} />
+                    <span>Edit</span>
+                  </Center>
+                ),
+                value: 'edit',
+              },
+              {
+                label: (
+                  <Center style={{ gap: 10 }}>
+                    <EyeIcon size={16} />
+                    <span>Preview</span>
+                  </Center>
+                ),
+                value: 'preview',
+              },
+            ]}
+          />
+          <Menu position="bottom-end" withinPortal>
+            <Menu.Target>
+              <ActionIcon variant="default" size="lg" aria-label="More">
+                <DotsThreeIcon size={18} weight="bold" />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<PencilSimpleIcon size={14} />}
+                onClick={onEditProfile}
+              >
+                Edit profile
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color="red"
+                leftSection={<TrashIcon size={14} />}
+                onClick={onClear}
+              >
+                Clear report…
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          <Button
+            size="sm"
+            loading={isGenerating}
+            color={COLORS.spruce}
+            disabled={includedCount === 0}
+            onClick={onDownload}
+            leftSection={<DownloadSimpleIcon size={16} weight="bold" />}
+          >
+            Download PDF
+          </Button>
+        </Group>
+      </Group>
     </Box>
   );
 }
 
-type ReportActionsProps = {
-  isGenerating: boolean;
-  onDownload: () => void;
-  onClear: () => void;
+type OutlineGroup = {
+  category: string;
+  rows: { defId: string; title: string; included: boolean }[];
 };
 
-function ReportActions({
-  isGenerating,
-  onDownload,
-  onClear,
-}: ReportActionsProps) {
-  return (
-    <Group mt={20}>
-      <Button
-        size="sm"
-        loading={isGenerating}
-        onClick={onDownload}
-        leftSection={<DownloadSimpleIcon size={16} weight="bold" />}
-        style={{
-          backgroundColor: COLORS.birchDim,
-          color: COLORS.spruceDeep,
-          border: 'none',
-          fontFamily: FONTS.body,
-        }}
-      >
-        Download PDF
-      </Button>
+// Table of contents: every available chart, grouped like the report. The
+// checkbox is the single place to add/remove charts; clicking an included
+// title jumps to it.
+function ReportOutline({
+  groups,
+  onToggle,
+  onJump,
+}: {
+  groups: OutlineGroup[];
+  onToggle: (defId: string) => void;
+  onJump: (defId: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleCollapsed = (category: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(category)) next.add(category);
+      return next;
+    });
 
-      <Button
-        size="sm"
-        variant="light"
-        color="red"
-        onClick={onClear}
-        leftSection={<XIcon size={16} weight="bold" />}
-        style={{
-          border: 'none',
-          fontFamily: FONTS.body,
-        }}
-      >
-        Clear report
-      </Button>
-    </Group>
+  return (
+    <Stack gap="md">
+      <Box>
+        <Text fw={700}>Contents</Text>
+        <Text size="xs" c="dimmed">
+          Check a chart to add it to your report.
+        </Text>
+      </Box>
+      {groups.map(({ category, rows }) => {
+        const isOpen = !collapsed.has(category);
+        return (
+          <Box key={category}>
+            <UnstyledButton
+              w="100%"
+              mb={isOpen ? 6 : 0}
+              onClick={() => toggleCollapsed(category)}
+              aria-expanded={isOpen}
+            >
+              <Group justify="space-between" wrap="nowrap">
+                <Group gap={4} wrap="nowrap">
+                  {isOpen ? (
+                    <CaretDownIcon size={12} weight="bold" color="gray" />
+                  ) : (
+                    <CaretRightIcon size={12} weight="bold" color="gray" />
+                  )}
+                  <Text
+                    size="xs"
+                    fw={700}
+                    tt="uppercase"
+                    c="dimmed"
+                    style={{ letterSpacing: '0.06em' }}
+                  >
+                    {category}
+                  </Text>
+                </Group>
+                <Text size="xs" c="dimmed">
+                  {rows.filter((r) => r.included).length}/{rows.length}
+                </Text>
+              </Group>
+            </UnstyledButton>
+            <Collapse expanded={isOpen}>
+              <Stack gap={6}>
+                {rows.map((r) => (
+                  <Group key={r.defId} gap={8} wrap="nowrap" align="flex-start">
+                    <Checkbox
+                      size="xs"
+                      mt={2}
+                      checked={r.included}
+                      onChange={() => onToggle(r.defId)}
+                      aria-label={`${r.included ? 'Remove' : 'Add'} ${r.title}`}
+                    />
+                    <Anchor
+                      component="button"
+                      type="button"
+                      size="sm"
+                      lh={1.3}
+                      ta="left"
+                      underline="hover"
+                      c={r.included ? COLORS.ink : 'dimmed'}
+                      onClick={() =>
+                        r.included ? onJump(r.defId) : onToggle(r.defId)
+                      }
+                    >
+                      {r.title}
+                    </Anchor>
+                  </Group>
+                ))}
+              </Stack>
+            </Collapse>
+          </Box>
+        );
+      })}
+    </Stack>
   );
 }
 
@@ -398,7 +457,11 @@ function SortableChartItem({
     position: 'relative',
   };
   return (
-    <div ref={setNodeRef} style={style}>
+    <div
+      ref={setNodeRef}
+      id={`chart-${defId}`}
+      style={{ ...style, scrollMarginTop: BELOW_TOOLBAR }}
+    >
       <ChartStackItem
         chart={chart}
         action="toggle"
@@ -416,6 +479,9 @@ function SortableChartItem({
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
   const [isPdfMode, setIsPdfMode] = useState(false);
+  // Preview hides editing chrome (same as PDF mode) without changing layout
+  const [previewMode, setPreviewMode] = useState(false);
+  const hideChrome = isPdfMode || previewMode;
   const [isGenerating, setIsGenerating] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(),
@@ -456,11 +522,11 @@ export default function WorkingReport() {
     chartCustomizations,
     sectionOrder,
     sectionChartOrder,
-    layoutStyle,
     reorderSections,
     reorderChartsInSection,
-    setLayoutStyle,
     resetLayout,
+    guideDismissed,
+    dismissGuide,
   } = useItems();
 
   const dndSensors = useSensors(
@@ -719,7 +785,6 @@ export default function WorkingReport() {
 
   const isIncluded = (defId: string) => !excludedIds.includes(defId);
   const includedPairs = allPairs.filter((p) => isIncluded(p.defId));
-  const excludedPairs = allPairs.filter((p) => !isIncluded(p.defId));
 
   // ---------- report builder: sections + per-section chart order ----------
   // Included charts grouped by their first category — this is the same
@@ -829,19 +894,90 @@ export default function WorkingReport() {
     openProfileModal();
   };
 
+  // ---------- outline (table of contents) ----------
+  const defTitles = new Map(chartDefs.map((d) => [d.id, d.title]));
+  const outlineMap = new Map<string, OutlineGroup['rows']>();
+  allPairs.forEach(({ defId, item }) => {
+    const cat = item.categories?.[0] ?? 'Other';
+    if (!outlineMap.has(cat)) outlineMap.set(cat, []);
+    outlineMap.get(cat)!.push({
+      defId,
+      title:
+        chartCustomizations[defId]?.title ||
+        item.description ||
+        defTitles.get(defId) ||
+        item.title,
+      included: isIncluded(defId),
+    });
+  });
+  // Stable order (rows never jump when checked/unchecked): the user's
+  // section/chart order where one exists, else the default chartDefs order.
+  const defaultIndex = new Map(allPairs.map((p, i) => [p.defId, i]));
+  const outlineGroups: OutlineGroup[] = [
+    ...sectionOrder.filter((cat) => outlineMap.has(cat)),
+    ...Array.from(outlineMap.keys())
+      .filter((cat) => !sectionOrder.includes(cat))
+      .sort((a, b) => categoryRank([a]) - categoryRank([b])),
+  ].map((category) => {
+    const userOrder = sectionChartOrder[category] ?? [];
+    const rank = (id: string) =>
+      userOrder.includes(id)
+        ? userOrder.indexOf(id)
+        : userOrder.length + (defaultIndex.get(id) ?? 0);
+    return {
+      category,
+      rows: [...outlineMap.get(category)!].sort(
+        (a, b) => rank(a.defId) - rank(b.defId),
+      ),
+    };
+  });
+
+  const [contentsOpen, setContentsOpen] = useState(false);
+  const jumpToChart = (defId: string) => {
+    setContentsOpen(false);
+    if (collapsedSections.size) setCollapsedSections(new Set());
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`chart-${defId}`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Charts above may still be growing as their data arrives, and the
+      // site header hiding mid-scroll shifts the target — land it exactly.
+      window.addEventListener(
+        'scrollend',
+        () => el.scrollIntoView({ block: 'start' }),
+        { once: true },
+      );
+    });
+  };
+
+  const outline = (
+    <ReportOutline
+      groups={outlineGroups}
+      onToggle={toggleExcluded}
+      onJump={jumpToChart}
+    />
+  );
+
   return (
     <Container size="xl" py="xl">
-      <Stack gap="xl">
+      <Stack gap="lg">
         <HeroSection
           myLocation={myLocation}
           comparison={comparison}
-          interests={interests}
           yearMin={yearMin}
           yearMax={yearMax}
           openProfileModal={openProfileModal}
+        />
+        <ReportToolbar
+          includedCount={includedPairs.length}
+          sectionCount={resolvedSectionOrder.length}
+          previewMode={previewMode}
+          setPreviewMode={setPreviewMode}
           isGenerating={isGenerating}
-          handleDownloadPdf={handleDownloadPdf}
-          handleClearReport={() => setClearConfirmOpen(true)}
+          onDownload={handleDownloadPdf}
+          onEditProfile={openProfileModal}
+          onClear={() => setClearConfirmOpen(true)}
+          onOpenContents={() => setContentsOpen(true)}
         />
         <Modal
           opened={clearConfirmOpen}
@@ -865,164 +1001,217 @@ export default function WorkingReport() {
             </Button>
           </Group>
         </Modal>
-        {includedPairs.length === 0 && (
-          <Card withBorder radius="md" padding="xl">
-            <Stack align="center" gap="xs">
-              <Title order={3}>Your report is empty</Title>
-              <Text c="dimmed" ta="center">
-                Pick your interests, or add charts from the Data Viewer.
-              </Text>
-              <Group mt="sm">
-                <Button onClick={openProfileModal}>Choose interests</Button>
-                <Button component={Link} href="/data-viewer" variant="light">
-                  Go to Data Viewer
-                </Button>
-              </Group>
-            </Stack>
-          </Card>
-        )}
-        {!isPdfMode && includedPairs.length > 0 && (
-          <Group justify="flex-end" px="md">
-            <Text size="sm" c="dimmed">
-              Layout
-            </Text>
-            <SegmentedControl
-              size="xs"
-              value={layoutStyle}
-              onChange={(v) => setLayoutStyle(v as 'list' | 'grid')}
-              data={[
-                { label: 'List', value: 'list' },
-                { label: 'Grid', value: 'grid' },
-              ]}
-            />
-          </Group>
-        )}
+        <Drawer
+          opened={contentsOpen}
+          onClose={() => setContentsOpen(false)}
+          title="Report contents"
+          hiddenFrom="md"
+        >
+          {outline}
+        </Drawer>
 
-        <PdfModeContext.Provider value={isPdfMode}>
-          <div ref={chartsRef}>
-            <DndContext
-              id="working-report-dnd"
-              sensors={dndSensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={resolvedSectionOrder.map((c) => `section:${c}`)}
-                strategy={verticalListSortingStrategy}
+        <Grid gap="xl">
+          {!previewMode && (
+            <Grid.Col span={{ base: 12, md: 3 }} visibleFrom="md">
+              <Box
+                style={{
+                  position: 'sticky',
+                  top: BELOW_TOOLBAR,
+                  transition: 'top 250ms ease',
+                }}
               >
-                <Stack gap="xl" px="md">
-                  {resolvedSectionOrder.map((category) => {
-                    const pairs = resolveChartOrder(category);
-                    const chartIds = pairs.map((p) => p.defId);
-                    const effectiveLayoutStyle = isPdfMode
-                      ? 'list'
-                      : layoutStyle;
-                    const ChartWrapper =
-                      effectiveLayoutStyle === 'grid' ? SimpleGrid : Stack;
-                    const chartWrapperProps =
-                      effectiveLayoutStyle === 'grid'
-                        ? {
-                            cols: { base: 1, md: 2 },
-                            spacing: 'md',
-                            verticalSpacing: 'md',
-                          }
-                        : {};
-                    const isCollapsed = collapsedSections.has(category);
-                    return (
-                      <SortableSection
-                        key={category}
-                        id={`section:${category}`}
+                <ScrollArea.Autosize
+                  mah={`calc(100vh - ${BELOW_TOOLBAR} - 24px)`}
+                  offsetScrollbars
+                >
+                  {outline}
+                </ScrollArea.Autosize>
+              </Box>
+            </Grid.Col>
+          )}
+          <Grid.Col span={{ base: 12, md: previewMode ? 12 : 9 }}>
+            <Stack gap="lg">
+              {!guideDismissed && !previewMode && (
+                <Alert
+                  variant="light"
+                  title="How this works"
+                  withCloseButton
+                  onClose={dismissGuide}
+                  closeButtonLabel="Dismiss guide"
+                >
+                  <List type="ordered" size="sm" spacing={4}>
+                    <List.Item>
+                      Check charts under <b>Contents</b> to add them to your
+                      report.
+                    </List.Item>
+                    <List.Item>
+                      Drag <b>⋮⋮</b> to reorder. Click a chart&apos;s title or
+                      note to edit it.
+                    </List.Item>
+                    <List.Item>
+                      Switch to <b>Preview</b> to check it, then{' '}
+                      <b>Download PDF</b>.
+                    </List.Item>
+                  </List>
+                </Alert>
+              )}
+
+              {includedPairs.length === 0 && (
+                <Card withBorder radius="md" padding="xl">
+                  <Stack align="center" gap="xs">
+                    <Title order={3}>Your report is empty</Title>
+                    <Text c="dimmed" ta="center" maw={420}>
+                      Check charts under Contents, or add them from the Data
+                      Viewer.
+                    </Text>
+                    <Button
+                      component={Link}
+                      href="/data-viewer"
+                      variant="filled"
+                      color={COLORS.spruce}
+                      mt="sm"
+                    >
+                      Go to Data Viewer
+                    </Button>
+                  </Stack>
+                </Card>
+              )}
+
+              <Box
+                style={
+                  previewMode
+                    ? {
+                        maxWidth: 900,
+                        width: '100%',
+                        margin: '0 auto',
+                        padding: '40px 36px',
+                        background: '#fff',
+                        borderRadius: 6,
+                        border: `1px solid ${COLORS.line}`,
+                        boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
+                      }
+                    : undefined
+                }
+              >
+                <PdfModeContext.Provider value={hideChrome}>
+                  <div ref={chartsRef}>
+                    <DndContext
+                      id="working-report-dnd"
+                      sensors={dndSensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={resolvedSectionOrder.map((c) => `section:${c}`)}
+                        strategy={verticalListSortingStrategy}
                       >
-                        {(handleProps) => (
-                          <Box>
-                            <Group mb="sm" gap={6} justify="space-between">
-                              <Group gap={6}>
-                                {!isPdfMode && (
-                                  <Box
-                                    style={{
-                                      cursor: 'grab',
-                                      touchAction: 'none',
-                                    }}
-                                    {...handleProps.attributes}
-                                    {...handleProps.listeners}
-                                  >
-                                    <DotsSixVerticalIcon size={18} />
+                        <Stack gap={40}>
+                          {resolvedSectionOrder.map((category) => {
+                            const pairs = resolveChartOrder(category);
+                            const chartIds = pairs.map((p) => p.defId);
+                            const isCollapsed = collapsedSections.has(category);
+                            return (
+                              <SortableSection
+                                key={category}
+                                id={`section:${category}`}
+                              >
+                                {(handleProps) => (
+                                  <Box>
+                                    <Group
+                                      mb="sm"
+                                      pb={6}
+                                      gap={6}
+                                      justify="space-between"
+                                      style={{
+                                        borderBottom: `2px solid ${COLORS.line}`,
+                                      }}
+                                    >
+                                      <Group gap={8}>
+                                        {!hideChrome && (
+                                          <Box
+                                            style={{
+                                              cursor: 'grab',
+                                              touchAction: 'none',
+                                              display: 'flex',
+                                            }}
+                                            aria-label={`Reorder ${category} section`}
+                                            {...handleProps.attributes}
+                                            {...handleProps.listeners}
+                                          >
+                                            <DotsSixVerticalIcon size={18} />
+                                          </Box>
+                                        )}
+                                        <Title order={3}>{category}</Title>
+                                        {!hideChrome && (
+                                          <Badge
+                                            variant="light"
+                                            color="gray"
+                                            size="sm"
+                                          >
+                                            {pairs.length}{' '}
+                                            {pairs.length === 1
+                                              ? 'chart'
+                                              : 'charts'}
+                                          </Badge>
+                                        )}
+                                      </Group>
+                                      {!hideChrome && (
+                                        <ActionIcon
+                                          variant="subtle"
+                                          color="gray"
+                                          onClick={() =>
+                                            toggleSectionCollapsed(category)
+                                          }
+                                          aria-label={
+                                            isCollapsed
+                                              ? `Expand ${category}`
+                                              : `Collapse ${category}`
+                                          }
+                                        >
+                                          {isCollapsed ? (
+                                            <CaretRightIcon size={18} />
+                                          ) : (
+                                            <CaretDownIcon size={18} />
+                                          )}
+                                        </ActionIcon>
+                                      )}
+                                    </Group>
+                                    <Collapse
+                                      expanded={hideChrome || !isCollapsed}
+                                    >
+                                      <SortableContext
+                                        items={chartIds}
+                                        strategy={verticalListSortingStrategy}
+                                      >
+                                        <Stack>
+                                          {pairs.map(({ defId, item }) => (
+                                            <SortableChartItem
+                                              key={defId}
+                                              id={defId}
+                                              chart={item}
+                                              defId={defId}
+                                              userInterests={interests}
+                                              isIncludedFn={isIncluded}
+                                              onToggle={toggleExcluded}
+                                            />
+                                          ))}
+                                        </Stack>
+                                      </SortableContext>
+                                    </Collapse>
                                   </Box>
                                 )}
-                                <Title order={3}>{category}</Title>
-                              </Group>
-                              {!isPdfMode && (
-                                <ActionIcon
-                                  variant="subtle"
-                                  color="gray"
-                                  onClick={() =>
-                                    toggleSectionCollapsed(category)
-                                  }
-                                  aria-label={
-                                    isCollapsed
-                                      ? `Expand ${category}`
-                                      : `Collapse ${category}`
-                                  }
-                                >
-                                  {isCollapsed ? (
-                                    <CaretRightIcon size={18} />
-                                  ) : (
-                                    <CaretDownIcon size={18} />
-                                  )}
-                                </ActionIcon>
-                              )}
-                            </Group>
-                            <Collapse expanded={isPdfMode || !isCollapsed}>
-                              <SortableContext
-                                items={chartIds}
-                                strategy={verticalListSortingStrategy}
-                              >
-                                <ChartWrapper {...chartWrapperProps}>
-                                  {pairs.map(({ defId, item }) => (
-                                    <SortableChartItem
-                                      key={defId}
-                                      id={defId}
-                                      chart={item}
-                                      defId={defId}
-                                      userInterests={interests}
-                                      isIncludedFn={isIncluded}
-                                      onToggle={toggleExcluded}
-                                    />
-                                  ))}
-                                </ChartWrapper>
-                              </SortableContext>
-                            </Collapse>
-                          </Box>
-                        )}
-                      </SortableSection>
-                    );
-                  })}
-                </Stack>
-              </SortableContext>
-            </DndContext>
-          </div>
-        </PdfModeContext.Provider>
-
-        {excludedPairs.length > 0 && (
-          <>
-            <Divider
-              label="Not included in report"
-              labelPosition="center"
-              mt="xl"
-              size="md"
-            />
-            <Box>
-              <ChartStack
-                charts={excludedPairs.map((p) => p.item)}
-                action="toggle"
-                userInterests={interests}
-                defIds={excludedPairs.map((p) => p.defId)}
-                onToggle={toggleExcluded}
-                isIncludedFn={isIncluded}
-              />
-            </Box>
-          </>
-        )}
+                              </SortableSection>
+                            );
+                          })}
+                        </Stack>
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                </PdfModeContext.Provider>
+              </Box>
+            </Stack>
+          </Grid.Col>
+        </Grid>
       </Stack>
     </Container>
   );

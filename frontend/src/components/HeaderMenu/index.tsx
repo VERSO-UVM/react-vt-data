@@ -331,7 +331,10 @@ export default function HeaderMenu() {
   });
 
   return (
-    <header className={`${classes.header} ${hidden ? classes.hidden : ''}`}>
+    <header
+      className={`${classes.header} ${hidden ? classes.hidden : ''}`}
+      data-hidden={hidden}
+    >
       <Container size="xl">
         <div className={classes.inner}>
           <Group gap="lg" wrap="nowrap">
