@@ -15,6 +15,7 @@ import {
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
 import { FileXlsIcon } from '@phosphor-icons/react';
+import { chartDataReducer } from 'recharts/types/state/chartDataSlice';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
@@ -55,13 +56,32 @@ export const TableView = <TData extends DataRow>({
     cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
 
   async function handleExport() {
-    const data = rows;
+    // Columns with a "(cmp)" twin are location columns: suffix them with the
+    // location names. Everything else (year, category, ...) keeps its title.
+    const paired = new Set(cmpKeys.map((k) => k.slice(0, -CMP_SUFFIX.length)));
+    const renameKey = (k: string) =>
+      k.endsWith(CMP_SUFFIX)
+        ? `${k.slice(0, -CMP_SUFFIX.length)} (${compareLabel})`
+        : paired.has(k)
+          ? `${k} (${homeLabel})`
+          : k;
+
+    const data = rows.map((row) =>
+      Object.fromEntries(
+        Object.entries(row).map(([k, v]) => [renameKey(k), v]),
+      ),
+    );
+
     // Create a new workbook and worksheet
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
 
     // Append the worksheet to the workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users Data');
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      chart.description ?? 'Sheet 1',
+    );
 
     // Generate a buffer allocation
     const excelBuffer = XLSX.write(workbook, {
@@ -75,7 +95,19 @@ export const TableView = <TData extends DataRow>({
     });
 
     // Trigger the download using file-saver
-    saveAs(blob, `${chart.title}_data.xlsx`);
+    const formatFileName = (str: string) =>
+      str.trim().replace('_', ' ').toLowerCase();
+
+    const fileName =
+      chart?.description && chart?.title
+        ? `${formatFileName(chart.description)}_${formatFileName(chart.title)}`
+        : chart?.description
+          ? formatFileName(chart.description)
+          : chart?.title
+            ? formatFileName(chart.title)
+            : 'chart';
+
+    saveAs(blob, `${fileName}_data.xlsx`);
   }
 
   // Render the comparison toggle header control
