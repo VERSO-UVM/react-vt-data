@@ -32,8 +32,14 @@ interface AddChartProps {
 }
 
 export function AddChart({ chart, defId }: AddChartProps) {
-  const { addItem, removeItem, items, excludedIds, toggleExcluded } =
-    useItems();
+  const {
+    addItem,
+    removeItem,
+    items,
+    excludedIds,
+    toggleExcluded,
+    setSessionInitialized,
+  } = useItems();
   const { interests } = useProfile();
 
   const stableId =
@@ -70,6 +76,9 @@ export function AddChart({ chart, defId }: AddChartProps) {
     e.stopPropagation();
 
     if (defId) {
+      // Explicit choice: stop the working report from re-deriving inclusion
+      // from interests on first visit and wiping this out.
+      setSessionInitialized(true);
       toggleExcluded(defId);
       return;
     }
@@ -89,17 +98,19 @@ export function AddChart({ chart, defId }: AddChartProps) {
   return (
     <Button
       onClick={handleClick}
-      color={inReport ? 'red' : 'blue'}
-      variant={inReport ? 'filled' : 'light'}
+      color={inReport ? COLORS.red : COLORS.spruce}
+      variant={inReport ? 'light' : 'filled'}
+      radius="xl"
+      size="xs"
       leftSection={
         inReport ? (
-          <XIcon size={12} weight="bold" />
+          <XIcon size={14} weight="bold" />
         ) : (
-          <CheckIcon size={16} weight="bold" />
+          <CheckIcon size={14} weight="bold" />
         )
       }
     >
-      {inReport ? 'Remove from working report' : 'Add to working report'}
+      {inReport ? 'Remove from report' : 'Add to report'}
     </Button>
   );
 }

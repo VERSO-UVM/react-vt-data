@@ -7,11 +7,13 @@ import {
   Badge,
   Box,
   Button,
+  Card,
   Collapse,
   Container,
   Divider,
   Grid,
   Group,
+  Modal,
   SegmentedControl,
   SimpleGrid,
   Stack,
@@ -24,6 +26,7 @@ import {
   useApplyFilters,
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import {
   PencilSimpleIcon,
@@ -815,7 +818,10 @@ export default function WorkingReport() {
     }
   };
 
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+
   const handleClearReport = () => {
+    setClearConfirmOpen(false);
     clearItems();
     chartDefs.forEach((def) => excludeById(def.id));
     resetLayout();
@@ -835,8 +841,46 @@ export default function WorkingReport() {
           openProfileModal={openProfileModal}
           isGenerating={isGenerating}
           handleDownloadPdf={handleDownloadPdf}
-          handleClearReport={handleClearReport}
+          handleClearReport={() => setClearConfirmOpen(true)}
         />
+        <Modal
+          opened={clearConfirmOpen}
+          onClose={() => setClearConfirmOpen(false)}
+          title="Clear report?"
+          centered
+        >
+          <Text size="sm">
+            This removes all saved charts and layout changes. This can&apos;t be
+            undone.
+          </Text>
+          <Group justify="flex-end" mt="lg">
+            <Button
+              variant="default"
+              onClick={() => setClearConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button color="red" onClick={handleClearReport}>
+              Clear report
+            </Button>
+          </Group>
+        </Modal>
+        {includedPairs.length === 0 && (
+          <Card withBorder radius="md" padding="xl">
+            <Stack align="center" gap="xs">
+              <Title order={3}>Your report is empty</Title>
+              <Text c="dimmed" ta="center">
+                Pick your interests, or add charts from the Data Viewer.
+              </Text>
+              <Group mt="sm">
+                <Button onClick={openProfileModal}>Choose interests</Button>
+                <Button component={Link} href="/data-viewer" variant="light">
+                  Go to Data Viewer
+                </Button>
+              </Group>
+            </Stack>
+          </Card>
+        )}
         {!isPdfMode && includedPairs.length > 0 && (
           <Group justify="flex-end" px="md">
             <Text size="sm" c="dimmed">
