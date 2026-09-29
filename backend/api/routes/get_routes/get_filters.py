@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# Schema Orientation: see design/current/Data_Engineering.md
+# Schema Orientation: see docs/architecture/etl.md
 def get_filter_table_metadata(target_table: str, filter_table: str) -> dict:
     return (
         schema.get(target_table, {}).get(filter_table)

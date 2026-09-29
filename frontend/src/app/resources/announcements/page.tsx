@@ -1,18 +1,36 @@
 'use client';
 
 import {
+  Anchor,
   Box,
   Container,
   Group,
-  SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
   Title,
 } from '@mantine/core';
 import * as motion from 'motion/react-client';
-import { BellRingingIcon } from '@phosphor-icons/react';
+import {
+  ArrowUpRightIcon,
+  BellRingingIcon,
+  NewspaperIcon,
+} from '@phosphor-icons/react';
 import { COLORS, FONTS } from '@/app/theme';
+
+// -----------------------------------------------------------------------------
+// Data
+// -----------------------------------------------------------------------------
+
+const ANNOUNCEMENTS = [
+  {
+    date: 'September 28, 2026',
+    title: 'Vermont Data Collaborative featured in UVM News',
+    body: 'UVM News covered our work in "Using Data for Good," spotlighting how the Vermont Data Collaborative helps towns and regional planning commissions turn federal, state, and local data into clear, usable reports on housing, conservation, and other community issues.',
+    href: 'https://www.uvm.edu/uvmnews/news/using-data-good',
+    linkLabel: 'Read the article on UVM News',
+  },
+];
 
 // -----------------------------------------------------------------------------
 // Page
@@ -87,50 +105,129 @@ export default function AnnouncementsPage() {
       </Box>
 
       <Container size="lg" py={{ base: 50, sm: 70 }}>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <Box
-            py={90}
-            ta="center"
-            style={{
-              border: `1px dashed ${COLORS.line}`,
-              borderRadius: 16,
-              backgroundColor: COLORS.birchDim,
-            }}
+        {ANNOUNCEMENTS.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <ThemeIcon
-              size={54}
-              radius="xl"
-              variant="light"
+            <Box
+              py={90}
+              ta="center"
               style={{
-                backgroundColor: COLORS.birch,
-                color: COLORS.slate,
-                margin: '0 auto',
+                border: `1px dashed ${COLORS.line}`,
+                borderRadius: 16,
+                backgroundColor: COLORS.birchDim,
               }}
             >
-              <BellRingingIcon size={26} />
-            </ThemeIcon>
+              <ThemeIcon
+                size={54}
+                radius="xl"
+                variant="light"
+                style={{
+                  backgroundColor: COLORS.birch,
+                  color: COLORS.slate,
+                  margin: '0 auto',
+                }}
+              >
+                <BellRingingIcon size={26} />
+              </ThemeIcon>
 
-            <Title
-              order={3}
-              mt="lg"
-              style={{
-                fontFamily: FONTS.display,
-                color: COLORS.ink,
-              }}
-            >
-              No announcements yet
-            </Title>
+              <Title
+                order={3}
+                mt="lg"
+                style={{
+                  fontFamily: FONTS.display,
+                  color: COLORS.ink,
+                }}
+              >
+                No announcements yet
+              </Title>
 
-            <Text size="sm" c="dimmed" mt={8} maw={420} mx="auto">
-              We&apos;ll post here as soon as there&apos;s news to share.
-            </Text>
-          </Box>
-        </motion.div>
+              <Text size="sm" c="dimmed" mt={8} maw={420} mx="auto">
+                We&apos;ll post here as soon as there&apos;s news to share.
+              </Text>
+            </Box>
+          </motion.div>
+        ) : (
+          <Stack gap="lg">
+            {ANNOUNCEMENTS.map((item) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <Box
+                  p={{ base: 24, sm: 32 }}
+                  style={{
+                    border: `1px solid ${COLORS.line}`,
+                    borderRadius: 16,
+                    backgroundColor: COLORS.birchDim,
+                  }}
+                >
+                  <Group gap="md" align="flex-start" wrap="nowrap">
+                    <ThemeIcon
+                      size={44}
+                      radius="xl"
+                      variant="light"
+                      style={{
+                        backgroundColor: COLORS.birch,
+                        color: COLORS.spruce,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <NewspaperIcon size={22} weight="duotone" />
+                    </ThemeIcon>
+
+                    <Stack gap={6}>
+                      <Text
+                        style={{
+                          fontFamily: FONTS.mono,
+                          fontSize: 12,
+                          letterSpacing: '0.08em',
+                          color: COLORS.slate,
+                        }}
+                      >
+                        {item.date}
+                      </Text>
+
+                      <Title
+                        order={3}
+                        style={{ fontFamily: FONTS.display, color: COLORS.ink }}
+                      >
+                        {item.title}
+                      </Title>
+
+                      <Text style={{ color: COLORS.slate, lineHeight: 1.6 }}>
+                        {item.body}
+                      </Text>
+
+                      <Anchor
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          color: COLORS.spruce,
+                          fontWeight: 600,
+                          marginTop: 4,
+                        }}
+                      >
+                        {item.linkLabel}
+                        <ArrowUpRightIcon size={16} />
+                      </Anchor>
+                    </Stack>
+                  </Group>
+                </Box>
+              </motion.div>
+            ))}
+          </Stack>
+        )}
       </Container>
     </Box>
   );
