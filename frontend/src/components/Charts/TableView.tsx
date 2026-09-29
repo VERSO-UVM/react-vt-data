@@ -77,11 +77,7 @@ export const TableView = <TData extends DataRow>({
     const workbook = XLSX.utils.book_new();
 
     // Append the worksheet to the workbook
-    XLSX.utils.book_append_sheet(
-      workbook,
-      worksheet,
-      chart.description ?? 'Sheet 1',
-    );
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet 1');
 
     // Generate a buffer allocation
     const excelBuffer = XLSX.write(workbook, {
