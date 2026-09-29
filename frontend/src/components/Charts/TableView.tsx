@@ -92,7 +92,7 @@ export const TableView = <TData extends DataRow>({
 
     // Trigger the download using file-saver
     const formatFileName = (str: string) =>
-      str.trim().replace('_', ' ').toLowerCase();
+      str.trim().replaceAll('_', ' ').toLowerCase();
 
     const fileName =
       chart?.description && chart?.title
@@ -107,17 +107,17 @@ export const TableView = <TData extends DataRow>({
   }
 
   // Render the comparison toggle header control
-  const ComparisonToggleHeader = () =>
-    hasCompare ? (
-      <Group mb="xs" gap="md" align="center">
-        <Button
-          size="xs"
-          color={COLORS.spruce}
-          leftSection={<FileXlsIcon size={20} />}
-          onClick={handleExport}
-        >
-          Export
-        </Button>
+  const ComparisonToggleHeader = () => (
+    <Group mb="xs" gap="md" align="center">
+      <Button
+        size="xs"
+        color={COLORS.spruce}
+        leftSection={<FileXlsIcon size={20} />}
+        onClick={handleExport}
+      >
+        Export
+      </Button>
+      {hasCompare && (
         <Button
           size="xs"
           variant={showCompare ? 'filled' : 'light'}
@@ -126,35 +126,36 @@ export const TableView = <TData extends DataRow>({
         >
           {showCompare ? 'Hide Comparison' : 'Show Comparison'}
         </Button>
-        {showCompare && (
-          <Group gap={6}>
-            <Box
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: 2,
-                background: HOME_BG,
-                border: '1px solid var(--mantine-color-green-3)',
-                display: 'inline-block',
-              }}
-            />
-            <Text size="xs">{homeLabel}</Text>
-            <Box
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: 2,
-                background: COMP_BG,
-                border: '1px solid var(--mantine-color-blue-3)',
-                display: 'inline-block',
-                marginLeft: 8,
-              }}
-            />
-            <Text size="xs">{compareLabel}</Text>
-          </Group>
-        )}
-      </Group>
-    ) : null;
+      )}
+      {hasCompare && showCompare && (
+        <Group gap={6}>
+          <Box
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              background: HOME_BG,
+              border: '1px solid var(--mantine-color-green-3)',
+              display: 'inline-block',
+            }}
+          />
+          <Text size="xs">{homeLabel}</Text>
+          <Box
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              background: COMP_BG,
+              border: '1px solid var(--mantine-color-blue-3)',
+              display: 'inline-block',
+              marginLeft: 8,
+            }}
+          />
+          <Text size="xs">{compareLabel}</Text>
+        </Group>
+      )}
+    </Group>
+  );
 
   // --- MODE A: PIVOTED TABLE (FOR TREND CHARTS) ---
   if (usePivot) {
