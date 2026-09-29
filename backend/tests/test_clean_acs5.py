@@ -20,6 +20,7 @@ from data_cleaning.clean_acs5 import (
     _assert_unique_observations,
     build_dp_combined,
 )
+from query.production_db import get_db
 
 BURLINGTON = "Burlington city, Chittenden County, Vermont"
 BURLINGTON_GEOID = "5000710675"
@@ -126,3 +127,13 @@ def test_duplicate_town_lines_row_does_not_fan_out_observations():
     build_dp_combined(con)
 
     _assert_unique_observations(con)  # should not raise despite the dup join row
+
+
+def test_dp_value_col():
+    con = get_db()
+    df = con.execute("SELECT value FROM main.acs5_dp_combined_tidy").df()
+    print(df["value"].dtype, df["value"].min(), df["value"].max())
+
+    assert df["value"].dtype.kind == "f"
+    assert df["value"].min() >= 0
+    assert df["value"].max() < 666666666
