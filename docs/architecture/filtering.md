@@ -13,15 +13,15 @@ In both situation above, we want _multiple filters_. This means that the filters
 
 Instead, we will opt for a series of nested components. * indicates level, number indicates properties.
 
-1. FilterWrap -- Overall component for rendering and getting data from lots of filters.
-   - Props:
-     - data -- null from parent
-     - selectData -- from parent, sets the data value
-     - filterlist -- set of definitions of which filters to include
-   - Internal state:
+1. **FilterWrap** -- Overall component for rendering and getting data from lots of filters.
+   - *Props*:
+     - `data` -- null from parent
+     - `selectData` -- from parent, sets the data value
+     - `filterlist` -- set of definitions of which filters to include
+   - *Internal state*:
      - list of filterspecs, all initially null, built from filterlist with a factory component.
-       - FilterSpec = (source, FilterValue[])
-         - FilterValue is either string or range
+       - `FilterSpec` = (source, FilterValue[])
+         - `FilterValue` is either string or range
      - components, built also from filterlist, that update filterspecs
    - Included components 2. Filter UI. * We'll start with just cascading filters, then add checkboxes * Props: * api to get filter options from backend (set from filterlist) * current value (initially None from parent filterspec). * for a cascade filter, this is the _path walked through the tree_ ; this should now be recorded explicitly as {column: value} rather than the old way where we used the levels of the tree. * setValue -- a function to set the _correct_ in the filterspec. This must be indexed to update the right one. inherited from parent. * internal state: * filter options from API * for a cascade filter, this is _the tree_ * subselections within filter * returns: * appropriate mantine components to let user select options, according to UI type 2. Apply Button * Props: * filterspecs from parent * selectData * DataURL * internal logic * filter selections and posts to fastAPI * ignores null filters * takes fastAPI response and updates the selectData value, which then the parent of all this actually does stuff with. * returns: * mantine component with apply button that, when clicked, handles this.
 

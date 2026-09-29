@@ -297,7 +297,7 @@ split or assigned to a guessed subdivision.
 `excluded_overlays` covers the full summary selection, independently of its
 page size, and includes a bounded district preview. Source overlay flags control
 exclusion even when a classification is disputed. Review the underlying follow-up
-items in [the 2026-09-16 data issues](2026-09-16-issues.md); MCP safeguards do not
+items in [the 2026-09-16 data issues](../reports/2026-09-16-data-issues.md); MCP safeguards do not
 repair those warehouse records.
 
 ### Report interpretation
@@ -353,7 +353,7 @@ flowchart LR
 
 Configuration is read when a service instance starts. Restart after changing it.
 The justfile loads the root `.env`; direct Python/Uvicorn invocations need exported
-environment variables. See the committed [`.env.example`](../.env.example).
+environment variables. See the committed [`.env.example`](../../.env.example).
 
 | Variable                   | Default                                              | Meaning                                                                                                                                        |
 | -------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -388,16 +388,16 @@ configuration. An invalid bearer configuration fails closed.
 ### What already exists
 
 The backend deployment is a **manual Podman deployment on a VM**. The
-[justfile](../justfile) builds API and frontend images locally and runs them in a
+[justfile](../../justfile) builds API and frontend images locally and runs them in a
 shared pod named `app`. The API reads `/data` from a read-only host volume. Nginx
 serves the static Next.js export on container port 8080, published as host port
 3000, and proxies `/api/` to the API on port 6767. MCP follows that same route.
 
-The [GitHub Pages workflow](../.github/workflows/deploy.yml) deploys only the
+The [GitHub Pages workflow](../../.github/workflows/deploy.yml) deploys only the
 static frontend. It does **not** deploy Python, the warehouse, or MCP. There is no
 backend image registry push, production secret provisioning, VM rollout, TLS
 configuration, or automatic rollback in that workflow. Existing background is in
-[the containerization design](../design/current/containerization.md).
+[the containerization design](../architecture/containers.md).
 
 This change adds an MCP test workflow, API container packaging for the MCP
 modules, environment propagation in the run recipes, and nginx proxy settings
