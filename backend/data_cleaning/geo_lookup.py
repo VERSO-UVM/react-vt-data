@@ -26,8 +26,8 @@ import pandas as pd
 UNAVAILABLE = -666666666.0
 
 
-def inline_sql_unavailable(missing_values: dict[str:str]) -> str:
-    in_list = ", ".join(f"'{key}'" for key in missing_values)
+def inline_sql_unavailable(missing_values: dict[int, str]) -> str:
+    in_list = ", ".join(str(int(code)) for code in missing_values)
     return in_list
 
 
