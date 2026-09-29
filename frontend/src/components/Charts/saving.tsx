@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useItems } from '../ItemsProvider';
 import { useProfile } from '@/components/profile/profileStore';
-import { Button, Transition } from '@mantine/core';
+import Link from 'next/link';
+import { Anchor, Button, Group, Transition } from '@mantine/core';
 import { CheckIcon, XIcon } from '@phosphor-icons/react';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { COLORS } from '@/app/theme';
@@ -80,22 +81,35 @@ export function AddChart({ chart, defId }: AddChartProps) {
   }
 
   return (
-    <Button
-      onClick={handleClick}
-      color={inReport ? COLORS.red : COLORS.spruce}
-      variant={inReport ? 'light' : 'filled'}
-      radius="xl"
-      size="xs"
-      leftSection={
-        inReport ? (
-          <XIcon size={14} weight="bold" />
-        ) : (
-          <CheckIcon size={14} weight="bold" />
-        )
-      }
-    >
-      {inReport ? 'Remove from report' : 'Add to report'}
-    </Button>
+    <Group gap="sm">
+      <Button
+        onClick={handleClick}
+        color={inReport ? COLORS.red : COLORS.spruce}
+        variant={inReport ? 'light' : 'filled'}
+        radius="xl"
+        size="xs"
+        leftSection={
+          inReport ? (
+            <XIcon size={14} weight="bold" />
+          ) : (
+            <CheckIcon size={14} weight="bold" />
+          )
+        }
+      >
+        {inReport ? 'Remove from report' : 'Add to report'}
+      </Button>
+      {inReport && (
+        <Anchor
+          component={Link}
+          href="/working-report"
+          size="xs"
+          c={COLORS.spruce}
+          onClick={(e) => e.stopPropagation()}
+        >
+          Added — view report →
+        </Anchor>
+      )}
+    </Group>
   );
 }
 
