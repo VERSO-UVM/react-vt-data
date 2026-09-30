@@ -1,5 +1,7 @@
 // TableView.tsx
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import {
   Box,
   Button,
@@ -11,6 +13,9 @@ import {
   SegmentedControl,
 } from '@mantine/core';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { COLORS, FONTS } from '@/app/theme';
+import { FileXlsIcon } from '@phosphor-icons/react';
+import { chartDataReducer } from 'recharts/types/state/chartDataSlice';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
@@ -50,10 +55,69 @@ export const TableView = <TData extends DataRow>({
   const hasCompare =
     cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
 
+  async function handleExport() {
+    // Columns with a "(cmp)" twin are location columns: suffix them with the
+    // location names. Everything else (year, category, ...) keeps its title.
+    const paired = new Set(cmpKeys.map((k) => k.slice(0, -CMP_SUFFIX.length)));
+    const renameKey = (k: string) =>
+      k.endsWith(CMP_SUFFIX)
+        ? `${k.slice(0, -CMP_SUFFIX.length)} (${compareLabel})`
+        : paired.has(k)
+          ? `${k} (${homeLabel})`
+          : k;
+
+    const data = rows.map((row) =>
+      Object.fromEntries(
+        Object.entries(row).map(([k, v]) => [renameKey(k), v]),
+      ),
+    );
+
+    // Create a new workbook and worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet 1');
+
+    // Generate a buffer allocation
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+    });
+
+    // 4. Create a Blob with the correct Excel MIME type
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    });
+
+    // Trigger the download using file-saver
+    const formatFileName = (str: string) =>
+      str.trim().replaceAll('_', ' ').toLowerCase();
+
+    const fileName =
+      chart?.description && chart?.title
+        ? `${formatFileName(chart.description)}_${formatFileName(chart.title)}`
+        : chart?.description
+          ? formatFileName(chart.description)
+          : chart?.title
+            ? formatFileName(chart.title)
+            : 'chart';
+
+    saveAs(blob, `${fileName}_data.xlsx`);
+  }
+
   // Render the comparison toggle header control
-  const ComparisonToggleHeader = () =>
-    hasCompare ? (
-      <Group mb="xs" gap="sm" align="center">
+  const ComparisonToggleHeader = () => (
+    <Group mb="xs" gap="md" align="center">
+      <Button
+        size="xs"
+        color={COLORS.spruce}
+        leftSection={<FileXlsIcon size={20} />}
+        onClick={handleExport}
+      >
+        Export
+      </Button>
+      {hasCompare && (
         <Button
           size="xs"
           variant={showCompare ? 'filled' : 'light'}
@@ -62,35 +126,36 @@ export const TableView = <TData extends DataRow>({
         >
           {showCompare ? 'Hide Comparison' : 'Show Comparison'}
         </Button>
-        {showCompare && (
-          <Group gap={6}>
-            <Box
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: 2,
-                background: HOME_BG,
-                border: '1px solid var(--mantine-color-green-3)',
-                display: 'inline-block',
-              }}
-            />
-            <Text size="xs">{homeLabel}</Text>
-            <Box
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: 2,
-                background: COMP_BG,
-                border: '1px solid var(--mantine-color-blue-3)',
-                display: 'inline-block',
-                marginLeft: 8,
-              }}
-            />
-            <Text size="xs">{compareLabel}</Text>
-          </Group>
-        )}
-      </Group>
-    ) : null;
+      )}
+      {hasCompare && showCompare && (
+        <Group gap={6}>
+          <Box
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              background: HOME_BG,
+              border: '1px solid var(--mantine-color-green-3)',
+              display: 'inline-block',
+            }}
+          />
+          <Text size="xs">{homeLabel}</Text>
+          <Box
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              background: COMP_BG,
+              border: '1px solid var(--mantine-color-blue-3)',
+              display: 'inline-block',
+              marginLeft: 8,
+            }}
+          />
+          <Text size="xs">{compareLabel}</Text>
+        </Group>
+      )}
+    </Group>
+  );
 
   // --- MODE A: PIVOTED TABLE (FOR TREND CHARTS) ---
   if (usePivot) {
