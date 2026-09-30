@@ -3,7 +3,6 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from api.models import FilterRequest, make_response
-from api.posthog import PosthogClient
 from query import timeseries_db
 from query.production_db import get_db
 
@@ -41,10 +40,7 @@ _TIMESERIES_VIEWS: dict[tuple[str, str], str] = {
 # and `subcategory`(special time series tables)
 @router.post("/load/census/{category}/{subcategory}")
 async def read_census_data_subcat(
-    category: str,
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-    subcategory: str = "main",
+    category: str, request: FilterRequest, subcategory: str = "main"
 ):
     if category not in CENSUS_DATASETS:
         raise HTTPException(
@@ -62,15 +58,6 @@ async def read_census_data_subcat(
             raise HTTPException(
                 status_code=404,
                 detail=f"No data found for the given filters: {filters}",
-            )
-        if posthog_client:
-            posthog_client.capture(
-                "census_timeseries_requested",
-                properties={
-                    "$process_person_profile": False,
-                    "category": category,
-                    "subcategory": subcategory,
-                },
             )
         return make_response(data, {})
 

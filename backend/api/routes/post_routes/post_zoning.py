@@ -3,7 +3,6 @@ from fastapi import APIRouter, Response
 from api.core_functions import request_to_source, spec_to_source
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, FilterSpec, make_response
-from api.posthog import PosthogClient
 from query.zoning import (
     get_building_footprints,
     get_unzoned_geojson,
@@ -52,17 +51,9 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/zoning/standard_new")
-async def zoning_geo_new(
-    specs: list[FilterSpec],
-    posthog_client: PosthogClient,
-):
+async def zoning_geo_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_zoning_geojson(sources)
-    if posthog_client:
-        posthog_client.capture(
-            "zoning_data_requested",
-            properties={"$process_person_profile": False, "view_type": "map"},
-        )
     return Response(content=data, media_type="application/json")
 
 
@@ -82,32 +73,16 @@ async def zoning_unzoned():
 
 
 @router.post("/load/data/zoning/aggregated")
-async def acreage_response(
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-):
+async def acreage_response(request: FilterRequest):
     source = request_to_source(request, "VersoZoning_info", "default")
     agg, table = get_zoning_aggregated_acres([source])
-    if posthog_client:
-        posthog_client.capture(
-            "zoning_data_requested",
-            properties={"$process_person_profile": False, "view_type": "aggregated_acres"},
-        )
     return make_response(data=agg, metadata=get_metadata("zoning"), tableData=table)
 
 
 @router.post("/load/data/zoning/allowances")
-async def zoning_allowances(
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-):
+async def zoning_allowances(request: FilterRequest):
     source = request_to_source(request, "VersoZoning_info", "default")
     agg, table = get_zoning_allowances([source])
-    if posthog_client:
-        posthog_client.capture(
-            "zoning_data_requested",
-            properties={"$process_person_profile": False, "view_type": "allowances"},
-        )
     return make_response(
         data=agg,
         metadata=get_metadata("zoning"),

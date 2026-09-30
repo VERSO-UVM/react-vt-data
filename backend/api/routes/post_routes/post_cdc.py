@@ -2,7 +2,6 @@ from fastapi import APIRouter
 
 from api.core_functions import request_to_source, spec_to_source
 from api.models import APIResponse, FilterRequest, FilterSpec, make_response
-from api.posthog import PosthogClient
 from query import (
     dual_var_comparison,
     get_cdc_county_pca,
@@ -44,48 +43,24 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/cdc/places/single")
-async def cdc_single_geojson(
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-):
+async def cdc_single_geojson(request: FilterRequest):
     source = request_to_source(request, "cdc_places_county", "default")
     data = single_var_geojson([source])
-    if posthog_client:
-        posthog_client.capture(
-            "cdc_data_requested",
-            properties={"$process_person_profile": False, "view_type": "single_map"},
-        )
     return data
 
 
 @router.post("/load/data/cdc/places")
-async def cdc_places_tidy(
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-):
+async def cdc_places_tidy(request: FilterRequest):
     source = request_to_source(request, "cdc_places_county", "default")
     rows = get_cdc_places_tidy([source])
-    if posthog_client:
-        posthog_client.capture(
-            "cdc_data_requested",
-            properties={"$process_person_profile": False, "view_type": "data_table"},
-        )
     return make_response(data=rows, metadata={})
 
 
 @router.post("/load/data/cdc/places/by-county")
-async def cdc_places_by_county(
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-):
+async def cdc_places_by_county(request: FilterRequest):
     """Every county's value for the filtered measures, for rankings."""
     source = request_to_source(request, "cdc_places_county", "default")
     rows = get_cdc_places_by_county([source])
-    if posthog_client:
-        posthog_client.capture(
-            "cdc_data_requested",
-            properties={"$process_person_profile": False, "view_type": "county_ranking"},
-        )
     return make_response(data=rows, metadata={})
 
 

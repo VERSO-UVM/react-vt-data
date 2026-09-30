@@ -3,7 +3,6 @@ from fastapi import APIRouter
 
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
-from api.posthog import PosthogClient
 from query.production_db import get_db
 
 DB = get_db()
@@ -24,10 +23,7 @@ SECTOR_ORDER = [
 
 
 @router.post("/load/qcew/employment")
-async def employment_by_sector(
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-):
+async def employment_by_sector(request: FilterRequest):
     filters = request.filters or {}
 
     def _first(label: str):
@@ -92,14 +88,6 @@ async def employment_by_sector(
         ordered[col] = ordered[col].round(0)
 
     metadata = {**get_metadata("qcew_employment"), "county": county}
-    if posthog_client:
-        posthog_client.capture(
-            "qcew_employment_requested",
-            properties={
-                "$process_person_profile": False,
-                "geography_scope": "county" if county else "statewide",
-            },
-        )
     return make_response(data=ordered, metadata=metadata)
 
 

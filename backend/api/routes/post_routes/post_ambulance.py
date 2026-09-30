@@ -2,7 +2,6 @@ from fastapi import APIRouter, Response
 
 from api.core_functions import request_to_source, spec_to_source
 from api.models import FilterRequest, FilterSpec
-from api.posthog import PosthogClient
 from query import (
     get_ambulance_export_table,
     get_ambulance_geojson,
@@ -35,32 +34,16 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/ambulance/service_area")
-async def ambulance_info_geojson(
-    request: FilterRequest,
-    posthog_client: PosthogClient,
-):
+async def ambulance_info_geojson(request: FilterRequest):
     source = request_to_source(request, "VCGI_ambulanceService_info", "default")
     data = get_ambulance_geojson([source])
-    if posthog_client:
-        posthog_client.capture(
-            "ambulance_map_requested",
-            properties={"$process_person_profile": False, "request_format": "legacy"},
-        )
     return Response(content=data, media_type="application/json")
 
 
 @router.post("/load/mapping/ambulance/service_area_new")
-async def ambulance_info_geojson_new(
-    specs: list[FilterSpec],
-    posthog_client: PosthogClient,
-):
+async def ambulance_info_geojson_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_ambulance_geojson(sources)
-    if posthog_client:
-        posthog_client.capture(
-            "ambulance_map_requested",
-            properties={"$process_person_profile": False, "request_format": "spec"},
-        )
     return Response(content=data, media_type="application/json")
 
 
