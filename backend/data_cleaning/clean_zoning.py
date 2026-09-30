@@ -72,14 +72,17 @@ MISSING_GEOID_FIXES = {
     "Huntington": (None, "Huntington town"),
     "Hyde Park Town Hyde Park Village": ("Hyde Park Village", "Hyde Park town"),
     "Morristown": (None, "Morristown town"),
+    "Newport Town": ("Newport town", "Newport town"),
     "North Bennington": (None, "Bennington town"),
     "Old Bennington": (None, "Bennington town"),
+    "Peru": (None, "Peru town"),
     "Saint George": (None, "St. George town"),
     "Sandgate F2": ("Sandgate", "Sandgate town"),
     "South Burlington": (None, "South Burlington city"),
     "Stowe Town": (None, "Stowe town"),
     "Stowe Town Stowe Village": ("Stowe Village", "Stowe town"),
     "Warren Gore": ("Warren's Gore", "Warren's gore"),
+    "Westmore": (None, "Westmore town"),
 }
 
 
