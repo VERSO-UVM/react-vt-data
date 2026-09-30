@@ -21,6 +21,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from api.posthog import PosthogClient
 from api.routes.post_routes.post_acs5_db import EXPORT_SOURCES as ACS5_EXPORT_SOURCES
 from api.routes.post_routes.post_ambulance import (
     EXPORT_SOURCES as AMBULANCE_EXPORT_SOURCES,
@@ -137,7 +138,11 @@ async def list_locations():
 
 
 @router.post("/csv")
-async def export_csv(body: ExportRequest, request: Request):
+async def export_csv(
+    body: ExportRequest,
+    request: Request,
+    posthog_client: PosthogClient,
+):
     """
     Return a filtered dataset as a CSV file.
 
@@ -193,6 +198,22 @@ async def export_csv(body: ExportRequest, request: Request):
         (body.jurisdiction or body.county or "vermont").lower().replace(" ", "-")
     )
     filename = f"vt-data-{body.source}-{area_slug}.csv"
+
+    if posthog_client:
+        posthog_client.capture(
+            "data_exported",
+            properties={
+                "$process_person_profile": False,
+                "source": body.source,
+                "row_count": len(df),
+                "is_truncated": truncated,
+                "filter_scope": (
+                    "jurisdiction"
+                    if body.jurisdiction
+                    else "county" if body.county else "statewide"
+                ),
+            },
+        )
 
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',

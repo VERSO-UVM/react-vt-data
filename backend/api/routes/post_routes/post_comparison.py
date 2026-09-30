@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from api.core_functions import spec_to_source
 from api.models import APIResponse, FilterSpec, make_response
+from api.posthog import PosthogClient
 from query import compare_variables, composite_index, dataset_registry
 from query.comparison import (
     NoDataError,
@@ -13,6 +14,7 @@ from query.comparison import (
 )
 
 logger = logging.getLogger(__name__)
+posthog_logs = logging.getLogger("posthog.exporter")
 router = APIRouter()
 
 
@@ -25,7 +27,11 @@ async def compare_datasets() -> dict:
 
 
 @router.post("/load/mapping/compare/{level}")
-async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
+async def compare(
+    level: str,
+    specs: list[FilterSpec],
+    posthog_client: PosthogClient,
+) -> APIResponse:
     """Bivariate comparison map: geojson in `data`, legend in `metadata`.
 
     `specs` carries two Cascade filter picks (Variable 1, Variable 2), each
@@ -97,11 +103,33 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+    dataset_count = len({dataset1, dataset2})
+    if posthog_client:
+        posthog_client.capture(
+            "comparison_map_requested",
+            properties={
+                "$process_person_profile": False,
+                "geography_level": level,
+                "dataset_count": dataset_count,
+            },
+        )
+    posthog_logs.info(
+        "comparison_map_completed",
+        extra={
+            "event": "comparison_map_completed",
+            "geography_level": level,
+            "dataset_count": dataset_count,
+        },
+    )
     return make_response(data=geojson, metadata={"legend": legend})
 
 
 @router.post("/load/mapping/compare/{dataset}/{level}/composite_index")
-async def compare_composite_index(dataset: str, level: str) -> APIResponse:
+async def compare_composite_index(
+    dataset: str,
+    level: str,
+    posthog_client: PosthogClient,
+) -> APIResponse:
     """A single-component PCA summary across every variable in the dataset,
     standardized relative to this level's own Vermont-wide average (not a
     national baseline). Independent of which two variables are selected."""
@@ -110,4 +138,13 @@ async def compare_composite_index(dataset: str, level: str) -> APIResponse:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+    if posthog_client:
+        posthog_client.capture(
+            "composite_index_requested",
+            properties={
+                "$process_person_profile": False,
+                "dataset": dataset,
+                "geography_level": level,
+            },
+        )
     return make_response(data=data, metadata={})

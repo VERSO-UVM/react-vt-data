@@ -3,6 +3,7 @@ from fastapi import APIRouter, Response
 from api.core_functions import request_to_source
 from api.metadata_registry import get_metadata
 from api.models import FilterRequest, make_response
+from api.posthog import PosthogClient
 from query import (
     get_soil_suit_geojson,
     get_soil_suit_legend,
@@ -82,18 +83,34 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/wastewater/service_area")
-async def wastewater_service_geojson(request: FilterRequest):
+async def wastewater_service_geojson(
+    request: FilterRequest,
+    posthog_client: PosthogClient,
+):
     source = request_to_source(request, "VersoWastewater_serviceAreas_info", "default")
     data = get_waste_service_areas_geojson([source])
+    if posthog_client:
+        posthog_client.capture(
+            "wastewater_map_requested",
+            properties={"$process_person_profile": False, "view_type": "service_area"},
+        )
     return Response(content=data, media_type="application/json")
 
 
 @router.post("/load/mapping/wastewater/treatment_facility")
-async def wastewater_facility_geojson(request: FilterRequest):
+async def wastewater_facility_geojson(
+    request: FilterRequest,
+    posthog_client: PosthogClient,
+):
     source = request_to_source(
         request, "VersoWastewater_treatmentFacilities_info", "default"
     )
     data = get_waste_treatment_facility_geojson([source])
+    if posthog_client:
+        posthog_client.capture(
+            "wastewater_map_requested",
+            properties={"$process_person_profile": False, "view_type": "treatment_facility"},
+        )
     return Response(content=data, media_type="application/json")
 
 
