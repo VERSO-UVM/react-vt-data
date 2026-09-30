@@ -65,6 +65,55 @@ boolean_remapper = {
 }
 
 
+# Zoning data Municipal_Name -> (corrected Municipal_Name or None (unchanged)
+MISSING_GEOID_FIXES = {
+    "Bennington Landgrove": ("Landgrove", "Landgrove town"),
+    "Enosburgh Enosburg Falls": ("Enosburg Falls", "Enosburgh town"),
+    "Huntington": (None, "Huntington town"),
+    "Hyde Park Town Hyde Park Village": ("Hyde Park Village", "Hyde Park town"),
+    "Morristown": (None, "Morristown town"),
+    "North Bennington": (None, "Bennington town"),
+    "Old Bennington": (None, "Bennington town"),
+    "Saint George": (None, "St. George town"),
+    "Sandgate F2": ("Sandgate", "Sandgate town"),
+    "South Burlington": (None, "South Burlington city"),
+    "Stowe Town": (None, "Stowe town"),
+    "Stowe Town Stowe Village": ("Stowe Village", "Stowe town"),
+    "Warren Gore": ("Warren's Gore", "Warren's gore"),
+}
+
+
+def fix_missing_geoids(
+    con: duckdb.DuckDBPyConnection, raw_df: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Fixes for zoning rows whose GEO_ID/Municipal_Name
+    are missing or wrong (~132 rows).
+    """
+    # Westmore, Newport Town and Peru have a blank Municipal_Name.
+    # The town is the District_Name.
+    blank = raw_df["Municipal_Name"].fillna("") == ""
+    raw_df.loc[blank, "Municipal_Name"] = raw_df.loc[blank, "District_Name"]
+
+    # Get the town names for joining
+    geoids = con.execute(
+        "SELECT CAST(GEOID AS VARCHAR), split_part(NAME, ',', 1) "
+        "FROM lake.RAW.vt_town_lines"
+    ).fetchall()
+    geoid_by_name = {name: geoid for geoid, name in geoids}
+
+    for name, (new_name, census_name) in MISSING_GEOID_FIXES.items():
+        rows = raw_df["Municipal_Name"] == name
+        if census_name in geoid_by_name:
+            raw_df.loc[rows, "GEO_ID"] = geoid_by_name[census_name]
+        if new_name:
+            raw_df.loc[rows, "Municipal_Name"] = new_name
+
+    # Small fix: Landgrove district (OBJECT_ID=894) had the wrong RPC.
+    raw_df.loc[raw_df["OBJECT_ID"] == 894, "RPC"] = "BCRC"
+    return raw_df
+
+
 def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """
     Reads the lake.RAW.zoning table into python memory
@@ -94,7 +143,8 @@ def read_raw_data(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     # Hardcoded fix for Burlington's "Residential - High Density" zoning district
     # Changes overlay status to "No"
     raw_df.loc[raw_df["OBJECT_ID"] == 1045, "Overlay_District"] = "No"
-
+    # Fill in missing GEOIDs for future joins
+    raw_df = fix_missing_geoids(con, raw_df)
     con.register("zoning_raw", raw_df)
 
     return raw_df
