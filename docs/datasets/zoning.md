@@ -46,7 +46,7 @@ tables that downstream queries read; see the
 | `County`                    | `VARCHAR`      | Vermont county containing the district.                                                                            | 14 Vermont counties                                                                                         | 1,739 (100.0%) |
 | `RPC`                       | `VARCHAR`      | Abbreviation of the Regional Planning Commission serving the municipality.                                         | `CCRPC`, `NVDA`, `TRORC`, `RRPC`, `ACRPC`, `CVRPC`, `NWRPC`, `BCRC`, `WRC`, `MARC`, `LCPC`                  | 1,739 (100.0%) |
 | `Municipal_Name`            | `VARCHAR`      | Name of the municipality (town, city, or village) whose bylaw defines the district.                                | 208 distinct; trailing space on almost every value                                                          | 1,739 (100.0%) |
-| `GEO_ID`                    | `VARCHAR`      | Census geographic identifier (GEOID) for the municipality, used to join to Census data. Missing for some rows.     | 10-digit string, e.g. `5000929125`                                                                          | 1,607 (92.4%)  |
+| `GEO_ID`                    | `VARCHAR`      | Census geographic identifier (GEOID) for the municipality, used to join to Census data. Missing for 132 rows (Fixed in `clean_zoning.py`)     | 10-digit string, e.g. `5000929125`                                                                          | 1,607 (92.4%)  |
 | `District_Name`             | `VARCHAR`      | Full name of the district as written in the municipal bylaw.                                                       | Free text (1,026 distinct)                                                                                  | 1,739 (100.0%) |
 | `Abbreviated_District_Name` | `VARCHAR`      | Short abbreviation of the district name used on maps and tables.                                                   | Free text (873 distinct)                                                                                    | 1,739 (100.0%) |
 | `District_Type`             | `VARCHAR`      | Classification of the district by primary land-use character.                                                      | `Mixed with Residential`, `Primarily Residential`, `Nonresidential`, `Overlay not Affecting Use`, `Overlay` | 1,739 (100.0%) |
@@ -210,7 +210,7 @@ tables that downstream queries read; see the
   EPSG:4326 (degrees), but these values run up to about 5.4e5 and 1.4e8, so they
   were computed in a different projection upstream and are not degrees. Compute
   area from the geometry instead (the cleaner derives `Acres` this way).
-- **Missing identifiers and dates.** `GEO_ID` is null on 132 rows and
+- **Missing identifiers and dates.** `GEO_ID` is null on 132 rows (Addressed in the `data_cleaning/clean_zoning.py` script) and
   `Bylaw_Date` on 504. `Bylaw_Date` spans 2006 to 2024, so districts in
   different towns reflect different bylaw vintages.
 - **Sparse rule columns.** Most numeric rule columns are populated on well under
@@ -232,18 +232,25 @@ The Atlas documentation also lists `FIPS6`, `GIS_ID`, `Last_Update`,
 
 ```sql
 -- Districts where 4+ unit housing is permitted by right, by RPC
-SELECT RPC, COUNT(*) AS districts
+SELECT 
+  RPC, 
+  COUNT(*) AS districts
 FROM lake.RAW.zoning
 WHERE F4F_Allowance = 'Permitted'
 GROUP BY RPC
 ORDER BY districts DESC;
 
 -- Trim names before joining to other tables
-SELECT TRIM(Municipal_Name) AS town, District_Name, F1F_Min_Lot_Size
+SELECT 
+  TRIM(Municipal_Name) AS town, 
+  District_Name, 
+  F1F_Min_Lot_Size
 FROM lake.RAW.zoning
 WHERE TRIM(Municipal_Name) = 'Middlebury';
 
 -- Geometry back to a spatial type
-SELECT OBJECT_ID, ST_GeomFromWKB(geometry) AS geom
+SELECT 
+  OBJECT_ID, 
+  ST_GeomFromWKB(geometry) AS geom
 FROM lake.RAW.zoning;
 ```
