@@ -30,7 +30,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 import {
-  Title,
   Box,
   Group,
   Text,

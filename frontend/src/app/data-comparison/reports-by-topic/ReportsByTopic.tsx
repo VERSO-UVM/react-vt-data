@@ -6,7 +6,6 @@ import axios from 'axios';
 import {
   Alert,
   Box,
-  Button,
   Container,
   Group,
   Grid,
@@ -30,7 +29,7 @@ import {
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
 import { DataRow } from '@/types/cachedCharts';
-import { IconDownload, IconInfoCircle } from '@tabler/icons-react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import { exportReport } from '@/utils/exportReport';
 import { DashboardSection, TOPIC_SLUGS, topicPath } from './topics';
 

@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { ChartItem } from '@/types/cachedCharts';
 import { ScrollArea, SegmentedControl, Table } from '@mantine/core';
 import { useState } from 'react';
 import { usePdfMode } from '@/contexts/PdfModeContext';

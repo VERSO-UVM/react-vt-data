@@ -1,7 +1,6 @@
 import { Card, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconCalendarStats } from '@tabler/icons-react';
 import { DataRow } from '@/types/cachedCharts';
-import { COLORS, FONTS } from '@/app/theme';
 
 interface MedianAgeCardProps {
   primary: DataRow[];

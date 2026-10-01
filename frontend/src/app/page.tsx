@@ -25,7 +25,6 @@ import {
   MapTrifoldIcon,
   ChartBarIcon,
   DownloadSimpleIcon,
-  HandHeartIcon,
   PencilSimpleIcon,
   GithubLogoIcon,
   UsersThreeIcon,

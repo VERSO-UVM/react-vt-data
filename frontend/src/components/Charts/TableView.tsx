@@ -13,9 +13,8 @@ import {
   SegmentedControl,
 } from '@mantine/core';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
-import { COLORS, FONTS } from '@/app/theme';
+import { COLORS } from '@/app/theme';
 import { FileXlsIcon } from '@phosphor-icons/react';
-import { chartDataReducer } from 'recharts/types/state/chartDataSlice';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
