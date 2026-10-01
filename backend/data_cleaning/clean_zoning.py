@@ -109,6 +109,12 @@ def fix_missing_geoids(
         rows = raw_df["Municipal_Name"] == name
         if census_name in geoid_by_name:
             raw_df.loc[rows, "GEO_ID"] = geoid_by_name[census_name]
+        # If there is a mismatch between the names, log it!
+        else:
+            print(
+                "No census match for zoning Municipal_Name"
+                + f"\033[1m{name}\033[0m to Census name \033[1m{census_name}\033[0m"
+            )
         if new_name:
             raw_df.loc[rows, "Municipal_Name"] = new_name
 
