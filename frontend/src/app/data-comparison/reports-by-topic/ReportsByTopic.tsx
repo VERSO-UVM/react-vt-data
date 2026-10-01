@@ -30,7 +30,6 @@ import {
 // import { createChartItem } from '@/utils/itemFactory';
 import { DataRow } from '@/types/cachedCharts';
 import { IconInfoCircle } from '@tabler/icons-react';
-import { exportReport } from '@/utils/exportReport';
 import { DashboardSection, TOPIC_SLUGS, topicPath } from './topics';
 
 // ---------------------------------------------------------------------------
@@ -555,7 +554,6 @@ export default function ReportsByTopic({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Fetch both locations whenever section or location names change — plus,
@@ -792,22 +790,6 @@ export default function ReportsByTopic({
       ...geographyNotes(SECTIONS[section], myLocation, comparison),
     ]),
   );
-
-  const handleExportPdf = async () => {
-    setIsExporting(true);
-    try {
-      await exportReport('demographics-dashboard-report', {
-        title: section,
-        primaryName: myLocation.name,
-        comparisonName: comparison.name,
-        year: year,
-      });
-    } catch (err) {
-      console.error('PDF export failed:', err);
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   // ---------------------------------------------------------------------------
   // Render

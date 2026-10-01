@@ -355,7 +355,7 @@ export default function DataViewerPage() {
     Record<string, DataRow[]>
   >({});
 
-  const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
+  const [focusMode] = useState<'all' | 'focus'>('all');
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const applyFilters = useApplyFilters();
