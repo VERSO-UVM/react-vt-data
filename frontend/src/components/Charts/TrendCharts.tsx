@@ -327,6 +327,29 @@ export interface MultiSeriesConfig {
   nameSuffix?: boolean;
 }
 
+// The series' value for a year; summed series add up their matches.
+const getValue = (
+  rows: TrendRow[],
+  year: number,
+  s: SeriesDef,
+  valueField: string,
+) => {
+  if (s.aggregateFrom) {
+    const sum = s.aggregateFrom.reduce((acc, label) => {
+      const v = (rows.find((r) => r.year === year && r.Variable === label)?.[
+        valueField
+      ] ?? 0) as number;
+      return acc + v;
+    }, 0);
+    return sum > 0 ? Math.round(sum * 10) / 10 : null;
+  }
+  const label = s.matchVariable ?? s.key;
+  return (
+    rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ??
+    null
+  );
+};
+
 export const MultiSeriesTrendChart = <TData,>({
   chart,
   config,
@@ -341,7 +364,7 @@ export const MultiSeriesTrendChart = <TData,>({
   const isGallery = view === 'gallery';
   const isPdfMode = usePdfMode();
   const {
-    series,
+    series: seriesConfig,
     valueField,
     format,
     showHelperText = true,
@@ -351,6 +374,14 @@ export const MultiSeriesTrendChart = <TData,>({
   } = config;
 
   const { hidden, toggleSeries, legendFormatter } = useToggle();
+
+  // Configs are inline literals (new identity every render), so re-parse by
+  // content: the memos below re-run only when the series actually change.
+  const seriesJson = JSON.stringify(seriesConfig);
+  const series = useMemo(
+    () => JSON.parse(seriesJson) as SeriesDef[],
+    [seriesJson],
+  );
 
   const data = chart.data as TrendRow[];
   const compareData = chart.compareData as TrendRow[];
@@ -373,7 +404,7 @@ export const MultiSeriesTrendChart = <TData,>({
       own: split(data, s),
       other: split(compareData, s),
     }));
-  }, [data, compareData, JSON.stringify(series)]);
+  }, [data, compareData, series]);
   const maxPerYear = Math.max(
     0,
     ...splitSeries.flatMap(({ own, other }) => [own.maxPerX, other.maxPerX]),
@@ -384,23 +415,6 @@ export const MultiSeriesTrendChart = <TData,>({
   );
   // Lines past a series' first, when it split; the first keeps s.key.
   const extraKey = (s: SeriesDef, i: number) => `${s.key} (${i + 1})`;
-
-  const getValue = (rows: TrendRow[], year: number, s: SeriesDef) => {
-    if (s.aggregateFrom) {
-      const sum = s.aggregateFrom.reduce((acc, label) => {
-        const v = (rows.find((r) => r.year === year && r.Variable === label)?.[
-          valueField
-        ] ?? 0) as number;
-        return acc + v;
-      }, 0);
-      return sum > 0 ? Math.round(sum * 10) / 10 : null;
-    }
-    const label = s.matchVariable ?? s.key;
-    return (
-      rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ??
-      null
-    );
-  };
 
   const years = useMemo(
     () =>
@@ -413,9 +427,9 @@ export const MultiSeriesTrendChart = <TData,>({
     return years.map((year) => {
       const pt: DataRow = { year };
       series.forEach((s, si) => {
-        pt[s.key] = getValue(data, year, s);
+        pt[s.key] = getValue(data, year, s, valueField);
         if (compareData && compareData.length > 0)
-          pt[`${s.key} (cmp)`] = getValue(compareData, year, s);
+          pt[`${s.key} (cmp)`] = getValue(compareData, year, s, valueField);
         if (s.aggregateFrom) return;
         const { own, other } = splitSeries[si];
         const at = (line: { rows: DataRow[] }) =>
@@ -431,14 +445,7 @@ export const MultiSeriesTrendChart = <TData,>({
       });
       return pt;
     });
-  }, [
-    years,
-    data,
-    compareData,
-    JSON.stringify(series),
-    valueField,
-    splitSeries,
-  ]);
+  }, [years, data, compareData, series, valueField, splitSeries]);
 
   useEffect(() => {
     onPlotData?.(plotData);

@@ -66,7 +66,7 @@ function StatCards() {
         setData(data as Row[]);
       },
     });
-  }, [myLocation, yearMin, yearMax]);
+  }, [applyFilters, myLocation, yearMin, yearMax]);
 
   const metrics = data.reduce<Record<string, number>>((acc, d) => {
     acc[d.Variable] = d.Value;
@@ -333,6 +333,11 @@ function ProfileField({
   );
 }
 
+const tableDefs = chartDefs.filter((c) => c.subtype.startsWith('renderTable'));
+const nonTableDefs = chartDefs.filter(
+  (c) => !c.subtype.startsWith('renderTable'),
+);
+
 export default function DataViewerPage() {
   const {
     myLocation,
@@ -354,12 +359,6 @@ export default function DataViewerPage() {
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const applyFilters = useApplyFilters();
-  const tableDefs = chartDefs.filter((c) =>
-    c.subtype.startsWith('renderTable'),
-  );
-  const nonTableDefs = chartDefs.filter(
-    (c) => !c.subtype.startsWith('renderTable'),
-  );
 
   const categoryIcons: Record<string, Icon> = {
     Housing: HouseLineIcon,
@@ -423,7 +422,7 @@ export default function DataViewerPage() {
           })),
       });
     });
-  }, [myLocation, comparison, yearMin, yearMax]);
+  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
 
   useEffect(() => {
     const seen = new Set<string>();
@@ -485,7 +484,7 @@ export default function DataViewerPage() {
         });
       }
     });
-  }, [myLocation, comparison, yearMin, yearMax]);
+  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
 
   // QCEW employment data is county-level only; swap to a note card for town selections
   const isSubcountyLocation = myLocation.type === 'town';

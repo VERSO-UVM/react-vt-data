@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import axios from 'axios';
 import { Location } from '../profile/profileStore';
 
@@ -10,7 +11,7 @@ type apiFilterParams = {
 };
 
 export function useApplyFilters() {
-  return async function apply(params: apiFilterParams) {
+  return useCallback(async function apply(params: apiFilterParams) {
     const { dataURL, filters, onData } = params;
     if (!dataURL) return;
     try {
@@ -24,7 +25,7 @@ export function useApplyFilters() {
     } catch (err) {
       console.error('Error fetching filtered data:', err);
     }
-  };
+  }, []);
 }
 
 type filterRange = { col: string; selected: [number, number] };
