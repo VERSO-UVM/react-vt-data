@@ -109,7 +109,7 @@ def fetch_quarter(year: int, quarter: int, area_fips: str) -> pd.DataFrame | Non
         df = pd.read_csv(StringIO(r.text), dtype=str)
         df.columns = df.columns.str.strip()
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year}Q{quarter} / {area_fips}: {e}")
         return None
 

@@ -102,7 +102,7 @@ def fetch(
             if c[0] == "B":
                 df[c] = pd.to_numeric(df[c], errors="coerce")
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year} / {for_clause}: {e}")
         return None
 
@@ -116,7 +116,7 @@ def pct(val: float, total: float) -> float | None:
     try:
         if total and total > 0:
             return round(val / total * 100, 1)
-    except Exception:
+    except Exception:  # noqa: BLE001 -- skip and keep the run going
         pass
     return None
 

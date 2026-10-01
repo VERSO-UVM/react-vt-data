@@ -75,7 +75,7 @@ def inspect_schema(schema: str) -> None:
 
                 print(f"Years: {years[0]} → {years[1]} ({years[2]} distinct)")
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- skip and keep the run going
                 print(f"Could not inspect years: {e}")
 
 

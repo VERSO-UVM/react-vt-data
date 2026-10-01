@@ -74,7 +74,7 @@ def fetch_table(year, table, for_clause, in_clause):
         df["year"] = year
         df["table"] = table
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year} / {table} / {for_clause}: {e}")
         return None
 
@@ -134,7 +134,7 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
                 tidy_year["table"] = table
                 tidy_frames.append(tidy_year)
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- skip and keep the run going
                 print(f"  SKIP tidy {year} / {table}: {e}")
 
         if tidy_frames:
@@ -155,7 +155,7 @@ def merge_tidy_tables():
         path = f"{STORAGE_LOCATION}/vt_acs5_{label}_data_tidy.parquet"
         try:
             tidy_frames.append(pd.read_parquet(path))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- skip and keep the run going
             print(f"  SKIP {path}: {e}")
 
     if tidy_frames:
