@@ -43,8 +43,8 @@ const FORMATTERS: Record<
   FormatType,
   {
     unit?: string;
-    axisFormatter?: (v: any) => string;
-    tooltip: (v: any, decimals?: number) => string;
+    axisFormatter?: (v: number) => string;
+    tooltip: (v: unknown, decimals?: number) => string;
   }
 > = {
   currency: {
@@ -145,8 +145,8 @@ export const SingleSeriesTrendChart = <TData,>({
 
   const { hidden, toggleSeries, legendFormatter } = useToggle();
 
-  const data = chart.data as any[];
-  const compareData = chart.compareData as any[];
+  const data = chart.data as TrendRow[];
+  const compareData = chart.compareData as TrendRow[];
 
   const seriesName = displayName ?? seriesKey ?? valueField;
   const labels = chart.chartParams?.legendLabels as
@@ -174,7 +174,8 @@ export const SingleSeriesTrendChart = <TData,>({
   const otherKey = (i: number) => `${lineKey(seriesName, i)} (cmp)`;
 
   const years = useMemo(
-    () => (data ? Array.from(new Set(data.map((r) => r.year))).sort() : []),
+    () =>
+      data ? Array.from(new Set(data.map((r) => r.year as number))).sort() : [],
     [data],
   );
 
@@ -238,14 +239,14 @@ export const SingleSeriesTrendChart = <TData,>({
             tickFormatter={fmt.axisFormatter}
           />
           {!isGallery && (
-            <Tooltip formatter={(v: any) => fmt.tooltip(v, decimals)} />
+            <Tooltip formatter={(v) => fmt.tooltip(v, decimals)} />
           )}
           {!isGallery && (
             <Legend
               iconSize={LEGEND_ICON_SIZE}
               align="right"
               verticalAlign="bottom"
-              onClick={(e: any) => toggleSeries(e.dataKey)}
+              onClick={(e) => toggleSeries(String(e.dataKey))}
               formatter={legendFormatter}
               wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
             />
@@ -351,8 +352,8 @@ export const MultiSeriesTrendChart = <TData,>({
 
   const { hidden, toggleSeries, legendFormatter } = useToggle();
 
-  const data = chart.data as any[];
-  const compareData = chart.compareData as any[];
+  const data = chart.data as TrendRow[];
+  const compareData = chart.compareData as TrendRow[];
   const labels = chart.chartParams?.legendLabels as
     [string, string] | undefined;
 
@@ -384,13 +385,12 @@ export const MultiSeriesTrendChart = <TData,>({
   // Lines past a series' first, when it split; the first keeps s.key.
   const extraKey = (s: SeriesDef, i: number) => `${s.key} (${i + 1})`;
 
-  const getValue = (rows: any[], year: number, s: SeriesDef) => {
+  const getValue = (rows: TrendRow[], year: number, s: SeriesDef) => {
     if (s.aggregateFrom) {
       const sum = s.aggregateFrom.reduce((acc, label) => {
-        const v =
-          rows.find((r) => r.year === year && r.Variable === label)?.[
-            valueField
-          ] ?? 0;
+        const v = (rows.find((r) => r.year === year && r.Variable === label)?.[
+          valueField
+        ] ?? 0) as number;
         return acc + v;
       }, 0);
       return sum > 0 ? Math.round(sum * 10) / 10 : null;
@@ -403,14 +403,15 @@ export const MultiSeriesTrendChart = <TData,>({
   };
 
   const years = useMemo(
-    () => (data ? Array.from(new Set(data.map((r) => r.year))).sort() : []),
+    () =>
+      data ? Array.from(new Set(data.map((r) => r.year as number))).sort() : [],
     [data],
   );
 
   const plotData = useMemo(() => {
     if (!data || data.length === 0) return [];
     return years.map((year) => {
-      const pt: Record<string, any> = { year };
+      const pt: DataRow = { year };
       series.forEach((s, si) => {
         pt[s.key] = getValue(data, year, s);
         if (compareData && compareData.length > 0)
@@ -479,13 +480,13 @@ export const MultiSeriesTrendChart = <TData,>({
             domain={['auto', 'auto']}
             tickFormatter={fmt.axisFormatter}
           />
-          {!isGallery && <Tooltip formatter={(v: any) => fmt.tooltip(v)} />}
+          {!isGallery && <Tooltip formatter={(v) => fmt.tooltip(v)} />}
           {!isGallery && (
             <Legend
               iconSize={LEGEND_ICON_SIZE}
               align="right"
               verticalAlign="bottom"
-              onClick={(e: any) => toggleSeries(e.dataKey)}
+              onClick={(e) => toggleSeries(String(e.dataKey))}
               formatter={legendFormatter}
               wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
             />
@@ -570,8 +571,8 @@ export const MultiSeriesTrendChart = <TData,>({
 };
 
 // SINGLE CHARTS
-const single = (
-  chart: ChartItem<any>,
+const single = <TData,>(
+  chart: ChartItem<TData>,
   config: SingleSeriesConfig,
   view?: 'gallery' | 'report',
   onPlotData?: (rows: DataRow[]) => void,
@@ -863,8 +864,8 @@ export const HousingIncomeBurdenChart = <TData,>({
   );
 
 // MULTI CHARTS
-const multi = (
-  chart: ChartItem<any>,
+const multi = <TData,>(
+  chart: ChartItem<TData>,
   config: MultiSeriesConfig,
   view?: 'gallery' | 'report',
   onPlotData?: (rows: DataRow[]) => void,
@@ -998,7 +999,7 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
   ).sort((a, b) => Number(a) - Number(b));
 
   const plotData = allYears.map((year) => {
-    const pt: Record<string, unknown> = { year };
+    const pt: DataRow = { year };
     primary.lines.forEach((line, i) => {
       pt[`primary${i}`] = line.rows.find((r) => r.year === year)?.Value ?? null;
     });

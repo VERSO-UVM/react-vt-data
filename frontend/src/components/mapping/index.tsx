@@ -6,7 +6,7 @@ import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
 import { FlyToInterpolator } from '@deck.gl/core';
 import { WebMercatorViewport } from '@math.gl/web-mercator';
-import type { LayersList } from '@deck.gl/core';
+import type { LayersList, MapViewState } from '@deck.gl/core';
 import type { FeatureCollection } from 'geojson';
 import {
   Paper,
@@ -209,7 +209,7 @@ export default function VTMap({
   const mapRef = useRef<MapRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [viewState, setViewState] = useState<any>({
+  const [viewState, setViewState] = useState<MapViewState>({
     ...INITIAL_VIEW_STATE,
     zoom: initialZoom,
   });
@@ -238,7 +238,7 @@ export default function VTMap({
         },
       );
 
-      setViewState((prev: any) => ({
+      setViewState((prev) => ({
         ...prev,
         longitude,
         latitude,
@@ -277,8 +277,8 @@ export default function VTMap({
       .catch(() => {});
   }, []);
 
-  const onViewStateChange = useCallback((params: { viewState: any }) => {
-    const vs = params.viewState;
+  const onViewStateChange = useCallback((params: { viewState: unknown }) => {
+    const vs = params.viewState as MapViewState;
     setViewState({
       ...vs,
       zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),

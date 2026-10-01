@@ -34,7 +34,7 @@ import {
   NewspaperIcon,
 } from '@phosphor-icons/react';
 
-import { useProfile } from '@/components/profile/profileStore';
+import { useProfile, type Location } from '@/components/profile/profileStore';
 
 import { COLORS, FONTS } from '@/app/theme';
 
@@ -244,8 +244,8 @@ function HeroSection({
   yearMax,
   openProfileModal,
 }: {
-  myLocation: any;
-  comparison: any;
+  myLocation: Location;
+  comparison: Location;
   interests: string[];
   yearMin: number;
   yearMax: number;

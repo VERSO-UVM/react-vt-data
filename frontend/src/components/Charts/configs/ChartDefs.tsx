@@ -12,7 +12,7 @@ export interface TableRowDef {
 
 export interface TableConfig {
   variable?: string;
-  extraParams?: Record<string, any>; // year_min, year_max, etc.
+  extraParams?: Record<string, unknown>; // year_min, year_max, etc.
 }
 
 export interface ChartDef {

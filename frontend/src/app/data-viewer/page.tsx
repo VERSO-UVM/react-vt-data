@@ -22,7 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
-import { useProfile } from '@/components/profile/profileStore';
+import { useProfile, type Location } from '@/components/profile/profileStore';
 import {
   useApplyFilters,
   buildFilters,
@@ -127,8 +127,8 @@ function HeroSection({
   activeTab,
   setActiveTab,
 }: {
-  myLocation: any;
-  comparison: any;
+  myLocation: Location;
+  comparison: Location;
   interests: string[];
   yearMin: number;
   yearMax: number;
@@ -342,9 +342,7 @@ export default function DataViewerPage() {
     yearMax,
     openProfileModal,
   } = useProfile();
-  const [chartData, setChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
-  >({});
+  const [chartData, setChartData] = useState<Record<string, ChartPayload>>({});
   const [compareChartData, setCompareChartData] = useState<
     Record<string, ChartPayload>
   >({});

@@ -312,7 +312,13 @@ function HeroSection({
   year,
   setYear,
   availableYears,
-}: any) {
+}: {
+  section: string;
+  setSection: (value: string) => void;
+  year: number;
+  setYear: (value: number) => void;
+  availableYears: number[];
+}) {
   return (
     <Box
       style={{
