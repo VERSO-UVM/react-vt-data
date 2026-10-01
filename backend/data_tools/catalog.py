@@ -593,6 +593,7 @@ _DATASET_LIST = [
         "VERSO Wastewater Infrastructure Mapping",
         INFRA_CAVEATS,
         name_column="town",
+        id_column="geoid",
         fixed_geo_type="county_subdivision",
         filter_columns=(
             "area_id",
@@ -616,6 +617,7 @@ _DATASET_LIST = [
         "VERSO Wastewater Infrastructure Mapping",
         INFRA_CAVEATS,
         name_column="town",
+        id_column="geoid",
         fixed_geo_type="county_subdivision",
         value_columns={"design_hydraulic_capacity_mgd": "million gallons per day"},
         filter_columns=(
@@ -1638,6 +1640,13 @@ def build_locations(conn: Any) -> list[dict[str, Any]]:
                 aliases.add(short[: len(base)])
             else:
                 aliases = {alias for alias in aliases if alias.casefold() != base}
+            # Tables spell "St." as Saint / St / St. inconsistently (e.g. "St. Albans city")
+            aliases.update(
+                variant + alias[4:]
+                for alias in tuple(aliases)
+                if "," not in alias and alias.casefold().startswith("st. ")
+                for variant in ("Saint ", "St ")
+            )
             # Some infrastructure inventories concatenate municipality words.
             aliases.update(
                 alias.replace(" ", "")
