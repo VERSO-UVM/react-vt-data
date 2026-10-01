@@ -76,7 +76,8 @@ const useToggle = () => {
   const toggleSeries = (key: string) =>
     setHidden((prev) => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   const legendFormatter = (value: string) => (
@@ -367,9 +368,6 @@ export const MultiSeriesTrendChart = <TData,>({
     series: seriesConfig,
     valueField,
     format,
-    showHelperText = true,
-    showCompareNote = true,
-    legendPosition = 'bottom-right',
     nameSuffix = true,
   } = config;
 

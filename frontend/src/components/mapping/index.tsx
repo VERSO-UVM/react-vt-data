@@ -202,7 +202,6 @@ export default function VTMap({
   controllerOn = true,
   initialZoom = 7,
   targetBBox,
-  largeBorders = false,
   onFeatureHover,
   highlightId = null,
 }: MyMapProps) {
@@ -322,21 +321,6 @@ export default function VTMap({
   }) => {
     setSelected(info.object ? info.object.properties.tooltip : null);
   };
-
-  const [lineWidth, setLineWidth] = useState<number>(0.5);
-  const [lineColor, setLineColor] = useState<[number, number, number, number]>([
-    80, 80, 80, 80,
-  ]);
-
-  useEffect(() => {
-    if (largeBorders) {
-      setLineWidth(3);
-      setLineColor([0, 0, 0, 100]);
-    } else {
-      setLineWidth(0.5);
-      setLineColor([80, 80, 80, 80]);
-    }
-  }, [largeBorders]);
 
   const getFillColor = (d: {
     properties?: { rgba_color?: [number, number, number, number] };
