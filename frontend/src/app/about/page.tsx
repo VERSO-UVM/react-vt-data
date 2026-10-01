@@ -780,7 +780,7 @@ function FAQSection() {
           <Link href="/data-sources" style={{ color: COLORS.spruceDeep }}>
             Data Sources
           </Link>{' '}
-          to learn more about what's available.
+          to learn more about what&apos;s available.
         </>
       ),
     },
