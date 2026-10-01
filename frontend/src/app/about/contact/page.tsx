@@ -7,6 +7,7 @@ import {
   Box,
   Button,
   Card,
+  Checkbox,
   Container,
   Group,
   Select,
@@ -44,6 +45,7 @@ interface FeedbackFormValues {
   email: string;
   feedbackType: string;
   message: string;
+  joinEmailList: boolean;
 }
 
 function FeedbackForm() {
@@ -56,6 +58,7 @@ function FeedbackForm() {
       email: '',
       feedbackType: '',
       message: '',
+      joinEmailList: false,
     },
     validate: {
       name: isNotEmpty('Please enter your name'),
@@ -81,6 +84,7 @@ function FeedbackForm() {
           email: values.email,
           feedback_type: values.feedbackType,
           message: values.message,
+          email_list_opt_in: values.joinEmailList ? 'Yes' : 'No',
         }),
       });
 
@@ -183,6 +187,25 @@ function FeedbackForm() {
                 },
               }}
             />
+
+            <Box
+              p="md"
+              style={{
+                border: `1px solid ${COLORS.line}`,
+                borderLeft: `4px solid ${COLORS.spruce}`,
+                borderRadius: 'var(--mantine-radius-md)',
+                background: COLORS.birchDim,
+              }}
+            >
+              <Checkbox
+                size="md"
+                color={COLORS.spruce}
+                label="Join our email list"
+                description="Updates on new data, features, and reports."
+                styles={{ label: { fontWeight: 600, color: COLORS.ink } }}
+                {...form.getInputProps('joinEmailList', { type: 'checkbox' })}
+              />
+            </Box>
 
             {status === 'success' && (
               <Alert
