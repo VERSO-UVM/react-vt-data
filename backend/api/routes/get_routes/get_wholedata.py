@@ -32,7 +32,7 @@ async def read_flood_data():
 
 # VT Municipalities Endpoint
 @router.get("/data/vermont/municipalities")
-async def read_municipalities_data():
+def read_municipalities_data():
     with open(
         DATA_DIR / "vermont" / "municipalities.json", "r", encoding="utf-8"
     ) as file:
