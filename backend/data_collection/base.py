@@ -115,9 +115,13 @@ def fetch(
 def pct(val: float, total: float) -> float | None:
     try:
         if total and total > 0:
-            return round(val / total * 100, 1)
-    except Exception:  # noqa: BLE001 -- skip and keep the run going
-        pass
+            return round((val / total) * 100, 1)
+    except OverflowError:
+        print(f"OverflowError computing pct({val}, {total})")
+    except FloatingPointError:
+        print(f"FloatingPointError computing pct({val}, {total})")
+    except ValueError:
+        print(f"ValueError computing pct({val}, {total})")
     return None
 
 
