@@ -30,6 +30,7 @@ import pandas as pd
 import requests
 
 from data_collection.census import split_name_col
+from query.clock import EASTERN_STD_TIME
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -52,7 +53,7 @@ ALL_GEOS: dict[str, tuple[str, str]] = {
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
 
 
-MAX_YEAR = datetime.now().year - 2
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 2
 
 # ---------------------------------------------------------------------------
 # Data structures

@@ -20,6 +20,7 @@ import requests
 
 from data_collection.base import ALL_GEOS
 from data_collection.census import tidy_census
+from query.clock import EASTERN_STD_TIME
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -36,7 +37,7 @@ TABLES = {
 STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 

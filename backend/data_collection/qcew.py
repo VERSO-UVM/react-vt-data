@@ -25,6 +25,8 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from query.clock import EASTERN_STD_TIME
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -89,7 +91,7 @@ SECTOR_ORDER = [
 BASE_URL = "https://data.bls.gov/cew/data/api/{year}/{q}/area/{fips}.csv"
 QUARTERS = [1, 2, 3, 4]
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
