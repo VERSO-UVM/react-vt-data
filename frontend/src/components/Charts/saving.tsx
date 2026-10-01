@@ -1,26 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useItems } from '../ItemsProvider';
 import { useProfile } from '@/components/profile/profileStore';
-import { Button, Transition } from '@mantine/core';
+import Link from 'next/link';
+import { Anchor, Button, Group, Transition } from '@mantine/core';
 import { CheckIcon, XIcon } from '@phosphor-icons/react';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { COLORS } from '@/app/theme';
-
-// Toggle include/exclude for auto-populated working report charts
-interface ToggleProps {
-  defId: string;
-  isIncluded: boolean;
-  onToggle: () => void;
-}
-export function ToggleChart({ isIncluded, onToggle }: ToggleProps) {
-  const button_color = isIncluded ? COLORS.red : COLORS.spruce;
-
-  return (
-    <Button variant="filled" color={button_color} onClick={onToggle}>
-      {isIncluded ? 'Exclude from report' : 'Include in report'}
-    </Button>
-  );
-}
 
 // Save an externally-built chart (comparison pages, etc.) to the working report.
 // If defId is provided, marks it included in the auto-populated set instead of
@@ -32,8 +17,14 @@ interface AddChartProps {
 }
 
 export function AddChart({ chart, defId }: AddChartProps) {
-  const { addItem, removeItem, items, excludedIds, toggleExcluded } =
-    useItems();
+  const {
+    addItem,
+    removeItem,
+    items,
+    excludedIds,
+    toggleExcluded,
+    setSessionInitialized,
+  } = useItems();
   const { interests } = useProfile();
 
   const stableId =
@@ -70,6 +61,9 @@ export function AddChart({ chart, defId }: AddChartProps) {
     e.stopPropagation();
 
     if (defId) {
+      // Explicit choice: stop the working report from re-deriving inclusion
+      // from interests on first visit and wiping this out.
+      setSessionInitialized(true);
       toggleExcluded(defId);
       return;
     }
@@ -87,20 +81,35 @@ export function AddChart({ chart, defId }: AddChartProps) {
   }
 
   return (
-    <Button
-      onClick={handleClick}
-      color={inReport ? 'red' : 'blue'}
-      variant={inReport ? 'filled' : 'light'}
-      leftSection={
-        inReport ? (
-          <XIcon size={12} weight="bold" />
-        ) : (
-          <CheckIcon size={16} weight="bold" />
-        )
-      }
-    >
-      {inReport ? 'Remove from working report' : 'Add to working report'}
-    </Button>
+    <Group gap="sm">
+      <Button
+        onClick={handleClick}
+        color={inReport ? COLORS.red : COLORS.spruce}
+        variant={inReport ? 'light' : 'filled'}
+        radius="xl"
+        size="xs"
+        leftSection={
+          inReport ? (
+            <XIcon size={14} weight="bold" />
+          ) : (
+            <CheckIcon size={14} weight="bold" />
+          )
+        }
+      >
+        {inReport ? 'Remove from report' : 'Add to report'}
+      </Button>
+      {inReport && (
+        <Anchor
+          component={Link}
+          href="/working-report"
+          size="xs"
+          c={COLORS.spruce}
+          onClick={(e) => e.stopPropagation()}
+        >
+          Added — view report →
+        </Anchor>
+      )}
+    </Group>
   );
 }
 

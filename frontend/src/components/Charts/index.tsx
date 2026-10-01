@@ -35,7 +35,6 @@ export { EmploymentAreaChart } from './EmploymentAreaChart';
 
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import {
-  Badge,
   Card,
   Box,
   Title,
@@ -49,15 +48,17 @@ import {
   ScrollArea,
   TextInput,
   Textarea,
+  Tooltip,
 } from '@mantine/core';
 import {
   CornersOutIcon,
   CornersInIcon,
   PencilSimpleIcon,
   DotsSixVerticalIcon,
+  XIcon,
 } from '@phosphor-icons/react';
 import * as motion from 'motion/react-client';
-import { AddChart, RemoveChart, ToggleChart } from './saving';
+import { AddChart, RemoveChart } from './saving';
 import { useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 import { usePdfMode } from '@/contexts/PdfModeContext';
@@ -142,36 +143,39 @@ export const ChartCard = <TData extends DataRow>({
 
   const [trendPlotData, setTrendPlotData] = useState<DataRow[] | undefined>();
 
-  const content = selfManagesViews ? (
-    <ChartComponent chart={chart} view={view} />
-  ) : isTablePrimary ? (
-    localView === 'chart' && TrendComponent ? (
-      <TrendComponent chart={chart} view={view} onPlotData={setTrendPlotData} />
-    ) : TrendComponent ? (
-      <TableView chart={chart} rows={trendPlotData} />
-    ) : (
+  const PlotComponent = isTablePrimary ? TrendComponent : ChartComponent;
+
+  const content =
+    selfManagesViews || !PlotComponent ? (
       <ChartComponent chart={chart} view={view} />
-    )
-  ) : (
-    <>
-      <Box display={localView === 'chart' ? 'block' : 'none'} h="100%">
-        <ChartComponent
-          chart={chart}
-          view={view}
-          onPlotData={setTrendPlotData} // TypeScript will now accept this cleanly!
-        />
-      </Box>
-
-      {localView === 'table' && (
-        <Box h={400}>
-          <TableView chart={chart} rows={trendPlotData} />
+    ) : (
+      <>
+        {/* Stays mounted (just hidden) while the table shows: it derives the
+            rows the table displays via onPlotData. Unmounting it left a card
+            that mounts straight into table view — e.g. a persisted view on a
+            re-included chart — falling back to the raw long-format data. */}
+        <Box className={classes.plotLayer} data-hidden={localView !== 'chart'}>
+          <PlotComponent
+            chart={chart}
+            view={view}
+            onPlotData={setTrendPlotData}
+          />
         </Box>
-      )}
-    </>
-  );
 
-  const isHighlighted = matchedCategories.length > 0;
-  const allCategories = chart.categories ?? [];
+        {localView === 'table' &&
+          (isTablePrimary ? (
+            <TableView chart={chart} rows={trendPlotData} />
+          ) : (
+            <Box h={400}>
+              <TableView chart={chart} rows={trendPlotData} />
+            </Box>
+          ))}
+      </>
+    );
+
+  // Report sections already group by category, so the interest highlight
+  // only helps when browsing the gallery.
+  const isHighlighted = isGallery && matchedCategories.length > 0;
 
   // Table-primary items showing their trend chart still need a definite
   // height in PDF mode — the chart's ResponsiveContainer is height="100%",
@@ -197,7 +201,7 @@ export const ChartCard = <TData extends DataRow>({
         padding={isGallery ? 'sm' : 'lg'}
         radius="md"
         withBorder={showBorder}
-        className={isGallery ? classes.galleryCard : undefined}
+        className={isGallery ? classes.galleryCard : classes.reportCard}
         data-chart-id={customizationId}
         data-chart-subtype={chart.subtype}
         onClick={
@@ -244,7 +248,13 @@ export const ChartCard = <TData extends DataRow>({
                 style={{ flex: '0 1 auto' }}
               />
             ) : (
-              <Title order={isGallery ? 5 : 2} fw={500} lineClamp={1}>
+              <Title
+                order={isGallery ? 5 : 4}
+                fw={isGallery ? 500 : 600}
+                lineClamp={1}
+                onClick={canEdit ? () => setIsEditingTitle(true) : undefined}
+                style={canEdit ? { cursor: 'text' } : undefined}
+              >
                 {displayTitle}
               </Title>
             )}
@@ -255,39 +265,12 @@ export const ChartCard = <TData extends DataRow>({
                 size="sm"
                 onClick={() => setIsEditingTitle(true)}
                 aria-label="Edit chart title"
+                className={classes.hoverReveal}
               >
                 <PencilSimpleIcon size={14} />
               </ActionIcon>
             )}
-            {!isGallery && (
-              <>
-                <Title order={2} fw={200} c="dimmed">
-                  {' '}
-                  |{' '}
-                </Title>
-                <Title order={2} fw={200}>
-                  {chart.title}
-                </Title>
-              </>
-            )}
             <Box flex={1} />
-
-            {!isGallery && (
-              <Group align="right" gap={4}>
-                {allCategories.map((cat) => (
-                  <Badge
-                    key={cat}
-                    color="green"
-                    variant={
-                      matchedCategories.includes(cat) ? 'filled' : 'light'
-                    }
-                    size="sm"
-                  >
-                    {cat}
-                  </Badge>
-                ))}
-              </Group>
-            )}
             {isGallery && (
               <Group justify="flex-end">
                 <ActionIcon
@@ -313,7 +296,25 @@ export const ChartCard = <TData extends DataRow>({
             {!isPdfMode && showViewSwitch && (
               <ViewSwitch view={localView} setView={setLocalView} />
             )}
+            {!isPdfMode && !isGallery && action === 'toggle' && onToggle && (
+              <Tooltip label="Remove from report">
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  onClick={onToggle}
+                  aria-label="Remove from report"
+                >
+                  <XIcon size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
           </Group>
+
+          {!isGallery && (
+            <Text size="sm" c="dimmed" mt={-4} mb={8}>
+              {chart.title}
+            </Text>
+          )}
 
           {canEdit ? (
             isEditingNotes ? (
@@ -373,15 +374,9 @@ export const ChartCard = <TData extends DataRow>({
           </Text>
         )}
 
-        {!isPdfMode && (
+        {!isPdfMode && action !== 'toggle' && (
           <Group mt={isGallery ? 'xs' : 'md'}>
-            {action === 'toggle' && defId && onToggle ? (
-              <ToggleChart
-                defId={defId}
-                isIncluded={isIncluded ?? true}
-                onToggle={onToggle}
-              />
-            ) : action === 'add' ? (
+            {action === 'add' ? (
               <AddChart chart={chart} defId={defId} />
             ) : action === 'remove' ? (
               <RemoveChart chart={chart} />

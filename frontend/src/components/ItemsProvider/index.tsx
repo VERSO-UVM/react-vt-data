@@ -8,8 +8,6 @@ export interface ChartCustomization {
   notes?: string; // overrides chart.notes in display + PDF
 }
 
-export type LayoutStyle = 'list' | 'grid';
-
 interface ItemsStore {
   // Auto-populated working report charts (from chartDefs): track by def ID
   excludedIds: string[];
@@ -31,14 +29,12 @@ interface ItemsStore {
   chartCustomizations: Record<string, ChartCustomization>;
   sectionOrder: string[];
   sectionChartOrder: Record<string, string[]>;
-  layoutStyle: LayoutStyle;
   setChartView: (defId: string, view: 'chart' | 'table') => void;
   setChartTitle: (defId: string, title: string) => void;
   setChartNotes: (defId: string, notes: string) => void;
   resetChartCustomization: (defId: string) => void;
   reorderSections: (newOrder: string[]) => void;
   reorderChartsInSection: (category: string, orderedDefIds: string[]) => void;
-  setLayoutStyle: (style: LayoutStyle) => void;
   resetLayout: () => void;
 
   // Session guard — not persisted
@@ -47,6 +43,10 @@ interface ItemsStore {
   // Set when the user clears the report; cleared after auto-exclude re-runs
   pendingReset: boolean;
   setPendingReset: (v: boolean) => void;
+
+  // First-run "how this works" guide on the working report
+  guideDismissed: boolean;
+  dismissGuide: () => void;
 }
 
 export const useItems = create<ItemsStore>()(
@@ -84,7 +84,6 @@ export const useItems = create<ItemsStore>()(
       chartCustomizations: {},
       sectionOrder: [],
       sectionChartOrder: {},
-      layoutStyle: 'list',
       setChartView: (defId, view) =>
         set((s) => ({
           chartCustomizations: {
@@ -120,19 +119,19 @@ export const useItems = create<ItemsStore>()(
             [category]: orderedDefIds,
           },
         })),
-      setLayoutStyle: (style) => set({ layoutStyle: style }),
       resetLayout: () =>
         set({
           chartCustomizations: {},
           sectionOrder: [],
           sectionChartOrder: {},
-          layoutStyle: 'list',
         }),
 
       sessionInitialized: false,
       setSessionInitialized: (v) => set({ sessionInitialized: v }),
       pendingReset: false,
       setPendingReset: (v) => set({ pendingReset: v }),
+      guideDismissed: false,
+      dismissGuide: () => set({ guideDismissed: true }),
     }),
     {
       name: 'report-prefs',
@@ -142,7 +141,7 @@ export const useItems = create<ItemsStore>()(
         chartCustomizations: state.chartCustomizations,
         sectionOrder: state.sectionOrder,
         sectionChartOrder: state.sectionChartOrder,
-        layoutStyle: state.layoutStyle,
+        guideDismissed: state.guideDismissed,
       }),
     },
   ),

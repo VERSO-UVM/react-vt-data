@@ -26,3 +26,27 @@
   flex: 1 1 0;
   min-height: 0;
 }
+
+/* Wraps the chart so it can stay mounted under the table view; a flex column
+   itself so the rule above still applies inside it. */
+.plotLayer {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.plotLayer[data-hidden='true'] {
+  display: none;
+}
+
+/* Report cards: keep edit affordances out of the way until hovered. */
+.reportCard .hoverReveal {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.reportCard:hover .hoverReveal,
+.reportCard .hoverReveal:focus-visible {
+  opacity: 1;
+}

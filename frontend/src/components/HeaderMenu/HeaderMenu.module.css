@@ -3,6 +3,13 @@
   --nav-hover-bg: rgba(64, 82, 90, 0.08);
   --nav-surface: #f6f5ef; /* COLORS.birch */
   --nav-active-bg: #1b3a2f; /* COLORS.spruce */
+  /* Height of the sticky header, 0 while it's hidden on scroll-down, so
+     page-level sticky bars (e.g. the working report toolbar) can follow it. */
+  --header-offset: 70px;
+}
+
+:global(:root:has(header[data-hidden='true'])) {
+  --header-offset: 0px;
 }
 
 .header {

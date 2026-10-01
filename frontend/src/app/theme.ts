@@ -1,5 +1,5 @@
 // theme.ts
-import { createTheme } from '@mantine/core';
+import { createTheme, type MantineColorsTuple } from '@mantine/core';
 
 export const COLORS = {
   spruce: '#1B3A2F',
@@ -20,16 +20,33 @@ export const FONTS = {
   mono: "'IBM Plex Mono', monospace",
 } as const;
 
+// Brand palette for Mantine (light → dark). Shade 8 is COLORS.spruce, so
+// anything using the primary color (filled buttons, checkboxes, loaders, …)
+// renders spruce; shade 9 (spruceDeep) is its hover.
+const spruce: MantineColorsTuple = [
+  '#eef4f1',
+  '#dce8e2',
+  '#b8d0c4',
+  '#92b7a5',
+  '#6f9f88',
+  '#52876f',
+  '#3d6f59',
+  '#2b5544',
+  COLORS.spruce,
+  COLORS.spruceDeep,
+];
+
 export const theme = createTheme({
-  primaryColor: 'green',
-  primaryShade: 9,
+  colors: { spruce },
+  primaryColor: 'spruce',
+  primaryShade: 8,
   fontFamily: 'var(--font-zilla-slab), Georgia, serif',
   headings: {
     fontFamily: 'var(--font-zilla-slab), Georgia, serif',
   },
   components: {
     Button: {
-      defaultProps: { color: 'green', radius: 'md', size: 'md' },
+      defaultProps: { radius: 'md', size: 'md' },
     },
   },
 });
