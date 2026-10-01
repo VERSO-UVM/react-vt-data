@@ -67,6 +67,19 @@ export const EmploymentAreaChart = ({
   // Gallery tiles always show the stacked view — no controls, no state to manage.
   const activeView: EmpView = isPdfMode || isGallery ? 'stacked' : localView;
 
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
   const data = chart.data;
   if (!data?.length) return null;
 
@@ -101,19 +114,6 @@ export const EmploymentAreaChart = ({
   const trendYMax = Math.ceil(maxTotal / step) * step;
 
   const tableRows = [...dataWithTotal].reverse();
-
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const toggleSeries = (key: string) => {
-    setHidden((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
 
   const height = isGallery ? GALLERY_H : INNER_H;
 
