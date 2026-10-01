@@ -151,7 +151,7 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
 def merge_tidy_tables():
     """Merge the per-table tidy parquets into one combined file."""
     tidy_frames = []
-    for table, label in TABLES.items():
+    for label in TABLES.values():
         path = f"{STORAGE_LOCATION}/vt_acs5_{label}_data_tidy.parquet"
         try:
             tidy_frames.append(pd.read_parquet(path))
