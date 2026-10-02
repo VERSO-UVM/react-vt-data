@@ -1,24 +1,5 @@
 """
 Shared utilities for ACS 5-Year Census B-table scrapers.
-
-Each scraper defines:
-  fetch_specs  – dict mapping Census table name → list of variable codes.
-                 Each entry triggers one API call; results are merged by geography.
-  var_groups   – list of VarGroup, describing how raw columns become tidy output rows.
-
-Then calls run_scrape(fetch_specs, var_groups, output_filename).
-
-Geography selection
--------------------
-ALL_GEOS maps a short key to (for_clause, in_clause) for the Census API.
-Pass a subset to run_scrape(geos=...) or use --geos on the CLI to scrape
-only specific geographic levels.
-
-Append mode
------------
-run_scrape(..., append=True) reads the existing parquet, drops any rows
-whose NAME appears in the newly fetched data (so a re-run of state/national
-replaces rather than duplicates those rows), then writes the merged result.
 """
 
 import os
@@ -153,21 +134,20 @@ def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.Dat
 def run_acs_b_scrape(
     fetch_specs: dict[str, list[str]],
     var_groups: list[VarGroup],
-    output_filename: str,
     year: int = MAX_YEAR,
     geos: list = GEOS,
-    append: bool = False,
-) -> None:
+) -> pd.DataFrame:
     """
-    Fetch Census data, compute tidy rows, and save as parquet.
+    Fetch Census data, compute tidy rows, and return tidy DataFrame.
 
-    fetch_specs:      maps a Census table label (for logging) to its variable codes.
-                      Each entry triggers a separate API call; all are merged by geo.
-    var_groups:       defines how raw fetched columns assemble into tidy output rows.
-    output_filename:  file name (not path) saved under STORAGE_LOCATION.
-    geos:             list of (label, for_clause, in_clause) tuples to scrape.
-    append:           if True, merge with existing parquet instead of overwriting.
-                      Rows whose NAME appears in the new data replace old rows.
+    Args:
+        fetch_specs: dict of {table_name: list of variable codes to fetch}
+        var_groups: list of VarGroup objects defining tidy output rows
+        year: year to fetch (default = MAX_YEAR)
+        geos: list of geographies to fetch (default = GEOS)
+
+    Returns:
+        pd.DataFrame: tidy DataFrame of the fetched data
     """
     all_frames = []
 
@@ -196,37 +176,16 @@ def run_acs_b_scrape(
                 )
         if not failed and merged is not None:
             all_frames.append(merged)
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     if not all_frames:
         print("No data fetched.")
-        return
+        return pd.DataFrame()
 
     combined = pd.concat(all_frames, ignore_index=True, sort=False)
     tidy = compute_tidy_generic(combined, var_groups)
     tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
-    tidy = split_name_col(tidy)  # keeps NAME and adds Jurisdiction + County
+    tidy = split_name_col(tidy)  # keeps NAME and adds Jurisdiction + County columns
     tidy.reset_index(drop=True, inplace=True)
-
-    out = f"{STORAGE_LOCATION}/{output_filename}"
-
-    if append:
-        try:
-            existing = pd.read_parquet(out)
-            # Drop any existing rows for the NAMEs we just fetched, then concat
-            new_names = set(tidy["NAME"].unique())
-            existing = existing[~existing["NAME"].isin(new_names)]
-            tidy = pd.concat([existing, tidy], ignore_index=True)
-            tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
-            tidy.reset_index(drop=True, inplace=True)
-            print(
-                f"Appended — kept {len(existing):,} existing rows, "
-                f"added/replaced {len(new_names)} NAME(s)."
-            )
-        except FileNotFoundError:
-            print(f"No existing file at {out}; writing fresh.")
-
-    # tidy.to_parquet(out, index=False)
-    # print(f"\nDone. {len(tidy):,} rows -> {out}")
 
     return tidy

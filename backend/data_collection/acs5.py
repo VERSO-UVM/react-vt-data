@@ -2,8 +2,7 @@
 Fetch ACS 5-Year Data Profile tables (DP02-DP05) for Vermont
 Geographies: counties + county subdivisions + Vermont statewide + United States
 Years: 2009 - Latest published data
-Output: one wide CSV + parquet per table, plus tidy parquet per table
-Credit: Written largely by Claude, with some fine-tuning and troubleshooting by Fitz Koch
+Output: one wide table and tidy table
 
 Geography selection
 -------------------
@@ -33,7 +32,6 @@ TABLES = {
     "DP04": "Housing",
     "DP05": "Demographic",
 }
-STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
 
 MAX_YEAR = datetime.now().year - 1
@@ -145,24 +143,6 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
             results[f"acs5_{label.lower()}"] = tidy
 
     return results
-
-
-def merge_tidy_tables():
-    """Merge the per-table tidy parquets into one combined file."""
-    tidy_frames = []
-    for table, label in TABLES.items():
-        path = f"{STORAGE_LOCATION}/vt_acs5_{label}_data_tidy.parquet"
-        try:
-            tidy_frames.append(pd.read_parquet(path))
-        except Exception as e:
-            print(f"  SKIP {path}: {e}")
-
-    if tidy_frames:
-        combined = pd.concat(tidy_frames, ignore_index=True)
-        # combined.to_parquet(f"{STORAGE_LOCATION}/vt_acs5_combined_TIDY.parquet", index=False)
-        return combined
-
-    return
 
 
 def collect(years: range = YEARS, geos=GEOS, append=False):

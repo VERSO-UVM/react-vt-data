@@ -26,9 +26,9 @@ def fetch_ambulance_service_areas() -> pd.DataFrame | None:
 # ---------------------------------------------------------------------------
 
 
-def collect() -> None:
+def collect() -> pd.DataFrame:
     """
-    Fetch ambulance data and save as parquet files.
+    Fetch ambulance data from the government ArcGIS website and return a pandas DataFrame.
     """
     df = fetch_ambulance_service_areas()
     return df
