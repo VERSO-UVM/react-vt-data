@@ -23,6 +23,8 @@ from io import StringIO
 import pandas as pd
 import requests
 
+from data_collection.parallel import pmap
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -216,15 +218,16 @@ def process_county(area_fips: str, county_name: str, year: int) -> pd.DataFrame:
 
 
 def run_qcew_scrape(years: range = YEARS) -> pd.DataFrame:
-    all_frames = []
-    for year in years:
-        for fips, name in VT_COUNTIES.items():
-            print(f"\n{name} County ...")
-            df = process_county(fips, name, year)
-            if not df.empty:
-                all_frames.append(df)
-            else:
-                print("No data")
+    def one(task):
+        year, fips, name = task
+        print(f"{name} County {year} ...")
+        df = process_county(fips, name, year)
+        if df.empty:
+            print(f"No data: {name} County {year}")
+        return df
+
+    tasks = [(y, f, n) for y in years for f, n in VT_COUNTIES.items()]
+    all_frames = [df for df in pmap(one, tasks) if not df.empty]
 
     if not all_frames:
         print("No data fetched.")

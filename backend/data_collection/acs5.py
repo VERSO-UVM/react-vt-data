@@ -19,6 +19,7 @@ import requests
 
 from data_collection.base import ALL_GEOS
 from data_collection.census import tidy_census
+from data_collection.parallel import pmap
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -87,20 +88,18 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
     # Collect raw frames per table
     all_frames = {table: [] for table in TABLES}
 
-    for year in years:
-        print(f"\n=== {year} ===")
+    def fetch_one(task):
+        year, (geo_label, for_clause, in_clause), table = task
+        print(f"  {year} / {table} / {geo_label}...")
+        df = fetch_table(year, table, for_clause, in_clause)
+        time.sleep(0.01)
+        return table, geo_label, df
 
-        for geo_label, for_clause, in_clause in geos:
-            for table in TABLES:
-                print(f"  {table} / {geo_label}...")
-
-                df = fetch_table(year, table, for_clause, in_clause)
-
-                if df is not None:
-                    df["geo_type"] = geo_label
-                    all_frames[table].append(df)
-
-                time.sleep(0.01)
+    tasks = [(y, g, t) for y in years for g in geos for t in TABLES]
+    for table, geo_label, df in pmap(fetch_one, tasks):
+        if df is not None:
+            df["geo_type"] = geo_label
+            all_frames[table].append(df)
 
     results = {}
 

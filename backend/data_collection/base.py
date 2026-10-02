@@ -11,6 +11,7 @@ import pandas as pd
 import requests
 
 from data_collection.census import split_name_col
+from data_collection.parallel import pmap
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -163,18 +164,16 @@ def run_acs_b_scrape(
     Returns:
         pd.DataFrame: tidy DataFrame of the fetched data
     """
-    all_frames = []
-
     print(f"\n=== {year} ===")
-    for geo_label, for_clause, in_clause in geos:
+
+    def fetch_geo(geo):
+        geo_label, for_clause, in_clause = geo
         merged = None
-        failed = False
         for table_name, codes in fetch_specs.items():
-            print(f"  {table_name} / {geo_label}...")
+            print(f"  {year} / {table_name} / {geo_label}...")
             df = fetch(year, codes, for_clause, in_clause)
             if df is None:
-                failed = True
-                break
+                return None
             if merged is None:
                 merged = df.copy()
                 merged["geo_type"] = geo_label
@@ -188,9 +187,10 @@ def run_acs_b_scrape(
                 merged = merged.merge(
                     df[merge_cols + new_var_cols], on=merge_cols, how="left"
                 )
-        if not failed and merged is not None:
-            all_frames.append(merged)
         time.sleep(0.01)
+        return merged
+
+    all_frames = [m for m in pmap(fetch_geo, geos) if m is not None]
 
     if not all_frames:
         print("No data fetched.")
