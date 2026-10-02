@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """PostToolUse hook: format files Claude edits.
 
 .py -> ruff format (config in backend/pyproject.toml)

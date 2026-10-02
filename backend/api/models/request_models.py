@@ -3,7 +3,9 @@ from typing import Literal
 
 from pydantic import BaseModel, model_validator
 
-MAX_YEAR = datetime.now().year - 2
+from query.clock import EASTERN_STD_TIME
+
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 2
 
 
 class RangeFilter(BaseModel):

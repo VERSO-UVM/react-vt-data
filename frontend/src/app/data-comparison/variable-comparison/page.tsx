@@ -1,5 +1,5 @@
 'use client';
-import { Select, keys, Paper, Text, SegmentedControl } from '@mantine/core';
+import { Paper, Text, SegmentedControl } from '@mantine/core';
 import { useState } from 'react';
 import type { FeatureCollection } from 'geojson';
 import { BASE_API_URL } from '@/config';

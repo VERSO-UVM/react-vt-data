@@ -22,7 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { createChartItem, createTableItem } from '@/utils/itemFactory';
 import { ChartStack } from '@/components/Charts';
-import { useProfile } from '@/components/profile/profileStore';
+import { useProfile, type Location } from '@/components/profile/profileStore';
 import {
   useApplyFilters,
   buildFilters,
@@ -66,7 +66,7 @@ function StatCards() {
         setData(data as Row[]);
       },
     });
-  }, [myLocation, yearMin, yearMax]);
+  }, [applyFilters, myLocation, yearMin, yearMax]);
 
   const metrics = data.reduce<Record<string, number>>((acc, d) => {
     acc[d.Variable] = d.Value;
@@ -127,8 +127,8 @@ function HeroSection({
   activeTab,
   setActiveTab,
 }: {
-  myLocation: any;
-  comparison: any;
+  myLocation: Location;
+  comparison: Location;
   interests: string[];
   yearMin: number;
   yearMax: number;
@@ -333,6 +333,11 @@ function ProfileField({
   );
 }
 
+const tableDefs = chartDefs.filter((c) => c.subtype.startsWith('renderTable'));
+const nonTableDefs = chartDefs.filter(
+  (c) => !c.subtype.startsWith('renderTable'),
+);
+
 export default function DataViewerPage() {
   const {
     myLocation,
@@ -342,9 +347,7 @@ export default function DataViewerPage() {
     yearMax,
     openProfileModal,
   } = useProfile();
-  const [chartData, setChartData] = useState<
-    Record<string, { data: any[]; metadata?: any; tableData?: any[] }>
-  >({});
+  const [chartData, setChartData] = useState<Record<string, ChartPayload>>({});
   const [compareChartData, setCompareChartData] = useState<
     Record<string, ChartPayload>
   >({});
@@ -352,16 +355,10 @@ export default function DataViewerPage() {
     Record<string, DataRow[]>
   >({});
 
-  const [focusMode, setFocusMode] = useState<'all' | 'focus'>('all');
+  const [focusMode] = useState<'all' | 'focus'>('all');
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   const applyFilters = useApplyFilters();
-  const tableDefs = chartDefs.filter((c) =>
-    c.subtype.startsWith('renderTable'),
-  );
-  const nonTableDefs = chartDefs.filter(
-    (c) => !c.subtype.startsWith('renderTable'),
-  );
 
   const categoryIcons: Record<string, Icon> = {
     Housing: HouseLineIcon,
@@ -425,7 +422,7 @@ export default function DataViewerPage() {
           })),
       });
     });
-  }, [myLocation, comparison, yearMin, yearMax]);
+  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
 
   useEffect(() => {
     const seen = new Set<string>();
@@ -487,7 +484,7 @@ export default function DataViewerPage() {
         });
       }
     });
-  }, [myLocation, comparison, yearMin, yearMax]);
+  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
 
   // QCEW employment data is county-level only; swap to a note card for town selections
   const isSubcountyLocation = myLocation.type === 'town';

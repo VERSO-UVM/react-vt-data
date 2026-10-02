@@ -17,7 +17,6 @@ import Link from 'next/link';
 import {
   ArrowRightIcon,
   BellIcon,
-  CalculatorIcon,
   DatabaseIcon,
   FileTextIcon,
   GithubLogoIcon,
