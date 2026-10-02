@@ -70,8 +70,13 @@ def fetch(
         "for": for_clause,
         "key": API_KEY,
     }
+    if params.get("key") is None:
+        print("API key is either missing or set to None.")
+        return None
+
     if in_clause:  # state/national geos have no "in" clause
         params["in"] = in_clause
+
     try:
         r = requests.get(BASE_URL.format(year=year), params=params, timeout=30)
         r.raise_for_status()

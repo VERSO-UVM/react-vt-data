@@ -42,12 +42,16 @@ YEARS = range(2009, MAX_YEAR)
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
 
 
-def fetch_table(year, table, for_clause, in_clause):
+def fetch_table(year, table, for_clause, in_clause) -> pd.DataFrame:
     params = {
         "get": f"group({table}),NAME",
         "for": for_clause,
         "key": API_KEY,
     }
+    if params.get("key") is None:
+        print("API key is either missing or set to None.")
+        return pd.DataFrame
+
     if in_clause:  # state/national geos have no "in" clause
         params["in"] = in_clause
     try:

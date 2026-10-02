@@ -42,6 +42,11 @@ def fetch_table(year: int, table: str) -> pd.DataFrame:
         "in": f"state:{STATE_FIPS}",
         "key": API_KEY,
     }
+
+    if params.get("key") is None:
+        print("API key is either missing or set to None.")
+        return pd.DataFrame
+
     r = requests.get(BASE_URL.format(year=year), params=params, timeout=60)
     r.raise_for_status()
     if "json" not in r.headers.get("content-type", ""):
