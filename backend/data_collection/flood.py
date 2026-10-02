@@ -21,14 +21,18 @@ from pyogrio import read_dataframe
 
 # Fetch flood data from VCGI API (this uses pagination to get around the row limit)
 def fetch_flood() -> pd.DataFrame | None:
-    start_rows = list(range(0, 8000, 1000))
+    page_size = 2000
     dfs = []
-    for row_num in start_rows:
-        BASE_URL = f"https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&resultRecordCount=2000&resultOffset={row_num}&f=geojson"
+    offset = 0
+    while True:
+        BASE_URL = f"https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&resultRecordCount={page_size}&resultOffset={offset}&f=geojson"
         r = requests.get(BASE_URL, timeout=3000)
         r.raise_for_status()
         df = read_dataframe(BytesIO(r.content))
         dfs.append(df)
+        if len(df) < page_size:
+            break
+        offset += page_size
 
     df = pd.concat(dfs, ignore_index=True)
 
