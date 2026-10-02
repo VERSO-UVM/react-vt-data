@@ -17,7 +17,11 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { useProfile, Location } from '@/components/profile/profileStore';
+import {
+  useProfile,
+  useProfileHydrated,
+  Location,
+} from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import {
   DemographicsDashboard,
@@ -551,6 +555,8 @@ export default function ReportsByTopic({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  // Skip the hydration render's default locations (see useProfileHydrated).
+  const hydrated = useProfileHydrated();
 
   // ---------------------------------------------------------------------------
   // Fetch both locations whenever section or location names change — plus,
@@ -560,6 +566,7 @@ export default function ReportsByTopic({
   // section, since it's supplementary to the primary table.
   // ---------------------------------------------------------------------------
   useEffect(() => {
+    if (!hydrated) return;
     const cfg = SECTIONS[section];
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: reset status before the async request
     setLoading(true);
@@ -636,7 +643,7 @@ export default function ReportsByTopic({
     // .name changes whenever type/county/town does (it's derived from them),
     // so it's a reliable proxy for "the location changed" without needing
     // the whole objects in the dependency array.
-  }, [section, myLocation.name, comparison.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hydrated, section, myLocation.name, comparison.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Section-wide data (cfg.allAreas) doesn't depend on the locations, so it's
