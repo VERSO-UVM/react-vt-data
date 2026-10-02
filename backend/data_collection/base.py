@@ -107,28 +107,37 @@ def pct(val: float, total: float) -> float | None:
 
 
 def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.DataFrame:
-    rows = []
-    for _, row in df.iterrows():
-        base = {
-            "year": row["year"],
-            "geo_type": row["geo_type"],
-            "NAME": row["NAME"],
-            "state": row.get("state"),
-            "county": row.get("county"),
+    base = pd.DataFrame(
+        {
+            "year": df["year"],
+            "geo_type": df["geo_type"],
+            "NAME": df["NAME"],
+            "state": df.get("state"),
+            "county": df.get("county"),
         }
-        for g in var_groups:
-            value = sum(row.get(c) or 0 for c in g.codes)
-            denom = sum(row.get(c) or 0 for c in g.denom) if g.denom else None
-            rows.append(
-                {
-                    **base,
-                    "Section": g.section,
-                    "Variable": g.label,
-                    "Value": value,
-                    "Percent": pct(value, denom),
-                }
+    )
+
+    def row_sum(codes: list[str]) -> pd.Series:
+        # reindex: codes absent from df become all-NaN columns, then count as 0
+        return df.reindex(columns=codes).fillna(0).sum(axis=1)
+
+    frames = []
+    for var in var_groups:
+        value = row_sum(var.codes)
+        if var.denom:
+            denom = row_sum(var.denom)
+            percent = (value / denom * 100).round(1).where(denom > 0)
+        else:
+            percent = None
+        frames.append(
+            base.assign(
+                Section=var.section, Variable=var.label, Value=value, Percent=percent
             )
-    return pd.DataFrame(rows)
+        )
+    if not frames:
+        return pd.DataFrame()
+
+    return pd.concat(frames).sort_index(kind="stable").reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
