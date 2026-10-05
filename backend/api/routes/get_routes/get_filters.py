@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -50,6 +51,11 @@ def filter_tree_endpoint(
         dict: a JSON dictionary of format
         key1: {values, each key2: values} and so on iteratively through the columns.
     """
+    return _filter_tree(filter_table, target_table, tuple(exclude_cols or ()))
+
+
+@lru_cache(maxsize=128)
+def _filter_tree(filter_table: str, target_table: str, exclude_cols: tuple):
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]
     if exclude_cols:
@@ -71,6 +77,11 @@ def filter_options_endpoint(
     target_table: str = "default",
     cols: Annotated[list[str] | None, Query()] = None,
 ):
+    return _filter_options(filter_table, target_table, tuple(cols or ()))
+
+
+@lru_cache(maxsize=128)
+def _filter_options(filter_table: str, target_table: str, cols: tuple):
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]
 
@@ -92,6 +103,11 @@ def filter_ranges_endpoint(
 ):
     """Min/max bounds for one or more numeric columns (e.g. min lot size
     sliders). Mirrors /filters/options but for the schema's "range" map."""
+    return _filter_ranges(filter_table, target_table, tuple(cols or ()))
+
+
+@lru_cache(maxsize=128)
+def _filter_ranges(filter_table: str, target_table: str, cols: tuple):
     meta = get_filter_table_metadata(target_table, filter_table)
     rangemap: dict = meta.get("range", {})
 

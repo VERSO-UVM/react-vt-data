@@ -16,6 +16,7 @@ import io
 import threading
 import time
 from collections import defaultdict
+from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -117,6 +118,7 @@ def list_export_sources():
 
 
 @router.get("/locations")
+@lru_cache(maxsize=1)
 def list_locations():
     """
     Return sorted lists of Vermont counties and towns, derived from the ACS5

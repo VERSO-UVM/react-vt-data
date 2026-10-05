@@ -8,6 +8,7 @@
 """
 
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -31,6 +32,7 @@ def get_ambulance_geojson(sources: list[FilterSource]):
     return result[0]
 
 
+@lru_cache(maxsize=1)
 def get_ambulance_legend():
     result = DB.execute(
         "SELECT json_group_array(to_json(VCGI_ambulanceService_colors)) FROM VCGI_ambulanceService_colors;"
