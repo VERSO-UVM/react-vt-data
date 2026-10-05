@@ -25,6 +25,7 @@ def fetch_flood() -> pd.DataFrame | None:
     dfs = []
     offset = 0
     while True:
+        # AS OF Oct 2nd, this URL is no longer serviced by VCGI (!!!)
         BASE_URL = f"https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&resultRecordCount={page_size}&resultOffset={offset}&f=geojson"
         r = requests.get(BASE_URL, timeout=3000)
         r.raise_for_status()
