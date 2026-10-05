@@ -232,18 +232,11 @@ async def tidy_economics(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("labor_force"))
 
 
-# Labor Force (FIXME: broken)
+# Labor Force
 @router.post("/load/acs5-db/tidy/labor-force")
 async def tidy_labor_force(request: FilterRequest):
     rows = get_acs5_tidy(dataset="labor_force", filters=request.filters)
     return make_response(data=rows, metadata=get_metadata("labor_force"))
-
-
-# Income (FIXME: broken)
-@router.post("/load/acs5-db/tidy/income")
-async def tidy_income(request: FilterRequest):
-    rows = get_acs5_tidy(dataset="income", filters=request.filters)
-    return make_response(data=rows, metadata=get_metadata("income"))
 
 
 # -----------------------------
@@ -308,7 +301,7 @@ async def get_population_change(request: FilterRequest):
 
 
 ##### ECONOMICS #####
-# Heath Insurance Coverage
+# Health Insurance Coverage
 @router.post("/load/acs5-db/timeseries/economics/health-insurance")
 async def get_health_insurance(request: FilterRequest):
     rows = get_acs5_timeseries(
@@ -344,7 +337,7 @@ async def get_per_capita_income(request: FilterRequest):
     return make_response(data=rows, metadata=get_metadata("income"))
 
 
-# Median Earnings (FIXME: broken)
+# Median Earnings
 @router.post("/load/acs5-db/timeseries/economics/median-earnings")
 async def get_median_earnings(request: FilterRequest):
     rows = get_acs5_timeseries(
