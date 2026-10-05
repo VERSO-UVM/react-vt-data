@@ -7,10 +7,11 @@
     Fetches Vermont CDC data from the CDC SODA API (In "Open Data Format")
 """
 
-import pandas as pd
-import geopandas as gpd
-import requests
 from io import BytesIO
+
+import geopandas as gpd
+import pandas as pd
+import requests
 
 # ---------------------------------------------------------------------------
 # API endpoints

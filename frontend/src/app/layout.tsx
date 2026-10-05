@@ -4,7 +4,7 @@ import { Zilla_Slab } from 'next/font/google';
 import '@mantine/core/styles.css';
 import './globals.css';
 
-import { MantineProvider, Container, Box } from '@mantine/core';
+import { MantineProvider, Box } from '@mantine/core';
 
 import HeaderMenu from '../components/HeaderMenu';
 import Maintenance from '../components/Maintenance';

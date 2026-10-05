@@ -1,5 +1,5 @@
 import argparse
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 
 from data_collection import (
     acs5,
@@ -20,6 +20,7 @@ from data_collection import (
     zoning,
 )
 from lake_build import get_connection, insert_year, replace_table
+from query.clock import EASTERN_STD_TIME
 
 YEARLY_SCRAPERS = [
     acs5,
@@ -43,8 +44,7 @@ STATIC_SCRAPERS = [
     zoning,
 ]
 
-eastern_std_time = timezone(timedelta(hours=5))
-MAX_YEAR = datetime.now(eastern_std_time).year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 
 def run_scraper(

@@ -28,8 +28,8 @@ const SECTOR_COLORS: Record<string, string> = {
   'Other Services': '#c0c0c0',
 };
 
-const yAxisFmt = (v: any) => `${(v / 1000).toFixed(0)}k`;
-const tooltipFmt = (v: any) => `${v.toLocaleString(0)}`;
+const yAxisFmt = (v: number) => `${(v / 1000).toFixed(0)}k`;
+const tooltipFmt = (v: unknown) => (v as number).toLocaleString();
 
 type EmpView = 'stacked' | 'trend' | 'table';
 
@@ -57,7 +57,7 @@ export const EmploymentAreaChart = ({
   chart,
   view = 'report',
 }: {
-  chart: ChartItem<any>;
+  chart: ChartItem;
   view?: 'gallery' | 'report';
 }) => {
   const isPdfMode = usePdfMode();
@@ -67,7 +67,20 @@ export const EmploymentAreaChart = ({
   // Gallery tiles always show the stacked view — no controls, no state to manage.
   const activeView: EmpView = isPdfMode || isGallery ? 'stacked' : localView;
 
-  const data = chart.data as any[];
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const toggleSeries = (key: string) => {
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const data = chart.data;
   if (!data?.length) return null;
 
   const sectors = Object.keys(data[0]).filter((k) => k !== 'quarter_label');
@@ -78,7 +91,7 @@ export const EmploymentAreaChart = ({
 
   const galleryTicks = computeGalleryTicks(q1Ticks, 4);
 
-  const dataWithTotal = data.map((row) => ({
+  const dataWithTotal: DataRow[] = data.map((row) => ({
     ...row,
     Total: sectors.reduce((sum, s) => {
       const v = row[s];
@@ -101,19 +114,6 @@ export const EmploymentAreaChart = ({
   const trendYMax = Math.ceil(maxTotal / step) * step;
 
   const tableRows = [...dataWithTotal].reverse();
-
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
-  const toggleSeries = (key: string) => {
-    setHidden((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
 
   const height = isGallery ? GALLERY_H : INNER_H;
 
@@ -186,8 +186,8 @@ export const EmploymentAreaChart = ({
                       paddingBottom: '8px',
                     }}
                   >
-                    {payload?.map((entry: any) => {
-                      const key = entry.value;
+                    {payload?.map((entry) => {
+                      const key = entry.value as string;
                       const isHidden = hidden.has(key);
                       return (
                         <span

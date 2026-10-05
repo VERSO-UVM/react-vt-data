@@ -10,7 +10,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { DataRow } from '@/types/cachedCharts';
-import { COLORS } from '@/app/theme';
 
 interface AgeDistributionChartProps {
   primary: DataRow[];

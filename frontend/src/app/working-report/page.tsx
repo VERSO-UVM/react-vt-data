@@ -476,6 +476,11 @@ function SortableChartItem({
   );
 }
 
+const tableDefs = chartDefs.filter((c) => c.subtype.startsWith('renderTable'));
+const nonTableDefs = chartDefs.filter(
+  (c) => !c.subtype.startsWith('renderTable'),
+);
+
 export default function WorkingReport() {
   const chartsRef = useRef<HTMLDivElement>(null);
   const [isPdfMode, setIsPdfMode] = useState(false);
@@ -588,12 +593,6 @@ export default function WorkingReport() {
   >({});
 
   const applyFilters = useApplyFilters();
-  const tableDefs = chartDefs.filter((c) =>
-    c.subtype.startsWith('renderTable'),
-  );
-  const nonTableDefs = chartDefs.filter(
-    (c) => !c.subtype.startsWith('renderTable'),
-  );
 
   useEffect(() => {
     nonTableDefs.forEach((chart: ChartDef) => {
@@ -641,7 +640,7 @@ export default function WorkingReport() {
           })),
       });
     });
-  }, [myLocation, comparison, yearMin, yearMax]);
+  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
 
   useEffect(() => {
     const seen = new Set<string>();
@@ -700,7 +699,7 @@ export default function WorkingReport() {
         });
       }
     });
-  }, [myLocation, comparison, yearMin, yearMax]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
 
   // ---------- build chart items ----------
   const isSubcountyLocation = myLocation.type === 'town';

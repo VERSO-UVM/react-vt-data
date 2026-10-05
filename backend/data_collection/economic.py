@@ -23,6 +23,7 @@ from datetime import datetime
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
+from query.clock import EASTERN_STD_TIME
 
 SL = "Labor Force"
 SI = "Income"
@@ -84,7 +85,7 @@ fetch_specs = {
     "B19301": ["B19301_001E"],
 }
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 

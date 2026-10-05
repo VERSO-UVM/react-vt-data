@@ -1,4 +1,4 @@
-import { Table, ScrollArea, Paper, Text, Stack, Grid } from '@mantine/core';
+import { Grid } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
 import { EducationalAttainment } from '@/components/Reports/education';
 

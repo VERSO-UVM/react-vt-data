@@ -117,8 +117,8 @@ def filter_tree(
     tree_labels: list[str],
     table: str,
     db=DB,
-    rangemap: dict = {},
-    badgemap: dict = {},
+    rangemap: dict | None = None,
+    badgemap: dict | None = None,
 ) -> FilterResponse:
     """
     Info for cascading filter UI.
@@ -126,6 +126,10 @@ def filter_tree(
     When we consolidate all SQL to one source/place, we'll update this to be just one.
     TODO: update to not pass in tree_labels but just use from schema
     """
+    if rangemap is None:
+        rangemap = {}
+    if badgemap is None:
+        badgemap = {}
     cols = [colmap.get(label) for label in tree_labels]
     select = ", ".join(f'"{col}"' for col in cols)
     order = ", ".join(str(i + 1) for i in range(len(cols)))

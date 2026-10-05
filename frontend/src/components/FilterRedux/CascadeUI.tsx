@@ -113,7 +113,7 @@ export function CascadeFilter(params: apiFilterParams) {
         setBadges(r.data.badges || {});
       })
       .catch((e) => console.error('tree fetch failed', e));
-  }, [filterURL]);
+  }, [spec.filter_table, filterURL]);
 
   // Hand the current level set up to the caller whenever it changes -- only
   // `labels` (not `onLabelsChange`'s identity) should retrigger this.
@@ -130,7 +130,7 @@ export function CascadeFilter(params: apiFilterParams) {
     if (!labels.length) return;
     const removed = removeStaleFilters(tree, labels, spec.filters ?? {});
     if (removed !== spec.filters) setValue(removed);
-  }, [tree, labels]);
+  }, [tree, labels, spec.filters, setValue]);
 
   // what happens when we select a value in the box
   // (we update our filters and push them up to parent)

@@ -12,6 +12,7 @@ import requests
 
 from data_collection.census import split_name_col
 from data_collection.parallel import pmap
+from query.clock import EASTERN_STD_TIME
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -34,7 +35,7 @@ ALL_GEOS: dict[str, tuple[str, str]] = {
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
 
 
-MAX_YEAR = datetime.now().year - 2
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 2
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -88,7 +89,7 @@ def fetch(
             if c[0] == "B":
                 df[c] = pd.to_numeric(df[c], errors="coerce")
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year} / {for_clause}: {e}")
         return None
 
@@ -101,9 +102,13 @@ def fetch(
 def pct(val: float, total: float) -> float | None:
     try:
         if total and total > 0:
-            return round(val / total * 100, 1)
-    except Exception:
-        pass
+            return round((val / total) * 100, 1)
+    except OverflowError:
+        print(f"OverflowError computing pct({val}, {total})")
+    except FloatingPointError:
+        print(f"FloatingPointError computing pct({val}, {total})")
+    except ValueError:
+        print(f"ValueError computing pct({val}, {total})")
     return None
 
 

@@ -13,9 +13,8 @@ import {
   SegmentedControl,
 } from '@mantine/core';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
-import { COLORS, FONTS } from '@/app/theme';
+import { COLORS } from '@/app/theme';
 import { FileXlsIcon } from '@phosphor-icons/react';
-import { chartDataReducer } from 'recharts/types/state/chartDataSlice';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
@@ -107,7 +106,7 @@ export const TableView = <TData extends DataRow>({
   }
 
   // Render the comparison toggle header control
-  const ComparisonToggleHeader = () => (
+  const comparisonToggleHeader = (
     <Group mb="xs" gap="md" align="center">
       <Button
         size="xs"
@@ -176,7 +175,7 @@ export const TableView = <TData extends DataRow>({
 
     return (
       <Box h="100%">
-        <ComparisonToggleHeader />
+        {comparisonToggleHeader}
         <ScrollArea>
           <Table striped withTableBorder withColumnBorders fz="xs">
             <Table.Thead>
@@ -245,16 +244,12 @@ export const TableView = <TData extends DataRow>({
 
   return (
     <Box h="100%">
-      <ComparisonToggleHeader />
+      {comparisonToggleHeader}
       <ScrollArea>
         <Table striped withTableBorder withColumnBorders fz="xs">
           <Table.Thead>
             <Table.Tr>
               {baseColumns.map((column) => {
-                const hasColCompare =
-                  hasCompare &&
-                  rows.some((r) => r[`${column}${CMP_SUFFIX}`] != null);
-
                 return <Table.Th key={column}>{column}</Table.Th>;
               })}
             </Table.Tr>

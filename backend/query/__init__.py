@@ -36,7 +36,7 @@ _EXPORTS = {
 }
 _NAME_TO_MODULE = {n: m for m, names in _EXPORTS.items() for n in names}
 
-__all__ = sorted(_NAME_TO_MODULE)
+__all__ = sorted(_NAME_TO_MODULE)  # noqa: PLE0605
 
 
 def __getattr__(name: str):

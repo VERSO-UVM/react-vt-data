@@ -49,7 +49,7 @@ def run_master_clean(script_name: str | None = None):
                 cleaner.main(con)
                 print(f"\033[32mCompleted\033[0m {name}")
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- isolate any cleaner failure so the rest still run
                 failed.append(name)
                 print(f"\033[31mFAILED\033[0m {name}: {e}")
 
