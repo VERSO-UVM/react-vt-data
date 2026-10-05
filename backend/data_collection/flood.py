@@ -3,9 +3,12 @@
     Ian Sargent
 **Created**:
     2026-07-13
+**Updated**:
+    2026-10-05
 **Description**:
-    Fetches Vermont FEMA flood data from the VT ANR ArcGIS RestAPI
-    Orginal Data Source: https://geodata.vermont.gov/datasets/VTANR::flood-hazard-areas-only-fema-digitized-data/explore?location=43.838610%2C-72.732276%2C7
+    Fetches Vermont flood hazard zones from the FEMA National Flood Hazard
+    Layer (NFHL) ArcGIS REST API (layer 28, Flood Hazard Zones).
+    Data Source: https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28
 """
 
 from io import BytesIO
@@ -13,21 +16,41 @@ from io import BytesIO
 import pandas as pd
 import requests
 from pyogrio import read_dataframe
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # ---------------------------------------------------------------------------
 # FEMA Flood API fetch
 # ---------------------------------------------------------------------------
 
 
-# Fetch flood data from VCGI API (this uses pagination to get around the row limit)
+# Fetch Vermont flood zones from FEMA NFHL (using pagination)
+URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query"
+# DFIRM_ID starts with the state FIPS code (50 = Vermont)
+PARAMS = {
+    "where": "DFIRM_ID LIKE '50%'",
+    "outFields": "*",
+    "resultRecordCount": 500,
+    "f": "geojson",
+}
+
+
 def fetch_flood() -> pd.DataFrame | None:
-    page_size = 2000
+    page_size = PARAMS["resultRecordCount"]  # 500
+    # The FEMA server intermittently resets connections, so retry with backoff
+    session = requests.Session()
+    session.mount(
+        "https://",
+        HTTPAdapter(
+            max_retries=Retry(
+                total=6, backoff_factor=2, status_forcelist=[500, 502, 503, 504]
+            )
+        ),
+    )
     dfs = []
     offset = 0
     while True:
-        # AS OF Oct 2nd, this URL is no longer serviced by VCGI (!!!)
-        BASE_URL = f"https://anrmaps.vermont.gov/arcgis/rest/services/Open_Data/OPENDATA_ANR_EMERGENCY_SP_NOCACHE_v2/MapServer/57/query?outFields=*&where=1%3D1&resultRecordCount={page_size}&resultOffset={offset}&f=geojson"
-        r = requests.get(BASE_URL, timeout=3000)
+        r = session.get(URL, params={**PARAMS, "resultOffset": offset}, timeout=300)
         r.raise_for_status()
         df = read_dataframe(BytesIO(r.content))
         dfs.append(df)
