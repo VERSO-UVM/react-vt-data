@@ -14,6 +14,10 @@ router = APIRouter()
 BACKEND_DIR = Path(__file__).resolve().parents[3]
 DATA_DIR = Path(os.environ.get("DATA_DIR", BACKEND_DIR / "Data"))
 
+# Load the municipalities dataset into memory during initial startup
+with open(DATA_DIR / "vermont" / "municipalities.json", "r", encoding="utf-8") as file:
+    MUNICIPALITIES_DATA = json.load(file)
+
 
 @router.get("/")
 def read_root():
@@ -33,8 +37,4 @@ def read_flood_data():
 # VT Municipalities Endpoint
 @router.get("/data/vermont/municipalities")
 def read_municipalities_data():
-    with open(
-        DATA_DIR / "vermont" / "municipalities.json", "r", encoding="utf-8"
-    ) as file:
-        data = json.load(file)
-    return data
+    return MUNICIPALITIES_DATA
