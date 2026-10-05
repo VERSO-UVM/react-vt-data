@@ -26,9 +26,8 @@ from urllib3.util.retry import Retry
 
 # Fetch Vermont flood zones from FEMA NFHL (using pagination)
 URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query"
-# DFIRM_ID starts with the state FIPS code (50 = Vermont)
 PARAMS = {
-    "where": "DFIRM_ID LIKE '50%'",
+    "where": "DFIRM_ID LIKE '50%'",  # Filtering to Vermont flood zones
     "outFields": "*",
     "resultRecordCount": 500,
     "f": "geojson",
@@ -37,7 +36,6 @@ PARAMS = {
 
 def fetch_flood() -> pd.DataFrame | None:
     page_size = PARAMS["resultRecordCount"]  # 500
-    # The FEMA server intermittently resets connections, so retry with backoff
     session = requests.Session()
     session.mount(
         "https://",
