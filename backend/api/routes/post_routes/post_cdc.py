@@ -88,7 +88,6 @@ async def cdc_comparison_tract(specs: list[FilterSpec]) -> APIResponse:
     return make_response(data=geojson, metadata={"legend": legend})
 
 
-# (FIXME)
 @router.post("/load/mapping/cdc/places/pca_summary")
 async def cdc_pca(specs: list[FilterSpec]) -> APIResponse:
     return make_response(data=get_cdc_county_pca(), metadata={})

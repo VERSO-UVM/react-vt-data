@@ -13,7 +13,6 @@ from pathlib import Path
 import pandas as pd
 
 from api.models import FilterSource, RangeFilter
-from query.core_functions import filter_tree
 from query.production_db import get_db
 from query.sql_render import sql_filter_block
 
@@ -275,8 +274,3 @@ def get_poverty_uninsured_timeseries(
     if not names:
         return pd.DataFrame(columns=["year", "Location", "Variable", "Percent"])
     return DB.execute(sql, [*case_params, *names]).df()
-
-
-# FIXME: Link to new database table name (broken for now)
-def get_acs5_filters():
-    return filter_tree(ACS5_FILTER_COLS, ACS5_TREE_LABELS, "acs5_info")
