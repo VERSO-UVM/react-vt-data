@@ -10,7 +10,7 @@ export function getFeatureBBox(
   let maxLng = -Infinity;
   let maxLat = -Infinity;
 
-  const processCoords = (coords: any) => {
+  const processCoords = (coords: unknown) => {
     if (!Array.isArray(coords) || coords.length === 0) return;
 
     // Check if we reached a coordinate pair [lng, lat]

@@ -19,7 +19,6 @@ function findValue(data: DataRow[], variable: string): number | null {
 export default function PopulationCard({
   primary,
   comparison,
-  primaryName,
   comparisonName,
 }: PopulationCardProps) {
   const primaryPopulation = findValue(primary, 'Population (ACS)');

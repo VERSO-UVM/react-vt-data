@@ -25,6 +25,8 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from query.clock import EASTERN_STD_TIME
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -89,7 +91,7 @@ SECTOR_ORDER = [
 BASE_URL = "https://data.bls.gov/cew/data/api/{year}/{q}/area/{fips}.csv"
 QUARTERS = [1, 2, 3, 4]
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
@@ -107,7 +109,7 @@ def fetch_quarter(year: int, quarter: int, area_fips: str) -> pd.DataFrame | Non
         df = pd.read_csv(StringIO(r.text), dtype=str)
         df.columns = df.columns.str.strip()
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year}Q{quarter} / {area_fips}: {e}")
         return None
 

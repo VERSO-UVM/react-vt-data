@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
 import { useItems } from '../ItemsProvider';
 import { useProfile } from '@/components/profile/profileStore';
 import Link from 'next/link';
-import { Anchor, Button, Group, Transition } from '@mantine/core';
+import { Anchor, Button, Group } from '@mantine/core';
 import { CheckIcon, XIcon } from '@phosphor-icons/react';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { COLORS } from '@/app/theme';

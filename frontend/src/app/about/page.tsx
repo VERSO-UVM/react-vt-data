@@ -2,15 +2,12 @@
 
 import {
   Accordion,
-  Badge,
   Box,
   Button,
   Card,
   Container,
-  Divider,
   Grid,
   Group,
-  Paper,
   SimpleGrid,
   Stack,
   Text,
@@ -42,7 +39,6 @@ import Link from 'next/link';
 import * as motion from 'motion/react-client';
 
 import { COLORS, FONTS } from '@/app/theme';
-import { color } from 'd3';
 
 // -----------------------------------------------------------------------------
 // Hero
@@ -693,7 +689,7 @@ function WhoItsFor() {
       />
 
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" mt={55}>
-        {audiences.map((audience, index, icon) => (
+        {audiences.map((audience, index) => (
           <Card
             key={audience.title}
             withBorder
@@ -784,7 +780,7 @@ function FAQSection() {
           <Link href="/data-sources" style={{ color: COLORS.spruceDeep }}>
             Data Sources
           </Link>{' '}
-          to learn more about what's available.
+          to learn more about what&apos;s available.
         </>
       ),
     },

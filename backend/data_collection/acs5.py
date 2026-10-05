@@ -20,6 +20,7 @@ import requests
 
 from data_collection.base import ALL_GEOS
 from data_collection.census import tidy_census
+from query.clock import EASTERN_STD_TIME
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -36,7 +37,7 @@ TABLES = {
 STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
@@ -73,7 +74,7 @@ def fetch_table(year, table, for_clause, in_clause):
         df["year"] = year
         df["table"] = table
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year} / {table} / {for_clause}: {e}")
         return None
 
@@ -133,7 +134,7 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
                 tidy_year["table"] = table
                 tidy_frames.append(tidy_year)
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 -- skip and keep the run going
                 print(f"  SKIP tidy {year} / {table}: {e}")
 
         if tidy_frames:
@@ -150,11 +151,11 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
 def merge_tidy_tables():
     """Merge the per-table tidy parquets into one combined file."""
     tidy_frames = []
-    for table, label in TABLES.items():
+    for label in TABLES.values():
         path = f"{STORAGE_LOCATION}/vt_acs5_{label}_data_tidy.parquet"
         try:
             tidy_frames.append(pd.read_parquet(path))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 -- skip and keep the run going
             print(f"  SKIP {path}: {e}")
 
     if tidy_frames:

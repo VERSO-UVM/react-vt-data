@@ -27,7 +27,7 @@ export function RangeFilter(params: apiFilterParams) {
       .get(rangeURL)
       .then((r) => setRanges(r.data.ranges))
       .catch((e) => console.error('range bounds fetch failed', e));
-  }, [rangeURL]);
+  }, [spec.filter_table, rangeURL]);
 
   return (
     <Stack gap="lg">

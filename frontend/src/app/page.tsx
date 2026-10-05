@@ -25,7 +25,6 @@ import {
   MapTrifoldIcon,
   ChartBarIcon,
   DownloadSimpleIcon,
-  HandHeartIcon,
   PencilSimpleIcon,
   GithubLogoIcon,
   UsersThreeIcon,
@@ -35,7 +34,7 @@ import {
   NewspaperIcon,
 } from '@phosphor-icons/react';
 
-import { useProfile } from '@/components/profile/profileStore';
+import { useProfile, type Location } from '@/components/profile/profileStore';
 
 import { COLORS, FONTS } from '@/app/theme';
 
@@ -245,8 +244,8 @@ function HeroSection({
   yearMax,
   openProfileModal,
 }: {
-  myLocation: any;
-  comparison: any;
+  myLocation: Location;
+  comparison: Location;
   interests: string[];
   yearMin: number;
   yearMax: number;
@@ -334,8 +333,8 @@ function HeroSection({
                 style={{ color: 'rgba(246,245,239,0.78)' }}
               >
                 Zoning, flood risk, housing, demographics, and more
-                community-level data for all 251 towns and cities. It's free to
-                explore and open to all.
+                community-level data for all 251 towns and cities. It&apos;s
+                free to explore and open to all.
               </Text>
 
               <Group mt={32} gap="md">
@@ -743,7 +742,7 @@ function ValueAdds() {
           }}
           mb={8}
         >
-          What's different here
+          What&apos;s different here
         </Title>
         <Text ta="center" c="dimmed" mb={40}>
           Compared to a typical government data portal.
@@ -827,7 +826,7 @@ function CommunitySection() {
             mx="auto"
             style={{ color: 'rgba(246,245,239,0.78)' }}
           >
-            The platform's code and data pipelines are open source. Towns,
+            The platform&apos;s code and data pipelines are open source. Towns,
             researchers, and volunteers help shape what gets added next — and
             anyone can inspect exactly how a number was calculated.
           </Text>
