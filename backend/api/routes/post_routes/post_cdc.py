@@ -43,21 +43,21 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/cdc/places/single")
-async def cdc_single_geojson(request: FilterRequest):
+def cdc_single_geojson(request: FilterRequest):
     source = request_to_source(request, "cdc_places_county", "default")
     data = single_var_geojson([source])
     return data
 
 
 @router.post("/load/data/cdc/places")
-async def cdc_places_tidy(request: FilterRequest):
+def cdc_places_tidy(request: FilterRequest):
     source = request_to_source(request, "cdc_places_county", "default")
     rows = get_cdc_places_tidy([source])
     return make_response(data=rows, metadata={})
 
 
 @router.post("/load/data/cdc/places/by-county")
-async def cdc_places_by_county(request: FilterRequest):
+def cdc_places_by_county(request: FilterRequest):
     """Every county's value for the filtered measures, for rankings."""
     source = request_to_source(request, "cdc_places_county", "default")
     rows = get_cdc_places_by_county([source])
@@ -65,7 +65,7 @@ async def cdc_places_by_county(request: FilterRequest):
 
 
 @router.post("/load/mapping/cdc/places/county_comparison")
-async def cdc_comparison(specs: list[FilterSpec]) -> APIResponse:
+def cdc_comparison(specs: list[FilterSpec]) -> APIResponse:
     """Bivariate comparison map: geojson in `data`, legend in `metadata`.
 
     One response so the legend grid is guaranteed to match the map colors
@@ -77,7 +77,7 @@ async def cdc_comparison(specs: list[FilterSpec]) -> APIResponse:
 
 
 @router.post("/load/mapping/cdc/places/tract_comparison")
-async def cdc_comparison_tract(specs: list[FilterSpec]) -> APIResponse:
+def cdc_comparison_tract(specs: list[FilterSpec]) -> APIResponse:
     """Bivariate comparison map: geojson in `data`, legend in `metadata`.
 
     One response so the legend grid is guaranteed to match the map colors
@@ -89,5 +89,5 @@ async def cdc_comparison_tract(specs: list[FilterSpec]) -> APIResponse:
 
 
 @router.post("/load/mapping/cdc/places/pca_summary")
-async def cdc_pca(specs: list[FilterSpec]) -> APIResponse:
+def cdc_pca(specs: list[FilterSpec]) -> APIResponse:
     return make_response(data=get_cdc_county_pca(), metadata={})

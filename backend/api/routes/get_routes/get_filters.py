@@ -19,7 +19,7 @@ def get_filter_table_metadata(target_table: str, filter_table: str) -> dict:
 
 
 @router.get("/filters/schema")
-async def get_schema(target_table: str) -> dict:
+def get_schema(target_table: str) -> dict:
     all_tables = set(schema["default"]) | set(schema.get(target_table, {}))
     return {
         filter_table: get_filter_table_metadata(target_table, filter_table)
@@ -28,7 +28,7 @@ async def get_schema(target_table: str) -> dict:
 
 
 @router.get("/filters/tree")
-async def filter_tree_endpoint(
+def filter_tree_endpoint(
     filter_table: str,
     target_table: str = "default",
     exclude_cols: Annotated[list[str] | None, Query()] = None,
@@ -66,7 +66,7 @@ async def filter_tree_endpoint(
 
 
 @router.get("/filters/options")
-async def filter_options_endpoint(
+def filter_options_endpoint(
     filter_table: str,
     target_table: str = "default",
     cols: Annotated[list[str] | None, Query()] = None,
@@ -85,7 +85,7 @@ async def filter_options_endpoint(
 
 
 @router.get("/filters/ranges")
-async def filter_ranges_endpoint(
+def filter_ranges_endpoint(
     filter_table: str,
     target_table: str = "default",
     cols: Annotated[list[str] | None, Query()] = None,

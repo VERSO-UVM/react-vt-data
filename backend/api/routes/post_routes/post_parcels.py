@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.post("/load/mapping/parcels/standard")
-async def parcels_geojson(specs: list[FilterSpec]):
+def parcels_geojson(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_parcels_geojson(sources)
     return Response(content=data, media_type="application/json")

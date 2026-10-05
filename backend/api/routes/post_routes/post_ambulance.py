@@ -34,20 +34,20 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/ambulance/service_area")
-async def ambulance_info_geojson(request: FilterRequest):
+def ambulance_info_geojson(request: FilterRequest):
     source = request_to_source(request, "VCGI_ambulanceService_info", "default")
     data = get_ambulance_geojson([source])
     return Response(content=data, media_type="application/json")
 
 
 @router.post("/load/mapping/ambulance/service_area_new")
-async def ambulance_info_geojson_new(specs: list[FilterSpec]):
+def ambulance_info_geojson_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_ambulance_geojson(sources)
     return Response(content=data, media_type="application/json")
 
 
 @router.get("/load/mapping/ambulance/ambulance_legend")
-async def ambulance_legend():
+def ambulance_legend():
     data = get_ambulance_legend()
     return Response(content=data, media_type="application/json")

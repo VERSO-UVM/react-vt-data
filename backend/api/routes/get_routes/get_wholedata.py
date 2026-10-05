@@ -25,7 +25,7 @@ def read_root():
 # query/flood.py (also used by the POST /load/mapping/flood_legal route in
 # post_flood.py, which supports the mapping explorer's flood filters).
 @router.get("/load/mapping/flood_legal")
-async def read_flood_data():
+def read_flood_data():
     data = get_flood_geojson([])
     return Response(content=data, media_type="application/json")
 

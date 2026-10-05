@@ -108,7 +108,7 @@ class ExportRequest(BaseModel):
 
 
 @router.get("/sources")
-async def list_export_sources():
+def list_export_sources():
     """Return available export sources with metadata (no internal loader)."""
     return {
         key: {k: v for k, v in meta.items() if k in _SOURCE_META_KEYS}
@@ -117,7 +117,7 @@ async def list_export_sources():
 
 
 @router.get("/locations")
-async def list_locations():
+def list_locations():
     """
     Return sorted lists of Vermont counties and towns, derived from the ACS5
     housing export source (representative of every town-level dataset).
@@ -137,7 +137,7 @@ async def list_locations():
 
 
 @router.post("/csv")
-async def export_csv(body: ExportRequest, request: Request):
+def export_csv(body: ExportRequest, request: Request):
     """
     Return a filtered dataset as a CSV file.
 

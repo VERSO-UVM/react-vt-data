@@ -82,14 +82,14 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/wastewater/service_area")
-async def wastewater_service_geojson(request: FilterRequest):
+def wastewater_service_geojson(request: FilterRequest):
     source = request_to_source(request, "VersoWastewater_serviceAreas_info", "default")
     data = get_waste_service_areas_geojson([source])
     return Response(content=data, media_type="application/json")
 
 
 @router.post("/load/mapping/wastewater/treatment_facility")
-async def wastewater_facility_geojson(request: FilterRequest):
+def wastewater_facility_geojson(request: FilterRequest):
     source = request_to_source(
         request, "VersoWastewater_treatmentFacilities_info", "default"
     )
@@ -98,7 +98,7 @@ async def wastewater_facility_geojson(request: FilterRequest):
 
 
 @router.post("/load/mapping/wastewater/treatment_facility/permits")
-async def wastewater_facility_permits(request: FilterRequest):
+def wastewater_facility_permits(request: FilterRequest):
     # Filter against the facilities table (has Town/County/Jurisdiction/RPC
     # columns and the Facility_ID join key); the permits table itself has
     # neither and can't be filtered directly.
@@ -110,7 +110,7 @@ async def wastewater_facility_permits(request: FilterRequest):
 
 
 @router.post("/load/mapping/wastewater/septic_soil_suitability")
-async def wastewater_soil_suit_geojson(request: FilterRequest):
+def wastewater_soil_suit_geojson(request: FilterRequest):
     source = request_to_source(
         request, "VersoWastewater_soilSuitability_info", "default"
     )
@@ -119,6 +119,6 @@ async def wastewater_soil_suit_geojson(request: FilterRequest):
 
 
 @router.post("/load/mapping/wastewater/septic_soil_legend")
-async def wastewater_soil_suit_legend():
+def wastewater_soil_suit_legend():
     data = get_soil_suit_legend()
     return Response(content=data, media_type="application/json")
