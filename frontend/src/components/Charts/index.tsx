@@ -345,7 +345,12 @@ export const ChartCard = <TData extends DataRow>({
             )
           ) : (
             displayNotes && (
-              <Text size="xs" c="dimmed" mb={8}>
+              <Text
+                size="xs"
+                c="dimmed"
+                mb={8}
+                lineClamp={isGallery ? 2 : undefined}
+              >
                 {displayNotes}
               </Text>
             )
