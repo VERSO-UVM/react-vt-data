@@ -16,6 +16,7 @@ import {
   IconHeartbeat,
   IconHome2,
   IconMap2,
+  IconArrowRight,
   IconPencil,
   IconUsers,
   type Icon,
@@ -64,49 +65,50 @@ export default function TopicLanding() {
 
   return (
     <Box bg={COLORS.birch} style={{ minHeight: 'calc(100vh - 70px)' }}>
-      <Container size="xl" py={56}>
-        <Stack gap="xs" mb={40} maw={720}>
-          <Title order={1} c={COLORS.spruce} fz={44}>
+      <Container size="xl" pt={32} pb={48}>
+        <Stack gap={6} mb="lg">
+          <Text size="xs" fw={700} tt="uppercase" lts={1.2} c={COLORS.slate}>
             Reports by Topic
+          </Text>
+          <Title order={1} c={COLORS.spruce} fz={40}>
+            Understand your community in context
           </Title>
           <Text size="lg" c={COLORS.slate}>
-            Pick a topic to see how your place compares with a benchmark.
+            Explore demographics, housing, labor, land use, and community
+            health.
           </Text>
-          <Group gap="xl" mt="md" align="center" wrap="wrap">
-            {[
-              [COLORS.spruce, 'Your place', myLocation.name],
-              [COMPARISON_COLOR, 'Compared with', comparison.name],
-            ].map(([color, label, name]) => (
-              <Group key={label} gap={8} wrap="nowrap">
+        </Stack>
+
+        <Group gap="md" mb="lg" wrap="wrap">
+          {[
+            [COLORS.spruce, myLocation.name],
+            [COMPARISON_COLOR, comparison.name],
+          ].map(([color, name], i) => (
+            <Group key={name} gap="md" wrap="nowrap">
+              {i === 1 && <IconArrowRight size={16} color={COLORS.slate} />}
+              <Group gap={8} wrap="nowrap">
                 <Box
                   w={10}
                   h={10}
                   bg={color}
                   style={{ borderRadius: '50%', flexShrink: 0 }}
                 />
-                <Stack gap={0}>
-                  <Text size="xs" c={COLORS.slate}>
-                    {label}
-                  </Text>
-                  <Text fw={600} c={COLORS.ink}>
-                    {name}
-                  </Text>
-                </Stack>
+                <Text fw={600} c={COLORS.ink}>
+                  {name}
+                </Text>
               </Group>
-            ))}
-          </Group>
+            </Group>
+          ))}
           <Button
             variant="subtle"
             size="compact-sm"
             color={COLORS.spruce}
             leftSection={<IconPencil size={14} />}
             onClick={openProfileModal}
-            style={{ alignSelf: 'flex-start' }}
-            px={0}
           >
             Change comparison
           </Button>
-        </Stack>
+        </Group>
 
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
           {(Object.keys(TOPIC_SLUGS) as DashboardSection[]).map((topic) => {
