@@ -89,6 +89,26 @@ export const chartDefs: ChartDef[] = [
     ],
   },
   {
+    id: 'parcel_flood_exposure',
+    title: 'Land in High-Risk Flood Zones: Acres by Land Use',
+    categories: ['Land Use'],
+    xField: 'Land Use',
+    yField: 'Acres',
+    subtype: 'CompareDiffPerXBarChart',
+    chartParams: { legendLabels: ['Main', 'Compare'], yLabel: 'Acres' },
+    url: `${BASE_API_URL}/load/data/parcels/high-flood-risk`,
+    filterKey: 'parcel_flood_acres',
+    notes:
+      'Parcels touching a FEMA high-risk (Special Flood Hazard) zone. A parcel counts as having its full acreage even if only part of it is in the zone.',
+    showCols: [
+      { key: 'County' },
+      { key: 'Jurisdiction' },
+      { key: 'Land Use' },
+      { key: 'Parcels' },
+      { key: 'Acres', label: 'Acres in High-Risk Zone' },
+    ],
+  },
+  {
     id: 'demographics',
     title: 'Changes in Age Composition',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,

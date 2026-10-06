@@ -35,3 +35,11 @@ def get_parcels_by_category(
     ).df()
     table = DB.execute(*sql_filter_block(sql_dir / "category_table.sql", sources)).df()
     return agg, table
+
+
+def get_parcels_in_flood_zone(
+    sources: list[FilterSource],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    agg = DB.execute(*sql_filter_block(sql_dir / "agg_flood_table.sql", sources)).df()
+    table = DB.execute(*sql_filter_block(sql_dir / "flood_table.sql", sources)).df()
+    return agg, table
