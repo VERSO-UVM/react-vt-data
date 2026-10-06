@@ -77,6 +77,14 @@ def get_zoning_allowances(
     return agg, table
 
 
+def get_zoning_lot_sizes(
+    sources: list[FilterSource],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    agg = DB.execute(*sql_filter_block(sql_dir / "agg_lot_size.sql", sources)).df()
+    table = DB.execute(*sql_filter_block(sql_dir / "lot_size_table.sql", sources)).df()
+    return agg, table
+
+
 def get_building_footprints(
     sources: list[FilterSource],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:

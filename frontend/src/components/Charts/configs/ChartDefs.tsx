@@ -52,6 +52,31 @@ export const chartDefs: ChartDef[] = [
     ],
   },
   {
+    id: 'zoning_lot_size',
+    title: 'Minimum Lot Size for a Single-Family Home: Share of Zoned Land',
+    categories: ['Land Use'],
+    xField: 'Minimum Lot Size',
+    yField: 'Share of Acres',
+    subtype: 'CompareDiffPerXBarChart',
+    chartParams: {
+      legendLabels: ['Main', 'Compare'],
+      yLabel: 'Share of zoned acres (%)',
+      percentFormat: true,
+    },
+    url: `${BASE_API_URL}/load/data/zoning/lot-sizes`,
+    filterKey: 'zoning_lot_size',
+    notes:
+      'Districts where single-family homes are allowed (by right or with a public hearing), weighted by district acreage. Districts with no minimum lot size on record are excluded. Lot-size minimums are nearly identical for two- to four-family homes, so only single-family is shown.',
+    showCols: [
+      { key: 'County' },
+      { key: 'Jurisdiction' },
+      { key: 'Jurisdiction District Name' },
+      { key: 'District Type' },
+      { key: 'Acres' },
+      { key: 'Minimum Lot Size (ac)' },
+    ],
+  },
+  {
     id: 'zoning_allowance',
     title: 'Zoning Allowance Acreage by Unit Type',
     categories: ['Land Use'],
