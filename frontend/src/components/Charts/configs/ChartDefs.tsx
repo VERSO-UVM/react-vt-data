@@ -109,6 +109,29 @@ export const chartDefs: ChartDef[] = [
     ],
   },
   {
+    id: 'parcel_value_per_acre',
+    title: 'Land Value by Land Use: Median Assessed Value per Acre',
+    categories: ['Land Use'],
+    xField: 'Land Use',
+    yField: 'Value Per Acre',
+    subtype: 'CompareDiffPerXBarChart',
+    chartParams: {
+      legendLabels: ['Main', 'Compare'],
+      yLabel: 'Dollars per acre ($)',
+    },
+    url: `${BASE_API_URL}/load/data/parcels/value-per-acre`,
+    filterKey: 'parcel_value_per_acre',
+    notes:
+      'Median of each parcel’s assessed value divided by its acreage. Residential and seasonal land are split at 6 acres because small lots are worth far more per acre. Parcels without an assessed value, and mobile homes without land, are excluded.',
+    showCols: [
+      { key: 'County' },
+      { key: 'Jurisdiction' },
+      { key: 'Land Use' },
+      { key: 'Parcels' },
+      { key: 'Value Per Acre', label: 'Median Value Per Acre ($)' },
+    ],
+  },
+  {
     id: 'demographics',
     title: 'Changes in Age Composition',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
