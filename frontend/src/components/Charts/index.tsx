@@ -32,6 +32,7 @@ export {
   DPTrendChart,
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';
+export { AgeAreaChart } from './AgeAreaChart';
 
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import {

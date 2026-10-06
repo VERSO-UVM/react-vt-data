@@ -85,7 +85,7 @@ export const chartDefs: ChartDef[] = [
       extraParams: { year_min: 2010, year_max: 2023 },
     },
   },
-  // Education (Bar Graph)
+  // Age Distribution (Bar Graph)
   {
     id: 'age_distribution',
     title: 'Age Distribution',
@@ -180,6 +180,17 @@ export const chartDefs: ChartDef[] = [
     tableConfig: {
       extraParams: { year_min: 2010, year_max: 2023 },
     },
+  },
+  // Age Area Chart (Annual, stacked by age group)
+  {
+    id: 'age_area',
+    title: 'Age Distribution - Trend',
+    categories: ['Demographics'],
+    xField: 'year',
+    yField: 'Value',
+    subtype: 'AgeAreaChart',
+    chartParams: { noViewSwitch: true },
+    url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
   },
   {
     id: 'education_trend',
