@@ -33,6 +33,71 @@ const formatCell = (v: unknown) => {
   return String(v);
 };
 
+/** Write a worksheet to a one-sheet .xlsx named after the chart and download it. */
+export function saveWorksheet<TData>(
+  chart: ChartItem<TData>,
+  worksheet: XLSX.WorkSheet,
+) {
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet 1');
+
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: 'xlsx',
+    type: 'array',
+  });
+
+  // Blob with the Excel MIME type, downloaded via file-saver
+  const blob = new Blob([excelBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+  });
+
+  const formatFileName = (str: string) =>
+    str.trim().replaceAll('_', ' ').toLowerCase();
+
+  const fileName =
+    chart?.description && chart?.title
+      ? `${formatFileName(chart.description)}_${formatFileName(chart.title)}`
+      : chart?.description
+        ? formatFileName(chart.description)
+        : chart?.title
+          ? formatFileName(chart.title)
+          : 'chart';
+
+  saveAs(blob, `${fileName}_data.xlsx`);
+}
+
+/**
+ * Download rows as an .xlsx file. Columns with a "(cmp)" twin are location
+ * columns: they get suffixed with the location names, everything else (year,
+ * category, ...) keeps its title.
+ */
+export function exportRowsToExcel<TData>(
+  chart: ChartItem<TData>,
+  rows: DataRow[],
+) {
+  const labels = chart.chartParams?.legendLabels as
+    [string, string] | undefined;
+  const homeLabel = labels?.[0] ?? 'Primary';
+  const compareLabel = labels?.[1] ?? 'Comparison';
+  const cmpKeys = Object.keys(rows[0] ?? {}).filter((k) =>
+    k.endsWith(CMP_SUFFIX),
+  );
+
+  const paired = new Set(cmpKeys.map((k) => k.slice(0, -CMP_SUFFIX.length)));
+  const renameKey = (k: string) =>
+    k.endsWith(CMP_SUFFIX)
+      ? `${k.slice(0, -CMP_SUFFIX.length)} (${compareLabel})`
+      : paired.has(k)
+        ? `${k} (${homeLabel})`
+        : k;
+
+  const data = rows.map((row) =>
+    Object.fromEntries(Object.entries(row).map(([k, v]) => [renameKey(k), v])),
+  );
+
+  saveWorksheet(chart, XLSX.utils.json_to_sheet(data));
+}
+
 export const TableView = <TData extends DataRow>({
   chart,
   rows: rowsOverride,
@@ -54,56 +119,7 @@ export const TableView = <TData extends DataRow>({
   const hasCompare =
     cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
 
-  async function handleExport() {
-    // Columns with a "(cmp)" twin are location columns: suffix them with the
-    // location names. Everything else (year, category, ...) keeps its title.
-    const paired = new Set(cmpKeys.map((k) => k.slice(0, -CMP_SUFFIX.length)));
-    const renameKey = (k: string) =>
-      k.endsWith(CMP_SUFFIX)
-        ? `${k.slice(0, -CMP_SUFFIX.length)} (${compareLabel})`
-        : paired.has(k)
-          ? `${k} (${homeLabel})`
-          : k;
-
-    const data = rows.map((row) =>
-      Object.fromEntries(
-        Object.entries(row).map(([k, v]) => [renameKey(k), v]),
-      ),
-    );
-
-    // Create a new workbook and worksheet
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-
-    // Append the worksheet to the workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet 1');
-
-    // Generate a buffer allocation
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: 'xlsx',
-      type: 'array',
-    });
-
-    // 4. Create a Blob with the correct Excel MIME type
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
-    });
-
-    // Trigger the download using file-saver
-    const formatFileName = (str: string) =>
-      str.trim().replaceAll('_', ' ').toLowerCase();
-
-    const fileName =
-      chart?.description && chart?.title
-        ? `${formatFileName(chart.description)}_${formatFileName(chart.title)}`
-        : chart?.description
-          ? formatFileName(chart.description)
-          : chart?.title
-            ? formatFileName(chart.title)
-            : 'chart';
-
-    saveAs(blob, `${fileName}_data.xlsx`);
-  }
+  const handleExport = () => exportRowsToExcel(chart, rows);
 
   // Render the comparison toggle header control
   const comparisonToggleHeader = (
