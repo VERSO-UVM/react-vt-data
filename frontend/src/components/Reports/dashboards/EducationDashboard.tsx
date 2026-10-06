@@ -12,7 +12,7 @@ const EDUCATION_CATEGORIES = [
 // TODO: Add more charts and tables for educational attainment dashboard (from dept of education data?)
 export default function EducationDashboard() {
   return (
-    <ReportSection eyebrow="Education" title="Educational attainment">
+    <ReportSection intro eyebrow="Education" title="Educational attainment">
       <ComparisonBarChart
         title="Educational Attainment"
         categories={EDUCATION_CATEGORIES}

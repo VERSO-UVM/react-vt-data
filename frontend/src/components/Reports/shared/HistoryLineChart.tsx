@@ -52,8 +52,31 @@ export default function HistoryLineChart({
   }));
   const f = FORMATS[format];
 
+  // "Burlington grew 45% since 2010 (South Burlington: 38%)."
+  const change = (key: string) => {
+    const pts = data.filter((d) => Number(d[key]) > 0);
+    if (pts.length < 2) return null;
+    const first = pts[0];
+    const last = pts[pts.length - 1];
+    return {
+      from: first.year,
+      pct:
+        ((Number(last[key]) - Number(first[key])) / Number(first[key])) * 100,
+    };
+  };
+  const pc = change(primary.name);
+  const cc = change(comparison.name);
+  const verb = (n: number) => (n >= 0 ? 'grew' : 'fell');
+  const short = (n: string) => n.replace(/, Vermont$/, '');
+  const insight = pc
+    ? `${short(primary.name)} ${verb(pc.pct)} ${Math.abs(pc.pct).toFixed(0)}% since ${pc.from}` +
+      (cc
+        ? ` (${short(comparison.name)}: ${cc.pct >= 0 ? '+' : '-'}${Math.abs(cc.pct).toFixed(0)}%).`
+        : '.')
+    : undefined;
+
   return (
-    <ChartBlock title={title}>
+    <ChartBlock title={title} insight={insight}>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart
           data={data}

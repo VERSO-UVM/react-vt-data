@@ -32,7 +32,7 @@ export default function HealthDashboard() {
 
   return (
     <>
-      <ReportSection eyebrow="At a Glance" title="Key health indicators">
+      <ReportSection intro eyebrow="At a Glance" title="Key health indicators">
         <KeyIndicatorTiles
           rows={rows}
           measures={AT_A_GLANCE_MEASURES}

@@ -6,7 +6,6 @@ import axios from 'axios';
 import {
   Alert,
   Anchor,
-  Badge,
   Box,
   Button,
   Container,
@@ -15,7 +14,6 @@ import {
   Paper,
   Stack,
   Text,
-  Title,
 } from '@mantine/core';
 import { useProfile, Location } from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
@@ -36,11 +34,7 @@ import {
   IconInfoCircle,
 } from '@tabler/icons-react';
 import { COLORS } from '@/app/theme';
-import {
-  COMPARISON_COLOR,
-  ReportProvider,
-  TOPIC_ACCENTS,
-} from '@/components/Reports/shared';
+import { ReportProvider } from '@/components/Reports/shared';
 import type { ReportData } from '@/components/Reports/shared';
 import { exportReport } from '@/utils/exportReport';
 import { DashboardSection, TOPIC_SLUGS, topicPath } from './topics';
@@ -318,19 +312,16 @@ function buildLocationFilters(
   return {};
 }
 
-// The topic switcher and the places being compared, stuck under the site
-// header so both stay in view while the report scrolls.
+// One slim bar stuck under the site header: back to the topic chooser, the
+// topic tabs, and export. The places and year live in the report's intro.
 function ReportHeader({
   section,
   data,
-  showYear,
 }: {
   section: DashboardSection;
   data: ReportData;
-  showYear: boolean;
 }) {
   const [exporting, setExporting] = useState(false);
-  const accent = TOPIC_ACCENTS[section];
 
   const handleExport = async () => {
     setExporting(true);
@@ -348,23 +339,6 @@ function ReportHeader({
     }
   };
 
-  const place = (color: string, label: string, name: string) => (
-    <Group gap={6} wrap="nowrap">
-      <Box
-        w={10}
-        h={10}
-        bg={color}
-        style={{ borderRadius: '50%', flexShrink: 0 }}
-      />
-      <Text size="xs" c="dimmed">
-        {label}
-      </Text>
-      <Text size="sm" fw={600}>
-        {name}
-      </Text>
-    </Group>
-  );
-
   return (
     <Box
       style={{
@@ -373,87 +347,71 @@ function ReportHeader({
         zIndex: 900,
         transition: 'top 250ms ease',
         background: COLORS.spruce,
-        borderBottom: `1px solid ${COLORS.line}`,
       }}
     >
-      <Container size="xl" pt="md">
-        <Group gap="sm" mb={4}>
-          <Anchor
-            component={Link}
-            href="/data-comparison/reports-by-topic/"
-            size="sm"
-            fw={600}
-            c={COLORS.birchDim}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
-          >
-            <IconArrowLeft size={18} />
-            All topics
-          </Anchor>
-        </Group>
-        <Title order={1} size="h2" mb="sm" c={COLORS.birch}>
-          Reports by Topic
-        </Title>
+      <Container size="xl" py={8}>
+        <Group justify="space-between" wrap="nowrap" gap="md">
+          <Group gap="lg" wrap="nowrap" style={{ minWidth: 0 }}>
+            <Anchor
+              component={Link}
+              href="/data-comparison/reports-by-topic/"
+              size="sm"
+              fw={600}
+              c={COLORS.birchDim}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                flexShrink: 0,
+              }}
+            >
+              <IconArrowLeft size={18} />
+              Reports by Topic
+            </Anchor>
 
-        {/* Plain links, so each topic stays its own statically exported route. */}
-        <Group
-          gap="lg"
-          wrap="nowrap"
-          style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
-        >
-          {(Object.keys(TOPIC_SLUGS) as DashboardSection[]).map((topic) => {
-            const active = topic === section;
-            return (
-              <Link
-                key={topic}
-                href={topicPath(topic)}
-                scroll={false}
-                aria-current={active ? 'page' : undefined}
-                style={{
-                  flexShrink: 0,
-                  padding: '6px 2px',
-                  fontSize: 14,
-                  fontWeight: active ? 700 : 500,
-                  color: active ? COLORS.birch : 'rgba(238,235,224,.7)',
-                  textDecoration: 'none',
-                  borderBottom: `3px solid ${active ? TOPIC_ACCENTS[topic] : 'transparent'}`,
-                }}
-              >
-                {topic}
-              </Link>
-            );
-          })}
+            {/* Plain links, so each topic stays its own static route. */}
+            <Group
+              gap="lg"
+              wrap="nowrap"
+              style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
+            >
+              {(Object.keys(TOPIC_SLUGS) as DashboardSection[]).map((topic) => {
+                const active = topic === section;
+                return (
+                  <Link
+                    key={topic}
+                    href={topicPath(topic)}
+                    scroll={false}
+                    aria-current={active ? 'page' : undefined}
+                    style={{
+                      flexShrink: 0,
+                      padding: '4px 2px',
+                      fontSize: 14,
+                      fontWeight: active ? 700 : 500,
+                      color: active ? COLORS.birch : 'rgba(238,235,224,.7)',
+                      textDecoration: 'none',
+                      borderBottom: `3px solid ${active ? COLORS.amber : 'transparent'}`,
+                    }}
+                  >
+                    {topic}
+                  </Link>
+                );
+              })}
+            </Group>
+          </Group>
+          <Button
+            size="xs"
+            variant="white"
+            color={COLORS.spruce}
+            leftSection={<IconDownload size={14} />}
+            loading={exporting}
+            onClick={handleExport}
+            style={{ flexShrink: 0 }}
+          >
+            Export PDF
+          </Button>
         </Group>
       </Container>
-
-      <Box
-        style={{
-          background: COLORS.birchDim,
-          borderTop: `1px solid ${COLORS.line}`,
-        }}
-      >
-        <Container size="xl" py="xs">
-          <Group justify="space-between" wrap="wrap" gap="sm">
-            <Group gap="lg" wrap="wrap">
-              {place(accent, 'Primary', data.primary.name)}
-              {place(COMPARISON_COLOR, 'Benchmark', data.comparison.name)}
-              {showYear && (
-                <Badge variant="light" radius="sm" color="gray">
-                  ACS {data.year}
-                </Badge>
-              )}
-            </Group>
-            <Button
-              size="xs"
-              variant="default"
-              leftSection={<IconDownload size={14} />}
-              loading={exporting}
-              onClick={handleExport}
-            >
-              Export PDF
-            </Button>
-          </Group>
-        </Container>
-      </Box>
     </Box>
   );
 }
@@ -700,11 +658,7 @@ export default function ReportsByTopic({
   // ---------------------------------------------------------------------------
   return (
     <>
-      <ReportHeader
-        section={section}
-        data={dashboardData}
-        showYear={year > 0 && cfg.hasYearDimension !== false}
-      />
+      <ReportHeader section={section} data={dashboardData} />
       <Container size="xl" mb="xl" mt="md">
         {error && <Text c="red">{error}</Text>}
         {areaNotes.length > 0 && (

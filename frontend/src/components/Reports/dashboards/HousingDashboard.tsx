@@ -15,6 +15,7 @@ export default function HousingDashboard() {
   return (
     <>
       <ReportSection
+        intro
         eyebrow="Housing Stock"
         title="Homes and what they cost"
         takeaway={takeaway(

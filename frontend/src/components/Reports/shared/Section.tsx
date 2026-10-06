@@ -3,6 +3,7 @@
 import { Children, type ReactNode } from 'react';
 import { Box, Group, Stack, Text, Title } from '@mantine/core';
 import { COLORS } from '@/app/theme';
+import { COMPARISON_COLOR } from './colors';
 import { useReport } from './ReportContext';
 
 /**
@@ -14,32 +15,68 @@ export function ReportSection({
   eyebrow,
   title,
   takeaway,
+  intro = false,
   children,
 }: {
   eyebrow: string;
   title: string;
   takeaway?: string;
+  /** The report's first section: topic + year eyebrow and the places legend. */
+  intro?: boolean;
   children: ReactNode;
 }) {
-  const { accent } = useReport();
+  const { accent, topic, year, primary, comparison } = useReport();
+  const place = (color: string, name: string, role: string) => (
+    <Group gap={8} wrap="nowrap" align="flex-start">
+      <Box
+        w={10}
+        h={10}
+        mt={5}
+        bg={color}
+        style={{ borderRadius: '50%', flexShrink: 0 }}
+      />
+      <Stack gap={0}>
+        <Text size="sm" fw={700} tt="uppercase" lts={0.6}>
+          {name.replace(/, Vermont$/, '')}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {role}
+        </Text>
+      </Stack>
+    </Group>
+  );
+
   return (
     <Box
       className="pdf-export-block"
-      py={40}
-      style={{ borderTop: `1px solid ${COLORS.line}` }}
+      py={intro ? 28 : 40}
+      style={intro ? undefined : { borderTop: `1px solid ${COLORS.line}` }}
     >
       <Stack gap={6} mb="xl">
-        <Group gap={10}>
-          <Box w={28} h={3} bg={accent} style={{ borderRadius: 2 }} />
-          <Text size="xs" fw={700} tt="uppercase" lts={1.2} c={accent}>
-            {eyebrow}
-          </Text>
+        <Group gap={10} justify="space-between">
+          <Group gap={10}>
+            <Box w={28} h={3} bg={accent} style={{ borderRadius: 2 }} />
+            <Text size="xs" fw={700} tt="uppercase" lts={1.2} c={accent}>
+              {intro ? topic : eyebrow}
+            </Text>
+          </Group>
+          {intro && year > 0 && (
+            <Text size="xs" fw={600} c="dimmed">
+              ACS {year}
+            </Text>
+          )}
         </Group>
         <Title order={2}>{title}</Title>
         {takeaway && (
           <Text size="md" c="dimmed" maw={720}>
             {takeaway}
           </Text>
+        )}
+        {intro && (
+          <Group gap={48} mt="sm">
+            {place(accent, primary.name, 'Primary')}
+            {place(COMPARISON_COLOR, comparison.name, 'Benchmark')}
+          </Group>
         )}
       </Stack>
       <Stack gap={40}>{children}</Stack>
@@ -51,10 +88,13 @@ export function ReportSection({
 export function ChartBlock({
   title,
   note,
+  insight,
   children,
 }: {
   title: string;
   note?: string;
+  /** One interpretive sentence between the caption and the chart. */
+  insight?: string;
   children: ReactNode;
 }) {
   return (
@@ -65,6 +105,11 @@ export function ChartBlock({
       {note && (
         <Text size="xs" c="dimmed" mb="sm">
           {note}
+        </Text>
+      )}
+      {insight && (
+        <Text size="sm" mb="sm" maw={560}>
+          {insight}
         </Text>
       )}
       {children}

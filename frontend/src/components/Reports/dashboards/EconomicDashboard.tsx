@@ -17,6 +17,7 @@ export default function EconomicDashboard() {
   const ctx = useReport();
   return (
     <ReportSection
+      intro
       eyebrow="Income & Employment"
       title="How people earn and spend"
       takeaway={takeaway(

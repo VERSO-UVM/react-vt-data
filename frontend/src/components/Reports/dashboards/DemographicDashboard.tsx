@@ -38,6 +38,7 @@ export default function DemographicsDashboard() {
   return (
     <>
       <ReportSection
+        intro
         eyebrow="Population"
         title="Who lives here"
         takeaway={takeaway(ctx, 'Median Age', 'median age', 'years')}

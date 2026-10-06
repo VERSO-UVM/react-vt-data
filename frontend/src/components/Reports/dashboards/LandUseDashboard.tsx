@@ -19,7 +19,7 @@ const acresOf = (rows: DataRow[], type: string) =>
 export default function LandUseDashboard() {
   return (
     <>
-      <ReportSection eyebrow="Zoning" title="How land can be used">
+      <ReportSection intro eyebrow="Zoning" title="How land can be used">
         <StatStrip>
           <ZoningCoverageStatCard />
         </StatStrip>

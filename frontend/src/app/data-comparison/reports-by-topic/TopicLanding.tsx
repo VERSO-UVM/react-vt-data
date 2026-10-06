@@ -104,7 +104,7 @@ export default function TopicLanding() {
             style={{ alignSelf: 'flex-start' }}
             px={0}
           >
-            Edit your places
+            Change comparison
           </Button>
         </Stack>
 

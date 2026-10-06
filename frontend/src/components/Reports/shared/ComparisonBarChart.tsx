@@ -59,12 +59,23 @@ export default function ComparisonBarChart({
       [comparison.name]: read(comparison.current, key),
     };
   });
+  const gap = data
+    .map((d) => ({
+      label: String(d.label),
+      p: Number(d[primary.name]),
+      c: Number(d[comparison.name]),
+    }))
+    .sort((a, b) => Math.abs(b.p - b.c) - Math.abs(a.p - a.c))[0];
+  const insight =
+    gap && gap.p !== gap.c
+      ? `Biggest gap: ${gap.label}, ${tip(gap.p)} in ${primary.name.replace(/, Vermont$/, '')} vs. ${tip(gap.c)} in ${comparison.name.replace(/, Vermont$/, '')}.`
+      : undefined;
   const radius: [number, number, number, number] = horizontal
     ? [0, 4, 4, 0]
     : [4, 4, 0, 0];
 
   return (
-    <ChartBlock title={title}>
+    <ChartBlock title={title} insight={insight}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart
           data={data}
