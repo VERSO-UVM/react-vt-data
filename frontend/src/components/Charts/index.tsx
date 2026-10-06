@@ -48,7 +48,9 @@ import {
   TextInput,
   Textarea,
   Tooltip,
+  Skeleton,
 } from '@mantine/core';
+import { useIntersection } from '@mantine/hooks';
 import {
   CornersOutIcon,
   CornersInIcon,
@@ -58,7 +60,7 @@ import {
 } from '@phosphor-icons/react';
 import * as motion from 'motion/react-client';
 import { AddChart, RemoveChart } from './saving';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 import { useItems } from '@/components/ItemsProvider';
@@ -442,6 +444,8 @@ interface ChartStackItemProps<TData extends DataRow> {
   isIncludedFn?: (defId: string) => boolean;
   onToggle?: (defId: string) => void;
   dragHandleProps?: ChartCardProps<TData>['dragHandleProps'];
+  /** Data not fetched yet: show a skeleton rather than "no data". */
+  loading?: boolean;
 }
 
 /**
@@ -459,6 +463,7 @@ export const ChartStackItem = <TData extends DataRow>({
   isIncludedFn,
   onToggle,
   dragHandleProps,
+  loading = false,
 }: ChartStackItemProps<TData>) => {
   const ChartComponent = allCharts[
     chart.subtype as keyof typeof allCharts
@@ -488,6 +493,15 @@ export const ChartStackItem = <TData extends DataRow>({
     );
 
   if (!ChartComponent) return null;
+  if (loading)
+    return (
+      <Card shadow="sm" padding="sm" radius="md" withBorder>
+        <Skeleton h={20} w="60%" mb="xs" />
+        <Skeleton h={14} w="90%" mb={4} />
+        <Skeleton h={14} w="80%" mb="md" />
+        <Skeleton h={275} />
+      </Card>
+    );
   if (!chart.data || chart.data.length === 0)
     return (
       <Card shadow="sm" padding="lg" radius="md" withBorder>
@@ -514,6 +528,35 @@ export const ChartStackItem = <TData extends DataRow>({
   );
 };
 
+/**
+ * Calls `onVisible` once, the first time the slot is within ~400px of the
+ * viewport, so a chart can start fetching just before it scrolls in. The
+ * wrapper is a grid so the card still stretches to its row's height.
+ */
+const LazySlot = ({
+  onVisible,
+  children,
+}: {
+  onVisible: () => void;
+  children: React.ReactNode;
+}) => {
+  const { ref, entry } = useIntersection<HTMLDivElement>({
+    rootMargin: '400px',
+  });
+  const seen = useRef(false);
+  useEffect(() => {
+    if (entry?.isIntersecting && !seen.current) {
+      seen.current = true;
+      onVisible();
+    }
+  }, [entry, onVisible]);
+  return (
+    <div ref={ref} style={{ display: 'grid' }}>
+      {children}
+    </div>
+  );
+};
+
 interface ChartStackProps<TData extends DataRow> {
   charts: ChartItem<TData>[];
   action?: 'add' | 'remove' | 'toggle';
@@ -522,6 +565,12 @@ interface ChartStackProps<TData extends DataRow> {
   view?: 'gallery' | 'report';
   onToggle?: (defId: string) => void;
   isIncludedFn?: (defId: string) => boolean;
+  /** Lazy loading ids per chart; falls back to `defIds` where undefined. */
+  loadIds?: (string | undefined)[];
+  /** Lazy loading: called once when a chart's card nears the viewport. */
+  onVisible?: (defId: string) => void;
+  /** Lazy loading: true while a chart's data hasn't arrived. */
+  isLoading?: (defId: string) => boolean;
 }
 
 export const ChartStack = <TData extends DataRow>({
@@ -532,6 +581,9 @@ export const ChartStack = <TData extends DataRow>({
   view,
   onToggle,
   isIncludedFn,
+  loadIds,
+  onVisible,
+  isLoading,
 }: ChartStackProps<TData>) => {
   const isGallery = view === 'gallery';
   const Wrapper = isGallery ? SimpleGrid : Stack;
@@ -544,7 +596,8 @@ export const ChartStack = <TData extends DataRow>({
       <Wrapper {...wrapperProps} mt={5}>
         {charts.map((chart, i) => {
           const defId = defIds?.[i];
-          return (
+          const loadId = loadIds?.[i] ?? defId;
+          const item = (
             <ChartStackItem
               key={defId ?? chart.id}
               chart={chart}
@@ -554,7 +607,15 @@ export const ChartStack = <TData extends DataRow>({
               defId={defId}
               isIncludedFn={isIncludedFn}
               onToggle={onToggle}
+              loading={!!loadId && !!isLoading?.(loadId)}
             />
+          );
+          return loadId && onVisible ? (
+            <LazySlot key={loadId} onVisible={() => onVisible(loadId)}>
+              {item}
+            </LazySlot>
+          ) : (
+            item
           );
         })}
       </Wrapper>
