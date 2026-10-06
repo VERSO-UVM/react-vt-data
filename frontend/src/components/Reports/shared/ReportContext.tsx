@@ -25,6 +25,9 @@ export interface ReportData {
 export interface ReportContextValue extends ReportData {
   topic: string;
   accent: string;
+  // True while the PDF export captures the page: charts skip their
+  // entrance animations so the capture isn't a half-drawn frame.
+  exporting: boolean;
 }
 
 const ReportContext = createContext<ReportContextValue | null>(null);
@@ -32,15 +35,22 @@ const ReportContext = createContext<ReportContextValue | null>(null);
 export function ReportProvider({
   topic,
   data,
+  exporting = false,
   children,
 }: {
   topic: string;
   data: ReportData;
+  exporting?: boolean;
   children: ReactNode;
 }) {
   return (
     <ReportContext.Provider
-      value={{ ...data, topic, accent: TOPIC_ACCENTS[topic] ?? DEFAULT_ACCENT }}
+      value={{
+        ...data,
+        topic,
+        exporting,
+        accent: TOPIC_ACCENTS[topic] ?? DEFAULT_ACCENT,
+      }}
     >
       {children}
     </ReportContext.Provider>

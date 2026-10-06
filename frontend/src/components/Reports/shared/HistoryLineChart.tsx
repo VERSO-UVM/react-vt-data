@@ -30,7 +30,7 @@ export default function HistoryLineChart({
   title: string;
   format: FormatKey;
 }) {
-  const { timeseries, primary, comparison, accent } = useReport();
+  const { timeseries, primary, comparison, accent, exporting } = useReport();
   const ts = timeseries?.[source];
   if (!ts) return null;
 
@@ -93,6 +93,7 @@ export default function HistoryLineChart({
           />
           <Legend />
           <Line
+            isAnimationActive={!exporting}
             type="monotone"
             dataKey={primary.name}
             stroke={accent}
@@ -100,6 +101,7 @@ export default function HistoryLineChart({
             dot={false}
           />
           <Line
+            isAnimationActive={!exporting}
             type="monotone"
             dataKey={comparison.name}
             stroke={COMPARISON_COLOR}

@@ -47,7 +47,7 @@ export default function ComparisonBarChart({
   tick?: (v: number) => string;
   tip?: (v: number) => string;
 }) {
-  const { primary, comparison, accent } = useReport();
+  const { primary, comparison, accent, exporting } = useReport();
   const read =
     readValue ??
     ((rows: DataRow[], key: string) => getValue(rows, key, field) ?? 0);
@@ -114,8 +114,14 @@ export default function ComparisonBarChart({
           )}
           <Tooltip formatter={(v) => tip(Number(v))} />
           <Legend />
-          <Bar dataKey={primary.name} fill={accent} radius={radius} />
           <Bar
+            isAnimationActive={!exporting}
+            dataKey={primary.name}
+            fill={accent}
+            radius={radius}
+          />
+          <Bar
+            isAnimationActive={!exporting}
             dataKey={comparison.name}
             fill={COMPARISON_COLOR}
             radius={radius}

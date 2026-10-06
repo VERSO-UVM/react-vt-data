@@ -71,7 +71,7 @@ function buildData(primary: DataRow[], comparison: DataRow[]) {
 }
 
 export default function ZoningAllowanceChart() {
-  const { timeseries, primary: p, comparison: c } = useReport();
+  const { timeseries, primary: p, comparison: c, exporting } = useReport();
   const primary = timeseries?.allowances?.primary ?? [];
   const comparison = timeseries?.allowances?.comparison ?? [];
   const primaryName = p.name;
@@ -109,6 +109,7 @@ export default function ZoningAllowanceChart() {
           <Legend />
           {VAL_ORDER.map((group) => (
             <Bar
+              isAnimationActive={!exporting}
               key={group}
               dataKey={group}
               name={group}
@@ -119,6 +120,7 @@ export default function ZoningAllowanceChart() {
           {hasComparison &&
             VAL_ORDER.map((group) => (
               <Bar
+                isAnimationActive={!exporting}
                 key={`${group}-cmp`}
                 dataKey={`${group} (cmp)`}
                 name={group}

@@ -14,10 +14,12 @@ function SexDonut({
   title,
   rows,
   accent,
+  exporting,
 }: {
   title: string;
   rows: DataRow[];
   accent: string;
+  exporting: boolean;
 }) {
   const data = [
     {
@@ -37,6 +39,7 @@ function SexDonut({
       <ResponsiveContainer width="100%" height={220}>
         <PieChart responsive>
           <Pie
+            isAnimationActive={!exporting}
             data={data}
             dataKey="value"
             nameKey="name"
@@ -61,7 +64,7 @@ function SexDonut({
 }
 
 export default function SexDistributionChart() {
-  const { primary, comparison, accent } = useReport();
+  const { primary, comparison, accent, exporting } = useReport();
   return (
     <ChartBlock title="Sex Distribution">
       <Grid justify="space-around" align="flex-start">
@@ -70,6 +73,7 @@ export default function SexDistributionChart() {
             title={primary.name}
             rows={primary.current}
             accent={accent}
+            exporting={exporting}
           />
         </Grid.Col>
         <Grid.Col span={6}>
@@ -77,6 +81,7 @@ export default function SexDistributionChart() {
             title={comparison.name}
             rows={comparison.current}
             accent={accent}
+            exporting={exporting}
           />
         </Grid.Col>
       </Grid>

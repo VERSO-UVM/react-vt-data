@@ -51,15 +51,20 @@ import { DashboardSection, TOPIC_SLUGS, topicPath } from './topics';
 function ReportHeader({
   section,
   data,
+  exporting,
+  setExporting,
 }: {
   section: DashboardSection;
   data: ReportData;
+  exporting: boolean;
+  setExporting: (v: boolean) => void;
 }) {
-  const [exporting, setExporting] = useState(false);
-
   const handleExport = async () => {
     setExporting(true);
     try {
+      // Let the charts re-render without animation (see ReportContext's
+      // `exporting`) so the capture isn't a half-drawn frame.
+      await new Promise((resolve) => setTimeout(resolve, 400));
       await exportReport('report-body', {
         title: section,
         primaryName: data.primary.name,
@@ -183,6 +188,7 @@ export default function ReportsByTopic({
   const [allAreasData, setAllAreasData] = useState<Record<string, DataRow[]>>(
     {},
   );
+  const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -374,7 +380,12 @@ export default function ReportsByTopic({
   // ---------------------------------------------------------------------------
   return (
     <>
-      <ReportHeader section={section} data={dashboardData} />
+      <ReportHeader
+        section={section}
+        data={dashboardData}
+        exporting={exporting}
+        setExporting={setExporting}
+      />
       <Container size="xl" mb="xl" mt="md">
         {error && <Text c="red">{error}</Text>}
         {areaNotes.length > 0 && (
@@ -404,7 +415,11 @@ export default function ReportsByTopic({
           </Paper>
         ) : (
           Dashboard && (
-            <ReportProvider topic={section} data={dashboardData}>
+            <ReportProvider
+              topic={section}
+              data={dashboardData}
+              exporting={exporting}
+            >
               <div id="report-body">
                 <Dashboard />
               </div>

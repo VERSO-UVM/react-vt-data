@@ -57,7 +57,13 @@ function seriesFor(
 }
 
 export default function PovertyUninsuredTrends() {
-  const { timeseries, primary: p, comparison: c, accent } = useReport();
+  const {
+    timeseries,
+    primary: p,
+    comparison: c,
+    accent,
+    exporting,
+  } = useReport();
   const primary = timeseries?.povertyUninsured?.primary ?? [];
   const comparison = timeseries?.povertyUninsured?.comparison ?? [];
   const primaryName = p.name;
@@ -100,6 +106,7 @@ export default function PovertyUninsuredTrends() {
                 />
                 <Legend />
                 <Line
+                  isAnimationActive={!exporting}
                   type="monotone"
                   dataKey="primary"
                   name={first}
@@ -109,6 +116,7 @@ export default function PovertyUninsuredTrends() {
                   connectNulls={false}
                 />
                 <Line
+                  isAnimationActive={!exporting}
                   type="monotone"
                   dataKey="comparison"
                   name={second}
