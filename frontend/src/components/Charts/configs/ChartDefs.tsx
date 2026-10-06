@@ -132,6 +132,30 @@ export const chartDefs: ChartDef[] = [
     ],
   },
   {
+    id: 'parcel_owner_type',
+    title: 'Who Owns the Land: Share of Parcels by Owner Residency',
+    categories: ['Land Use'],
+    xField: 'Owner Type',
+    yField: 'Share of Parcels',
+    subtype: 'CompareDiffPerXBarChart',
+    chartParams: {
+      legendLabels: ['Main', 'Compare'],
+      yLabel: 'Share of parcels (%)',
+      percentFormat: true,
+    },
+    url: `${BASE_API_URL}/load/data/parcels/owner-type`,
+    filterKey: 'parcel_owner_type',
+    notes:
+      'Based on the owner’s mailing address on the grand list. “Town resident” means the owner lives in the town where the parcel is. Corporations and other entities are shown separately regardless of location. Parcels with no owner information are excluded.',
+    showCols: [
+      { key: 'County' },
+      { key: 'Jurisdiction' },
+      { key: 'Owner Type' },
+      { key: 'Parcels' },
+      { key: 'Acres' },
+    ],
+  },
+  {
     id: 'demographics',
     title: 'Changes in Age Composition',
     url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,

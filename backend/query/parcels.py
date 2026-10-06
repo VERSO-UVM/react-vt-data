@@ -51,3 +51,11 @@ def get_parcel_value_per_acre(
     agg = DB.execute(*sql_filter_block(sql_dir / "agg_value_table.sql", sources)).df()
     table = DB.execute(*sql_filter_block(sql_dir / "value_table.sql", sources)).df()
     return agg, table
+
+
+def get_parcel_owners(
+    sources: list[FilterSource],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    agg = DB.execute(*sql_filter_block(sql_dir / "agg_owner_table.sql", sources)).df()
+    table = DB.execute(*sql_filter_block(sql_dir / "owner_table.sql", sources)).df()
+    return agg, table
