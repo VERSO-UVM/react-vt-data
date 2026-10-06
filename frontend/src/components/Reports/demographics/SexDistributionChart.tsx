@@ -1,49 +1,40 @@
-import { Card, Grid, Group, Stack, Text, Title } from '@mantine/core';
+'use client';
+
+import { Grid, Group, Stack, Text } from '@mantine/core';
 import { PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
 import { DataRow } from '@/types/cachedCharts';
-
-interface SexDistributionChartProps {
-  primary: DataRow[];
-  comparison: DataRow[];
-  primaryName: string;
-  comparisonName: string;
-}
-
-function getValue(data: DataRow[], variable: string): number {
-  const row = data.find((d) => d.Variable === variable);
-
-  return row ? Number(row.Percent) : 0;
-}
-
-function buildSexData(data: DataRow[]) {
-  return [
-    {
-      name: 'Female',
-      value: getValue(data, 'Female'),
-      fill: '#5474B4',
-    },
-    {
-      name: 'Male',
-      value: getValue(data, 'Male'),
-      fill: '#868e96',
-    },
-  ];
-}
+import {
+  COMPARISON_COLOR,
+  ChartBlock,
+  getValue,
+  useReport,
+} from '@/components/Reports/shared';
 
 function SexDonut({
   title,
-  data,
+  rows,
+  accent,
 }: {
   title: string;
-  data: {
-    name: string;
-    value: number;
-  }[];
+  rows: DataRow[];
+  accent: string;
 }) {
+  const data = [
+    {
+      name: 'Female',
+      value: getValue(rows, 'Female', 'Percent') ?? 0,
+      fill: accent,
+    },
+    {
+      name: 'Male',
+      value: getValue(rows, 'Male', 'Percent') ?? 0,
+      fill: COMPARISON_COLOR,
+    },
+  ];
   return (
     <Stack align="center" gap="xs">
       <Text fw={600}>{title}</Text>
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={220}>
         <PieChart responsive>
           <Pie
             data={data}
@@ -69,34 +60,26 @@ function SexDonut({
   );
 }
 
-export default function SexDistributionChart({
-  primary,
-  comparison,
-  primaryName,
-  comparisonName,
-}: SexDistributionChartProps) {
-  const primarySex = buildSexData(primary);
-  const comparisonSex = buildSexData(comparison);
-
+export default function SexDistributionChart() {
+  const { primary, comparison, accent } = useReport();
   return (
-    <Card
-      radius="xl"
-      padding="lg"
-      withBorder
-      style={{ transition: 'all 180ms ease' }}
-    >
-      <Title order={4} mb="md">
-        Sex Distribution
-      </Title>
-
+    <ChartBlock title="Sex Distribution">
       <Grid justify="space-around" align="flex-start">
         <Grid.Col span={6}>
-          <SexDonut title={primaryName} data={primarySex} />
+          <SexDonut
+            title={primary.name}
+            rows={primary.current}
+            accent={accent}
+          />
         </Grid.Col>
         <Grid.Col span={6}>
-          <SexDonut title={comparisonName} data={comparisonSex} />
+          <SexDonut
+            title={comparison.name}
+            rows={comparison.current}
+            accent={accent}
+          />
         </Grid.Col>
       </Grid>
-    </Card>
+    </ChartBlock>
   );
 }

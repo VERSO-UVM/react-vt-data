@@ -1,4 +1,4 @@
-import { Card, Text, Title } from '@mantine/core';
+import { ChartBlock, useReport } from '@/components/Reports/shared';
 import {
   BarChart,
   Bar,
@@ -10,13 +10,6 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { DataRow } from '@/types/cachedCharts';
-
-interface ZoningAllowanceChartProps {
-  primary: DataRow[];
-  comparison: DataRow[];
-  primaryName: string;
-  comparisonName: string;
-}
 
 // Mirrors the categorization in components/Charts/Bar.tsx's
 // ZoningAllowanceStackedBarChart (the working-report version of this chart),
@@ -77,33 +70,26 @@ function buildData(primary: DataRow[], comparison: DataRow[]) {
   });
 }
 
-export default function ZoningAllowanceChart({
-  primary,
-  comparison,
-  primaryName,
-  comparisonName,
-}: ZoningAllowanceChartProps) {
+export default function ZoningAllowanceChart() {
+  const { timeseries, primary: p, comparison: c } = useReport();
+  const primary = timeseries?.allowances?.primary ?? [];
+  const comparison = timeseries?.allowances?.comparison ?? [];
+  const primaryName = p.name;
+  const comparisonName = c.name;
   const data = buildData(primary, comparison);
   const hasComparison = comparison.length > 0;
 
   if (data.length === 0) return null;
 
   return (
-    <Card
-      radius="xl"
-      padding="lg"
-      withBorder
-      style={{ height: '100%', transition: 'all 180ms ease' }}
+    <ChartBlock
+      title="Residential Zoning Allowance by Unit Type"
+      note={
+        hasComparison
+          ? `Solid = ${primaryName} · Lighter = ${comparisonName}`
+          : undefined
+      }
     >
-      <Title order={4} mb={hasComparison ? 4 : 'md'}>
-        Residential Zoning Allowance by Unit Type
-      </Title>
-      {hasComparison && (
-        <Text size="xs" c="dimmed" mb="md">
-          Solid = {primaryName} · Lighter = {comparisonName}
-        </Text>
-      )}
-
       <ResponsiveContainer width="100%" height={380}>
         <BarChart
           data={data}
@@ -144,6 +130,6 @@ export default function ZoningAllowanceChart({
             ))}
         </BarChart>
       </ResponsiveContainer>
-    </Card>
+    </ChartBlock>
   );
 }

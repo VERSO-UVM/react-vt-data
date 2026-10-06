@@ -1,92 +1,94 @@
 import { Grid } from '@mantine/core';
-import { DataRow } from '@/types/cachedCharts';
+import { IconBuildingCommunity, IconHomeDollar } from '@tabler/icons-react';
 import {
-  MedianHomeValueCard,
-  TotalHousingUnitsCard,
-  OccupancyDistributionChart,
-  VacancyDistributionChart,
-  MedianHomeValueHistoryChart,
-  TotalHousingUnitsHistoryChart,
-} from '@/components/Reports/housing';
+  ComparisonBarChart,
+  HistoryLineChart,
+  ReportSection,
+  StatCard,
+  StatStrip,
+  takeaway,
+  useReport,
+} from '@/components/Reports/shared';
 
-export interface DashboardData {
-  year: number;
-  primary: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
-  comparison: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
-  // Additional time-series tables, keyed by the SECTIONS.timeseries config
-  // key in reports-by-topic/page.tsx (e.g. "medianHomeValue").
-  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
-}
-
-export interface DashboardProps {
-  data: DashboardData;
-}
-
-export default function HousingDashboard({ data }: DashboardProps) {
-  const { primary, comparison, timeseries } = data;
-
+export default function HousingDashboard() {
+  const ctx = useReport();
   return (
-    <Grid gap="lg">
-      <Grid.Col span={{ base: 12, md: 6 }}>
-        <MedianHomeValueCard
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 6 }}>
-        <TotalHousingUnitsCard
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 7 }}>
-        <OccupancyDistributionChart
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 5 }}>
-        <VacancyDistributionChart
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      {timeseries?.medianHomeValue && (
-        <Grid.Col span={{ base: 12, md: 6 }}>
-          <MedianHomeValueHistoryChart
-            primary={timeseries.medianHomeValue.primary}
-            comparison={timeseries.medianHomeValue.comparison}
-            primaryName={primary.name}
-            comparisonName={comparison.name}
+    <>
+      <ReportSection
+        eyebrow="Housing Stock"
+        title="Homes and what they cost"
+        takeaway={takeaway(
+          ctx,
+          'Median Home Value',
+          'median home value',
+          'usd',
+        )}
+      >
+        <StatStrip>
+          <StatCard
+            label="Median Home Value"
+            icon={<IconHomeDollar size={18} />}
+            variable="Median Home Value"
+            format="usd"
           />
-        </Grid.Col>
-      )}
-      {timeseries?.totalUnits && (
-        <Grid.Col span={{ base: 12, md: 6 }}>
-          <TotalHousingUnitsHistoryChart
-            primary={timeseries.totalUnits.primary}
-            comparison={timeseries.totalUnits.comparison}
-            primaryName={primary.name}
-            comparisonName={comparison.name}
+          <StatCard
+            label="Total Housing Units"
+            icon={<IconBuildingCommunity size={18} />}
+            variable="Total Housing Units"
+            format="int"
           />
-        </Grid.Col>
-      )}
-    </Grid>
+        </StatStrip>
+        <Grid gap="xl">
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <HistoryLineChart
+              source="medianHomeValue"
+              field="Median_Home_Value"
+              title="Median Home Value Over Time"
+              format="usd"
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <HistoryLineChart
+              source="totalUnits"
+              field="Total_Housing_Units"
+              title="Total Housing Units Over Time"
+              format="int"
+            />
+          </Grid.Col>
+        </Grid>
+      </ReportSection>
+
+      <ReportSection
+        eyebrow="Occupancy"
+        title="Who lives in them, and what sits empty"
+      >
+        <Grid gap="xl">
+          <Grid.Col span={{ base: 12, md: 7 }}>
+            <ComparisonBarChart
+              title="Occupancy Distribution"
+              categories={[
+                { key: 'Owner-Occupied Units', label: 'Owner-Occupied' },
+                { key: 'Renter-Occupied Units', label: 'Renter-Occupied' },
+              ]}
+              horizontal
+              domain={[0, 100]}
+              height={300}
+              labelWidth={120}
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 5 }}>
+            <ComparisonBarChart
+              title="Vacancy Rates"
+              categories={[
+                { key: 'Homeowner Vacancy Rate', label: 'Own' },
+                { key: 'Rental Vacancy Rate', label: 'Rent' },
+              ]}
+              domain={[0, 6]}
+              height={300}
+            />
+          </Grid.Col>
+        </Grid>
+      </ReportSection>
+    </>
   );
 }

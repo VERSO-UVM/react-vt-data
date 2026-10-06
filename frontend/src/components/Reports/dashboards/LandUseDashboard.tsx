@@ -1,72 +1,52 @@
 import { Grid } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
 import {
-  AcreageByDistrictType,
-  ZoningAllowanceChart,
+  ComparisonBarChart,
+  ReportSection,
+  StatStrip,
+} from '@/components/Reports/shared';
+import {
   WastewaterPermitsTable,
+  ZoningAllowanceChart,
   ZoningCoverageStatCard,
 } from '@/components/Reports/land_use';
 
-export interface DashboardData {
-  year: number;
+const DISTRICT_TYPES = ['Nonresidential', 'Mixed', 'Overlay', 'Residential'];
 
-  primary: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
+const acresOf = (rows: DataRow[], type: string) =>
+  Number(rows.find((d) => d['District Type'] === type)?.Acres ?? 0);
 
-  comparison: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
-
-  // Additional endpoints, keyed by the SECTIONS.timeseries config key in
-  // reports-by-topic/page.tsx (e.g. "allowances", "wastewaterPermits").
-  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
-}
-
-export interface DashboardProps {
-  data: DashboardData;
-}
-
-export default function LandUseDashboard({ data }: DashboardProps) {
-  const { primary, comparison, timeseries } = data;
-
+export default function LandUseDashboard() {
   return (
-    <Grid gap="lg">
-      <Grid.Col span={{ base: 12, md: 6 }}>
-        <ZoningCoverageStatCard />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 6 }}>
-        <AcreageByDistrictType
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-          primary={primary.current}
-          comparison={comparison.current}
-        />
-      </Grid.Col>
-      {timeseries?.allowances && (
-        <Grid.Col span={{ base: 12, md: 6 }}>
-          <ZoningAllowanceChart
-            primary={timeseries.allowances.primary}
-            comparison={timeseries.allowances.comparison}
-            primaryName={primary.name}
-            comparisonName={comparison.name}
-          />
-        </Grid.Col>
-      )}
-      {timeseries?.wastewaterPermits && (
-        <Grid.Col span={12}>
-          <WastewaterPermitsTable
-            primary={timeseries.wastewaterPermits.primary}
-            comparison={timeseries.wastewaterPermits.comparison}
-            primaryName={primary.name}
-            comparisonName={comparison.name}
-          />
-        </Grid.Col>
-      )}
-    </Grid>
+    <>
+      <ReportSection eyebrow="Zoning" title="How land can be used">
+        <StatStrip>
+          <ZoningCoverageStatCard />
+        </StatStrip>
+        <Grid gap="xl">
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <ComparisonBarChart
+              title="Acreage by District Type"
+              categories={DISTRICT_TYPES}
+              readValue={acresOf}
+              horizontal
+              height={300}
+              labelWidth={130}
+              tick={(v) => v.toLocaleString()}
+              tip={(v) =>
+                `${v.toLocaleString(undefined, { maximumFractionDigits: 1 })} acres`
+              }
+            />
+          </Grid.Col>
+          <Grid.Col span={{ base: 12, md: 6 }}>
+            <ZoningAllowanceChart />
+          </Grid.Col>
+        </Grid>
+      </ReportSection>
+
+      <ReportSection eyebrow="Wastewater" title="Wastewater infrastructure">
+        <WastewaterPermitsTable />
+      </ReportSection>
+    </>
   );
 }
