@@ -160,14 +160,14 @@ export function StatCell({
 }) {
   const { accent } = useReport();
   return (
-    <Stack gap={4}>
+    <Stack gap={10}>
       <Group gap={8} c={accent}>
         {icon}
         <Text size="xs" fw={700} tt="uppercase" lts={0.8} c="dimmed">
           {label}
         </Text>
       </Group>
-      <Title order={2} style={{ fontSize: 34, lineHeight: 1.1 }}>
+      <Title order={2} style={{ fontSize: 34, lineHeight: '42px' }}>
         {value}
       </Title>
       {children}

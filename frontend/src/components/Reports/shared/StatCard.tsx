@@ -25,7 +25,7 @@ function Bar({
 }) {
   return (
     <Box>
-      <Text size="xs" c="dimmed" lineClamp={1}>
+      <Text size="xs" c="dimmed" mb={12} lh="18px">
         {name.replace(/, Vermont$/, '')} · {text}
       </Text>
       <Box h={8} bg={COLORS.birchDim} style={{ borderRadius: 4 }}>
@@ -71,14 +71,14 @@ export default function StatCard({
   return (
     <StatCell label={label} icon={icon} value={p !== null ? f.value(p) : NONE}>
       {diff !== null && (
-        <Text size="sm" fw={700}>
+        <Text size="sm" fw={700} lh="20px">
           {f.diff(diff)}
           {pct !== null &&
             ` (${pct > 0 ? '+' : ''}${pct.toFixed(1)}%)`} vs.{' '}
           {ctx.comparison.name.replace(/, Vermont$/, '')}
         </Text>
       )}
-      <Stack gap={8} mt={6}>
+      <Stack gap={16} mt={10}>
         {p !== null && (
           <Bar
             name={ctx.primary.name}
