@@ -3,11 +3,11 @@
 export const COMPARISON_COLOR = '#868e96';
 
 export const TOPIC_ACCENTS: Record<string, string> = {
-  Demographics: '#2F6F9F',
-  Housing: '#B4532A',
-  'Labor & Economy': '#2E7D5B',
-  'Land Use': '#7B5EA7',
-  'Community Health': '#B83A5E',
+  Demographics: '#2F4F6F',
+  Housing: '#A4452C',
+  'Labor & Economy': '#5B7B3A',
+  'Land Use': '#8B7A3A',
+  'Community Health': '#6B3F5E',
 };
 
-export const DEFAULT_ACCENT = '#2F6F9F';
+export const DEFAULT_ACCENT = '#2F4F6F';

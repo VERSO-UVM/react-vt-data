@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
   Container,
+  Grid,
   Group,
-  SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   Title,
@@ -17,12 +19,21 @@ import {
   IconHome2,
   IconMap2,
   IconArrowRight,
+  IconArrowUpRight,
   IconPencil,
   IconUsers,
   type Icon,
 } from '@tabler/icons-react';
 import { COLORS } from '@/app/theme';
 import { useProfile } from '@/components/profile/profileStore';
+import {
+  FORMATS,
+  getValue,
+  type FormatKey,
+} from '@/components/Reports/shared/data';
+import type { DataRow } from '@/types/cachedCharts';
+import classes from './TopicLanding.module.css';
+import { SECTIONS, postSection, resolveLocation } from './reportData';
 import {
   COMPARISON_COLOR,
   TOPIC_ACCENTS,
@@ -60,8 +71,159 @@ const TOPICS: Record<
   },
 };
 
+// The stats on each card, read from the topic's main dataset for one place.
+interface Stat {
+  label: string;
+  format: FormatKey;
+  read: (rows: DataRow[]) => number | null;
+}
+
+// ACS rows span several years; a card shows the latest.
+function latest(rows: DataRow[], key: 'year' | 'Year') {
+  const y = Math.max(0, ...rows.map((r) => Number(r[key]) || 0));
+  return y ? rows.filter((r) => Number(r[key]) === y) : rows;
+}
+const acs =
+  (variable: string, field = 'Value') =>
+  (rows: DataRow[]) =>
+    getValue(latest(rows, 'year'), variable, field);
+const cdc = (measure: string) => (rows: DataRow[]) => {
+  const v = latest(
+    rows.filter((r) => r.Measure === measure),
+    'Year',
+  )[0]?.Value;
+  return v == null ? null : Number(v);
+};
+
+const STATS: Record<DashboardSection, Stat[]> = {
+  Demographics: [
+    { label: 'Population', format: 'int', read: acs('Population (ACS)') },
+    { label: 'Median age', format: 'years', read: acs('Median Age') },
+  ],
+  Housing: [
+    {
+      label: 'Median home value',
+      format: 'usd',
+      read: acs('Median Home Value'),
+    },
+    { label: 'Housing units', format: 'int', read: acs('Total Housing Units') },
+  ],
+  'Labor & Economy': [
+    {
+      label: 'Median household income',
+      format: 'usd',
+      read: acs('Median Household Income'),
+    },
+    {
+      label: 'Unemployment',
+      format: 'pct',
+      read: acs('Unemployment Rate', 'Percent'),
+    },
+  ],
+  'Land Use': [
+    {
+      label: 'Zoning districts',
+      format: 'int',
+      read: (rows) => rows.length || null,
+    },
+  ],
+  'Community Health': [
+    {
+      label: 'Depression',
+      format: 'pct',
+      read: cdc('Depression among adults'),
+    },
+    {
+      label: 'Uninsured (18–64)',
+      format: 'pct',
+      read: cdc(
+        'Current lack of health insurance among adults aged 18-64 years',
+      ),
+    },
+  ],
+};
+
+type TopicRows = Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
+
+// One fetch per topic per place, same endpoints and filters as the reports.
+// Failed fetches come back empty, so a card just shows dashes.
+function useTopicRows(primaryName: string, comparisonName: string) {
+  const { myLocation, comparison } = useProfile();
+  const [rows, setRows] = useState<TopicRows | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const topics = Object.keys(TOPIC_SLUGS) as DashboardSection[];
+    const primary = resolveLocation(myLocation).location;
+    const bench = resolveLocation(comparison).location;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: back to the loading state for the new places
+    setRows(null);
+    Promise.all(
+      topics.map(async (t) => {
+        const cfg = SECTIONS[t];
+        const [p, c] = await Promise.all([
+          postSection(cfg, cfg.url, primary),
+          postSection(cfg, cfg.url, bench),
+        ]);
+        // Land Use's `data` is acreage by district type (a few rows); its
+        // `tableData` has one row per zoning district, which is what is counted.
+        const key = t === 'Land Use' ? 'tableData' : 'data';
+        const rowsOf = (r: typeof p) => (Array.isArray(r[key]) ? r[key] : []);
+        return [t, { primary: rowsOf(p), comparison: rowsOf(c) }] as const;
+      }),
+    ).then((entries) => {
+      if (!cancelled) setRows(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // The names change whenever the place does; see ReportsByTopic.
+  }, [primaryName, comparisonName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return rows;
+}
+
+function CardStat({
+  stat,
+  topic,
+  rows,
+}: {
+  stat: Stat;
+  topic: DashboardSection;
+  rows: TopicRows | null;
+}) {
+  const f = FORMATS[stat.format];
+  const p = rows ? stat.read(rows[topic].primary) : null;
+  const c = rows ? stat.read(rows[topic].comparison) : null;
+  return (
+    <Stack gap={2}>
+      <Text size="xs" fw={700} tt="uppercase" lts={0.6} c={COLORS.slate}>
+        {stat.label}
+      </Text>
+      {rows ? (
+        <>
+          <Text fw={800} fz={26} lh={1.1} c={TOPIC_ACCENTS[topic]}>
+            {p !== null ? f.value(p) : '—'}
+          </Text>
+          {p !== null && c !== null && (
+            <Text size="xs" c={COLORS.slate}>
+              {f.diff(p - c)} vs. {f.value(c)}
+            </Text>
+          )}
+        </>
+      ) : (
+        <>
+          <Skeleton h={26} w="70%" />
+          <Skeleton h={12} w="50%" mt={4} />
+        </>
+      )}
+    </Stack>
+  );
+}
+
 export default function TopicLanding() {
   const { myLocation, comparison, openProfileModal } = useProfile();
+  const rows = useTopicRows(myLocation.name, comparison.name);
 
   return (
     <Box bg={COLORS.birch} style={{ minHeight: 'calc(100vh - 70px)' }}>
@@ -110,46 +272,67 @@ export default function TopicLanding() {
           </Button>
         </Group>
 
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-          {(Object.keys(TOPIC_SLUGS) as DashboardSection[]).map((topic) => {
+        <Grid gap="md">
+          {(Object.keys(TOPIC_SLUGS) as DashboardSection[]).map((topic, i) => {
             const { icon: TopicIcon, blurb, shows } = TOPICS[topic];
             const accent = TOPIC_ACCENTS[topic];
             return (
-              <Box
+              <Grid.Col
                 key={topic}
-                component={Link}
-                href={topicPath(topic)}
-                p="xl"
-                style={{
-                  display: 'block',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  background: '#fff',
-                  boxShadow: '0 1px 2px rgba(27,58,47,.06)',
-                  border: `1px solid ${COLORS.line}`,
-                  borderTop: `4px solid ${accent}`,
-                  borderRadius: 12,
-                }}
+                span={{ base: 12, sm: 6, lg: i === 0 ? 8 : 4 }}
               >
-                <Group gap="sm" mb="xs" c={accent}>
-                  <TopicIcon size={24} />
-                  <Title order={3} c={COLORS.spruce}>
-                    {topic}
-                  </Title>
-                </Group>
-                <Text fw={500} mb={4} c={COLORS.ink}>
-                  {blurb}
-                </Text>
-                <Text size="sm" c={COLORS.slate}>
-                  {shows}
-                </Text>
-                <Text size="sm" fw={700} mt="md" c={accent}>
-                  Open report →
-                </Text>
-              </Box>
+                <Link href={topicPath(topic)} className={classes.card}>
+                  <Group
+                    justify="space-between"
+                    wrap="nowrap"
+                    px="xl"
+                    py="md"
+                    style={{ background: accent, position: 'relative' }}
+                  >
+                    <Group gap="sm" c={COLORS.birch}>
+                      <TopicIcon size={24} />
+                      <Title order={3} c={COLORS.birch}>
+                        {topic}
+                      </Title>
+                    </Group>
+                    <TopicIcon
+                      size={56}
+                      stroke={1.25}
+                      color={COLORS.birch}
+                      style={{ opacity: 0.25 }}
+                    />
+                  </Group>
+                  <Stack gap="md" p="xl" style={{ flex: 1 }}>
+                    <Box>
+                      <Text fw={500} c={COLORS.ink}>
+                        {blurb}
+                      </Text>
+                      <Text size="sm" c={COLORS.slate}>
+                        {shows}
+                      </Text>
+                    </Box>
+                    <Group gap="xl" align="flex-start" wrap="wrap">
+                      {STATS[topic].map((stat) => (
+                        <CardStat
+                          key={stat.label}
+                          stat={stat}
+                          topic={topic}
+                          rows={rows}
+                        />
+                      ))}
+                    </Group>
+                    <Group justify="space-between" mt="auto" c={accent}>
+                      <Text size="sm" fw={700} c={accent}>
+                        Open report
+                      </Text>
+                      <IconArrowUpRight size={22} className={classes.arrow} />
+                    </Group>
+                  </Stack>
+                </Link>
+              </Grid.Col>
             );
           })}
-        </SimpleGrid>
+        </Grid>
       </Container>
     </Box>
   );
