@@ -6,6 +6,8 @@
 import logging
 from pathlib import Path
 
+import pandas as pd
+
 from api.models import FilterSource
 from query.production_db import get_db
 from query.sql_render import sql_filter_block
@@ -23,3 +25,13 @@ def get_parcels_geojson(sources: list[FilterSource]) -> str:
         logger.error("parcels geo query returned no rows for filters: %s", sources)
         raise ValueError(f"no results for filters: {sources}")
     return result[0]
+
+
+def get_parcels_by_category(
+    sources: list[FilterSource],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    agg = DB.execute(
+        *sql_filter_block(sql_dir / "agg_category_table.sql", sources)
+    ).df()
+    table = DB.execute(*sql_filter_block(sql_dir / "category_table.sql", sources)).df()
+    return agg, table
