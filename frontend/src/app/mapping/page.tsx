@@ -1,76 +1,125 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, Suspense } from 'react';
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  Suspense,
+} from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
-import type { FeatureCollection } from 'geojson';
+import type { Feature, FeatureCollection } from 'geojson';
+import { Autocomplete } from '@mantine/core';
 import {
-  ActionIcon,
-  Autocomplete,
-  Badge,
-  Box,
-  Button,
-  Collapse,
-  Divider,
-  Group,
-  Paper,
-  Progress,
-  SimpleGrid,
-  Stack,
-  Switch,
-  Text,
-  Title,
-  Tooltip,
-  useMantineTheme,
-} from '@mantine/core';
-import {
-  IconChevronLeft,
-  IconChevronDown,
-  IconChevronUp,
-  IconChartBarPopular,
-  IconLayersIntersect,
-  IconBuildingCommunity,
-  IconDroplet,
-  IconMapPin,
-  IconInfoCircle,
+  IconChevronRight,
+  IconHandClick,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
+  IconSearch,
 } from '@tabler/icons-react';
-
-import { Search } from 'lucide-react';
 import { area } from '@turf/area';
+import { AnimatePresence, motion } from 'motion/react';
 
-import VTMap from '@/components/mapping';
+import VTMap, {
+  type Basemap,
+  type MapClick,
+  type MapLayerItem,
+  type VTMapHandle,
+} from '@/components/mapping';
 import LayerPanel from './LayerPanel';
-import DistributionCard from './DistributionCard';
+import QuestionList from './QuestionList';
+import SpotCard from './SpotCard';
+import { InsightStrip, MapControls, MapKey } from './MapOverlays';
 import type { LayerStats } from './UseMapLayer';
 import { MAP_LAYERS, UNZONED_URL } from '@/app/mapping/MapLayers';
 import { MAP_PRESETS, type MapPreset } from '@/app/mapping/MapPresets';
 import { jurisdictionCandidates } from './jurisdictionMatch';
 import {
+  acresInside,
   computeBuildableOverlay,
   withParcelBuildability,
   type PolyFeature,
 } from './buildableOverlay';
+import type { ParcelColorMode, RGBA } from './layerColors';
+import {
+  buildInsights,
+  buildMapKey,
+  spotReport,
+  type TownMapState,
+} from './townInsights';
+import { townNames } from './townNames';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import { useMunicipalities, MunicipalityFeature } from './useMunicipalities';
 import { getFeatureBBox } from './geoUtils';
-import { COLORS, FONTS } from '@/app/theme';
-
-const PRESET_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
-  'buildable-areas': IconBuildingCommunity,
-  infrastructure: IconDroplet,
-};
-
-// In rank order, best to worst. Mirrors the backend's filter option order
-// (CUSTOM_OPTION_ORDER in query/core_functions.py) — keep the two in sync.
-const SOIL_SUITABILITY_COLORS: Record<string, string> = {
-  'Well Suited': '#2ca02c',
-  'Moderately Suited': '#ffcc00',
-  'Marginally Suited': '#fd7e14',
-  'Not Suited': '#dc3545',
-  'Not Rated': '#6c757d',
-};
+import { COLORS } from '@/app/theme';
+import styles from './explorer.module.css';
 
 const ACRES_PER_SQM = 1 / 4046.8564224;
+const BUILDABLE_PRESET_ID = 'buildable-areas';
+const VERMONT_BBOX: [number, number, number, number] = [
+  -73.44, 42.72, -71.46, 45.02,
+];
+// Shortcuts on the welcome card, by Census name.
+const POPULAR_TOWNS = [
+  'Burlington city',
+  'Montpelier city',
+  'Stowe town',
+  'Brattleboro town',
+  'Rutland city',
+  'Middlebury town',
+  'St. Johnsbury town',
+  'Bennington town',
+];
+
+// How town boundaries are drawn. With no town chosen every town gets a
+// faint wash, so Vermont reads as one shape; once one is chosen its
+// neighbors fade back and it gets a solid outline.
+const TOWN_LINE: RGBA = [27, 58, 47, 90];
+const TOWN_TINT: RGBA = [27, 58, 47, 12];
+const TOWN_FADE: RGBA = [246, 245, 239, 150];
+const TOWN_HOVER: RGBA = [27, 58, 47, 55];
+const TOWN_OUTLINE: RGBA = [27, 58, 47, 255];
+const INVISIBLE: RGBA = [255, 255, 255, 1];
+const NO_LINE: RGBA = [0, 0, 0, 0];
+
+// The explorer's CSS reads its palette and fonts from these, so the brand
+// colors keep one home (app/theme.ts).
+const TOKENS = {
+  '--spruce': COLORS.spruce,
+  '--slate': COLORS.slate,
+  '--birch': COLORS.birch,
+  '--ink': COLORS.ink,
+  '--red': COLORS.red,
+  '--line': COLORS.line,
+  '--ui': "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  '--display': 'var(--font-zilla-slab), Georgia, serif',
+} as CSSProperties;
+
+/** Sizes the explorer to exactly the viewport below the site header,
+ *  whatever height the header happens to be. */
+function fillViewportBelow(el: HTMLDivElement | null) {
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY;
+  el.style.height = `calc(100dvh - ${top}px)`;
+}
+
+function SectionLabel({
+  children,
+  aside,
+}: {
+  children: ReactNode;
+  aside?: ReactNode;
+}) {
+  return (
+    <div className={styles.sectionLabel}>
+      <span className={styles.eyebrow}>{children}</span>
+      {aside}
+    </div>
+  );
+}
 
 export default function MapExplorerPage() {
   return (
@@ -81,16 +130,18 @@ export default function MapExplorerPage() {
 }
 
 function MapExplorerContent() {
-  const theme = useMantineTheme();
   const searchParams = useSearchParams();
+  const mapRef = useRef<VTMapHandle>(null);
 
   // Layout & Municipality State
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [reportExpanded, setReportExpanded] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [basemap, setBasemap] = useState<Basemap>('light');
   const [searchValue, setSearchValue] = useState('');
   const [selectedBBox, setSelectedBBox] = useState<
     [number, number, number, number] | null
   >(null);
+  // The clicked spot whose details are open.
+  const [selection, setSelection] = useState<MapClick | null>(null);
 
   const { data: municipalities } = useMunicipalities();
 
@@ -104,6 +155,7 @@ function MapExplorerContent() {
   const [layerData, setLayerData] = useState<
     Record<string, FeatureCollection | null>
   >({});
+  const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   // Zoning's server-computed area stats — see LayerStats.
   const [zoningStats, setZoningStats] = useState<LayerStats | null>(null);
   const [presetFilters, setPresetFilters] = useState<
@@ -113,7 +165,8 @@ function MapExplorerContent() {
   // so active layers re-fetch scoped to the new preset/town.
   const [scopeVersion, setScopeVersion] = useState(0);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
-  const [showCountyLines, setShowCountyLines] = useState(true);
+  const [parcelColorMode, setParcelColorMode] =
+    useState<ParcelColorMode>('category');
   const [unzoned, setUnzoned] = useState<FeatureCollection | null>(null);
 
   // Gate: no layer data loads until a town is selected. Statewide layers
@@ -137,6 +190,14 @@ function MapExplorerContent() {
       .catch((e) => console.error('unzoned layer fetch failed', e));
   }, []);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelection(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // The unzoned backdrop is fetched statewide (it's small — a few hundred
   // features), but each feature's tooltip title is the exact TIGER town
   // name it belongs to, so it can be scoped to the selected town with an
@@ -152,100 +213,66 @@ function MapExplorerContent() {
     };
   }, [unzoned, selectedTown]);
 
-  // 1. Build lookup dictionary & formatted options string list
-  const { optionsList, municipalityMap } = useMemo(() => {
-    if (!municipalities?.features) {
-      return {
-        optionsList: [],
-        municipalityMap: new Map<string, MunicipalityFeature>(),
-      };
+  // Display names, and the search box's options, for every municipality.
+  const { names, options, byOption } = useMemo(() => {
+    const features = municipalities?.features ?? [];
+    const names = townNames(features.map((f) => f.properties.NAME));
+    const byOption = new Map<string, MunicipalityFeature>();
+    for (const f of features) {
+      byOption.set(names.get(f.properties.NAME)!.option, f);
     }
-
-    const map = new Map<string, MunicipalityFeature>();
-    const uniqueOptionsSet = new Set<string>();
-
-    municipalities.features.forEach((f) => {
-      const fullName = f.properties.NAME;
-      const parts = fullName.split(',').map((s) => s.trim());
-
-      const rawName = parts[0] || '';
-      const county = parts[1] || 'VT';
-
-      const formattedName = rawName
-        .replace(/\btown\b/i, 'Town')
-        .replace(/\bcity\b/i, 'City')
-        .replace(/\bgore\b/i, 'Gore')
-        .replace(/\bgrant\b/i, 'Grant')
-        .replace(/\blocation\b/i, 'Location');
-
-      const displayLabel = `${formattedName} (${county})`;
-
-      map.set(displayLabel.toLowerCase(), f);
-      map.set(fullName.toLowerCase(), f);
-      map.set(rawName.toLowerCase(), f);
-      map.set(formattedName.toLowerCase(), f);
-
-      uniqueOptionsSet.add(displayLabel);
-    });
-
-    // Convert Set → array and sort alphabetically
-    const optionsList = Array.from(uniqueOptionsSet).sort((a, b) =>
-      a.localeCompare(b),
-    );
-
     return {
-      optionsList,
-      municipalityMap: map,
+      names,
+      byOption,
+      options: [...byOption.keys()].sort((a, b) => a.localeCompare(b)),
     };
   }, [municipalities]);
 
-  // 2. Centralized selection/bounds update handler
-  const triggerBBoxUpdate = useCallback(
-    (query: string) => {
-      if (!query) return;
+  const selectedName = selectedTown
+    ? names.get(selectedTown.properties.NAME)
+    : undefined;
+  const townName = selectedName?.name ?? '';
 
-      const normalized = query.trim().toLowerCase();
+  const selectTown = useCallback((town: MunicipalityFeature) => {
+    const bbox = getFeatureBBox(town.geometry);
+    // Ensure bbox is valid before setting
+    if (bbox[0] !== 0 || bbox[1] !== 0) setSelectedBBox(bbox);
+    // Selecting a (new) town rescopes every active layer's data to it —
+    // stale data from the previous town shouldn't linger on screen
+    // while the rescoped fetch is in flight.
+    setSelectedTown(town);
+    setLayerData({});
+    setZoningStats(null);
+    setScopeVersion((v) => v + 1);
+    setSelection(null);
+    setSearchValue('');
+  }, []);
 
-      // Direct lookup or partial match fallback
-      let match = municipalityMap.get(normalized);
-
-      if (!match) {
-        // Fallback search if user typed partial name (e.g., "Windsor")
-        for (const [key, feature] of municipalityMap.entries()) {
-          if (key.includes(normalized)) {
-            match = feature;
-            break;
-          }
-        }
-      }
-
-      if (match?.geometry) {
-        const bbox = getFeatureBBox(match.geometry);
-        // Ensure bbox is valid before setting
-        if (bbox && (bbox[0] !== 0 || bbox[1] !== 0)) {
-          setSelectedBBox(bbox);
-        }
-        // Selecting a (new) town rescopes every active layer's data to it —
-        // stale data from the previous town shouldn't linger on screen
-        // while the rescoped fetch is in flight.
-        setSelectedTown(match);
-        setLayerData({});
-        setZoningStats(null);
-        setScopeVersion((v) => v + 1);
-      }
-    },
-    [municipalityMap],
-  );
-
-  const handleSelectMunicipality = (value: string) => {
-    setSearchValue(value);
-    triggerBBoxUpdate(value);
+  const clearTown = () => {
+    setSelectedTown(null);
+    setSelectedBBox(null);
+    setLayerData({});
+    setLoadingIds(new Set());
+    setZoningStats(null);
+    setSelection(null);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      triggerBBoxUpdate(searchValue);
-    }
+  // Picking an option puts its exact label in the box; that is the cue to
+  // select the town and clear the box for the next search.
+  const handleSearchChange = (value: string) => {
+    const town = byOption.get(value);
+    if (town) selectTown(town);
+    else setSearchValue(value);
+  };
+
+  // Enter takes the best match for whatever has been typed so far.
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const query = searchValue.trim().toLowerCase();
+    if (e.key !== 'Enter' || !query) return;
+    const match =
+      options.find((o) => o.toLowerCase().startsWith(query)) ??
+      options.find((o) => o.toLowerCase().includes(query));
+    if (match) selectTown(byOption.get(match)!);
   };
 
   const handleToggle = useCallback((id: string, active: boolean) => {
@@ -258,10 +285,14 @@ function MapExplorerContent() {
     if (!active) {
       setLayerData((prev) => ({ ...prev, [id]: null }));
       if (id === 'zoning') setZoningStats(null);
+      setSelection((prev) => (prev?.layerId === id ? null : prev));
     }
-    // Manual toggling breaks out of "preset" mode so the picker no longer
-    // shows a preset as selected.
-    setActivePresetId(null);
+    // Adding a layer on top of a question keeps the question; taking away
+    // one of the question's own layers means the map no longer answers it.
+    setActivePresetId((current) => {
+      const preset = MAP_PRESETS.find((p) => p.id === current);
+      return preset && (active || !preset.layers.includes(id)) ? current : null;
+    });
   }, []);
 
   const handlePresetSelect = useCallback((preset: MapPreset) => {
@@ -269,6 +300,7 @@ function MapExplorerContent() {
     setPresetFilters(preset.filters ?? {});
     setScopeVersion((v) => v + 1);
     setActivePresetId(preset.id);
+    setSelection(null);
   }, []);
 
   const handlePresetClear = useCallback(() => {
@@ -277,6 +309,7 @@ function MapExplorerContent() {
     setZoningStats(null);
     setPresetFilters({});
     setActivePresetId(null);
+    setSelection(null);
   }, []);
 
   // While a preset is active, its layers' filters are locked — changing
@@ -303,11 +336,30 @@ function MapExplorerContent() {
     [],
   );
 
+  const handleLoadingChange = useCallback((id: string, loading: boolean) => {
+    setLoadingIds((prev) => {
+      if (prev.has(id) === loading) return prev;
+      const next = new Set(prev);
+      if (loading) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
   // Whenever both zoning and soil-suitability layers are active,
   // replace polygons with one derived "buildable" shape (permitted zoning ∩ suited
   // soil, minus flood) instead.
   const bothZoningAndSoilActive =
     activeLayers.has('zoning') && activeLayers.has('soil-suitability');
+  // The layers that shape stands in for, so aren't drawn on their own.
+  const combinedLayerIds = useMemo(
+    () =>
+      new Set(bothZoningAndSoilActive ? ['zoning', 'soil-suitability'] : []),
+    [bothZoningAndSoilActive],
+  );
+  // The shape only means "buildable" under the preset's filters; any other
+  // zoning + soil combination is just where the two layers overlap.
+  const buildablePreset = activePresetId === BUILDABLE_PRESET_ID;
 
   const buildableOverlay = useMemo(() => {
     if (!bothZoningAndSoilActive) return null;
@@ -315,9 +367,9 @@ function MapExplorerContent() {
       layerData['zoning'],
       layerData['soil-suitability'],
       activeLayers.has('flood-legal') ? layerData['flood-legal'] : null,
-      townCandidates?.[0],
+      buildablePreset ? 'Buildable land' : 'Zoning and soil overlap',
     );
-  }, [bothZoningAndSoilActive, layerData, activeLayers, townCandidates]);
+  }, [bothZoningAndSoilActive, layerData, activeLayers, buildablePreset]);
 
   // Gated on both being active so the per-parcel turf.intersect pass (a few
   // thousand clips against the dissolved buildable polygon, worst case)
@@ -332,11 +384,130 @@ function MapExplorerContent() {
     );
   }, [activeLayers, buildableOverlay, layerData]);
 
-  const mapLayers = MAP_LAYERS.map((cfg) => {
-    const suppressed =
-      bothZoningAndSoilActive &&
-      (cfg.id === 'zoning' || cfg.id === 'soil-suitability');
+  // ----- What the map says, in numbers ---------------------------------
+
+  const townShape = selectedTown as unknown as PolyFeature | null;
+  const townAcres = useMemo(
+    () => (townShape ? area(townShape) * ACRES_PER_SQM : null),
+    [townShape],
+  );
+  // Each depends on its own layer's data only, so the union behind it
+  // doesn't rerun when an unrelated layer changes.
+  const floodData = activeLayers.has('flood-legal')
+    ? layerData['flood-legal']
+    : null;
+  const sewerData = activeLayers.has('service-areas')
+    ? layerData['service-areas']
+    : null;
+  const floodAcres = useMemo(
+    () => acresInside(floodData, townShape),
+    [floodData, townShape],
+  );
+  const sewerAcres = useMemo(
+    () => acresInside(sewerData, townShape),
+    [sewerData, townShape],
+  );
+
+  const mapState: TownMapState = useMemo(
+    () => ({
+      townName,
+      townAcres,
+      active: activeLayers,
+      data: layerData,
+      combined: bothZoningAndSoilActive,
+      overlay: buildableOverlay,
+      buildablePreset,
+      zoningStats,
+      townCandidates,
+      floodAcres,
+      sewerAcres,
+      parcelMode: parcelColorMode,
+      unzoned: unzonedForTown,
+    }),
+    [
+      townName,
+      townAcres,
+      activeLayers,
+      layerData,
+      bothZoningAndSoilActive,
+      buildableOverlay,
+      buildablePreset,
+      zoningStats,
+      townCandidates,
+      floodAcres,
+      sewerAcres,
+      parcelColorMode,
+      unzonedForTown,
+    ],
+  );
+  const insights = useMemo(() => buildInsights(mapState), [mapState]);
+  const keyGroups = useMemo(() => buildMapKey(mapState), [mapState]);
+  const report = useMemo(
+    () => (selection ? spotReport(mapState, selection.coordinate) : []),
+    [mapState, selection],
+  );
+  const loadingTitles = MAP_LAYERS.filter((l) => loadingIds.has(l.id)).map(
+    (l) => l.title,
+  );
+
+  // ----- What the map draws --------------------------------------------
+
+  // Every town but the selected one: clickable, to pick or switch towns.
+  const otherTowns = useMemo((): FeatureCollection | null => {
+    if (!municipalities) return null;
     return {
+      type: 'FeatureCollection',
+      features: municipalities.features
+        .filter((f) => f !== selectedTown)
+        .map((f) => {
+          const name = names.get(f.properties.NAME);
+          return {
+            ...f,
+            properties: {
+              ...f.properties,
+              rgba_color: selectedTown ? TOWN_FADE : TOWN_TINT,
+              tooltip: { __title__: name?.name, County: name?.county },
+            },
+          };
+        }),
+    };
+  }, [municipalities, selectedTown, names]);
+
+  const townArea = useMemo((): FeatureCollection | null => {
+    if (!selectedTown) return null;
+    return {
+      type: 'FeatureCollection',
+      features: [
+        {
+          ...selectedTown,
+          properties: { ...selectedTown.properties, rgba_color: INVISIBLE },
+        },
+      ],
+    };
+  }, [selectedTown]);
+
+  const mapLayers: MapLayerItem[] = [];
+  // An invisible backdrop over the whole town, so a click anywhere in it —
+  // not only on a drawn feature — opens the spot card.
+  if (townArea) {
+    mapLayers.push({
+      id: 'town-area',
+      geojson: townArea,
+      visible: true,
+      hoverable: false,
+      lineColor: NO_LINE,
+    });
+  }
+  if (activeLayers.has('zoning') && unzonedForTown) {
+    mapLayers.push({
+      id: 'zoning-base',
+      geojson: unzonedForTown,
+      visible: true,
+    });
+  }
+  for (const cfg of MAP_LAYERS) {
+    const suppressed = combinedLayerIds.has(cfg.id);
+    mapLayers.push({
       id: cfg.id,
       geojson: suppressed
         ? null
@@ -344,708 +515,340 @@ function MapExplorerContent() {
           ? parcelsWithBuildability
           : (layerData[cfg.id] ?? null),
       visible: !suppressed && activeLayers.has(cfg.id),
-    };
-  });
-
+      summaryFields: cfg.summaryFields,
+      hint: 'Click for details',
+    });
+  }
   if (buildableOverlay) {
     mapLayers.push({
       id: 'buildable-overlay',
       geojson: buildableOverlay.geojson,
       visible: true,
+      summaryFields: ['Acreage'],
+      hint: 'Click for details',
     });
   }
-
-  if (activeLayers.has('zoning') && unzonedForTown) {
-    mapLayers.unshift({
-      id: 'zoning-base',
-      geojson: unzonedForTown,
+  if (otherTowns) {
+    mapLayers.push({
+      id: 'towns',
+      geojson: otherTowns,
       visible: true,
+      summaryFields: ['County'],
+      hint: selectedTown
+        ? 'Click to switch to this town'
+        : 'Click to explore this town',
+      lineColor: TOWN_LINE,
+      highlightColor: TOWN_HOVER,
+    });
+  }
+  if (townArea) {
+    mapLayers.push({
+      id: 'town-outline',
+      geojson: townArea,
+      visible: true,
+      pickable: false,
+      lineColor: TOWN_OUTLINE,
+      lineWidth: 2.5,
     });
   }
 
-  const totalLoadedFeatures = Object.values(layerData).reduce(
-    (acc, fc) => acc + (fc?.features?.length || 0),
-    0,
+  const handleMapClick = (click: MapClick | null) => {
+    if (click?.layerId === 'towns') {
+      const town = municipalities?.features.find(
+        (f) => f.properties.GEOID === click.feature.properties?.GEOID,
+      );
+      if (town) selectTown(town);
+      return;
+    }
+    setSelection(click);
+  };
+
+  // Ring the clicked feature — or, where the click landed on a shape too
+  // big to mean "here" (the whole town, the buildable area), the spot.
+  const outline = useMemo((): Feature | null => {
+    if (!selection) return null;
+    if (MAP_LAYERS.some((l) => l.id === selection.layerId)) {
+      return selection.feature;
+    }
+    return {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Point', coordinates: selection.coordinate },
+    };
+  }, [selection]);
+
+  const search = (
+    <Autocomplete
+      aria-label="Search for a Vermont town or city"
+      placeholder={
+        selectedTown ? 'Search another town…' : 'Search a town or city…'
+      }
+      leftSection={<IconSearch size={18} color={COLORS.spruce} />}
+      data={options}
+      value={searchValue}
+      onChange={handleSearchChange}
+      onKeyDown={handleSearchKeyDown}
+      limit={8}
+      size={selectedTown ? 'sm' : 'md'}
+      radius="md"
+      autoFocus={!selectedTown}
+      comboboxProps={{ shadow: 'lg', radius: 'md' }}
+      classNames={{ dropdown: styles.portal }}
+      style={{ flex: 1 }}
+    />
   );
 
-  const buildableAcres = useMemo(() => {
-    if (buildableOverlay) return buildableOverlay.acres;
-
-    const zoningFc = layerData['zoning'];
-    if (
-      bothZoningAndSoilActive ||
-      !activeLayers.has('zoning') ||
-      !zoningFc?.features?.length
-    ) {
-      return null;
-    }
-    return zoningFc.features.reduce((sum, f) => {
-      const acres = Number(f.properties?.Acres);
-      return sum + (Number.isFinite(acres) ? acres : 0);
-    }, 0);
-  }, [buildableOverlay, layerData, activeLayers, bothZoningAndSoilActive]);
-
-  const soilSuitabilityDistribution = useMemo(() => {
-    const fc = layerData['soil-suitability'];
-    if (!activeLayers.has('soil-suitability') || !fc?.features?.length) {
-      return null;
-    }
-
-    // Acreage-weighted, not feature-count-weighted: suitability polygons are
-    // dissolved/merged per rating class upstream, so a handful of large
-    // polygons can outweigh many small ones — counting features would
-    // misrepresent how much land is actually in each class.
-    const acresByClass = new Map<string, number>();
-    let totalAcres = 0;
-    for (const feature of fc.features) {
-      const key = String(feature.properties?.Suitability ?? 'Not Rated');
-      const acres = Number(feature.properties?.Acres) || 0;
-      acresByClass.set(key, (acresByClass.get(key) ?? 0) + acres);
-      totalAcres += acres;
-    }
-    if (totalAcres === 0) return null;
-
-    return Object.keys(SOIL_SUITABILITY_COLORS)
-      .filter((label) => acresByClass.has(label))
-      .map((label) => {
-        const acres = acresByClass.get(label) ?? 0;
-        return {
-          label,
-          acres,
-          pct: (acres / totalAcres) * 100,
-          color: SOIL_SUITABILITY_COLORS[label],
-        };
-      });
-  }, [layerData, activeLayers]);
-
-  const treatmentFacilityCapacity = useMemo(() => {
-    const fc = layerData['treatment-facilities'];
-    if (!activeLayers.has('treatment-facilities') || !fc?.features?.length) {
-      return null;
-    }
-
-    let totalMgd = 0;
-    let reporting = 0;
-    for (const feature of fc.features) {
-      const raw = feature.properties?.['Design Hydraulic Capacity'];
-      if (raw === null || raw === undefined || String(raw).trim() === '') {
-        continue;
-      }
-
-      const mgd = Number(raw);
-
-      if (Number.isFinite(mgd)) {
-        totalMgd += mgd;
-        reporting += 1;
-      }
-    }
-    return { totalMgd, reporting, total: fc.features.length };
-  }, [layerData, activeLayers]);
-
-  // % of this town's zoned area that matches the active filters. Both sides
-  // are server-side unions (see LayerStats), so overlays aren't counted
-  // twice. Stats from a fetch scoped to a previous town are ignored.
-  const zoningCoverage = useMemo(() => {
-    if (
-      !activeLayers.has('zoning') ||
-      !zoningStats ||
-      zoningStats.scope !== townCandidates ||
-      !townCandidates
-    ) {
-      return null;
-    }
-    const candidates = new Set(townCandidates);
-    let matchedAcres = 0;
-    let totalAcres = 0;
-    for (const t of zoningStats.towns) {
-      if (!candidates.has(t.town)) continue;
-      matchedAcres += t.matched_acres;
-      totalAcres += t.total_acres;
-    }
-    if (totalAcres === 0) return null;
-    return { matchedAcres, totalAcres, pct: (matchedAcres / totalAcres) * 100 };
-  }, [activeLayers, zoningStats, townCandidates]);
-
-  // Matched area per district type, as a share of the matched zoned area.
-  // Overlays sit on top of base districts, so with overlays present the
-  // shares can add up to more than 100%.
-  const zoningDistrictComposition = useMemo(() => {
-    if (!zoningCoverage || !zoningStats?.districts.length) return null;
-    if (zoningCoverage.matchedAcres === 0) return null;
-
-    const colorByDistrict = new Map<string, string>();
-    for (const feature of layerData['zoning']?.features ?? []) {
-      const district = String(feature.properties?.['District Type']);
-      if (colorByDistrict.has(district)) continue;
-      const rgba = feature.properties?.rgba_color as number[] | undefined;
-      if (Array.isArray(rgba) && rgba.length >= 3) {
-        colorByDistrict.set(
-          district,
-          `rgb(${rgba[0]}, ${rgba[1]}, ${rgba[2]})`,
-        );
-      }
-    }
-
-    return zoningStats.districts
-      .map(({ district_type, acres }) => ({
-        label: district_type ?? 'Unknown',
-        acres,
-        pct: (acres / zoningCoverage.matchedAcres) * 100,
-        color: colorByDistrict.get(district_type) ?? '#64748b',
-      }))
-      .sort((a, b) => b.acres - a.acres);
-  }, [zoningCoverage, zoningStats, layerData]);
-
-  const serviceAreaSummary = useMemo(() => {
-    const fc = layerData['service-areas'];
-    if (!activeLayers.has('service-areas') || !fc?.features?.length) {
-      return null;
-    }
-
-    let totalAcres = 0;
-    const systems = new Set<string>();
-    const owners = new Set<string>();
-    for (const feature of fc.features) {
-      try {
-        totalAcres += area(feature) * ACRES_PER_SQM;
-      } catch {
-        // Malformed geometry shouldn't block the rest of the summary.
-      }
-      const systemName = feature.properties?.['System Name'];
-      const systemOwner = feature.properties?.['System Owner'];
-      if (systemName) systems.add(String(systemName));
-      if (systemOwner) owners.add(String(systemOwner));
-    }
-    return { totalAcres, systemCount: systems.size, ownerCount: owners.size };
-  }, [layerData, activeLayers]);
-
   return (
-    <Box
-      style={{
-        position: 'relative',
-        width: '100vw',
-        height: 'calc(100vh - 80px)',
-        overflow: 'hidden',
-        backgroundColor: 'var(--mantine-color-body)',
-        fontFamily: theme.fontFamily,
-      }}
+    <div
+      ref={fillViewportBelow}
+      className={styles.root}
+      style={{ ...TOKENS, height: 'calc(100dvh - 70px)' }}
     >
-      <Box style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+      <div className={styles.map}>
         <VTMap
+          ref={mapRef}
           layers={mapLayers}
-          showCountyLines={showCountyLines}
-          targetBBox={selectedBBox}
+          showCountyLines={false}
+          targetBBox={selectedBBox ?? VERMONT_BBOX}
+          fitPadding={{
+            top: 120,
+            bottom: 56,
+            left: panelOpen ? 440 : 64,
+            right: 64,
+          }}
+          basemap={basemap}
+          onFeatureClick={handleMapClick}
+          outlineFeature={outline}
         />
-      </Box>
+      </div>
 
-      <Box
-        style={{
-          position: 'absolute',
-          top: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 20,
-          width: '100%',
-          maxWidth: 420,
-          padding: '0 16px',
-        }}
-      >
-        <Paper
-          shadow="md"
-          radius="md"
-          p={4}
-          withBorder
-          style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <Autocomplete
-            placeholder="Search Vermont Town or City..."
-            leftSection={<Search size={16} color={COLORS.spruce} />}
-            data={optionsList}
-            value={searchValue}
-            onChange={setSearchValue}
-            onOptionSubmit={handleSelectMunicipality}
-            onKeyDown={handleKeyDown}
-            variant="unstyled"
-            styles={{
-              input: {
-                fontSize: '14px',
-                fontWeight: 500,
-                paddingLeft: '36px',
-              },
-            }}
-          />
-        </Paper>
-      </Box>
+      <div className={styles.overlay}>
+        {!panelOpen && (
+          <button
+            type="button"
+            className={styles.reopen}
+            onClick={() => setPanelOpen(true)}
+          >
+            <IconLayoutSidebarLeftExpand size={18} />
+            {selectedTown ? townName : 'Choose a town'}
+          </button>
+        )}
 
-      <Box
-        style={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          zIndex: 10,
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 0,
-        }}
-      >
-        <Paper
-          shadow="md"
-          radius="md"
-          p="md"
-          withBorder
-          style={{
-            width: sidebarOpen ? 340 : 0,
-            opacity: sidebarOpen ? 1 : 0,
-            overflow: 'hidden',
-            pointerEvents: sidebarOpen ? 'all' : 'none',
-            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-            maxHeight: 'calc(100vh - 160px)',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(8px)',
-          }}
+        {/* Hidden, never unmounted, when collapsed: the layer rows inside
+            own each layer's data. */}
+        <aside
+          className={styles.panel}
+          data-collapsed={!panelOpen || undefined}
+          aria-label="Map explorer"
         >
-          <Stack gap="xs" mb="xs">
-            <Group gap="sm" align="center">
-              <Title
-                order={3}
-                style={{ fontFamily: theme.headings?.fontFamily, fontSize: 18 }}
-              >
-                Vermont Mapping
-              </Title>
-              <Badge
+          <div className={styles.panelHead}>
+            {!selectedTown && (
+              <>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between' }}
+                >
+                  <span className={styles.eyebrow}>Map explorer · Beta</span>
+                  <CollapseButton onClick={() => setPanelOpen(false)} />
+                </div>
+                <h1 className={styles.heroTitle}>
+                  Explore Vermont,
+                  <br />
+                  town by town.
+                </h1>
+                <p className={styles.lede}>
+                  Zoning, flood zones, soils, sewer service and property lines —
+                  together on one map, in plain language.
+                </p>
+              </>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {search}
+              {selectedTown && (
+                <CollapseButton onClick={() => setPanelOpen(false)} />
+              )}
+            </div>
+
+            {!selectedTown && municipalities && (
+              <div
                 style={{
-                  color: COLORS.birch,
-                  background: COLORS.amber,
-                  fontFamily: FONTS.mono,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  marginTop: 12,
                 }}
               >
-                Beta
-              </Badge>
-              <Text size="xs" c="dimmed" fw={600}>
-                {activeLayers.size} active
-              </Text>
-            </Group>
-          </Stack>
-
-          {!selectedTown ? (
-            <Paper
-              p="md"
-              radius="sm"
-              style={{
-                backgroundColor: 'var(--mantine-color-gray-0)',
-                border: '1px dashed var(--mantine-color-gray-4)',
-                textAlign: 'center',
-              }}
-            >
-              <IconMapPin
-                size={22}
-                color="var(--mantine-color-gray-5)"
-                style={{ marginBottom: 6 }}
-              />
-              <Text size="sm" fw={600} c="dimmed">
-                No town selected
-              </Text>
-              <Text size="xs" c="dimmed" mt={4}>
-                Search for a town above to get started.
-              </Text>
-            </Paper>
-          ) : (
-            <>
-              <Stack gap={6} mb="xs">
-                <Group justify="space-between" align="center">
-                  <Text size="sm" fw={700} c="dimmed" tt="uppercase">
-                    Quick Start
-                  </Text>
-                  {activePresetId && (
-                    <Button
-                      variant="subtle"
-                      size="compact-xs"
-                      color="gray"
-                      onClick={handlePresetClear}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </Group>
-                <SimpleGrid cols={2} spacing="xs">
-                  {MAP_PRESETS.map((preset) => {
-                    const Icon = PRESET_ICONS[preset.id] ?? IconLayersIntersect;
-                    const isActive = activePresetId === preset.id;
-                    return (
-                      <Button
-                        key={preset.id}
-                        variant={isActive ? 'filled' : 'default'}
-                        color={COLORS.spruce}
-                        size="xs"
-                        h="auto"
-                        py={8}
-                        justify="flex-start"
-                        leftSection={<Icon size={16} />}
-                        onClick={() => handlePresetSelect(preset)}
-                        title={preset.description}
-                        styles={{
-                          label: { flex: 1 },
-                        }}
+                {POPULAR_TOWNS.map((raw) => {
+                  const town = municipalities.features.find((f) =>
+                    f.properties.NAME.startsWith(`${raw},`),
+                  );
+                  return (
+                    town && (
+                      <button
+                        key={raw}
+                        type="button"
+                        className={styles.chip}
+                        onClick={() => selectTown(town)}
                       >
-                        <Group
-                          gap={4}
-                          wrap="nowrap"
-                          justify="space-between"
-                          w="100%"
-                        >
-                          <Text
-                            size="xs"
-                            fw={600}
-                            style={{ whiteSpace: 'normal', lineHeight: 1.2 }}
-                          >
-                            {preset.label}
-                          </Text>
-                          {preset.definition && (
-                            <Tooltip
-                              label={preset.definition}
-                              multiline
-                              w={280}
-                              withArrow
-                              events={{ hover: true, focus: true, touch: true }}
-                            >
-                              <ActionIcon
-                                component="span"
-                                variant="transparent"
-                                size="xs"
-                                c={isActive ? 'white' : 'gray'}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <IconInfoCircle size={14} />
-                              </ActionIcon>
-                            </Tooltip>
-                          )}
-                        </Group>
-                      </Button>
-                    );
-                  })}
-                </SimpleGrid>
-              </Stack>
+                        {names.get(town.properties.NAME)?.name}
+                      </button>
+                    )
+                  );
+                })}
+              </div>
+            )}
 
-              <Divider my="xs" />
+            {selectedTown && (
+              <>
+                <div className={styles.crumbs}>
+                  <button
+                    type="button"
+                    className={styles.crumbLink}
+                    onClick={clearTown}
+                  >
+                    All of Vermont
+                  </button>
+                  <IconChevronRight size={13} />
+                  {selectedName?.county}
+                  {selectedName?.kind && ` · ${selectedName.kind}`}
+                </div>
+                <h1 className={styles.townTitle}>{townName}</h1>
+              </>
+            )}
+          </div>
 
-              <Paper
-                p="xs"
-                radius="sm"
-                style={{
-                  backgroundColor: 'var(--mantine-color-gray-0)',
-                  border: '1px solid var(--mantine-color-gray-3)',
-                }}
-              >
-                <Switch
-                  checked={showCountyLines}
-                  onChange={(event) =>
-                    setShowCountyLines(event.currentTarget.checked)
-                  }
-                  color={COLORS.spruce}
-                  label={
-                    <Text size="sm" fw={600}>
-                      Show Municipal Boundaries
-                    </Text>
-                  }
-                  styles={{ track: { cursor: 'pointer' } }}
+          <div className={styles.panelBody}>
+            {!selectedTown ? (
+              <ol className={styles.steps}>
+                <li>
+                  <span>
+                    <b>Pick a town.</b>
+                    Search above, or click one on the map.
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    <b>Ask a question.</b>
+                    Like “Where could housing be built?”
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    <b>Click the map.</b>
+                    See what applies at any spot, in one card.
+                  </span>
+                </li>
+              </ol>
+            ) : (
+              <>
+                <SectionLabel>Start with a question</SectionLabel>
+                <QuestionList
+                  activeId={activePresetId}
+                  onSelect={handlePresetSelect}
+                  onClear={handlePresetClear}
                 />
-              </Paper>
 
-              <Box
-                mt="xs"
-                style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}
-              >
+                <SectionLabel
+                  aside={
+                    activeLayers.size > 0 && (
+                      <button
+                        type="button"
+                        className={styles.linkButton}
+                        onClick={handlePresetClear}
+                      >
+                        Clear the map
+                      </button>
+                    )
+                  }
+                >
+                  Or choose what to show
+                </SectionLabel>
                 <LayerPanel
                   activeLayers={activeLayers}
                   onToggle={handleToggle}
                   onDataChange={handleDataChange}
                   onStatsChange={handleStatsChange}
+                  onLoadingChange={handleLoadingChange}
                   presetFilters={presetFilters}
                   lockedLayerIds={lockedLayerIds}
+                  combinedLayerIds={combinedLayerIds}
                   townCandidates={townCandidates}
                   townBBox={selectedBBox}
+                  townName={townName}
                   scopeVersion={scopeVersion}
+                  parcelColorMode={parcelColorMode}
+                  onParcelColorMode={setParcelColorMode}
                 />
-              </Box>
-            </>
-          )}
-        </Paper>
-
-        <Paper
-          shadow="md"
-          radius="md"
-          style={{
-            borderTopLeftRadius: sidebarOpen ? 0 : undefined,
-            borderBottomLeftRadius: sidebarOpen ? 0 : undefined,
-            marginLeft: sidebarOpen ? -1 : 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            size="xl"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle Sidebar"
-            px={sidebarOpen ? 'xs' : 'md'}
-            style={{
-              minWidth: sidebarOpen ? 40 : 110,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {sidebarOpen ? (
-              <IconChevronLeft size={18} />
-            ) : (
-              <Group gap={6} align="center" wrap="nowrap">
-                <Text size="sm" fw={600}>
-                  Layers
-                </Text>
-                <IconLayersIntersect size={26} stroke={1.5} />
-              </Group>
+              </>
             )}
-          </ActionIcon>
-        </Paper>
-      </Box>
+          </div>
+        </aside>
 
-      {selectedTown && (
-        <Paper
-          shadow="lg"
-          withBorder
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: sidebarOpen ? 370 : 16,
-            right: 16,
-            zIndex: 10,
-            borderBottomLeftRadius: 0,
-            borderBottomRightRadius: 0,
-            transition: 'left 0.3s ease',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
-          }}
-        >
-          <Group
-            justify="space-between"
-            px="md"
-            py="xs"
-            onClick={() => setReportExpanded(!reportExpanded)}
-            style={{ cursor: 'pointer', userSelect: 'none' }}
-          >
-            <Group gap="xs">
-              <IconChartBarPopular size={16} color={COLORS.spruce} />
-              <Text
-                size="xs"
-                fw={700}
-                style={{ fontFamily: theme.headings?.fontFamily }}
-              >
-                SPATIAL ANALYSIS & REPORT SUMMARY
-              </Text>
-              <Text size="xs" c="dimmed" ml="sm">
-                • {totalLoadedFeatures.toLocaleString()} records active
-              </Text>
-            </Group>
+        <div className={styles.middle}>
+          <div className={styles.top}>
+            {!selectedTown && (
+              <div className={styles.pill}>
+                <IconHandClick size={16} />
+                Click any town on the map to begin
+              </div>
+            )}
+            {selectedTown && activeLayers.size === 0 && (
+              <div className={styles.pill}>
+                Pick a question on the left to see it on the map
+              </div>
+            )}
+            {selectedTown && (
+              <InsightStrip insights={insights} loading={loadingTitles} />
+            )}
+          </div>
 
-            <Button
-              variant="subtle"
-              size="compact-xs"
-              color="gray"
-              rightSection={
-                reportExpanded ? (
-                  <IconChevronDown size={14} />
-                ) : (
-                  <IconChevronUp size={14} />
-                )
-              }
+          <div className={styles.bottom}>
+            <MapKey groups={keyGroups} />
+            <MapControls
+              basemap={basemap}
+              onBasemap={setBasemap}
+              onZoom={(delta) => mapRef.current?.zoomBy(delta)}
+              onRefit={() => mapRef.current?.refit()}
+            />
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {selection && (
+            <motion.div
+              key="spot"
+              style={{ display: 'flex', flexShrink: 0 }}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 24 }}
+              transition={{ duration: 0.2 }}
             >
-              {reportExpanded ? 'Collapse Report' : 'Expand Insights'}
-            </Button>
-          </Group>
+              <SpotCard
+                click={selection}
+                report={report}
+                townName={townName}
+                onShowLayer={(id) => handleToggle(id, true)}
+                onClose={() => setSelection(null)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
 
-          <Collapse expanded={reportExpanded}>
-            <Box p="md" style={{ maxHeight: '35vh', overflowY: 'auto' }}>
-              <SimpleGrid cols={{ base: 1, md: 4 }} spacing="md">
-                <Paper
-                  withBorder
-                  p="xs"
-                  radius="sm"
-                  bg="var(--mantine-color-body)"
-                >
-                  <Text size="sm" c="dimmed" fw={600}>
-                    Total Rendered Features
-                  </Text>
-                  <Text fw={700} size="xl" c={COLORS.spruce}>
-                    {totalLoadedFeatures.toLocaleString()}
-                  </Text>
-                </Paper>
-
-                <Paper
-                  withBorder
-                  p="xs"
-                  radius="sm"
-                  bg="var(--mantine-color-body)"
-                >
-                  <Text size="sm" c="dimmed" fw={600}>
-                    Buildable Acreage
-                  </Text>
-                  {buildableAcres !== null ? (
-                    <Text fw={700} size="xl" c={COLORS.spruce}>
-                      {Math.round(buildableAcres).toLocaleString()} ac
-                    </Text>
-                  ) : (
-                    <Text size="sm" c="dimmed" fs="italic" mt={6}>
-                      Enable the Zoning layer to see acreage
-                    </Text>
-                  )}
-                </Paper>
-
-                {zoningCoverage && (
-                  <Paper
-                    withBorder
-                    p="xs"
-                    radius="sm"
-                    bg="var(--mantine-color-body)"
-                  >
-                    <Text size="sm" c="dimmed" fw={600}>
-                      Zoning Match Coverage
-                    </Text>
-                    <Text fw={700} size="xl" c={COLORS.spruce}>
-                      {zoningCoverage.pct.toFixed(1)}%
-                    </Text>
-                    <Text size="xs" c="dimmed" mt={4}>
-                      {Math.round(zoningCoverage.matchedAcres).toLocaleString()}{' '}
-                      of{' '}
-                      {Math.round(zoningCoverage.totalAcres).toLocaleString()}{' '}
-                      zoned acres in{' '}
-                      {selectedTown?.properties.NAME.split(',')[0] ??
-                        'this town'}{' '}
-                      match your filters
-                    </Text>
-                  </Paper>
-                )}
-
-                <Paper
-                  withBorder
-                  p="xs"
-                  radius="sm"
-                  bg="var(--mantine-color-body)"
-                >
-                  <Text size="sm" c="dimmed" fw={600} mb="xs">
-                    Layer Density Distribution
-                  </Text>
-                  {activeLayers.size === 0 ? (
-                    <Text size="xs" c="dimmed" fs="italic">
-                      No active layer data
-                    </Text>
-                  ) : (
-                    <Stack gap={6}>
-                      {MAP_LAYERS.filter((l) => activeLayers.has(l.id)).map(
-                        (layer) => {
-                          const count =
-                            layerData[layer.id]?.features?.length || 0;
-                          return (
-                            <Box key={layer.id}>
-                              <Group justify="space-between" mb={2}>
-                                <Text size="sm" fw={500} lineClamp={1}>
-                                  {layer.title}
-                                </Text>
-                                <Text size="sm" c="dimmed">
-                                  {count}
-                                </Text>
-                              </Group>
-                              <Progress
-                                value={
-                                  totalLoadedFeatures > 0
-                                    ? (count / totalLoadedFeatures) * 100
-                                    : 0
-                                }
-                                color={layer.color}
-                                size="xs"
-                                radius="xl"
-                              />
-                            </Box>
-                          );
-                        },
-                      )}
-                    </Stack>
-                  )}
-                </Paper>
-
-                {soilSuitabilityDistribution && (
-                  <DistributionCard
-                    title="Soil Suitability Distribution"
-                    rows={soilSuitabilityDistribution}
-                  />
-                )}
-
-                {zoningDistrictComposition && (
-                  <DistributionCard
-                    title="Zoning District Composition"
-                    rows={zoningDistrictComposition}
-                    footnote={
-                      zoningDistrictComposition.some(
-                        (d) => d.label === 'Overlay',
-                      ) &&
-                      'Overlays sit on top of base districts, so shares can add up to more than 100%.'
-                    }
-                  />
-                )}
-
-                {serviceAreaSummary && (
-                  <Paper
-                    withBorder
-                    p="xs"
-                    radius="sm"
-                    bg="var(--mantine-color-body)"
-                  >
-                    <Text size="sm" c="dimmed" fw={600}>
-                      Service Area Coverage
-                    </Text>
-                    <Text fw={700} size="xl" c={COLORS.spruce}>
-                      {Math.round(
-                        serviceAreaSummary.totalAcres,
-                      ).toLocaleString()}{' '}
-                      ac
-                    </Text>
-                    <Text size="xs" c="dimmed" mt={4}>
-                      {serviceAreaSummary.systemCount} system
-                      {serviceAreaSummary.systemCount === 1 ? '' : 's'},{' '}
-                      {serviceAreaSummary.ownerCount} owner
-                      {serviceAreaSummary.ownerCount === 1 ? '' : 's'}
-                    </Text>
-                  </Paper>
-                )}
-
-                {treatmentFacilityCapacity && (
-                  <Paper
-                    withBorder
-                    p="xs"
-                    radius="sm"
-                    bg="var(--mantine-color-body)"
-                  >
-                    <Text size="sm" c="dimmed" fw={600}>
-                      Treatment Capacity
-                    </Text>
-                    <Text fw={700} size="xl" c={COLORS.spruce}>
-                      {treatmentFacilityCapacity.totalMgd.toFixed(2)} MGD
-                    </Text>
-                    <Text size="xs" c="dimmed" mt={4}>
-                      {treatmentFacilityCapacity.reporting} of{' '}
-                      {treatmentFacilityCapacity.total} facilities report design
-                      capacity
-                    </Text>
-                  </Paper>
-                )}
-              </SimpleGrid>
-            </Box>
-          </Collapse>
-        </Paper>
-      )}
-    </Box>
+function CollapseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className={styles.linkButton}
+      aria-label="Hide this panel"
+      title="Hide this panel"
+      onClick={onClick}
+      style={{ display: 'grid', placeItems: 'center', color: COLORS.slate }}
+    >
+      <IconLayoutSidebarLeftCollapse size={20} />
+    </button>
   );
 }

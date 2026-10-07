@@ -60,6 +60,9 @@ export function useMapLayer(
   // responses (zoning). Null for every other layer.
   const [stats, setStats] = useState<LayerStats | null>(null);
   const [loading, setLoading] = useState(false);
+  // True when the last fetch failed, so the UI can say so and offer a retry
+  // instead of leaving a silently empty map.
+  const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const fetchLegend = useCallback(async () => {
@@ -79,6 +82,7 @@ export function useMapLayer(
   const applyFilters = useCallback(
     async (specs: FilterSpec[]) => {
       setLoading(true);
+      setError(false);
       try {
         let fc: FeatureCollection;
         if (config.method === 'GET') {
@@ -140,6 +144,7 @@ export function useMapLayer(
       } catch (e) {
         console.error(`data fetch failed for ${config.id}`, e);
         setGeojson(null);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -160,6 +165,7 @@ export function useMapLayer(
     legend,
     stats,
     loading,
+    error,
     applyFilters,
     loadInitial,
     fetchLegend,
