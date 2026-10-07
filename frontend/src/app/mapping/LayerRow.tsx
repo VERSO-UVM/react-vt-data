@@ -11,7 +11,12 @@ import {
 } from '@mantine/core';
 import { FilterWrap } from '@/components/FilterRedux/filterWrap';
 import { useMapLayer, type LayerStats } from './UseMapLayer';
-import { recolorParcels, type ParcelColorMode } from './layerColors';
+import MapLegend from '@/components/Legend';
+import {
+  legendItems,
+  recolorParcels,
+  type ParcelColorMode,
+} from './layerColors';
 import type { MapLayerConfig } from '@/app/mapping/MapLayers';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
 import type { FeatureCollection } from 'geojson';
@@ -54,11 +59,8 @@ export default function LayerRow({
   locked,
   scopeVersion,
 }: LayerRowProps) {
-  const { geojson, stats, loading, applyFilters } = useMapLayer(
-    config,
-    townCandidates,
-    townBBox,
-  );
+  const { geojson, legend, stats, loading, applyFilters, fetchLegend } =
+    useMapLayer(config, townCandidates, townBBox);
 
   // Parcels can be recolored by attribute (Category or Assessed Value)
   // without a re-fetch — purely a client-side restyle of the geojson already
@@ -96,6 +98,7 @@ export default function LayerRow({
     if (appliedVersion.current === scopeVersion) return;
     appliedVersion.current = scopeVersion;
     applyFilters(initialSpecs ?? []);
+    if (config.legendURL && legend.length === 0) fetchLegend();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, scopeVersion]);
 
@@ -142,6 +145,17 @@ export default function LayerRow({
             ]}
           />
         </Box>
+      )}
+
+      {active && (
+        <MapLegend
+          items={legendItems(
+            config.id,
+            displayGeojson,
+            parcelColorMode,
+            legend,
+          )}
+        />
       )}
 
       {active && config.filterList.length > 0 && (

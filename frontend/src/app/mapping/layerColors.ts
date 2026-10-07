@@ -20,6 +20,7 @@
  */
 
 import type { FeatureCollection } from 'geojson';
+import type { LegendItem, LegendRow } from '@/components/Legend';
 
 type RGBA = [number, number, number, number];
 
@@ -178,5 +179,57 @@ export function recolorLayer(
       return recolorFlat(fc, TREATMENT_FACILITY_COLOR);
     default:
       return fc;
+  }
+}
+
+const css = ([r, g, b, a]: RGBA) => `rgba(${r},${g},${b},${a / 255})`;
+
+/** Legend entries for a layer's current coloring. Flood derives its entries
+ *  from the colors the server put on the features; soil uses the server's
+ *  legend table (passed in); the rest come from this file's palettes. */
+export function legendItems(
+  layerId: string,
+  fc: FeatureCollection | null,
+  parcelMode: ParcelColorMode,
+  serverLegend: LegendRow[] = [],
+): LegendItem[] {
+  switch (layerId) {
+    case 'zoning':
+      return Object.entries(ZONING_DISTRICT_COLORS).map(([label, c]) => ({
+        label,
+        color: css(c),
+      }));
+    case 'service-areas':
+      return [{ label: 'Service area', color: css(SERVICE_AREA_COLOR) }];
+    case 'treatment-facilities':
+      return [
+        { label: 'Treatment facility', color: css(TREATMENT_FACILITY_COLOR) },
+      ];
+    case 'parcels':
+      return parcelMode === 'category'
+        ? Object.entries(PARCEL_CATEGORY_COLORS).map(([label, c]) => ({
+            label,
+            color: css(c),
+          }))
+        : PARCEL_VALUE_RAMP.map((c, i) => ({
+            label: ['Lowest', '', 'Middle', '', 'Highest'][i],
+            color: css(c),
+          }));
+    case 'soil-suitability':
+      return serverLegend.map((row) => ({
+        label: Object.values(row)[0],
+        color: row.hex_color,
+      }));
+    case 'flood-legal': {
+      const seen = new Map<string, string>();
+      for (const f of fc?.features ?? []) {
+        const label = f.properties?.['Flood Risk'];
+        const c = f.properties?.rgba_color;
+        if (label && Array.isArray(c)) seen.set(String(label), css(c as RGBA));
+      }
+      return [...seen].map(([label, color]) => ({ label, color }));
+    }
+    default:
+      return [];
   }
 }
