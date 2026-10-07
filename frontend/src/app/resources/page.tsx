@@ -63,7 +63,7 @@ const RESOURCES: Resource[] = [
     icon: BellIcon,
   },
   {
-    href: 'https://github.com',
+    href: 'https://github.com/VERSO-UVM/react-vt-data',
     label: 'GitHub',
     description:
       'View the source code, inspect how a number was calculated, or contribute to the platform.',
