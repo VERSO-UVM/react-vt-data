@@ -18,7 +18,11 @@ import {
   Text,
   Badge,
   SimpleGrid,
+  Tabs,
 } from '@mantine/core';
+import { booleanPointInPolygon } from '@turf/turf';
+import type { PolyFeature } from '@/app/mapping/buildableOverlay';
+import { MAP_LAYERS } from '@/app/mapping/MapLayers';
 import { IconX } from '@tabler/icons-react';
 import { COLORS, FONTS } from '@/app/theme';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -59,17 +63,20 @@ const DETAIL_GROUPS: {
   fields: string[];
   stat?: boolean;
   accent: string;
+  tab: string;
 }[] = [
   {
     title: 'Location',
     fields: ['Address', 'Jurisdiction', 'County'],
     accent: COLORS.spruce,
+    tab: 'Property',
   },
   {
     title: 'Valuation',
     fields: ['Assessed Value', 'Value Per Acre', 'Acres', 'Buildable'],
     stat: true,
     accent: COLORS.amber,
+    tab: 'Property',
   },
   {
     title: 'Owner',
@@ -81,6 +88,7 @@ const DETAIL_GROUPS: {
       'Out-of-State Owner',
     ],
     accent: COLORS.slate,
+    tab: 'Owner',
   },
 ];
 const DEFAULT_ACCENT = COLORS.slate;
@@ -315,12 +323,45 @@ export default function VTMap({
   const [selected, setSelected] = useState<Record<string, unknown> | null>(
     null,
   );
+  // What every active polygon layer says at the clicked point, for the
+  // card's Overview tab.
+  const [overview, setOverview] = useState<{ layer: string; value: string }[]>(
+    [],
+  );
 
   const onClick = (info: {
+    coordinate?: number[];
     object?: { properties: { tooltip: Record<string, unknown> } };
   }) => {
     setSelected(info.object ? info.object.properties.tooltip : null);
+    setOverview(
+      info.object && info.coordinate ? layersAtPoint(info.coordinate) : [],
+    );
   };
+
+  // ponytail: linear scan per layer on click; add a spatial index if
+  // parcels/soil in a large town make clicks feel slow.
+  const layersAtPoint = (coord: number[]) =>
+    activeLayers.flatMap((layer) => {
+      const hit = layer.visible
+        ? layer.geojson?.features.find(
+            (f) =>
+              (f.geometry?.type === 'Polygon' ||
+                f.geometry?.type === 'MultiPolygon') &&
+              booleanPointInPolygon(coord, f as PolyFeature),
+          )
+        : undefined;
+      const title = hit?.properties?.tooltip?.__title__;
+      return title
+        ? [
+            {
+              layer:
+                MAP_LAYERS.find((l) => l.id === layer.id)?.title ?? layer.id,
+              value: String(title),
+            },
+          ]
+        : [];
+    });
 
   const getFillColor = (d: {
     properties?: { rgba_color?: [number, number, number, number] };
@@ -533,75 +574,117 @@ export default function VTMap({
                 <IconX size={18} />
               </ActionIcon>
             </Group>
-            <Stack gap="md" p="lg" pt="md">
-              {(() => {
-                // Named `fields` rather than `Map` to avoid shadowing the
-                // react-map-gl `Map` component imported at the top of this file.
-                const fields = Object.entries(selected).filter(
-                  ([k]) => k !== '__title__',
+            {(() => {
+              // Named `fields` rather than `Map` to avoid shadowing the
+              // react-map-gl `Map` component imported at the top of this file.
+              const fields = Object.entries(selected).filter(
+                ([k]) => k !== '__title__',
+              );
+              const claimed = new Set<string>();
+
+              const sections = DETAIL_GROUPS.map((group) => {
+                const entries = fields.filter(([k]) =>
+                  group.fields.includes(k),
                 );
-                const claimed = new Set<string>();
+                entries.forEach(([k]) => claimed.add(k));
+                return { ...group, entries };
+              }).filter((g) => g.entries.length > 0);
 
-                const sections = DETAIL_GROUPS.map((group) => {
-                  const entries = fields.filter(([k]) =>
-                    group.fields.includes(k),
-                  );
-                  entries.forEach(([k]) => claimed.add(k));
-                  return { ...group, entries };
-                }).filter((g) => g.entries.length > 0);
+              // Anything the layer's tooltip carries that isn't one of the
+              // named parcel fields above — the only path non-parcel layers
+              // take, so the card still works generically for them.
+              const leftover = fields.filter(([k]) => !claimed.has(k));
+              if (leftover.length > 0) {
+                sections.push({
+                  title: 'Details',
+                  fields: [],
+                  stat: false,
+                  entries: leftover,
+                  accent: DEFAULT_ACCENT,
+                  tab: 'Details',
+                });
+              }
 
-                // Anything the layer's tooltip carries that isn't one of the
-                // named parcel fields above — the only path non-parcel layers
-                // take, so the card still works generically for them.
-                const leftover = fields.filter(([k]) => !claimed.has(k));
-                if (leftover.length > 0) {
-                  sections.push({
-                    title: 'Details',
-                    fields: [],
-                    stat: false,
-                    entries: leftover,
-                    accent: DEFAULT_ACCENT,
-                  });
-                }
+              const tabNames = [
+                'Overview',
+                ...new Set(sections.map((sec) => sec.tab)),
+              ];
 
-                return sections.map((section) => (
-                  <Paper
-                    key={section.title}
-                    radius="md"
-                    p="md"
-                    withBorder
-                    style={{
-                      background: '#fff',
-                      borderColor: COLORS.line,
-                      borderLeft: `4px solid ${section.accent}`,
-                    }}
-                  >
-                    <Text
-                      style={{ ...SECTION_LABEL_STYLE, color: section.accent }}
-                      mb={10}
-                    >
-                      {section.title}
-                    </Text>
-                    {section.stat ? (
-                      <SimpleGrid cols={2} spacing="sm">
-                        {section.entries.map(([k, v]) => (
-                          <StatTile key={k} label={k} value={v} />
-                        ))}
-                      </SimpleGrid>
-                    ) : (
-                      <Stack gap={10}>
-                        {section.entries.map(([k, v], i) => (
-                          <Fragment key={k}>
-                            {i > 0 && <Divider color={COLORS.line} />}
-                            <DetailRow label={k} value={v} />
-                          </Fragment>
-                        ))}
+              return (
+                <Tabs defaultValue="Overview" key={String(selected.__title__)}>
+                  <Tabs.List px="lg">
+                    {tabNames.map((t) => (
+                      <Tabs.Tab key={t} value={t}>
+                        {t}
+                      </Tabs.Tab>
+                    ))}
+                  </Tabs.List>
+
+                  <Tabs.Panel value="Overview">
+                    <Stack gap="xs" p="lg" pt="md">
+                      <Text size="xs" c="dimmed">
+                        What each active layer says at this spot
+                      </Text>
+                      {overview.map((o) => (
+                        <DetailRow
+                          key={o.layer}
+                          label={o.layer}
+                          value={o.value}
+                        />
+                      ))}
+                    </Stack>
+                  </Tabs.Panel>
+
+                  {tabNames.slice(1).map((t) => (
+                    <Tabs.Panel key={t} value={t}>
+                      <Stack gap="md" p="lg" pt="md">
+                        {sections
+                          .filter((sec) => sec.tab === t)
+                          .map((section) => (
+                            <Paper
+                              key={section.title}
+                              radius="md"
+                              p="md"
+                              withBorder
+                              style={{
+                                background: '#fff',
+                                borderColor: COLORS.line,
+                                borderLeft: `4px solid ${section.accent}`,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  ...SECTION_LABEL_STYLE,
+                                  color: section.accent,
+                                }}
+                                mb={10}
+                              >
+                                {section.title}
+                              </Text>
+                              {section.stat ? (
+                                <SimpleGrid cols={2} spacing="sm">
+                                  {section.entries.map(([k, v]) => (
+                                    <StatTile key={k} label={k} value={v} />
+                                  ))}
+                                </SimpleGrid>
+                              ) : (
+                                <Stack gap={10}>
+                                  {section.entries.map(([k, v], i) => (
+                                    <Fragment key={k}>
+                                      {i > 0 && <Divider color={COLORS.line} />}
+                                      <DetailRow label={k} value={v} />
+                                    </Fragment>
+                                  ))}
+                                </Stack>
+                              )}
+                            </Paper>
+                          ))}
                       </Stack>
-                    )}
-                  </Paper>
-                ));
-              })()}
-            </Stack>
+                    </Tabs.Panel>
+                  ))}
+                </Tabs>
+              );
+            })()}
           </Card>
         )}
       </div>
