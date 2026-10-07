@@ -27,8 +27,6 @@ NUMERIC_TYPE = re.compile(
 # listed here must match exactly; test_contract_exceptions_still_apply keeps
 # this list from going stale.
 TEXT_MEASURES = {
-    # DP profile values mix numbers, Census sentinels, and '(X)'.
-    ("acs5_dp", "value"),
     # Stored as text by the wastewater cleaner.
     ("wastewater_treatment_facilities", "design_hydraulic_capacity_mgd"),
     # Text since the ETL standardization (#97): clean_cdc converts only
