@@ -13,12 +13,12 @@ router = APIRouter()
 
 
 @router.get("/load/mapping/wastewater/septic_soil_legend")
-async def wastewater_soil_suit_legend():
+def wastewater_soil_suit_legend():
     data = get_soil_suit_legend()
     return Response(content=data, media_type="application/json")
 
 
 @router.get("/load/mapping/ambulance/ambulance_legend")
-async def ambulance_legend():
+def ambulance_legend():
     data = get_ambulance_legend()
     return Response(content=data, media_type="application/json")
