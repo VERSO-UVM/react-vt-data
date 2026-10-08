@@ -76,7 +76,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_historic_population": {
         "label": "Historic Population by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Vermont municipal population estimates by town and year.",
         "primary_source": "https://www.census.gov/programs-surveys/decennial-census.html",
         "loader": lambda: _load_full_table(
@@ -85,7 +85,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_historic_population_change": {
         "label": "Historic Population % Change by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Decade-over-decade percent population change by town and year.",
         "primary_source": "https://www.census.gov/programs-surveys/decennial-census.html",
         "loader": lambda: _load_full_table(
@@ -96,7 +96,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_population_change": {
         "label": "Population % Change by Year (ACS)",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Year-over-year percent population change (ACS 5-year) by town and year.",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP05",
         "loader": lambda: _load_full_table(
@@ -105,7 +105,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_median_age": {
         "label": "Median Age by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Median age by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP05",
         "loader": lambda: _load_full_table(
@@ -114,7 +114,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_age_dependency_ratio": {
         "label": "Age Dependency Ratio by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Age dependency ratio by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP05",
         "loader": lambda: _load_full_table(
@@ -123,7 +123,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_median_home_value": {
         "label": "Median Home Value by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Median owner-occupied home value by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
         "loader": lambda: _load_full_table(
@@ -132,7 +132,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_vacancy_rates": {
         "label": "Vacancy Rates by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Homeowner and rental vacancy rates by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
         "loader": lambda: _load_full_table(
@@ -141,7 +141,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_income_burden": {
         "label": "Housing Cost Burden by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Share of households spending 30% or more of income on housing, by tenure (renters, owners with and without a mortgage, all households), town, and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
         "loader": lambda: _load_full_table(
@@ -150,7 +150,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_household_income": {
         "label": "Median Household Income by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Median household income by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
         "loader": lambda: _load_full_table(
@@ -159,7 +159,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_per_capita_income": {
         "label": "Per Capita Income by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Per capita income by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
         "loader": lambda: _load_full_table(
@@ -168,7 +168,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_median_earnings": {
         "label": "Median Earnings by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Median earnings for full-time workers by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
         "loader": lambda: _load_full_table(
@@ -177,7 +177,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_health_insurance": {
         "label": "Health Insurance Coverage by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Health insurance coverage rates by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP03",
         "loader": lambda: _load_full_table(
@@ -186,7 +186,7 @@ EXPORT_SOURCES: dict[str, dict] = {
     },
     "acs5_ts_housing_units": {
         "label": "Total Housing Units by Year",
-        "group": "Historical Trends",
+        "group": "Time Series",
         "description": "Total housing units by town and year (ACS 5-year).",
         "primary_source": "https://data.census.gov/table/ACSDP5Y2023.DP04",
         "loader": lambda: _load_full_table(
