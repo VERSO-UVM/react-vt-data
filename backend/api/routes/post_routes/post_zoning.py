@@ -10,6 +10,7 @@ from query.zoning import (
     get_zoning_allowances,
     get_zoning_export_table,
     get_zoning_geojson,
+    get_zoning_lot_sizes,
 )
 
 router = APIRouter()
@@ -80,6 +81,13 @@ def zoning_allowances(request: FilterRequest):
         metadata=get_metadata("zoning"),
         tableData=table,
     )
+
+
+@router.post("/load/data/zoning/lot-sizes")
+async def zoning_lot_sizes(request: FilterRequest):
+    source = request_to_source(request, "VersoZoning_info", "default")
+    agg, table = get_zoning_lot_sizes([source])
+    return make_response(data=agg, metadata=get_metadata("zoning"), tableData=table)
 
 
 @router.post("/load/data/zoning/building-footprints")

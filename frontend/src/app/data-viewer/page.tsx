@@ -27,14 +27,14 @@ import {
   useApplyFilters,
   buildFilters,
 } from '@/components/FilterUI/useApplyFilters';
-import { DataRow, ChartPayload, ChartMetadata } from '@/types/cachedCharts';
+import { useLazyChartData } from '@/components/FilterUI/useLazyChartData';
 
 import { motion } from 'motion/react';
 import classes from './Tabs.module.css';
 import { useEffect, useState } from 'react';
 
 // within data viewer imports
-import { ChartDef, chartDefs } from '@/components/Charts/configs/ChartDefs';
+import { chartDefs } from '@/components/Charts/configs/ChartDefs';
 import { COLORS, FONTS } from '../theme';
 import { FieldLabel } from './FieldLabel';
 import { MetricsPanel } from './MetricsPanels';
@@ -347,18 +347,11 @@ export default function DataViewerPage() {
     yearMax,
     openProfileModal,
   } = useProfile();
-  const [chartData, setChartData] = useState<Record<string, ChartPayload>>({});
-  const [compareChartData, setCompareChartData] = useState<
-    Record<string, ChartPayload>
-  >({});
-  const [compareTableData, setCompareTableData] = useState<
-    Record<string, DataRow[]>
-  >({});
+  const { chartData, compareChartData, compareTableData, request, isLoading } =
+    useLazyChartData(chartDefs, { myLocation, comparison, yearMin, yearMax });
 
   const [focusMode] = useState<'all' | 'focus'>('all');
   const [activeTab, setActiveTab] = useState<string | null>(null);
-
-  const applyFilters = useApplyFilters();
 
   const categoryIcons: Record<string, Icon> = {
     Housing: HouseLineIcon,
@@ -376,119 +369,12 @@ export default function DataViewerPage() {
     icon: categoryIcons[category] ?? HouseLineIcon,
   }));
 
-  useEffect(() => {
-    nonTableDefs.forEach((chart: ChartDef) => {
-      const url = chart.url;
-      const filters = buildFilters(myLocation, {
-        col: 'year',
-        selected: [
-          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
-          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
-        ],
-      });
-      const compFilters = buildFilters(comparison, {
-        col: 'year',
-        selected: [
-          (chart.chartParams?.fixedYear as number | undefined) ?? yearMin,
-          (chart.chartParams?.fixedYear as number | undefined) ?? yearMax,
-        ],
-      });
-
-      applyFilters({
-        dataURL: url,
-        filters: filters,
-        onData: (data, metadata, tableData) =>
-          setChartData((prev) => ({
-            ...prev,
-            [chart.id]: {
-              data: data as DataRow[],
-              metadata: metadata as ChartMetadata,
-              tableData: tableData as DataRow[] | undefined,
-            },
-          })),
-      });
-
-      applyFilters({
-        dataURL: url,
-        filters: compFilters,
-        onData: (data, metadata, tableData) =>
-          setCompareChartData((prev) => ({
-            ...prev,
-            [chart.id]: {
-              data: data as DataRow[],
-              metadata: metadata as ChartMetadata,
-              tableData: tableData as DataRow[] | undefined,
-            },
-          })),
-      });
-    });
-  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
-
-  useEffect(() => {
-    const seen = new Set<string>();
-    tableDefs.forEach((def) => {
-      // Merge profile year range into extraParams, overriding any hardcoded defaults
-      const effectiveExtra = def.tableConfig?.extraParams
-        ? {
-            ...def.tableConfig.extraParams,
-            year_min: yearMin,
-            year_max: yearMax,
-          }
-        : { year_min: yearMin, year_max: yearMax };
-      const key = `${def.url}::${JSON.stringify(effectiveExtra)}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      const siblings = tableDefs.filter((d) => {
-        const extra = d.tableConfig?.extraParams
-          ? {
-              ...d.tableConfig.extraParams,
-              year_min: yearMin,
-              year_max: yearMax,
-            }
-          : { year_min: yearMin, year_max: yearMax };
-        return `${d.url}::${JSON.stringify(extra)}` === key;
-      });
-      // Primary location fetch
-      applyFilters({
-        dataURL: def.url,
-        filters: buildFilters(myLocation, {
-          col: 'year',
-          selected: [yearMin, yearMax],
-        }),
-        onData: (data, metadata) =>
-          siblings.forEach((d) =>
-            setChartData((prev) => ({
-              ...prev,
-              [d.id]: {
-                data: data as DataRow[],
-                metadata: metadata as ChartMetadata,
-              },
-            })),
-          ),
-      });
-      // Comparison location fetch
-      if (comparison.name) {
-        applyFilters({
-          dataURL: def.url,
-          filters: buildFilters(comparison, {
-            col: 'year',
-            selected: [yearMin, yearMax],
-          }),
-          onData: (data) =>
-            siblings.forEach((d) =>
-              setCompareTableData((prev) => ({
-                ...prev,
-                [d.id]: data as DataRow[],
-              })),
-            ),
-        });
-      }
-    });
-  }, [applyFilters, myLocation, comparison, yearMin, yearMax]);
-
   // QCEW employment data is county-level only; swap to a note card for town selections
   const isSubcountyLocation = myLocation.type === 'town';
   const employmentCounty = myLocation.county;
+
+  // item.id is a fresh uuid per render, so remember which def each item is
+  const loadIdByItem = new Map<string, string>();
 
   const charts = nonTableDefs.map((chart) => {
     if (chart.id === 'employment' && isSubcountyLocation) {
@@ -543,6 +429,14 @@ export default function DataViewerPage() {
     }),
   );
 
+  // charts[i] / tableItems[i] come from nonTableDefs[i] / tableDefs[i]; the
+  // town-level employment note card has no data to load.
+  nonTableDefs.forEach((def, i) => {
+    if (charts[i].subtype !== 'noteCard')
+      loadIdByItem.set(charts[i].id, def.id);
+  });
+  tableDefs.forEach((def, i) => loadIdByItem.set(tableItems[i].id, def.id));
+
   const allItems = [...charts, ...tableItems];
   let filteredItems = allItems;
 
@@ -588,6 +482,9 @@ export default function DataViewerPage() {
               .map((c) => c.chartParams?.defId)
               .filter((id): id is string => id !== undefined)}
             view="gallery"
+            loadIds={visibleItems.map((c) => loadIdByItem.get(c.id))}
+            onVisible={request}
+            isLoading={isLoading}
           />
         </Box>
       </Box>

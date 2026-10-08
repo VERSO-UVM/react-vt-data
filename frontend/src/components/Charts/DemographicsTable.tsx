@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Box, Button, Group, ScrollArea, Table, Text } from '@mantine/core';
+import { FileXlsIcon } from '@phosphor-icons/react';
 import { ChartItem, DataRow } from '@/types/cachedCharts';
+import { COLORS } from '@/app/theme';
+import * as XLSX from 'xlsx';
+import { saveWorksheet } from './TableView';
 
 // tidy ACS row shape consumed by the demographics tables
 interface AcsRow extends DataRow {
@@ -17,9 +21,12 @@ const SPLIT_BORDER = '1px solid var(--mantine-color-gray-3)';
 const DemographicsTableBase = ({
   chart,
   renderCell,
+  exportValue,
 }: {
   chart: ChartItem<AcsRow>;
   renderCell: (row: AcsRow | undefined) => React.ReactNode;
+  /** The number behind a cell, for the Excel export. */
+  exportValue: (row: AcsRow | undefined) => number | null;
 }) => {
   const data = chart.data;
   const compareData = chart.compareData ?? [];
@@ -40,10 +47,53 @@ const DemographicsTableBase = ({
     year: number | string | undefined,
   ) => rows.find((r) => r.Variable === variable && r.year === year);
 
+  // Mirrors the table: a "Variable" column, then one column per year that
+  // splits in two (main place | comparison) under a merged year header.
+  const exportTable = () => {
+    const sub = hasCompare ? [homeLabel, compareLabel] : [];
+    const width = hasCompare ? 2 : 1;
+    const num = (r: AcsRow | undefined) => exportValue(r) ?? '';
+    const header = [
+      'Variable',
+      ...years.flatMap((y) => (hasCompare ? [y, ''] : [y])),
+    ];
+    const body = variables.map((variable) => [
+      variable,
+      ...years.flatMap((year) => [
+        num(findRow(data, variable, year)),
+        ...(hasCompare ? [num(findRow(compareData, variable, year))] : []),
+      ]),
+    ]);
+    const rows = hasCompare
+      ? [header, ['', ...years.flatMap(() => sub)], ...body]
+      : [header, ...body];
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    if (hasCompare) {
+      sheet['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } },
+        ...years.map((_, i) => ({
+          s: { r: 0, c: 1 + i * width },
+          e: { r: 0, c: i * width + width },
+        })),
+      ];
+    }
+    saveWorksheet(chart, sheet);
+  };
+
   return (
-    <Box>
-      {hasCompare && (
-        <Group mb="xs" gap="sm" align="center">
+    // Fills the chart box and scrolls inside it; a ScrollArea with no bounded
+    // height never scrolls vertically, so long tables were cut off.
+    <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Group mb="xs" gap="sm" align="center">
+        <Button
+          size="xs"
+          color={COLORS.spruce}
+          leftSection={<FileXlsIcon size={20} />}
+          onClick={exportTable}
+        >
+          Export
+        </Button>
+        {hasCompare && (
           <Button
             size="xs"
             variant={showCompare ? 'filled' : 'light'}
@@ -52,38 +102,38 @@ const DemographicsTableBase = ({
           >
             {showCompare ? 'Hide Comparison' : 'Show Comparison'}
           </Button>
-          {showCompare && (
-            <Group gap={6}>
-              <Box
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 2,
-                  background: HOME_BG,
-                  border: '1px solid var(--mantine-color-green-3)',
-                  display: 'inline-block',
-                }}
-              />
-              <Text size="xs">{homeLabel}</Text>
-              <Box
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 2,
-                  background: COMP_BG,
-                  border: '1px solid var(--mantine-color-blue-3)',
-                  display: 'inline-block',
-                  marginLeft: 8,
-                }}
-              />
-              <Text size="xs">{compareLabel}</Text>
-            </Group>
-          )}
-        </Group>
-      )}
+        )}
+        {hasCompare && showCompare && (
+          <Group gap={6}>
+            <Box
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: HOME_BG,
+                border: '1px solid var(--mantine-color-green-3)',
+                display: 'inline-block',
+              }}
+            />
+            <Text size="xs">{homeLabel}</Text>
+            <Box
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: COMP_BG,
+                border: '1px solid var(--mantine-color-blue-3)',
+                display: 'inline-block',
+                marginLeft: 8,
+              }}
+            />
+            <Text size="xs">{compareLabel}</Text>
+          </Group>
+        )}
+      </Group>
 
-      <ScrollArea>
-        <Table striped withTableBorder withColumnBorders fz="xs">
+      <ScrollArea style={{ flex: 1, minHeight: 0 }}>
+        <Table stickyHeader striped withTableBorder withColumnBorders fz="xs">
           <Table.Thead>
             <Table.Tr>
               <Table.Th></Table.Th>
@@ -147,6 +197,7 @@ export const renderTable = ({ chart }: { chart: ChartItem<AcsRow> }) => (
     renderCell={(row) =>
       row?.Percent != null ? `${row.Percent.toFixed(1)}%` : '—'
     }
+    exportValue={(row) => row?.Percent ?? null}
   />
 );
 
@@ -160,6 +211,7 @@ export const renderTableEstimates = ({
     renderCell={(row) =>
       row?.Value != null ? row.Value.toLocaleString() : '—'
     }
+    exportValue={(row) => row?.Value ?? null}
   />
 );
 
@@ -172,5 +224,6 @@ export const renderTableMixed = ({ chart }: { chart: ChartItem<AcsRow> }) => (
       if (row?.Value != null) return row.Value.toLocaleString();
       return '—';
     }}
+    exportValue={(row) => row?.Percent ?? row?.Value ?? null}
   />
 );
