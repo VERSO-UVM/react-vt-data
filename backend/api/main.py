@@ -12,7 +12,7 @@ talks to the frontend's origin.
 
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -25,6 +25,17 @@ app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")
 # uncompressed — nginx gzips these in the containers, but `uvicorn --reload`
 # local dev has nothing else in front of it, so compress here too.
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+@app.middleware("http")
+async def cache_get_responses(request: Request, call_next):
+    # Data only changes when the ETL rebuilds the warehouse, so GETs are safe
+    # to cache briefly in the browser / nginx.
+    response = await call_next(request)
+    if request.method == "GET" and response.status_code == 200:
+        response.headers.setdefault("Cache-Control", "public, max-age=3600")
+    return response
+
 
 # Only needed for `next dev`, which bypasses the nginx proxy.
 # In the containers everything is same-origin and this does nothing.

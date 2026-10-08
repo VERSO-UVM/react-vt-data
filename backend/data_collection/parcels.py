@@ -15,6 +15,8 @@ import geopandas as gpd
 import pandas as pd
 import requests
 
+from data_collection.parallel import pmap
+
 # list of towns from which to gather data
 VT_TOWNS = [
     "Addison",
@@ -319,9 +321,11 @@ def standardize_town(shp_path: Path) -> gpd.GeoDataFrame:
 
 # need to add a failsafe - all towns might not work
 def collect():
-    for town in VT_TOWNS:
+    def fetch_logged(town):
         print(f"{town} ...")
         fetch_town(town)
+
+    pmap(fetch_logged, VT_TOWNS)
     gdfs = [
         standardize_town(
             Path(f"{STORAGE_LOCATION}/backfill/{town}") / f"VTPARCELS_{town}.shp"

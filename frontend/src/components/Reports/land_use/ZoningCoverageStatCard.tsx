@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Card, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { Text } from '@mantine/core';
 import { IconMap2 } from '@tabler/icons-react';
 import { BASE_API_URL } from '@/config';
 import { DataRow } from '@/types/cachedCharts';
+import { StatCell } from '@/components/Reports/shared';
 
 // Statewide dataset coverage, independent of the primary/comparison location
 // selection — how many zoning districts and towns this dataset covers, not a
@@ -38,43 +39,15 @@ export default function ZoningCoverageStatCard() {
       : null;
 
   return (
-    <Card
-      radius="xl"
-      padding="lg"
-      withBorder
-      style={{
-        height: '100%',
-        transition: 'all 180ms ease',
-        cursor: 'default',
-      }}
+    <StatCell
+      label="Statewide Zoning Coverage"
+      icon={<IconMap2 size={18} />}
+      value={districtCount !== null ? districtCount.toLocaleString() : '—'}
     >
-      <Group justify="space-between" mb="md">
-        <Text size="xs" fw={700} tt="uppercase" c="dimmed">
-          Statewide Zoning Coverage
-        </Text>
-        <ThemeIcon size={48} radius="xl" variant="light" color="green">
-          <IconMap2 size={24} />
-        </ThemeIcon>
-      </Group>
-
-      <Group grow>
-        <Stack gap={2}>
-          <Title order={3}>
-            {districtCount !== null ? districtCount.toLocaleString() : '—'}
-          </Title>
-          <Text size="sm" c="dimmed">
-            Zoning Districts
-          </Text>
-        </Stack>
-        <Stack gap={2}>
-          <Title order={3}>
-            {townCount !== null ? townCount.toLocaleString() : '—'}
-          </Title>
-          <Text size="sm" c="dimmed">
-            Towns with Zoning Data
-          </Text>
-        </Stack>
-      </Group>
-    </Card>
+      <Text size="sm" c="dimmed">
+        Zoning districts across{' '}
+        {townCount !== null ? townCount.toLocaleString() : '—'} towns
+      </Text>
+    </StatCell>
   );
 }

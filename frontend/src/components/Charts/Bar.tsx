@@ -199,8 +199,15 @@ interface CompareDiffChartItem extends ChartItem<DataRow> {
     percentFormat?: boolean;
     includeCategories?: string[];
     unit?: string;
+    yLabel?: string;
   };
 }
+
+/** Reorder compare rows to match the main rows by x value (missing -> no y). */
+const alignByX = (main: DataRow[], cmp: DataRow[], xField: string) => {
+  const byX = new Map(cmp.map((r) => [r[xField], r]));
+  return main.map((r) => byX.get(r[xField]) ?? { [xField]: r[xField] });
+};
 
 /** SVG (Recharts) version used when rendering to PDF. */
 const CompareDiffPerXBarChartSVG = ({
@@ -219,12 +226,15 @@ const CompareDiffPerXBarChartSVG = ({
         includeCategories.includes(entry[chart.xField] as string),
       )
     : chart.data;
-  const filteredCompareData =
+  const filteredCompareData = alignByX(
+    filteredData,
     includeCategories && chart.compareData
       ? chart.compareData.filter((entry) =>
           includeCategories.includes(entry[chart.xField] as string),
         )
-      : (chart.compareData ?? []);
+      : (chart.compareData ?? []),
+    chart.xField,
+  );
 
   // Determine per-bar primary colors (same logic as Chart.js version)
   let colors: string[];
@@ -253,7 +263,17 @@ const CompareDiffPerXBarChartSVG = ({
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey={chart.xField} />
-        <YAxis />
+        <YAxis
+          label={
+            chart.chartParams.yLabel
+              ? {
+                  value: chart.chartParams.yLabel,
+                  angle: -90,
+                  position: 'insideLeft',
+                }
+              : undefined
+          }
+        />
         <Tooltip />
         <Legend />
         <Bar dataKey="primary" name={legendLabels[0]}>
@@ -293,12 +313,13 @@ const CompareDiffPerXBarChart = ({
 
   // Filter comparison dataset based on categories if specified
   const filteredCompareData = useMemo(() => {
-    return includeCategories
+    const cmp = includeCategories
       ? compareRows.filter((entry) =>
           includeCategories.includes(entry[chart.xField] as string),
         )
       : compareRows;
-  }, [compareRows, includeCategories, chart.xField]);
+    return cmp.length ? alignByX(filteredData, cmp, chart.xField) : cmp;
+  }, [compareRows, filteredData, includeCategories, chart.xField]);
 
   // Derive exact plottable rows and report back to ChartCard for TableView
   const plotData = useMemo(() => {
@@ -364,6 +385,7 @@ const CompareDiffPerXBarChart = ({
   ]);
 
   const percentFormat = chart.chartParams?.percentFormat ?? false;
+  const yLabel = chart.chartParams?.yLabel;
   const options = useMemo(
     () => ({
       responsive: true,
@@ -382,6 +404,7 @@ const CompareDiffPerXBarChart = ({
       },
       scales: {
         y: {
+          title: { display: !!yLabel, text: yLabel },
           ticks: {
             callback: (value: string | number) =>
               percentFormat ? `${value}%` : value.toLocaleString(),
@@ -389,7 +412,7 @@ const CompareDiffPerXBarChart = ({
         },
       },
     }),
-    [view, percentFormat],
+    [view, percentFormat, yLabel],
   );
 
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;

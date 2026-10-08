@@ -10,6 +10,7 @@
 """
 
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -34,6 +35,7 @@ def get_zoning_geojson(sources: list[FilterSource]):
     return result[0]
 
 
+@lru_cache(maxsize=1)
 def get_unzoned_geojson() -> str:
     """GeoJSON (as a string) for the areas we have no zoning information about.
 
@@ -74,6 +76,14 @@ def get_zoning_allowances(
     agg = DB.execute(*sql_filter_block(sql_dir / "agg_rules_table.sql", sources)).df()
     table = DB.execute(*sql_filter_block(sql_dir / "rules_table.sql", sources)).df()
 
+    return agg, table
+
+
+def get_zoning_lot_sizes(
+    sources: list[FilterSource],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    agg = DB.execute(*sql_filter_block(sql_dir / "agg_lot_size.sql", sources)).df()
+    table = DB.execute(*sql_filter_block(sql_dir / "lot_size_table.sql", sources)).df()
     return agg, table
 
 
