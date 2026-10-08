@@ -23,6 +23,8 @@ from datetime import UTC, datetime
 import pandas as pd
 import requests
 
+from data_collection.parallel import pmap
+
 API_KEY = os.environ.get("CENSUS_API_KEY")
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5"
 STATE_FIPS = "50"
@@ -42,6 +44,11 @@ def fetch_table(year: int, table: str) -> pd.DataFrame:
         "in": f"state:{STATE_FIPS}",
         "key": API_KEY,
     }
+
+    if params.get("key") is None:
+        print("API key is either missing or set to None.")
+        return pd.DataFrame
+
     r = requests.get(BASE_URL.format(year=year), params=params, timeout=60)
     r.raise_for_status()
     if "json" not in r.headers.get("content-type", ""):
@@ -76,13 +83,14 @@ def to_long(wide: pd.DataFrame, table: str, year: int) -> pd.DataFrame:
 
 
 def collect(years: range = YEARS) -> pd.DataFrame:
-    frames = []
-    for year in years:
-        if year < 2020:
-            # No data on 2020 census tracts before the 2020 ACS 5-year release.
-            continue
-        for table in TABLES:
-            print(f"  {table} / tracts / {year}...")
-            frames.append(fetch_table(year, table))
-            time.sleep(0.1)
-    return pd.concat(frames, ignore_index=True)
+    # No data on 2020 census tracts before the 2020 ACS 5-year release.
+    tasks = [(y, t) for y in years if y >= 2020 for t in TABLES]
+
+    def fetch_one(task):
+        year, table = task
+        print(f"  {table} / tracts / {year}...")
+        df = fetch_table(year, table)
+        time.sleep(0.1)
+        return df
+
+    return pd.concat(pmap(fetch_one, tasks), ignore_index=True)

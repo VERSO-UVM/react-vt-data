@@ -8,8 +8,6 @@ Six categories matching the Annual Report:
   Associate's Degree      – B15003_021
   Bachelor's Degree       – B15003_022
   Postgraduate Degree     – B15003_023–025
-
-Output: vt_acs5_b_education_tidy.parquet
 """
 
 from datetime import datetime
@@ -56,10 +54,8 @@ def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
         df = run_acs_b_scrape(
             fetch_specs,
             var_groups,
-            "vt_acs5_b_education_tidy.parquet",
             year=year,
             geos=geos,
-            append=append,
         )
         if df is not None:
             frames.append(df)
@@ -79,7 +75,6 @@ if __name__ == "__main__":
         choices=list(ALL_GEOS),
         default=list(ALL_GEOS),
     )
-    p.add_argument("--append", action="store_true")
 
     args = p.parse_args()
 

@@ -4,7 +4,8 @@
 **Created**:
     2026-07-20
 **Description**:
-    Functions for serving ambulance data to the API from the parquet files.
+    Functions for serving ambulance data to the API
+    from the `warehouse.duckdb` tables.
 """
 
 import logging

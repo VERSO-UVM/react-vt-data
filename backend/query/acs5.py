@@ -4,7 +4,8 @@
 **Created**:
     2026-06-09
 **Description**:
-    Functions for serving Census ACS 5-year estimates data to the API from the parquet files.
+    Functions for serving Census ACS 5-year estimates
+    to the API from the `warehouse.duckdb` tables.
 """
 
 import logging
