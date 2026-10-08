@@ -119,21 +119,28 @@ async def list_export_sources():
 @router.get("/locations")
 async def list_locations():
     """
-    Return sorted lists of Vermont counties and towns, derived from the ACS5
-    housing export source (representative of every town-level dataset).
+    Return Vermont counties and a county -> towns mapping, derived from the
+    ACS5 housing export source (representative of every town-level dataset).
+    Counties and each county's towns are sorted alphabetically.
     """
     df = EXPORT_SOURCES["acs5_housing"]["loader"]()
-    counties = (
-        sorted(df["County"].dropna().unique().tolist())
-        if "County" in df.columns
-        else []
+
+    county_town_pairs = (
+        df[["County", "Jurisdiction"]]
+        .dropna()
+        .drop_duplicates()
+        .sort_values(["County", "Jurisdiction"])
     )
-    towns = (
-        sorted(df["Jurisdiction"].dropna().unique().tolist())
-        if "Jurisdiction" in df.columns
-        else []
-    )
-    return {"counties": counties, "towns": towns}
+
+    towns_by_county = {
+        county: group["Jurisdiction"].tolist()
+        for county, group in county_town_pairs.groupby("County", sort=True)
+    }
+
+    return {
+        "counties": list(towns_by_county),
+        "towns_by_county": towns_by_county,
+    }
 
 
 @router.post("/csv")

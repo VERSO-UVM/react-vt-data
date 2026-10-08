@@ -31,7 +31,7 @@ interface SourceMeta {
 
 interface Locations {
   counties: string[];
-  towns: string[];
+  towns_by_county: Record<string, string[]>;
 }
 
 interface SelectGroup {
@@ -45,7 +45,7 @@ export default function DataExport() {
   const [sources, setSources] = useState<Record<string, SourceMeta>>({});
   const [locations, setLocations] = useState<Locations>({
     counties: [],
-    towns: [],
+    towns_by_county: {},
   });
 
   const [selectedSource, setSelectedSource] = useState<string | null>(
@@ -97,6 +97,17 @@ export default function DataExport() {
   }, [sources]);
 
   const currentSource = selectedSource ? sources[selectedSource] : undefined;
+
+  /* ---------------- FILTERED TOWN OPTIONS ---------------- */
+  const filteredTowns: string[] = useMemo(() => {
+    // If a county is selected, return that county's towns in a list.
+    if (selectedCounty) {
+      return locations.towns_by_county[selectedCounty] ?? [];
+    }
+
+    // Return the full list of towns if the county is not yet selected.
+    return [...new Set(Object.values(locations.towns_by_county).flat())].sort();
+  }, [locations, selectedCounty]);
 
   function areaLabel() {
     if (selectedTown) return selectedTown;
@@ -339,7 +350,7 @@ export default function DataExport() {
 
                   <Select
                     placeholder="All towns"
-                    data={locations.towns}
+                    data={filteredTowns}
                     value={selectedTown}
                     onChange={setSelectedTown}
                     searchable
