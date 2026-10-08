@@ -1,6 +1,6 @@
-import { Grid, Text } from '@mantine/core';
-import { DataRow } from '@/types/cachedCharts';
+import { Text } from '@mantine/core';
 import type { Location } from '@/components/profile/profileStore';
+import { ReportSection, useReport } from '@/components/Reports/shared';
 import {
   IndicatorTable,
   KeyIndicatorTiles,
@@ -14,33 +14,8 @@ import {
   indicatorPlace,
 } from '@/components/Reports/health/indicatorRows';
 
-export interface DashboardData {
-  year: number;
-  primary: {
-    name: string;
-    location?: Location;
-    current: DataRow[];
-    history: DataRow[];
-  };
-  comparison: {
-    name: string;
-    location?: Location;
-    current: DataRow[];
-    history: DataRow[];
-  };
-  // Extra endpoints declared in reports-by-topic's SECTIONS (e.g.
-  // "povertyUninsured").
-  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
-  // Section-wide endpoints (e.g. "countyValues"), not per location.
-  allAreas?: Record<string, DataRow[]>;
-}
-
-export interface DashboardProps {
-  data: DashboardData;
-}
-
-export default function HealthDashboard({ data }: DashboardProps) {
-  const { primary, comparison, timeseries, allAreas } = data;
+export default function HealthDashboard() {
+  const { primary, comparison, allAreas } = useReport();
   const rows = buildIndicatorRows(primary.current, comparison.current);
   const dataYear = Math.max(
     0,
@@ -56,8 +31,8 @@ export default function HealthDashboard({ data }: DashboardProps) {
   const comparisonCounty = countyOf(comparison.location);
 
   return (
-    <Grid gap="lg">
-      <Grid.Col span={12}>
+    <>
+      <ReportSection intro eyebrow="At a Glance" title="Key health indicators">
         <KeyIndicatorTiles
           rows={rows}
           measures={AT_A_GLANCE_MEASURES}
@@ -68,16 +43,13 @@ export default function HealthDashboard({ data }: DashboardProps) {
           rankCounty={rankCounty}
           comparisonCounty={comparisonCounty}
         />
-      </Grid.Col>
-      <Grid.Col span={12}>
-        <PovertyUninsuredTrends
-          primary={timeseries?.povertyUninsured?.primary ?? []}
-          comparison={timeseries?.povertyUninsured?.comparison ?? []}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-      <Grid.Col span={12}>
+      </ReportSection>
+
+      <ReportSection eyebrow="Trends" title="Poverty and insurance coverage">
+        <PovertyUninsuredTrends />
+      </ReportSection>
+
+      <ReportSection eyebrow="Details" title="All indicators">
         <IndicatorTable
           primary={
             primary.location
@@ -92,8 +64,6 @@ export default function HealthDashboard({ data }: DashboardProps) {
           rows={rows}
           categoryOrder={HEALTH_CATEGORY_ORDER}
         />
-      </Grid.Col>
-      <Grid.Col span={12}>
         <Text size="xs" c="dimmed">
           Source: CDC PLACES
           {dataYear ? ` estimates for ${dataYear}` : ''}, age-adjusted. These
@@ -102,7 +72,7 @@ export default function HealthDashboard({ data }: DashboardProps) {
           statewide figure, so Vermont values are the county estimates averaged
           by each county&apos;s adult population.
         </Text>
-      </Grid.Col>
-    </Grid>
+      </ReportSection>
+    </>
   );
 }

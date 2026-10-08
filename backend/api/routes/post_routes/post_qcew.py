@@ -23,7 +23,7 @@ SECTOR_ORDER = [
 
 
 @router.post("/load/qcew/employment")
-async def employment_by_sector(request: FilterRequest):
+def employment_by_sector(request: FilterRequest):
     filters = request.filters or {}
 
     def _first(label: str):

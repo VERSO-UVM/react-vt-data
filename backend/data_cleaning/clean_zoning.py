@@ -383,9 +383,6 @@ def build_empty_geom(con: duckdb.DuckDBPyConnection) -> None:
     """
     Build the geometry for the polygons
     *where we don't have zoning information*.
-
-    Requires build/FIPS_data.py to have run first (it writes towns.parquet);
-    build/main.py orders them accordingly.
     """
 
     con.execute("""--sql

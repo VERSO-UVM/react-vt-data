@@ -22,8 +22,6 @@ export const TOPIC_SLUGS: Record<DashboardSection, string> = {
   'Community Health': 'community-health',
 };
 
-export const DEFAULT_SECTION: DashboardSection = 'Demographics';
-
 export function sectionFromSlug(slug: string): DashboardSection | undefined {
   return (Object.keys(TOPIC_SLUGS) as DashboardSection[]).find(
     (s) => TOPIC_SLUGS[s] === slug,
