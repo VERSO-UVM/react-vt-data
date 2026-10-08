@@ -34,6 +34,15 @@ def to_export_geo(df: pd.DataFrame) -> pd.DataFrame:
     if "Jurisdiction" not in df.columns and {"name", "geo_type"} <= set(df.columns):
         is_town = df["geo_type"] == "town"
         df["Jurisdiction"] = df["name"].str.split(",").str[0].where(is_town)
+    # Sort by geo_type (state, county, town), year, name; skip absent columns.
+    keys = [c for c in ("geo_type", "year", "name") if c in df.columns]
+    if keys:
+        order = {"state": 0, "county": 1, "town": 2}
+        df = df.sort_values(
+            keys,
+            key=lambda s: s.map(order) if s.name == "geo_type" else s,
+            kind="stable",
+        ).reset_index(drop=True)
     return df
 
 
