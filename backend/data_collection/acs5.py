@@ -2,8 +2,7 @@
 Fetch ACS 5-Year Data Profile tables (DP02-DP05) for Vermont
 Geographies: counties + county subdivisions + Vermont statewide + United States
 Years: 2009 - Latest published data
-Output: one wide CSV + parquet per table, plus tidy parquet per table
-Credit: Written largely by Claude, with some fine-tuning and troubleshooting by Fitz Koch
+Output: one wide table and tidy table
 
 Geography selection
 -------------------
@@ -20,6 +19,7 @@ import requests
 
 from data_collection.base import ALL_GEOS
 from data_collection.census import tidy_census
+from data_collection.parallel import pmap
 from query.clock import EASTERN_STD_TIME
 
 # Define API key through the .env file
@@ -34,7 +34,6 @@ TABLES = {
     "DP04": "Housing",
     "DP05": "Demographic",
 }
-STORAGE_LOCATION = "Data/Census/ACS_5"
 ID_VARS = ["year", "geo_type", "table", "NAME", "state", "county"]
 
 MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
@@ -45,12 +44,16 @@ YEARS = range(2009, MAX_YEAR)
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
 
 
-def fetch_table(year, table, for_clause, in_clause):
+def fetch_table(year, table, for_clause, in_clause) -> pd.DataFrame | None:
     params = {
         "get": f"group({table}),NAME",
         "for": for_clause,
         "key": API_KEY,
     }
+    if params.get("key") is None:
+        print("API key is either missing or set to None.")
+        return None
+
     if in_clause:  # state/national geos have no "in" clause
         params["in"] = in_clause
     try:
@@ -86,20 +89,18 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
     # Collect raw frames per table
     all_frames = {table: [] for table in TABLES}
 
-    for year in years:
-        print(f"\n=== {year} ===")
+    def fetch_one(task):
+        year, (geo_label, for_clause, in_clause), table = task
+        print(f"  {year} / {table} / {geo_label}...")
+        df = fetch_table(year, table, for_clause, in_clause)
+        time.sleep(0.01)
+        return table, geo_label, df
 
-        for geo_label, for_clause, in_clause in geos:
-            for table in TABLES:
-                print(f"  {table} / {geo_label}...")
-
-                df = fetch_table(year, table, for_clause, in_clause)
-
-                if df is not None:
-                    df["geo_type"] = geo_label
-                    all_frames[table].append(df)
-
-                time.sleep(0.01)
+    tasks = [(y, g, t) for y in years for g in geos for t in TABLES]
+    for table, geo_label, df in pmap(fetch_one, tasks):
+        if df is not None:
+            df["geo_type"] = geo_label
+            all_frames[table].append(df)
 
     results = {}
 
@@ -146,24 +147,6 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
             results[f"acs5_{label.lower()}"] = tidy
 
     return results
-
-
-def merge_tidy_tables():
-    """Merge the per-table tidy parquets into one combined file."""
-    tidy_frames = []
-    for label in TABLES.values():
-        path = f"{STORAGE_LOCATION}/vt_acs5_{label}_data_tidy.parquet"
-        try:
-            tidy_frames.append(pd.read_parquet(path))
-        except Exception as e:  # noqa: BLE001 -- skip and keep the run going
-            print(f"  SKIP {path}: {e}")
-
-    if tidy_frames:
-        combined = pd.concat(tidy_frames, ignore_index=True)
-        # combined.to_parquet(f"{STORAGE_LOCATION}/vt_acs5_combined_TIDY.parquet", index=False)
-        return combined
-
-    return
 
 
 def collect(years: range = YEARS, geos=GEOS, append=False):

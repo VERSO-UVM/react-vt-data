@@ -8,6 +8,7 @@
 """
 
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -64,6 +65,7 @@ def get_soil_suit_geojson(sources: list[FilterSource]):
     return result[0]
 
 
+@lru_cache(maxsize=1)
 def get_soil_suit_legend():
     result = DB.execute(
         "SELECT json_group_array(to_json(VersoWastewater_soilSuitability_colors)) FROM VersoWastewater_soilSuitability_colors;"
