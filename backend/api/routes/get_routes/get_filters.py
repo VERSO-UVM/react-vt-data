@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -19,7 +20,7 @@ def get_filter_table_metadata(target_table: str, filter_table: str) -> dict:
 
 
 @router.get("/filters/schema")
-async def get_schema(target_table: str) -> dict:
+def get_schema(target_table: str) -> dict:
     all_tables = set(schema["default"]) | set(schema.get(target_table, {}))
     return {
         filter_table: get_filter_table_metadata(target_table, filter_table)
@@ -28,7 +29,7 @@ async def get_schema(target_table: str) -> dict:
 
 
 @router.get("/filters/tree")
-async def filter_tree_endpoint(
+def filter_tree_endpoint(
     filter_table: str,
     target_table: str = "default",
     exclude_cols: Annotated[list[str] | None, Query()] = None,
@@ -50,6 +51,11 @@ async def filter_tree_endpoint(
         dict: a JSON dictionary of format
         key1: {values, each key2: values} and so on iteratively through the columns.
     """
+    return _filter_tree(filter_table, target_table, tuple(exclude_cols or ()))
+
+
+@lru_cache(maxsize=128)
+def _filter_tree(filter_table: str, target_table: str, exclude_cols: tuple):
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]
     if exclude_cols:
@@ -66,11 +72,16 @@ async def filter_tree_endpoint(
 
 
 @router.get("/filters/options")
-async def filter_options_endpoint(
+def filter_options_endpoint(
     filter_table: str,
     target_table: str = "default",
     cols: Annotated[list[str] | None, Query()] = None,
 ):
+    return _filter_options(filter_table, target_table, tuple(cols or ()))
+
+
+@lru_cache(maxsize=128)
+def _filter_options(filter_table: str, target_table: str, cols: tuple):
     meta = get_filter_table_metadata(target_table, filter_table)
     colmap: dict = meta["columns"]
 
@@ -85,13 +96,18 @@ async def filter_options_endpoint(
 
 
 @router.get("/filters/ranges")
-async def filter_ranges_endpoint(
+def filter_ranges_endpoint(
     filter_table: str,
     target_table: str = "default",
     cols: Annotated[list[str] | None, Query()] = None,
 ):
     """Min/max bounds for one or more numeric columns (e.g. min lot size
     sliders). Mirrors /filters/options but for the schema's "range" map."""
+    return _filter_ranges(filter_table, target_table, tuple(cols or ()))
+
+
+@lru_cache(maxsize=128)
+def _filter_ranges(filter_table: str, target_table: str, cols: tuple):
     meta = get_filter_table_metadata(target_table, filter_table)
     rangemap: dict = meta.get("range", {})
 

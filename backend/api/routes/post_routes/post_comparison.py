@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.get("/load/mapping/compare/datasets")
-async def compare_datasets() -> dict:
+def compare_datasets() -> dict:
     """Registry of every dataset available to the generalized variable
     explorer: display label, the filter_table its Section/Variable picker
     should query, and which geography levels it supports."""
@@ -25,7 +25,7 @@ async def compare_datasets() -> dict:
 
 
 @router.post("/load/mapping/compare/{level}")
-async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
+def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
     """Bivariate comparison map: geojson in `data`, legend in `metadata`.
 
     `specs` carries two Cascade filter picks (Variable 1, Variable 2), each
@@ -101,7 +101,7 @@ async def compare(level: str, specs: list[FilterSpec]) -> APIResponse:
 
 
 @router.post("/load/mapping/compare/{dataset}/{level}/composite_index")
-async def compare_composite_index(dataset: str, level: str) -> APIResponse:
+def compare_composite_index(dataset: str, level: str) -> APIResponse:
     """A single-component PCA summary across every variable in the dataset,
     standardized relative to this level's own Vermont-wide average (not a
     national baseline). Independent of which two variables are selected."""

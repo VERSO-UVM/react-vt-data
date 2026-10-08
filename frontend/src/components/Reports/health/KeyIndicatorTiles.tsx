@@ -1,12 +1,4 @@
-import {
-  Box,
-  Card,
-  Group,
-  SimpleGrid,
-  Text,
-  ThemeIcon,
-  Title,
-} from '@mantine/core';
+import { Box, Group, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
 import type { Icon } from '@tabler/icons-react';
 import { COLORS } from '@/app/theme';
 import { DataRow } from '@/types/cachedCharts';
@@ -103,11 +95,14 @@ function Tile({
   ];
 
   return (
-    <Card
-      radius="xl"
-      padding="lg"
-      withBorder
-      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    <Box
+      pt="md"
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderTop: `2px solid ${COLORS.line}`,
+      }}
     >
       <Group justify="space-between" align="center" wrap="nowrap" mb="lg">
         <Text size="xs" fw={700} tt="uppercase" c={COLORS.slate} lineClamp={2}>
@@ -157,7 +152,7 @@ function Tile({
           />
         </Box>
       )}
-    </Card>
+    </Box>
   );
 }
 

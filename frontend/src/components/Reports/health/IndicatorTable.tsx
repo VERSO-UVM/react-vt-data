@@ -4,7 +4,6 @@ import { useState } from 'react';
 import {
   Badge,
   Box,
-  Card,
   Group,
   SegmentedControl,
   Stack,
@@ -14,6 +13,10 @@ import {
   Title,
 } from '@mantine/core';
 import { COLORS } from '@/app/theme';
+import {
+  COMPARISON_COLOR,
+  TOPIC_ACCENTS,
+} from '@/components/Reports/shared/colors';
 
 // Presentational only: knows nothing about geography levels or the API.
 // Callers decide which estimates each place gets (e.g. a town shown with its
@@ -60,8 +63,8 @@ interface IndicatorTableProps {
 }
 
 // Same pair as the report's other comparison charts.
-export const PRIMARY_COLOR = '#5474B4';
-export const COMPARISON_COLOR = '#868e96';
+export const PRIMARY_COLOR = TOPIC_ACCENTS['Community Health'];
+export { COMPARISON_COLOR };
 
 export type Verdict = 'different' | 'similar' | 'unknown';
 
@@ -358,12 +361,7 @@ export default function IndicatorTable({
   );
 
   return (
-    <Card
-      radius="xl"
-      padding="lg"
-      withBorder
-      style={{ height: '100%', transition: 'all 180ms ease' }}
-    >
+    <Box h="100%">
       <Group justify="space-between" mb="xs" wrap="wrap">
         <Title order={4}>{title}</Title>
         <Group gap="md">
@@ -433,7 +431,7 @@ export default function IndicatorTable({
           {footnote}
         </Text>
       )}
-    </Card>
+    </Box>
   );
 }
 
