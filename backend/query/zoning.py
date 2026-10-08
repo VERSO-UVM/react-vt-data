@@ -94,6 +94,6 @@ def get_zoning_export_table(table: str) -> pd.DataFrame:
     filter columns used by every other export source.
     """
     df = DB.execute(f'SELECT * FROM "{table}"').df()
-    drop_cols = ["geometry", "fill", "fill-opacity", "tooltip"]
+    drop_cols = ["geometry", "fill", "fill-opacity", "tooltip", "notes"]
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
     return to_export_geo(df)
