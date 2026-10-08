@@ -1,4 +1,4 @@
-import { Card, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { SimpleGrid, Stack, Text } from '@mantine/core';
 import {
   CartesianGrid,
   Legend,
@@ -10,6 +10,11 @@ import {
   YAxis,
 } from 'recharts';
 import { DataRow } from '@/types/cachedCharts';
+import {
+  COMPARISON_COLOR,
+  ChartBlock,
+  useReport,
+} from '@/components/Reports/shared';
 
 // Census ACS poverty and uninsured rates over time for both places, from
 // /load/acs5-db/timeseries/economics/poverty-uninsured (rows: year,
@@ -22,13 +27,6 @@ const SERIES = [
   { variable: 'Below poverty level', title: 'People below the poverty level' },
   { variable: 'No health insurance', title: 'People without health insurance' },
 ];
-
-interface PovertyUninsuredTrendsProps {
-  primary: DataRow[];
-  comparison: DataRow[];
-  primaryName: string;
-  comparisonName: string;
-}
 
 function placeName(rows: DataRow[], fallback: string) {
   const name = rows.find((r) => r.Location)?.Location;
@@ -58,12 +56,18 @@ function seriesFor(
   }));
 }
 
-export default function PovertyUninsuredTrends({
-  primary,
-  comparison,
-  primaryName,
-  comparisonName,
-}: PovertyUninsuredTrendsProps) {
+export default function PovertyUninsuredTrends() {
+  const {
+    timeseries,
+    primary: p,
+    comparison: c,
+    accent,
+    exporting,
+  } = useReport();
+  const primary = timeseries?.povertyUninsured?.primary ?? [];
+  const comparison = timeseries?.povertyUninsured?.comparison ?? [];
+  const primaryName = p.name;
+  const comparisonName = c.name;
   const first = placeName(primary, primaryName);
   const second = placeName(comparison, comparisonName);
   const charts = SERIES.map((s) => ({
@@ -73,15 +77,10 @@ export default function PovertyUninsuredTrends({
   if (charts.length === 0) return null;
 
   return (
-    <Card radius="xl" padding="lg" withBorder style={{ height: '100%' }}>
-      <Stack gap={2} mb="md">
-        <Title order={4}>Change Over Time</Title>
-        <Text size="sm" c="dimmed">
-          Census ACS 5-year estimates. The CDC health estimates on this page are
-          a single snapshot; these show how poverty and insurance coverage
-          changed around them.
-        </Text>
-      </Stack>
+    <ChartBlock
+      title="Change Over Time"
+      note="Census ACS 5-year estimates. The CDC health estimates on this page are a single snapshot; these show how poverty and insurance coverage changed around them."
+    >
       <SimpleGrid cols={{ base: 1, md: charts.length }} spacing="xl">
         {charts.map((chart) => (
           <Stack key={chart.variable} gap="xs">
@@ -107,19 +106,21 @@ export default function PovertyUninsuredTrends({
                 />
                 <Legend />
                 <Line
+                  isAnimationActive={!exporting}
                   type="monotone"
                   dataKey="primary"
                   name={first}
-                  stroke="#5474B4"
+                  stroke={accent}
                   strokeWidth={2}
                   dot={false}
                   connectNulls={false}
                 />
                 <Line
+                  isAnimationActive={!exporting}
                   type="monotone"
                   dataKey="comparison"
                   name={second}
-                  stroke="#868e96"
+                  stroke={COMPARISON_COLOR}
                   strokeWidth={2}
                   dot={false}
                   connectNulls={false}
@@ -129,6 +130,6 @@ export default function PovertyUninsuredTrends({
           </Stack>
         ))}
       </SimpleGrid>
-    </Card>
+    </ChartBlock>
   );
 }
