@@ -109,8 +109,8 @@ def _load_export_table() -> pd.DataFrame:
 
 EXPORT_SOURCES: dict[str, dict] = {
     "qcew_employment_by_sector": {
-        "label": "Employment by Sector (QCEW)",
-        "group": "Historical Trends",
+        "label": "Employment by Sector",
+        "group": "Time Series",
         "description": (
             "Quarterly employment by industry sector, by county and year "
             "(BLS Quarterly Census of Employment and Wages, 4-quarter moving average)."

@@ -20,8 +20,8 @@ router = APIRouter()
 
 EXPORT_SOURCES: dict[str, dict] = {
     "cdc_places_county": {
-        "label": "Health Measures by County (CDC PLACES)",
-        "group": "Health",
+        "label": "Health Indicators by County",
+        "group": "Community Health",
         "description": (
             "Model-based county-level estimates for chronic disease, "
             "prevention, and health-related behaviors."
@@ -30,8 +30,8 @@ EXPORT_SOURCES: dict[str, dict] = {
         "loader": lambda: get_cdc_export_table("cdc_places_county"),
     },
     "cdc_places_tract": {
-        "label": "Health Measures by Census Tract (CDC PLACES)",
-        "group": "Health",
+        "label": "Health Indicators by Census Tract",
+        "group": "Community Health",
         "description": (
             "Model-based census-tract-level estimates for chronic disease, "
             "prevention, and health-related behaviors."
