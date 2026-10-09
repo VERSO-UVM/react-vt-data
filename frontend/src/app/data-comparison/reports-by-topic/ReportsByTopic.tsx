@@ -20,7 +20,6 @@ import {
   useProfileHydrated,
   Location,
 } from '@/components/profile/profileStore';
-import { BASE_API_URL } from '@/config';
 import {
   DemographicsDashboard,
   LandUseDashboard,
@@ -196,7 +195,6 @@ export default function ReportsByTopic({
   const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
   // Skip the hydration render's default locations (see useProfileHydrated).
   const hydrated = useProfileHydrated();
 
