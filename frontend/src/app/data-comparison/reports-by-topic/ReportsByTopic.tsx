@@ -597,9 +597,6 @@ export default function ReportsByTopic({
     };
 
     const timeseriesKeys = Object.keys(cfg.timeseries ?? {});
-    // Ignore a response once the locations change again: the first fetch
-    // (made before the saved profile loads) can otherwise land last and
-    // show the default places' numbers under the profile's names.
     let cancelled = false;
 
     Promise.all([
