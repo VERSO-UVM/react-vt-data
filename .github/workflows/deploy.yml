@@ -23,7 +23,7 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets.WEB3FORMS_ACCESS_KEY }}
+          NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets['WEB3FORMS_ACCESS_KEY'] }}
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
