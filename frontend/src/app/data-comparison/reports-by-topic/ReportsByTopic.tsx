@@ -1,21 +1,19 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axios from 'axios';
 import {
   Alert,
+  Anchor,
   Box,
   Button,
   Container,
   Group,
-  Grid,
   Loader,
   Paper,
-  Select,
   Stack,
   Text,
-  Title,
 } from '@mantine/core';
 import {
   useProfile,
@@ -34,479 +32,130 @@ import {
 // import { ChartStack } from '@/components/Charts';
 // import { createChartItem } from '@/utils/itemFactory';
 import { DataRow } from '@/types/cachedCharts';
-import { IconDownload, IconInfoCircle } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconDownload,
+  IconInfoCircle,
+} from '@tabler/icons-react';
+import { COLORS } from '@/app/theme';
+import { ReportProvider } from '@/components/Reports/shared';
+import type { ReportData } from '@/components/Reports/shared';
 import { exportReport } from '@/utils/exportReport';
+import {
+  SECTIONS,
+  TimeseriesEndpoint,
+  dataLocation,
+  geographyNotes,
+  postSection,
+  resolveLocation,
+} from './reportData';
 import { DashboardSection, TOPIC_SLUGS, topicPath } from './topics';
 
-// ---------------------------------------------------------------------------
-// Section config — url and which field to use as the bar value
-// ---------------------------------------------------------------------------
-
-type YField = 'Percent' | 'Value';
-
-// Additional named endpoints a topic can pull in alongside its primary `url`
-// — e.g. dedicated time-series tables for trend charts. Fetched for both the
-// primary and comparison locations and handed to the topic's Dashboard
-// component as `data.timeseries[key]`.
-interface TimeseriesEndpoint {
-  url: string;
-  // Filter by the profile place's ACS name (the Location filter) instead of
-  // the section's own location filter -- for ACS context on a county-only
-  // section, since ACS publishes the town itself.
-  byPlaceName?: boolean;
-}
-
-interface SectionConfig {
-  url: string;
-  yField: YField;
-  unit: string;
-  yearMin: number;
-  yearMax: number;
-  timeseries?: Record<string, TimeseriesEndpoint>;
-  // Endpoints fetched once per section with no location filter, for data on
-  // every area (e.g. each county's values, to rank one among the rest).
-  // Handed to the topic's Dashboard component as `data.allAreas[key]`.
-  allAreas?: Record<string, string>;
-  // Filter label sent as the location key (defaults to "Location", which
-  // matches the ACS5 routes' NAME column). Zoning/wastewater tables have no
-  // "Location" column in their filter schema — they use "Jurisdiction"
-  // (the `town` column) instead, so requests sent with the default key
-  // silently return unfiltered, statewide results.
-  locationFilterKey?: string;
-  // False for datasets with no `year` column (e.g. zoning is a current-
-  // snapshot dataset) — skips the year slice below, which would otherwise
-  // filter every row out since `String(undefined) !== yearStr`. Defaults to
-  // true.
-  hasYearDimension?: boolean;
-  // True for datasets only published at county grain (e.g. CDC PLACES has
-  // no town-level rows) — always filters by location.county, even for a
-  // town-type selection, instead of trying (and failing) to filter by town.
-  countyOnly?: boolean;
-  // Source name used in the notes shown when the report can't use the
-  // profile's own areas (see geographyNotes).
-  sourceLabel?: string;
-}
-
-const SECTIONS: Record<string, SectionConfig> = {
-  Demographics: {
-    url: `${BASE_API_URL}/load/acs5-db/tidy/demographics`,
-    yField: 'Percent',
-    unit: '%',
-    yearMin: 2010,
-    yearMax: 2024,
-    timeseries: {
-      historicPopulation: {
-        url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/historic-population`,
-      },
-      medianAge: {
-        url: `${BASE_API_URL}/load/acs5-db/timeseries/demographics/median-age`,
-      },
-    },
-  },
-  // Education: {
-  //   url: `${BASE_API_URL}/load/acs5-db/tidy/education`,
-  //   yField: 'Percent',
-  //   unit: '%',
-  //   yearMin: 2012,
-  //   yearMax: 2024,
-  // },
-  Housing: {
-    url: `${BASE_API_URL}/load/acs5-db/tidy/housing`,
-    yField: 'Value',
-    unit: '',
-    yearMin: 2010,
-    yearMax: 2024,
-    timeseries: {
-      medianHomeValue: {
-        url: `${BASE_API_URL}/load/acs5-db/timeseries/housing/median-home-value`,
-      },
-      totalUnits: {
-        url: `${BASE_API_URL}/load/acs5-db/timeseries/housing/total-units`,
-      },
-    },
-  },
-  'Labor & Economy': {
-    url: `${BASE_API_URL}/load/acs5-db/tidy/economics`,
-    yField: 'Value',
-    unit: '',
-    yearMin: 2010,
-    yearMax: 2024,
-    timeseries: {
-      householdIncome: {
-        url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/median-hh-income`,
-      },
-      perCapitaIncome: {
-        url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/per-capita-income`,
-      },
-    },
-  },
-  'Land Use': {
-    url: `${BASE_API_URL}/load/data/zoning/aggregated`,
-    yField: 'Value',
-    unit: '',
-    yearMin: 2024,
-    yearMax: 2024,
-    locationFilterKey: 'Jurisdiction',
-    hasYearDimension: false,
-    timeseries: {
-      allowances: {
-        url: `${BASE_API_URL}/load/data/zoning/allowances`,
-      },
-      wastewaterPermits: {
-        url: `${BASE_API_URL}/load/mapping/wastewater/treatment_facility/permits`,
-      },
-    },
-  },
-  'Community Health': {
-    url: `${BASE_API_URL}/load/data/cdc/places`,
-    yField: 'Value',
-    unit: '%',
-    yearMin: 2024,
-    yearMax: 2024,
-    locationFilterKey: 'County',
-    countyOnly: true,
-    hasYearDimension: false,
-    sourceLabel: 'CDC PLACES',
-    timeseries: {
-      // CDC PLACES is a single snapshot; Census rates show the change.
-      povertyUninsured: {
-        url: `${BASE_API_URL}/load/acs5-db/timeseries/economics/poverty-uninsured`,
-        byPlaceName: true,
-      },
-    },
-    allAreas: {
-      countyValues: `${BASE_API_URL}/load/data/cdc/places/by-county`,
-    },
-  },
-};
-
-// The county area containing a town-type location.
-function countyArea(l: Location, county: string): Location {
-  return {
-    ...l,
-    type: 'county',
-    town: null,
-    name: `${county} County, Vermont`,
-  };
-}
-
-// A profile saved as "Town" before a town was picked (the profile form now
-// requires one) has no town and the placeholder name "Unknown". Show its
-// county instead, so every section can filter and label it, and say so.
-function resolveLocation(l: Location): { location: Location; note?: string } {
-  if (l.type !== 'town' || l.town || !l.county) return { location: l };
-  return {
-    location: countyArea(l, l.county),
-    note: `Your profile has Town selected but no town picked, so ${l.county} County is shown instead.`,
-  };
-}
-
-// The place a section's data actually describes for a profile area: a
-// county-only source (CDC PLACES) shows a town's county. Other areas are
-// shown as picked (Vermont is still Vermont, just a computed figure).
-function dataLocation(cfg: SectionConfig, l: Location): Location {
-  if (!cfg.countyOnly || l.type !== 'town' || !l.county) return l;
-  return countyArea(l, l.county);
-}
-
-// Plain-language notes for each profile area this section can't show as-is
-// (e.g. a town shown with its county's numbers), so the substitution is
-// visible at the top of the report rather than only in chart footnotes.
-function geographyNotes(
-  cfg: SectionConfig,
-  primary: Location,
-  comparison: Location,
-): string[] {
-  if (!cfg.countyOnly) return [];
-  const source = cfg.sourceLabel ?? 'This data';
-  const noteFor = (l: Location) => {
-    switch (l.type) {
-      case 'county':
-        return null;
-      case 'town':
-        return l.county
-          ? `${source} doesn't publish town-level estimates, so ${l.town ?? l.name} shows ${l.county} County's numbers.`
-          : `${source} doesn't publish town-level estimates for ${l.name}.`;
-      case 'state':
-        return `${source} doesn't publish a statewide figure, so Vermont shows the average of its county estimates, weighted by adult population.`;
-      default:
-        return `${source} has no estimates for ${l.name}, so it has no data on this page.`;
+// One slim bar stuck under the site header: back to the topic chooser, the
+// topic tabs, and export. The places and year live in the report's intro.
+function ReportHeader({
+  section,
+  data,
+  exporting,
+  setExporting,
+}: {
+  section: DashboardSection;
+  data: ReportData;
+  exporting: boolean;
+  setExporting: (v: boolean) => void;
+}) {
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      // Let the charts re-render without animation (see ReportContext's
+      // `exporting`) so the capture isn't a half-drawn frame.
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      await exportReport('report-body', {
+        title: section,
+        primaryName: data.primary.name,
+        comparisonName: data.comparison.name,
+        year: data.year,
+      });
+    } catch (e) {
+      console.error('PDF export failed:', e);
+    } finally {
+      setExporting(false);
     }
   };
-  const notes = [noteFor(primary), noteFor(comparison)];
-  const countyOf = (l: Location) =>
-    l.type === 'town' || l.type === 'county' ? l.county : null;
-  const shared = countyOf(primary);
-  if (
-    shared &&
-    shared === countyOf(comparison) &&
-    primary.name !== comparison.name
-  ) {
-    notes.push(
-      `Both areas use ${shared} County's numbers, so their values are the same.`,
-    );
-  }
-  return Array.from(new Set(notes.filter((n): n is string => !!n)));
-}
 
-// county_town_names.json (the profile's town picker) stores Census-style
-// subdivision names — e.g. location.town is "Burlington city" or "Addison
-// town" — which is exactly what the cleaned datasets' `town` columns hold, so
-// that is the primary candidate. Rows the cleaners couldn't match to a
-// municipality keep their raw source spelling ("Huntington", "Barre Town"),
-// so the bare and title-cased-suffix forms ride along in the IN-list too.
-const TOWN_SUFFIX_RE = /\s+(town|city|gore|grant)$/i;
-const bareTownName = (town: string) => town.replace(TOWN_SUFFIX_RE, '');
-const titledTownName = (town: string) =>
-  town.replace(
-    /(town|city|gore|grant)$/i,
-    (s) => s[0].toUpperCase() + s.slice(1).toLowerCase(),
-  );
-
-// Builds the location portion of a filter request for a section. ACS-style
-// sections (no locationFilterKey) send the profile's full display name,
-// which matches the ACS NAME column at any grain (town/county/state) — this
-// is the pre-existing behavior. Zoning/wastewater sections have separate
-// Town/County columns instead of one combined name string, so the display
-// name (e.g. "Burlington city, Chittenden County, Vermont") never matches;
-// filter by whichever grain the selected location actually is instead, and
-// send no filter for state/national (no statewide-equivalent column to
-// filter to — this naturally falls back to the full dataset). A town pick
-// filters BOTH Jurisdiction and County — Vermont has same-named towns in
-// different counties, so Jurisdiction alone can be ambiguous.
-// Returns null when the section has no data for that kind of location.
-function buildLocationFilters(
-  cfg: SectionConfig,
-  location: Location,
-): Record<string, string[]> | null {
-  if (!cfg.locationFilterKey) {
-    return { Location: [location.name] };
-  }
-  if (cfg.countyOnly) {
-    if (location.county) return { County: [location.county] };
-    // No county filter means "all counties", which the API combines into a
-    // Vermont estimate: right for a statewide pick, but an RPC or national
-    // pick has no county-grain equivalent and would be mislabeled.
-    return location.type === 'state' ? {} : null;
-  }
-  if (location.type === 'town' && location.town) {
-    // `town` columns hold the Census-style name as-is ("Rockingham town");
-    // the bare/titled spellings only match rows the cleaners left unmatched.
-    const candidates = Array.from(
-      new Set([
-        location.town,
-        bareTownName(location.town),
-        titledTownName(location.town),
-      ]),
-    );
-    const filters: Record<string, string[]> = {
-      [cfg.locationFilterKey]: candidates,
-    };
-    if (location.county) filters.County = [location.county];
-    return filters;
-  }
-  if (location.type === 'county' && location.county) {
-    return { County: [location.county] };
-  }
-  return {};
-}
-
-function HeroSection({
-  section,
-  setSection,
-  year,
-  setYear,
-  availableYears,
-}: any) {
   return (
     <Box
       style={{
-        position: 'relative',
-        overflow: 'hidden',
-        width: '100vw',
-        height: 350,
-        left: '50%',
-        marginLeft: '-50vw',
-        background: '#1B3A2F',
-        paddingTop: 30,
-        paddingBottom: 64,
+        position: 'sticky',
+        top: 'var(--header-offset)',
+        zIndex: 900,
+        transition: 'top 250ms ease',
+        background: COLORS.spruce,
       }}
     >
-      <Container size="xl">
-        <Grid gap="xl" align="center">
-          <Grid.Col span={{ base: 12, lg: 7 }}>
-            <Stack gap="md" maw={760}>
-              <Text
-                style={{
-                  fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-                  fontSize: 12,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: '#E7B563',
-                }}
-              >
-                American Community Survey
-              </Text>
+      <Container size="xl" py={8}>
+        <Group justify="space-between" wrap="nowrap" gap="md">
+          <Group gap="lg" wrap="nowrap" style={{ minWidth: 0 }}>
+            <Anchor
+              component={Link}
+              href="/data-comparison/reports-by-topic/"
+              size="sm"
+              fw={600}
+              c={COLORS.birchDim}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                flexShrink: 0,
+              }}
+            >
+              <IconArrowLeft size={18} />
+              Reports by Topic
+            </Anchor>
 
-              <Title
-                order={1}
-                style={{
-                  fontFamily: "'Fraunces', 'Iowan Old Style', serif",
-                  fontWeight: 600,
-                  fontSize: 'clamp(2.4rem,5vw,4rem)',
-                  lineHeight: 1.05,
-                  color: '#F6F5EF',
-                }}
-              >
-                Reports by Topic
-              </Title>
-
-              <Text
-                size="lg"
-                maw={620}
-                style={{
-                  color: 'rgba(246,245,239,0.78)',
-                }}
-              >
-                Curated dashboards by data topic. Select a category to get
-                started.
-              </Text>
-            </Stack>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, lg: 5 }}>
-            <ExplorerControls
-              section={section}
-              setSection={setSection}
-              year={year}
-              setYear={setYear}
-              availableYears={availableYears}
-            />
-          </Grid.Col>
-        </Grid>
-      </Container>
-    </Box>
-  );
-}
-
-function ExplorerControls({
-  section,
-  setSection,
-  year,
-  setYear,
-  availableYears,
-}: {
-  section: string;
-  setSection: (value: string) => void;
-  year: number;
-  setYear: (value: number) => void;
-  availableYears: number[];
-}) {
-  return (
-    <Box
-      mt={48}
-      style={{
-        background: 'rgba(246,245,239,0.07)',
-        border: '1px solid rgba(246,245,239,0.18)',
-        borderRadius: 18,
-        padding: '24px 28px',
-        backdropFilter: 'blur(8px)',
-        maxWidth: 720,
-      }}
-    >
-      <Stack gap="lg">
-        <Stack gap={2}>
-          <Text
-            style={{
-              fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-              fontSize: 11,
-              letterSpacing: '.08em',
-              textTransform: 'uppercase',
-              color: 'rgba(246,245,239,0.55)',
-            }}
+            {/* Plain links, so each topic stays its own static route. */}
+            <Group
+              gap="lg"
+              wrap="nowrap"
+              style={{ overflowX: 'auto', scrollbarWidth: 'none' }}
+            >
+              {(Object.keys(TOPIC_SLUGS) as DashboardSection[]).map((topic) => {
+                const active = topic === section;
+                return (
+                  <Link
+                    key={topic}
+                    href={topicPath(topic)}
+                    scroll={false}
+                    aria-current={active ? 'page' : undefined}
+                    style={{
+                      flexShrink: 0,
+                      padding: '4px 2px',
+                      fontSize: 14,
+                      fontWeight: active ? 700 : 500,
+                      color: active ? COLORS.birch : 'rgba(238,235,224,.7)',
+                      textDecoration: 'none',
+                      borderBottom: `3px solid ${active ? COLORS.amber : 'transparent'}`,
+                    }}
+                  >
+                    {topic}
+                  </Link>
+                );
+              })}
+            </Group>
+          </Group>
+          <Button
+            size="xs"
+            variant="white"
+            color={COLORS.spruce}
+            leftSection={<IconDownload size={14} />}
+            loading={exporting}
+            onClick={handleExport}
+            style={{ flexShrink: 0 }}
           >
-            Analysis
-          </Text>
-
-          <Title
-            order={3}
-            style={{
-              fontFamily: "'Fraunces', 'Iowan Old Style', serif",
-              color: '#F6F5EF',
-            }}
-          >
-            Choose a dataset
-          </Title>
-
-          <Text
-            style={{
-              color: 'rgba(246,245,239,0.72)',
-            }}
-          >
-            Select an ACS topic and year to begin exploring detailed Census
-            tables.
-          </Text>
-        </Stack>
-
-        <Group align="flex-end" gap="md" wrap="wrap">
-          <Select
-            label="Topic"
-            value={section}
-            onChange={(v) => v && setSection(v)}
-            data={Object.keys(SECTIONS)}
-            flex={1}
-            miw={260}
-            styles={{
-              label: {
-                color: '#E7B563',
-                fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-                textTransform: 'uppercase',
-                fontSize: 11,
-                letterSpacing: '.08em',
-              },
-              input: {
-                borderRadius: 12,
-                height: 48,
-                background: 'rgba(255,255,255,.08)',
-                border: '1px solid rgba(255,255,255,.18)',
-                color: '#F6F5EF',
-              },
-              dropdown: {
-                borderRadius: 12,
-              },
-            }}
-          />
-          <Select
-            label="Year"
-            value={String(year)}
-            onChange={(v) => v && setYear(Number(v))}
-            data={availableYears.map((y) => ({
-              value: String(y),
-              label: String(y),
-            }))}
-            disabled={availableYears.length === 0}
-            w={150}
-            styles={{
-              label: {
-                color: '#E7B563',
-                fontFamily: "'IBM Plex Mono', ui-monospace, monospace",
-                textTransform: 'uppercase',
-                fontSize: 11,
-                letterSpacing: '.08em',
-              },
-              input: {
-                borderRadius: 12,
-                height: 48,
-                background: 'rgba(255,255,255,.08)',
-                border: '1px solid rgba(255,255,255,.18)',
-                color: '#F6F5EF',
-              },
-              dropdown: {
-                borderRadius: 12,
-              },
-            }}
-          />
+            Export PDF
+          </Button>
         </Group>
-      </Stack>
+      </Container>
     </Box>
   );
 }
@@ -523,11 +172,8 @@ export default function ReportsByTopic({
 }: {
   section: DashboardSection;
 }) {
-  const {
-    myLocation: profileLocation,
-    comparison: profileComparison,
-    yearMax: profileYearMax,
-  } = useProfile();
+  const { myLocation: profileLocation, comparison: profileComparison } =
+    useProfile();
   // Everything below uses the resolved areas (see resolveLocation).
   const primaryPick = useMemo(
     () => resolveLocation(profileLocation),
@@ -539,11 +185,6 @@ export default function ReportsByTopic({
   );
   const myLocation = primaryPick.location;
   const comparison = comparisonPick.location;
-  const router = useRouter();
-  const setSection = (value: string) => {
-    if (!(value in TOPIC_SLUGS) || value === section) return;
-    router.push(topicPath(value as DashboardSection), { scroll: false });
-  };
   const [primaryData, setPrimaryData] = useState<DataRow[]>([]);
   const [compareData, setCompareData] = useState<DataRow[]>([]);
   const [timeseriesData, setTimeseriesData] = useState<
@@ -552,6 +193,7 @@ export default function ReportsByTopic({
   const [allAreasData, setAllAreasData] = useState<Record<string, DataRow[]>>(
     {},
   );
+  const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -576,25 +218,7 @@ export default function ReportsByTopic({
       url: string,
       location: Location,
       endpoint?: TimeseriesEndpoint,
-    ) => {
-      const locationFilters = endpoint?.byPlaceName
-        ? { Location: [location.name] }
-        : buildLocationFilters(cfg, location);
-      if (!locationFilters) return Promise.resolve({ data: [] });
-      return axios
-        .post(url, {
-          filters: {
-            ...locationFilters,
-            year: {
-              min: cfg.yearMin,
-              max: cfg.yearMax,
-            },
-          },
-          include: [],
-        })
-        .then((r) => r.data)
-        .catch(() => ({ data: [] }));
-    };
+    ) => postSection(cfg, url, location, endpoint);
 
     const timeseriesKeys = Object.keys(cfg.timeseries ?? {});
     let cancelled = false;
@@ -681,22 +305,11 @@ export default function ReportsByTopic({
     ),
   ).sort();
 
-  const [year, setYear] = useState<number>(profileYearMax);
-
-  // When section changes the available years may shift — clamp to closest.
-  useEffect(() => {
-    if (availableYears.length === 0) return;
-    if (!availableYears.includes(year)) {
-      const nearest = availableYears.reduce((a, b) =>
-        Math.abs(b - year) < Math.abs(a - year) ? b : a,
-      );
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clamp selection when the section's year range shifts
-      setYear(nearest);
-    }
-  }, [availableYears.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Always the latest year available; there's no year picker.
+  const year = availableYears.length ? Math.max(...availableYears) : 0;
 
   // ---------------------------------------------------------------------------
-  // Slice to selected year
+  // Slice to the latest year
   // ---------------------------------------------------------------------------
   const yearStr = String(year);
   const cfg = SECTIONS[section];
@@ -712,7 +325,7 @@ export default function ReportsByTopic({
   // Charts are labeled with the place the section's data actually describes
   // (e.g. a town's county on Community Health), not the profile's choice;
   // the notes above the report explain any substitution.
-  const dashboardData = useMemo(() => {
+  const dashboardData = useMemo<ReportData>(() => {
     const cfg = SECTIONS[section];
     const primaryPlace = dataLocation(cfg, myLocation);
     const comparisonPlace = dataLocation(cfg, comparison);
@@ -749,31 +362,7 @@ export default function ReportsByTopic({
     comparison,
   ]);
 
-  interface DashboardData {
-    year: number;
-    primary: {
-      name: string;
-      location?: Location;
-      current: DataRow[];
-      history: DataRow[];
-    };
-    comparison: {
-      name: string;
-      location?: Location;
-      current: DataRow[];
-      history: DataRow[];
-    };
-    timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
-    allAreas?: Record<string, DataRow[]>;
-  }
-
-  interface DashboardProps {
-    data: DashboardData;
-  }
-
-  const dashboards: Partial<
-    Record<DashboardSection, React.ComponentType<DashboardProps>>
-  > = {
+  const dashboards: Partial<Record<DashboardSection, React.ComponentType>> = {
     Demographics: DemographicsDashboard,
     Housing: HousingDashboard,
     //Education: EducationDashboard, //Temporarily down until more education data gathered
@@ -792,35 +381,18 @@ export default function ReportsByTopic({
     ]),
   );
 
-  const handleExportPdf = async () => {
-    setIsExporting(true);
-    try {
-      await exportReport('demographics-dashboard-report', {
-        title: section,
-        primaryName: myLocation.name,
-        comparisonName: comparison.name,
-        year: year,
-      });
-    } catch (err) {
-      console.error('PDF export failed:', err);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
   return (
     <>
-      <HeroSection
+      <ReportHeader
         section={section}
-        setSection={setSection}
-        year={year}
-        setYear={setYear}
-        availableYears={availableYears}
+        data={dashboardData}
+        exporting={exporting}
+        setExporting={setExporting}
       />
-      <Container size="xl" mb="xl" mt="xl">
+      <Container size="xl" mb="xl" mt="md">
         {error && <Text c="red">{error}</Text>}
         {areaNotes.length > 0 && (
           <Alert
@@ -848,7 +420,17 @@ export default function ReportsByTopic({
             </Stack>
           </Paper>
         ) : (
-          Dashboard && <Dashboard data={dashboardData} />
+          Dashboard && (
+            <ReportProvider
+              topic={section}
+              data={dashboardData}
+              exporting={exporting}
+            >
+              <div id="report-body">
+                <Dashboard />
+              </div>
+            </ReportProvider>
+          )
         )}
       </Container>
     </>

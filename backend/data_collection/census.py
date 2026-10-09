@@ -1,13 +1,14 @@
 """
-Open Research Community Accelorator
-Vermont Data App
-
 Census Utility Functions
 """
 
+import json
+from pathlib import Path
+
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
+
+CENSUS_CACHE_DIR = Path(__file__).resolve().parent.parent / "Data/census"
 
 
 def split_name_col(census_gdf, keep_name: bool = True):
@@ -31,31 +32,32 @@ def split_name_col(census_gdf, keep_name: bool = True):
     return census_gdf
 
 
-def get_census_cols(year: int):
-    r = requests.get(
-        f"https://api.census.gov/data/{year}/acs/acs5/profile/variables.html"
-    )
-    soup = BeautifulSoup(r.content, "html.parser")
+def get_census_cols(year: int) -> pd.DataFrame:
+    # Path for cached census variable dataset
+    cache_path = CENSUS_CACHE_DIR / f"acs5_profile_variables_{year}.json"
+    if cache_path.exists():
+        with cache_path.open() as f:
+            data = json.load(f)
+    else:
+        url = f"https://api.census.gov/data/{year}/acs/acs5/profile/variables.json"
 
-    # get table headers as keys
-    keys = [
-        th.get_text(strip=True, separator=" ")
-        for tr in soup.find_all("tr")
-        for th in tr.find_all("th")
-    ]
+        response = requests.get(url)
+        response.raise_for_status()
 
-    # build rows
-    rows = []
-    for tr in soup.find_all("tr"):
-        cells = [
-            td.get_text(strip=True, separator=" ") for td in tr.find_all("td")
-        ]  # cols
-        if cells:
-            rows.append(cells)
+        data = response.json()["variables"]
 
-    df = pd.DataFrame(rows, columns=keys)
-    df = df[["Name", "Label"]].copy()
-    df.dropna(inplace=True)
+        CENSUS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+        with cache_path.open("w") as f:
+            json.dump(data, f, indent=2)
+
+    items_to_remove = ["for", "in", "ucgid"]
+    for item in items_to_remove:
+        data.pop(item, None)
+
+    df = pd.DataFrame.from_dict(data, orient="index")
+    df.index.name = "Name"
+    df = df.reset_index()[["Name", "label"]].rename(columns={"label": "Label"})
 
     return df
 
@@ -122,3 +124,8 @@ def tidy_census(census_gdf, year=2019, id_vars: list | None = None):
     name_df = get_census_cols(year)
     name_df = relabel_census_cols(name_df)
     return merge_census_cols(name_df, census_gdf, id_vars)
+
+
+if __name__ == "__main__":
+    # Example run to debug
+    get_census_cols(2024)

@@ -1,83 +1,71 @@
-import { Table, ScrollArea, Paper, Text, Stack, Grid } from '@mantine/core';
-import { DataRow } from '@/types/cachedCharts';
+import { Grid } from '@mantine/core';
 import {
-  UnemploymentRateCard,
-  MedianHouseholdIncomeCard,
-  PerCapitaIncomeCard,
-  MedianHouseholdIncomeHistoryChart,
-  PerCapitaIncomeHistoryChart,
-} from '@/components/Reports/economic';
+  IconBriefcase,
+  IconPigMoney,
+  IconUserDollar,
+} from '@tabler/icons-react';
+import {
+  HistoryLineChart,
+  ReportSection,
+  StatCard,
+  StatStrip,
+  takeaway,
+  useReport,
+} from '@/components/Reports/shared';
 
-export interface DashboardData {
-  year: number;
-  primary: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
-  comparison: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
-  // Additional time-series tables, keyed by the SECTIONS.timeseries config
-  // key in reports-by-topic/page.tsx (e.g. "householdIncome").
-  timeseries?: Record<string, { primary: DataRow[]; comparison: DataRow[] }>;
-}
-
-export interface DashboardProps {
-  data: DashboardData;
-}
-
-export default function EconomicDashboard({ data }: DashboardProps) {
-  const { primary, comparison, timeseries } = data;
-
+export default function EconomicDashboard() {
+  const ctx = useReport();
   return (
-    <Grid gap="lg">
-      <Grid.Col span={{ base: 12, md: 4 }}>
-        <MedianHouseholdIncomeCard
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
+    <ReportSection
+      intro
+      eyebrow="Income & Employment"
+      title="How people earn and spend"
+      takeaway={takeaway(
+        ctx,
+        'Median Household Income',
+        'median household income',
+        'usd',
+      )}
+    >
+      <StatStrip>
+        <StatCard
+          label="Median Household Income"
+          icon={<IconPigMoney size={18} />}
+          variable="Median Household Income"
+          format="usd"
         />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 4 }}>
-        <PerCapitaIncomeCard
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
+        <StatCard
+          label="Per Capita Income"
+          icon={<IconUserDollar size={18} />}
+          variable="Per Capita Income"
+          format="usd"
         />
-      </Grid.Col>
-      <Grid.Col span={{ base: 12, md: 4 }}>
-        <UnemploymentRateCard
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
+        <StatCard
+          label="Unemployment Rate"
+          icon={<IconBriefcase size={18} />}
+          variable="Unemployment Rate"
+          field="Percent"
+          format="pct"
         />
-      </Grid.Col>
-      {timeseries?.householdIncome && (
+      </StatStrip>
+      <Grid gap="xl">
         <Grid.Col span={{ base: 12, md: 6 }}>
-          <MedianHouseholdIncomeHistoryChart
-            primary={timeseries.householdIncome.primary}
-            comparison={timeseries.householdIncome.comparison}
-            primaryName={primary.name}
-            comparisonName={comparison.name}
+          <HistoryLineChart
+            source="householdIncome"
+            field="Median_Household_Income"
+            title="Median Household Income Over Time"
+            format="usd"
           />
         </Grid.Col>
-      )}
-      {timeseries?.perCapitaIncome && (
         <Grid.Col span={{ base: 12, md: 6 }}>
-          <PerCapitaIncomeHistoryChart
-            primary={timeseries.perCapitaIncome.primary}
-            comparison={timeseries.perCapitaIncome.comparison}
-            primaryName={primary.name}
-            comparisonName={comparison.name}
+          <HistoryLineChart
+            source="perCapitaIncome"
+            field="Per_Capita_Income"
+            title="Per Capita Income Over Time"
+            format="usd"
           />
         </Grid.Col>
-      )}
-    </Grid>
+      </Grid>
+    </ReportSection>
   );
 }

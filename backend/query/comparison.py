@@ -21,6 +21,7 @@ from sklearn.decomposition import PCA
 
 from api.models import FilterSource
 from query.cdc import build_cmap, to_rgba
+from query.clock import EASTERN_STD_TIME
 from query.production_db import get_db
 from query.sql_render import sql_filter_block
 
@@ -35,7 +36,7 @@ MIN_COMPLETE_ROWS = 3  # fewest geographies a composite index can be fit from
 ACS_SENTINEL = -666666666
 # Vintages this recent aren't final yet (ACS5/CDC Places both lag ~2 years),
 # so the newest year at or before this is the one used per table.
-MAX_YEAR = datetime.now().year - 2
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 2
 
 
 class NoDataError(ValueError):

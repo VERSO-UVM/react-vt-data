@@ -1,41 +1,24 @@
-import { Table, ScrollArea, Paper, Text, Stack, Grid } from '@mantine/core';
-import { DataRow } from '@/types/cachedCharts';
-import { EducationalAttainment } from '@/components/Reports/education';
+import { ComparisonBarChart, ReportSection } from '@/components/Reports/shared';
 
-export interface DashboardData {
-  year: number;
+const EDUCATION_CATEGORIES = [
+  'No High School Diploma',
+  'High School Graduate',
+  'Some College, No Degree',
+  "Associate's Degree",
+  "Bachelor's Degree",
+  'Postgraduate Degree',
+];
 
-  primary: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
-
-  comparison: {
-    name: string;
-    current: DataRow[];
-    history: DataRow[];
-  };
-}
-
-export interface DashboardProps {
-  data: DashboardData;
-}
-
-export default function EducationDashboard({ data }: DashboardProps) {
-  const { primary, comparison } = data;
-
-  // TODO: Add more charts and tables for educational attainment dashboard (from dept of education data?)
+// TODO: Add more charts and tables for educational attainment dashboard (from dept of education data?)
+export default function EducationDashboard() {
   return (
-    <Grid gap="lg">
-      <Grid.Col span={{ base: 12, md: 6 }}>
-        <EducationalAttainment
-          primary={primary.current}
-          comparison={comparison.current}
-          primaryName={primary.name}
-          comparisonName={comparison.name}
-        />
-      </Grid.Col>
-    </Grid>
+    <ReportSection intro eyebrow="Education" title="Educational attainment">
+      <ComparisonBarChart
+        title="Educational Attainment"
+        categories={EDUCATION_CATEGORIES}
+        horizontal
+        labelWidth={180}
+      />
+    </ReportSection>
   );
 }

@@ -68,6 +68,10 @@ const MAP_CONFIG: Record<string, MapConfig> = {
 export default function MappingContent() {
   const params = useParams();
   const slug = params?.slug as string | undefined;
+  return <MappingBody key={slug} slug={slug} />;
+}
+
+function MappingBody({ slug }: { slug?: string }) {
   const config = slug ? MAP_CONFIG[slug] : undefined;
 
   const townBorderDef = config?.townBorder ?? false;
@@ -82,16 +86,6 @@ export default function MappingContent() {
   const [largeBorder, setLargeBorder] = useState(largeBorderDef);
 
   const [legendData, setLegendData] = useState<LegendRow[]>([]);
-
-  /*
-   * Reset map state when navigating between map pages.
-   */
-  useEffect(() => {
-    setData(null);
-    setLegendData([]);
-    setShowCountyLines(townBorderDef);
-    setLargeBorder(largeBorderDef);
-  }, [slug, townBorderDef, largeBorderDef]);
 
   /*
    * Load initial map data.
@@ -143,10 +137,7 @@ export default function MappingContent() {
   useEffect(() => {
     const legendURL = config?.legendURL;
 
-    if (!legendURL) {
-      setLegendData([]);
-      return;
-    }
+    if (!legendURL) return;
 
     let cancelled = false;
 

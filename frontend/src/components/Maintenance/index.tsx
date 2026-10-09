@@ -36,8 +36,8 @@ export default function Maintenance(): React.JSX.Element {
               Under Maintenance
             </Title>
             <Text c="dimmed" size="lg">
-              We are updating our systems to serve you better. We'll be back
-              online shortly.
+              We are updating our systems to serve you better. We&apos;ll be
+              back online shortly.
             </Text>
           </Stack>
 

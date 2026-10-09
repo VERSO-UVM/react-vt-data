@@ -39,7 +39,7 @@ _TIMESERIES_VIEWS: dict[tuple[str, str], str] = {
 # Load the Census Dataset by `category`(housing, economic, etc.)
 # and `subcategory`(special time series tables)
 @router.post("/load/census/{category}/{subcategory}")
-async def read_census_data_subcat(
+def read_census_data_subcat(
     category: str, request: FilterRequest, subcategory: str = "main"
 ):
     if category not in CENSUS_DATASETS:

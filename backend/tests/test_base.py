@@ -5,7 +5,6 @@ Tests for data_collection/base.py:
 
 import pandas as pd
 import pytest
-
 from data_collection_OLD.base import VarGroup, compute_tidy_generic, pct
 
 # ---------------------------------------------------------------------------

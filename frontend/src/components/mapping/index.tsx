@@ -6,7 +6,7 @@ import { GeoJsonLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
 import { FlyToInterpolator } from '@deck.gl/core';
 import { WebMercatorViewport } from '@math.gl/web-mercator';
-import type { LayersList } from '@deck.gl/core';
+import type { LayersList, MapViewState } from '@deck.gl/core';
 import type { FeatureCollection } from 'geojson';
 import {
   Paper,
@@ -202,14 +202,13 @@ export default function VTMap({
   controllerOn = true,
   initialZoom = 7,
   targetBBox,
-  largeBorders = false,
   onFeatureHover,
   highlightId = null,
 }: MyMapProps) {
   const mapRef = useRef<MapRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [viewState, setViewState] = useState<any>({
+  const [viewState, setViewState] = useState<MapViewState>({
     ...INITIAL_VIEW_STATE,
     zoom: initialZoom,
   });
@@ -238,7 +237,7 @@ export default function VTMap({
         },
       );
 
-      setViewState((prev: any) => ({
+      setViewState((prev) => ({
         ...prev,
         longitude,
         latitude,
@@ -277,8 +276,8 @@ export default function VTMap({
       .catch(() => {});
   }, []);
 
-  const onViewStateChange = useCallback((params: { viewState: any }) => {
-    const vs = params.viewState;
+  const onViewStateChange = useCallback((params: { viewState: unknown }) => {
+    const vs = params.viewState as MapViewState;
     setViewState({
       ...vs,
       zoom: clamp(vs.zoom, VERMONT_BOUNDS.zoom.min, VERMONT_BOUNDS.zoom.max),
@@ -322,21 +321,6 @@ export default function VTMap({
   }) => {
     setSelected(info.object ? info.object.properties.tooltip : null);
   };
-
-  const [lineWidth, setLineWidth] = useState<number>(0.5);
-  const [lineColor, setLineColor] = useState<[number, number, number, number]>([
-    80, 80, 80, 80,
-  ]);
-
-  useEffect(() => {
-    if (largeBorders) {
-      setLineWidth(3);
-      setLineColor([0, 0, 0, 100]);
-    } else {
-      setLineWidth(0.5);
-      setLineColor([80, 80, 80, 80]);
-    }
-  }, [largeBorders]);
 
   const getFillColor = (d: {
     properties?: { rgba_color?: [number, number, number, number] };

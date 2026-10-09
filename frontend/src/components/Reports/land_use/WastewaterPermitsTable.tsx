@@ -1,12 +1,6 @@
-import { Anchor, Card, ScrollArea, Table, Text, Title } from '@mantine/core';
+import { Anchor, ScrollArea, Table, Text } from '@mantine/core';
 import { DataRow } from '@/types/cachedCharts';
-
-interface WastewaterPermitsTableProps {
-  primary: DataRow[];
-  comparison: DataRow[];
-  primaryName: string;
-  comparisonName: string;
-}
+import { ChartBlock, useReport } from '@/components/Reports/shared';
 
 function PermitRows({ rows }: { rows: DataRow[] }) {
   if (rows.length === 0) {
@@ -59,38 +53,27 @@ function PermitRows({ rows }: { rows: DataRow[] }) {
   );
 }
 
-export default function WastewaterPermitsTable({
-  primary,
-  comparison,
-  primaryName,
-  comparisonName,
-}: WastewaterPermitsTableProps) {
+export default function WastewaterPermitsTable() {
+  const { timeseries, primary: p, comparison: c } = useReport();
+  const primary = timeseries?.wastewaterPermits?.primary ?? [];
+  const comparison = timeseries?.wastewaterPermits?.comparison ?? [];
   const hasComparison = comparison.length > 0;
 
   return (
-    <Card
-      radius="xl"
-      padding="lg"
-      withBorder
-      style={{ height: '100%', transition: 'all 180ms ease' }}
-    >
-      <Title order={4} mb="xs">
-        Wastewater Treatment Facility Permits
-      </Title>
-
-      <Text size="sm" fw={600} mt="sm" mb={4}>
-        {primaryName}
+    <ChartBlock title="Wastewater Treatment Facility Permits">
+      <Text size="sm" fw={600} mb={4}>
+        {p.name}
       </Text>
       <PermitRows rows={primary} />
 
       {hasComparison && (
         <>
           <Text size="sm" fw={600} mt="md" mb={4}>
-            {comparisonName}
+            {c.name}
           </Text>
           <PermitRows rows={comparison} />
         </>
       )}
-    </Card>
+    </ChartBlock>
   );
 }

@@ -10,6 +10,7 @@ from query.zoning import (
     get_zoning_allowances,
     get_zoning_export_table,
     get_zoning_geojson,
+    get_zoning_lot_sizes,
 )
 
 router = APIRouter()
@@ -51,36 +52,28 @@ EXPORT_SOURCES: dict[str, dict] = {
 
 
 @router.post("/load/mapping/zoning/standard_new")
-async def zoning_geo_new(specs: list[FilterSpec]):
+def zoning_geo_new(specs: list[FilterSpec]):
     sources = [spec_to_source(spec, "default") for spec in specs]
     data = get_zoning_geojson(sources)
     return Response(content=data, media_type="application/json")
 
 
 @router.get("/load/mapping/zoning/unzoned")
-async def zoning_unzoned():
+def zoning_unzoned():
     """Grey "no zoning information" backdrop. GET: it takes no filters."""
     data = get_unzoned_geojson()
     return Response(content=data, media_type="application/json")
 
 
-# Unused by the frontend (it calls standard_new); disabled pending removal.
-# @router.post("/load/mapping/zoning/standard")
-# async def zoning_geojson_info(request: FilterRequest):
-#     source = request_to_source(request, "VersoZoning_info", "default")
-#     data = get_zoning_geojson([source])
-#     return Response(content=data, media_type="application/json")
-
-
 @router.post("/load/data/zoning/aggregated")
-async def acreage_response(request: FilterRequest):
+def acreage_response(request: FilterRequest):
     source = request_to_source(request, "VersoZoning_info", "default")
     agg, table = get_zoning_aggregated_acres([source])
     return make_response(data=agg, metadata=get_metadata("zoning"), tableData=table)
 
 
 @router.post("/load/data/zoning/allowances")
-async def zoning_allowances(request: FilterRequest):
+def zoning_allowances(request: FilterRequest):
     source = request_to_source(request, "VersoZoning_info", "default")
     agg, table = get_zoning_allowances([source])
     return make_response(
@@ -90,8 +83,15 @@ async def zoning_allowances(request: FilterRequest):
     )
 
 
+@router.post("/load/data/zoning/lot-sizes")
+async def zoning_lot_sizes(request: FilterRequest):
+    source = request_to_source(request, "VersoZoning_info", "default")
+    agg, table = get_zoning_lot_sizes([source])
+    return make_response(data=agg, metadata=get_metadata("zoning"), tableData=table)
+
+
 @router.post("/load/data/zoning/building-footprints")
-async def building_footprints(request: FilterRequest):
+def building_footprints(request: FilterRequest):
     source = request_to_source(request, "VCGI_buildingFootprints_geom", "default")
     agg, table = get_building_footprints([source])
     return make_response(

@@ -10,6 +10,12 @@
       "special_flood_hazard_zone": "BOOLEAN",
       "zone_subtype": "VARCHAR"
     },
+    "VCGIParcels_flood": {
+      "flood_risk": "VARCHAR",
+      "flood_zone_type": "VARCHAR",
+      "object_id": "BIGINT",
+      "special_flood_hazard_zone": "BOOLEAN"
+    },
     "VCGIParcels_geom": {
       "county": "VARCHAR",
       "geoid": "VARCHAR",
@@ -486,7 +492,7 @@
       "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
-      "value": "VARCHAR",
+      "value": "DOUBLE",
       "variable": "VARCHAR",
       "variable_code": "VARCHAR",
       "year": "BIGINT"
@@ -536,6 +542,20 @@
       "percent": "DOUBLE",
       "section": "VARCHAR",
       "value": "DOUBLE",
+      "variable": "VARCHAR",
+      "year": "VARCHAR"
+    },
+    "acs5_tract_tidy": {
+      "county": "VARCHAR",
+      "county_fips": "VARCHAR",
+      "geo_type": "VARCHAR",
+      "geoid": "VARCHAR",
+      "name": "VARCHAR",
+      "percent": "DOUBLE",
+      "percent_moe": "DOUBLE",
+      "section": "VARCHAR",
+      "universe": "HUGEINT",
+      "value": "HUGEINT",
       "variable": "VARCHAR",
       "year": "VARCHAR"
     },
@@ -639,7 +659,7 @@
       "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
-      "value": "VARCHAR",
+      "value": "DOUBLE",
       "variable": "VARCHAR",
       "variable_code": "VARCHAR",
       "year": "BIGINT"
@@ -654,7 +674,7 @@
       "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
-      "value": "VARCHAR",
+      "value": "DOUBLE",
       "variable": "VARCHAR",
       "variable_code": "VARCHAR",
       "year": "BIGINT"
@@ -669,7 +689,7 @@
       "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
-      "value": "VARCHAR",
+      "value": "DOUBLE",
       "variable": "VARCHAR",
       "variable_code": "VARCHAR",
       "year": "BIGINT"
@@ -684,7 +704,7 @@
       "source_label": "VARCHAR",
       "subcategory": "VARCHAR",
       "table": "VARCHAR",
-      "value": "VARCHAR",
+      "value": "DOUBLE",
       "variable": "VARCHAR",
       "variable_code": "VARCHAR",
       "year": "BIGINT"

@@ -1,24 +1,5 @@
 """
 Shared utilities for ACS 5-Year Census B-table scrapers.
-
-Each scraper defines:
-  fetch_specs  – dict mapping Census table name → list of variable codes.
-                 Each entry triggers one API call; results are merged by geography.
-  var_groups   – list of VarGroup, describing how raw columns become tidy output rows.
-
-Then calls run_scrape(fetch_specs, var_groups, output_filename).
-
-Geography selection
--------------------
-ALL_GEOS maps a short key to (for_clause, in_clause) for the Census API.
-Pass a subset to run_scrape(geos=...) or use --geos on the CLI to scrape
-only specific geographic levels.
-
-Append mode
------------
-run_scrape(..., append=True) reads the existing parquet, drops any rows
-whose NAME appears in the newly fetched data (so a re-run of state/national
-replaces rather than duplicates those rows), then writes the merged result.
 """
 
 import os
@@ -30,6 +11,8 @@ import pandas as pd
 import requests
 
 from data_collection.census import split_name_col
+from data_collection.parallel import pmap
+from query.clock import EASTERN_STD_TIME
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -52,7 +35,7 @@ ALL_GEOS: dict[str, tuple[str, str]] = {
 GEOS = [(k, *v) for k, v in ALL_GEOS.items()]
 
 
-MAX_YEAR = datetime.now().year - 2
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 2
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -89,8 +72,13 @@ def fetch(
         "for": for_clause,
         "key": API_KEY,
     }
+    if params.get("key") is None:
+        print("API key is either missing or set to None.")
+        return None
+
     if in_clause:  # state/national geos have no "in" clause
         params["in"] = in_clause
+
     try:
         r = requests.get(BASE_URL.format(year=year), params=params, timeout=30)
         r.raise_for_status()
@@ -101,7 +89,7 @@ def fetch(
             if c[0] == "B":
                 df[c] = pd.to_numeric(df[c], errors="coerce")
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year} / {for_clause}: {e}")
         return None
 
@@ -114,35 +102,48 @@ def fetch(
 def pct(val: float, total: float) -> float | None:
     try:
         if total and total > 0:
-            return round(val / total * 100, 1)
-    except Exception:
-        pass
+            return round((val / total) * 100, 1)
+    except OverflowError:
+        print(f"OverflowError computing pct({val}, {total})")
+    except FloatingPointError:
+        print(f"FloatingPointError computing pct({val}, {total})")
+    except ValueError:
+        print(f"ValueError computing pct({val}, {total})")
     return None
 
 
 def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.DataFrame:
-    rows = []
-    for _, row in df.iterrows():
-        base = {
-            "year": row["year"],
-            "geo_type": row["geo_type"],
-            "NAME": row["NAME"],
-            "state": row.get("state"),
-            "county": row.get("county"),
+    base = pd.DataFrame(
+        {
+            "year": df["year"],
+            "geo_type": df["geo_type"],
+            "NAME": df["NAME"],
+            "state": df.get("state"),
+            "county": df.get("county"),
         }
-        for g in var_groups:
-            value = sum(row.get(c) or 0 for c in g.codes)
-            denom = sum(row.get(c) or 0 for c in g.denom) if g.denom else None
-            rows.append(
-                {
-                    **base,
-                    "Section": g.section,
-                    "Variable": g.label,
-                    "Value": value,
-                    "Percent": pct(value, denom),
-                }
+    )
+
+    def row_sum(codes: list[str]) -> pd.Series:
+        # reindex: codes absent from df become all-NaN columns, then count as 0
+        return df.reindex(columns=codes).fillna(0).sum(axis=1)
+
+    frames = []
+    for var in var_groups:
+        value = row_sum(var.codes)
+        if var.denom:
+            denom = row_sum(var.denom)
+            percent = (value / denom * 100).round(1).where(denom > 0)
+        else:
+            percent = None
+        frames.append(
+            base.assign(
+                Section=var.section, Variable=var.label, Value=value, Percent=percent
             )
-    return pd.DataFrame(rows)
+        )
+    if not frames:
+        return pd.DataFrame()
+
+    return pd.concat(frames).sort_index(kind="stable").reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -153,34 +154,31 @@ def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.Dat
 def run_acs_b_scrape(
     fetch_specs: dict[str, list[str]],
     var_groups: list[VarGroup],
-    output_filename: str,
     year: int = MAX_YEAR,
     geos: list = GEOS,
-    append: bool = False,
-) -> None:
+) -> pd.DataFrame:
     """
-    Fetch Census data, compute tidy rows, and save as parquet.
+    Fetch Census data, compute tidy rows, and return tidy DataFrame.
 
-    fetch_specs:      maps a Census table label (for logging) to its variable codes.
-                      Each entry triggers a separate API call; all are merged by geo.
-    var_groups:       defines how raw fetched columns assemble into tidy output rows.
-    output_filename:  file name (not path) saved under STORAGE_LOCATION.
-    geos:             list of (label, for_clause, in_clause) tuples to scrape.
-    append:           if True, merge with existing parquet instead of overwriting.
-                      Rows whose NAME appears in the new data replace old rows.
+    Args:
+        fetch_specs: dict of {table_name: list of variable codes to fetch}
+        var_groups: list of VarGroup objects defining tidy output rows
+        year: year to fetch (default = MAX_YEAR)
+        geos: list of geographies to fetch (default = GEOS)
+
+    Returns:
+        pd.DataFrame: tidy DataFrame of the fetched data
     """
-    all_frames = []
-
     print(f"\n=== {year} ===")
-    for geo_label, for_clause, in_clause in geos:
+
+    def fetch_geo(geo):
+        geo_label, for_clause, in_clause = geo
         merged = None
-        failed = False
         for table_name, codes in fetch_specs.items():
-            print(f"  {table_name} / {geo_label}...")
+            print(f"  {year} / {table_name} / {geo_label}...")
             df = fetch(year, codes, for_clause, in_clause)
             if df is None:
-                failed = True
-                break
+                return None
             if merged is None:
                 merged = df.copy()
                 merged["geo_type"] = geo_label
@@ -194,39 +192,19 @@ def run_acs_b_scrape(
                 merged = merged.merge(
                     df[merge_cols + new_var_cols], on=merge_cols, how="left"
                 )
-        if not failed and merged is not None:
-            all_frames.append(merged)
-        time.sleep(0.1)
+        time.sleep(0.01)
+        return merged
+
+    all_frames = [m for m in pmap(fetch_geo, geos) if m is not None]
 
     if not all_frames:
         print("No data fetched.")
-        return
+        return pd.DataFrame()
 
     combined = pd.concat(all_frames, ignore_index=True, sort=False)
     tidy = compute_tidy_generic(combined, var_groups)
     tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
-    tidy = split_name_col(tidy)  # keeps NAME and adds Jurisdiction + County
+    tidy = split_name_col(tidy)  # keeps NAME and adds Jurisdiction + County columns
     tidy.reset_index(drop=True, inplace=True)
-
-    out = f"{STORAGE_LOCATION}/{output_filename}"
-
-    if append:
-        try:
-            existing = pd.read_parquet(out)
-            # Drop any existing rows for the NAMEs we just fetched, then concat
-            new_names = set(tidy["NAME"].unique())
-            existing = existing[~existing["NAME"].isin(new_names)]
-            tidy = pd.concat([existing, tidy], ignore_index=True)
-            tidy.sort_values(["year", "geo_type", "NAME"], inplace=True)
-            tidy.reset_index(drop=True, inplace=True)
-            print(
-                f"Appended — kept {len(existing):,} existing rows, "
-                f"added/replaced {len(new_names)} NAME(s)."
-            )
-        except FileNotFoundError:
-            print(f"No existing file at {out}; writing fresh.")
-
-    # tidy.to_parquet(out, index=False)
-    # print(f"\nDone. {len(tidy):,} rows -> {out}")
 
     return tidy

@@ -1,8 +1,8 @@
 """
 Fetch BLS Quarterly Census of Employment and Wages (QCEW) data for Vermont counties.
 
-Downloads quarterly employment by NAICS sector for all 14 VT counties,
-computes a four-quarter moving average (4QMA), and saves a tidy parquet.
+Downloads quarterly employment by NAICS sector for all 14 VT counties and
+computes a four-quarter moving average (4QMA).
 
 Data source:
   https://data.bls.gov/cew/data/api/{year}/{quarter}/area/{area_fips}.csv
@@ -13,24 +13,23 @@ Key agglvl_code values (for county area files):
   71 → County by ownership breakdown (own_code=1/2/3/5, industry_code=10)
   74 → County, Private sector by NAICS sector (own_code=5, 2-digit industry codes)
 
-Output: Data/QCEW/vt_qcew_employment.parquet
 Columns: County | year | quarter | quarter_label | sector | employment | employment_4qma
 """
 
 import time
 from datetime import datetime
 from io import StringIO
-from pathlib import Path
 
 import pandas as pd
 import requests
+
+from data_collection.parallel import pmap
+from query.clock import EASTERN_STD_TIME
 
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 
-STORAGE_PATH = Path(__file__).resolve().parent.parent / "Data/QCEW"
-OUTPUT_FILE = STORAGE_PATH / "vt_qcew_employment.parquet"
 
 # Vermont county FIPS → clean County name
 VT_COUNTIES: dict[str, str] = {
@@ -89,7 +88,7 @@ SECTOR_ORDER = [
 BASE_URL = "https://data.bls.gov/cew/data/api/{year}/{q}/area/{fips}.csv"
 QUARTERS = [1, 2, 3, 4]
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
@@ -107,7 +106,7 @@ def fetch_quarter(year: int, quarter: int, area_fips: str) -> pd.DataFrame | Non
         df = pd.read_csv(StringIO(r.text), dtype=str)
         df.columns = df.columns.str.strip()
         return df
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 -- skip and keep the run going
         print(f"  SKIP {year}Q{quarter} / {area_fips}: {e}")
         return None
 
@@ -220,16 +219,16 @@ def process_county(area_fips: str, county_name: str, year: int) -> pd.DataFrame:
 
 
 def run_qcew_scrape(years: range = YEARS) -> pd.DataFrame:
-    STORAGE_PATH.mkdir(parents=True, exist_ok=True)
-    all_frames = []
-    for year in years:
-        for fips, name in VT_COUNTIES.items():
-            print(f"\n{name} County ...")
-            df = process_county(fips, name, year)
-            if not df.empty:
-                all_frames.append(df)
-            else:
-                print("No data")
+    def one(task):
+        year, fips, name = task
+        print(f"{name} County {year} ...")
+        df = process_county(fips, name, year)
+        if df.empty:
+            print(f"No data: {name} County {year}")
+        return df
+
+    tasks = [(y, f, n) for y in years for f, n in VT_COUNTIES.items()]
+    all_frames = [df for df in pmap(one, tasks) if not df.empty]
 
     if not all_frames:
         print("No data fetched.")

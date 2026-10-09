@@ -30,7 +30,7 @@ export default function GenericFilter({ apiURL }: GenericFilterProps) {
         firstRange ? { ...firstRange, selected: firstRange.bounds } : null,
       );
     });
-  }, [apiURL, setLabels, setSelectedFilters]);
+  }, [apiURL, setLabels, setRange, setSelectedFilters]);
 
   const numLevels = labels.length;
 

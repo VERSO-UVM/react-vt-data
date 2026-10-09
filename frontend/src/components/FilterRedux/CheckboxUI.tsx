@@ -84,7 +84,7 @@ export function CheckboxFilter(params: apiFilterParams) {
         setOptions(r.data.options);
       })
       .catch((e) => console.error('Labels fetch failed', e));
-  }, [filterURL]);
+  }, [spec.filter_table, filterURL]);
 
   // what happens when we toggle a box
   const handleToggle = (label: string, selections: string[]) => {

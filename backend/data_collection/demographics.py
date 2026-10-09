@@ -4,8 +4,6 @@ Fetch ACS 5-Year demographics data for Vermont:
   B01002 – Median Age
   B02001 – Race
   B03003 – Hispanic or Latino origin
-
-Output: vt_acs5_b_demographics_tidy.parquet
 """
 
 from datetime import datetime
@@ -13,6 +11,7 @@ from datetime import datetime
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
+from query.clock import EASTERN_STD_TIME
 
 # ---------------------------------------------------------------------------
 # Age band definitions: (label, male_suffix_range, female_suffix_range)
@@ -29,7 +28,7 @@ _AGE_BANDS = [
     ("75 Plus", range(23, 26), range(47, 50)),
 ]
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
@@ -104,10 +103,8 @@ def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
         df = run_acs_b_scrape(
             fetch_specs,
             var_groups,
-            "vt_acs5_b_demographics_tidy.parquet",
             year=year,
             geos=geos,
-            append=append,
         )
         if df is not None:
             frames.append(df)
@@ -129,11 +126,7 @@ if __name__ == "__main__":
         metavar="GEO",
         help=f"Geographies to scrape (default: all). Choices: {list(ALL_GEOS)}",
     )
-    p.add_argument(
-        "--append",
-        action="store_true",
-        help="Merge new rows into existing parquet instead of overwriting.",
-    )
+
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]
 

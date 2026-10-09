@@ -285,7 +285,7 @@ router = APIRouter()
 
 
 @router.post("/load/mapping/zoning")
-async def read_zoning_data(request: FilterRequest) -> APIResponse:
+def read_zoning_data(request: FilterRequest) -> APIResponse:
     metadata = get_metadata("zoning")
 
     if request.format == "aggregated_acres":
@@ -309,7 +309,7 @@ router = APIRouter()
 
 
 @router.get("/load/mapping/zoning/filters")
-async def read_zoning_filters():
+def read_zoning_filters():
     return zoning_db.filter_tree()
 ```
 
@@ -320,7 +320,7 @@ Leave the flood / WWTF / service-area GETs on `masterload` for now. Replace just
 ```python
 # Zoning GET Endpoint
 @router.get("/load/mapping/zoning")
-async def read_zoning_data():
+def read_zoning_data():
     from app_utils import zoning_db
 
     return zoning_db.geojson()

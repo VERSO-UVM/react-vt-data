@@ -4,7 +4,8 @@
 **Created**:
     2026-08-28
 **Description**:
-    Fetches Vermont building footprint data from the VCGI website
+    Fetches Vermont building footprint data from
+    local parquet file (downloaded from VCGI)
     Orginal Data Source: https://geodata.vermont.gov/datasets/VCGI::vt-building-footprints/about
 """
 

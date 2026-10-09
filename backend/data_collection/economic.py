@@ -16,8 +16,6 @@ B23001 prime-age variable codes (structure: 7 vars per age-sex group):
   Female 30-34: total B23001_117E, in-LF B23001_118E
   Female 35-44: total B23001_124E, in-LF B23001_125E
   Female 45-54: total B23001_131E, in-LF B23001_132E
-
-Output: vt_acs5_b_economic_tidy.parquet
 """
 
 from datetime import datetime
@@ -25,6 +23,7 @@ from datetime import datetime
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
+from query.clock import EASTERN_STD_TIME
 
 SL = "Labor Force"
 SI = "Income"
@@ -86,7 +85,7 @@ fetch_specs = {
     "B19301": ["B19301_001E"],
 }
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
@@ -100,10 +99,8 @@ def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
         df = run_acs_b_scrape(
             fetch_specs,
             var_groups,
-            "vt_acs5_b_economic_tidy.parquet",
             year=year,
             geos=geos,
-            append=append,
         )
         if df is not None:
             frames.append(df)
@@ -123,7 +120,6 @@ if __name__ == "__main__":
         choices=list(ALL_GEOS),
         default=list(ALL_GEOS),
     )
-    p.add_argument("--append", action="store_true")
 
     args = p.parse_args()
 

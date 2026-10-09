@@ -30,7 +30,10 @@ import {
   MinusIcon,
   WarningIcon,
 } from '@phosphor-icons/react';
-import { useProfile } from '@/components/profile/profileStore';
+import {
+  useProfile,
+  YEAR_MAX_OVERALL,
+} from '@/components/profile/profileStore';
 import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
@@ -540,7 +543,9 @@ export default function DPExplorerPage() {
   // Available years derived from fetched data
   const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  const YEAR_MAX_OVERALL = new Date().getFullYear() - 2;
+  // stringified so the effect re-runs on name changes, not object identity
+  const nameA = makeName(sideA);
+  const nameB = makeName(sideB);
 
   useEffect(() => {
     if (!isComplete) {
@@ -567,7 +572,7 @@ export default function DPExplorerPage() {
         })
         .then((r) => r.data);
 
-    Promise.all([post(makeName(sideA)), post(makeName(sideB))])
+    Promise.all([post(nameA), post(nameB)])
       .then(([aRes, bRes]) => {
         const aData = aRes.data ?? [];
         const bData = bRes.data ?? [];
@@ -598,9 +603,8 @@ export default function DPExplorerPage() {
     subcategory,
     variable,
     measure,
-    // stringify name to avoid object ref changes
-    makeName(sideA),
-    makeName(sideB),
+    nameA,
+    nameB,
   ]);
 
   // ---------------------------------------------------------------------------

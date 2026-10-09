@@ -11,8 +11,6 @@ Variables match Table 4 of the Annual Report:
   Homeowner Vacancy Rate       – for-sale / (owner-occ + for-sale)  (Percent)
   Rental Vacancy Rate          – for-rent / (renter-occ + for-rent) (Percent)
   Renter-Occupied Units        – B25003_003E / B25003_001E          (Value + Percent)
-
-Output: vt_acs5_b_housing_tidy.parquet
 """
 
 from datetime import datetime
@@ -20,6 +18,7 @@ from datetime import datetime
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
+from query.clock import EASTERN_STD_TIME
 
 S = "Housing"
 
@@ -45,7 +44,7 @@ fetch_specs = {
     "B25077": ["B25077_001E"],
 }
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
@@ -59,10 +58,8 @@ def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
         df = run_acs_b_scrape(
             fetch_specs,
             var_groups,
-            "vt_acs5_b_housing_tidy.parquet",
             year=year,
             geos=geos,
-            append=append,
         )
         if df is not None:
             frames.append(df)
@@ -83,11 +80,6 @@ if __name__ == "__main__":
         default=list(ALL_GEOS),
         metavar="GEO",
         help=f"Geographies to scrape (default: all). Choices: {list(ALL_GEOS)}",
-    )
-    p.add_argument(
-        "--append",
-        action="store_true",
-        help="Merge new rows into existing parquet instead of overwriting.",
     )
     args = p.parse_args()
     selected_geos = [(k, *ALL_GEOS[k]) for k in args.geos]

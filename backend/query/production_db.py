@@ -27,11 +27,29 @@ def _load_spatial(con: duckdb.DuckDBPyConnection) -> None:
     """Load the spatial extension."""
     try:
         con.execute("LOAD spatial")
-    except duckdb.Error as exc:
-        raise RuntimeError("The DuckDB spatial extension could not be loaded.") from exc
+    except duckdb.Error as e:
+        raise RuntimeError("The DuckDB spatial extension could not be loaded.") from e
 
 
-def get_db() -> duckdb.DuckDBPyConnection:
+class _ThreadSafeDB:
+    """Wraps one connection; each execute() gets its own cursor.
+
+    A single DuckDB connection is not safe across FastAPI's threadpool:
+    concurrent execute()/.df() calls steal each other's results (.df()
+    returns None). Cursors share the database but not result state.
+    """
+
+    def __init__(self, con: duckdb.DuckDBPyConnection):
+        self._con = con
+
+    def execute(self, *args, **kwargs):
+        return self._con.cursor().execute(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._con, name)
+
+
+def get_db() -> _ThreadSafeDB:
     """
     Open a read-only connection to the production warehouse.
 
@@ -47,10 +65,10 @@ def get_db() -> duckdb.DuckDBPyConnection:
     try:
         con = duckdb.connect(WAREHOUSE_PATH, read_only=True)
         _load_spatial(con)
-        return con
+        return _ThreadSafeDB(con)
 
-    except Exception as exc:
+    except Exception as e:
         raise RuntimeError(
             f"Could not open the production database at {WAREHOUSE_PATH}.\n"
             "Try running `just run-etl` to rebuild the production database."
-        ) from exc
+        ) from e

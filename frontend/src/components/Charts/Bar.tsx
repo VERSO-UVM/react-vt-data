@@ -24,13 +24,15 @@ import {
   Tooltip as TooltipJS,
   Legend as LegendJS,
   TooltipItem,
+  ChartEvent,
+  LegendItem,
+  LegendElement,
 } from 'chart.js';
 ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 import {
-  Title,
   Box,
   Group,
   Text,
@@ -197,8 +199,15 @@ interface CompareDiffChartItem extends ChartItem<DataRow> {
     percentFormat?: boolean;
     includeCategories?: string[];
     unit?: string;
+    yLabel?: string;
   };
 }
+
+/** Reorder compare rows to match the main rows by x value (missing -> no y). */
+const alignByX = (main: DataRow[], cmp: DataRow[], xField: string) => {
+  const byX = new Map(cmp.map((r) => [r[xField], r]));
+  return main.map((r) => byX.get(r[xField]) ?? { [xField]: r[xField] });
+};
 
 /** SVG (Recharts) version used when rendering to PDF. */
 const CompareDiffPerXBarChartSVG = ({
@@ -213,16 +222,19 @@ const CompareDiffPerXBarChartSVG = ({
 
   const includeCategories = chart.chartParams?.includeCategories;
   const filteredData = includeCategories
-    ? chart.data.filter((entry: any) =>
-        includeCategories.includes(entry[chart.xField]),
+    ? chart.data.filter((entry) =>
+        includeCategories.includes(entry[chart.xField] as string),
       )
     : chart.data;
-  const filteredCompareData =
+  const filteredCompareData = alignByX(
+    filteredData,
     includeCategories && chart.compareData
-      ? chart.compareData.filter((entry: any) =>
-          includeCategories.includes(entry[chart.xField]),
+      ? chart.compareData.filter((entry) =>
+          includeCategories.includes(entry[chart.xField] as string),
         )
-      : (chart.compareData ?? []);
+      : (chart.compareData ?? []),
+    chart.xField,
+  );
 
   // Determine per-bar primary colors (same logic as Chart.js version)
   let colors: string[];
@@ -251,7 +263,17 @@ const CompareDiffPerXBarChartSVG = ({
       >
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey={chart.xField} />
-        <YAxis />
+        <YAxis
+          label={
+            chart.chartParams.yLabel
+              ? {
+                  value: chart.chartParams.yLabel,
+                  angle: -90,
+                  position: 'insideLeft',
+                }
+              : undefined
+          }
+        />
         <Tooltip />
         <Legend />
         <Bar dataKey="primary" name={legendLabels[0]}>
@@ -283,24 +305,25 @@ const CompareDiffPerXBarChart = ({
   // Filter primary dataset based on categories if specified
   const filteredData = useMemo(() => {
     return includeCategories
-      ? rows.filter((entry: any) =>
-          includeCategories.includes(entry[chart.xField]),
+      ? rows.filter((entry) =>
+          includeCategories.includes(entry[chart.xField] as string),
         )
       : rows;
   }, [rows, includeCategories, chart.xField]);
 
   // Filter comparison dataset based on categories if specified
   const filteredCompareData = useMemo(() => {
-    return includeCategories
-      ? compareRows.filter((entry: any) =>
-          includeCategories.includes(entry[chart.xField]),
+    const cmp = includeCategories
+      ? compareRows.filter((entry) =>
+          includeCategories.includes(entry[chart.xField] as string),
         )
       : compareRows;
-  }, [compareRows, includeCategories, chart.xField]);
+    return cmp.length ? alignByX(filteredData, cmp, chart.xField) : cmp;
+  }, [compareRows, filteredData, includeCategories, chart.xField]);
 
   // Derive exact plottable rows and report back to ChartCard for TableView
   const plotData = useMemo(() => {
-    return filteredData.map((entry: any, i: number) => {
+    return filteredData.map((entry, i) => {
       const cmpEntry = filteredCompareData[i];
       return {
         [chart.xField]: entry[chart.xField],
@@ -325,26 +348,26 @@ const CompareDiffPerXBarChart = ({
 
   const data = useMemo(() => {
     let colors: string[];
-    if (colorField && (rows[0] as any)?.[colorField]) {
-      colors = filteredData.map((entry: any) => entry[colorField]);
+    if (colorField && rows[0]?.[colorField]) {
+      colors = filteredData.map((entry) => entry[colorField] as string);
     } else {
       const colorScale = d3.scaleOrdinal<string, string>(
-        (d3 as any)[colorScheme],
+        d3Schemes[colorScheme],
       );
       colors = filteredData.map((_, index) => colorScale(index.toString()));
     }
 
     return {
-      labels: filteredData.map((entry: any) => entry[xField]),
+      labels: filteredData.map((entry) => entry[xField]),
       datasets: [
         {
           label: primaryLabel,
-          data: filteredData.map((entry: any) => entry[yField]),
+          data: filteredData.map((entry) => entry[yField] as number),
           backgroundColor: colors,
         },
         {
           label: compareLabel,
-          data: filteredCompareData.map((entry: any) => entry[yField]),
+          data: filteredCompareData.map((entry) => entry[yField] as number),
           backgroundColor: filteredCompareData.map(() => '#D3D3D3'),
         },
       ],
@@ -362,6 +385,7 @@ const CompareDiffPerXBarChart = ({
   ]);
 
   const percentFormat = chart.chartParams?.percentFormat ?? false;
+  const yLabel = chart.chartParams?.yLabel;
   const options = useMemo(
     () => ({
       responsive: true,
@@ -371,8 +395,8 @@ const CompareDiffPerXBarChart = ({
         legend: { display: true },
         tooltip: {
           callbacks: {
-            label: (context: any) => {
-              const value = context.parsed.y;
+            label: (context: TooltipItem<'bar'>) => {
+              const value = context.parsed.y ?? 0;
               return percentFormat ? `${value}%` : value.toLocaleString();
             },
           },
@@ -380,14 +404,15 @@ const CompareDiffPerXBarChart = ({
       },
       scales: {
         y: {
+          title: { display: !!yLabel, text: yLabel },
           ticks: {
-            callback: (value: any) =>
+            callback: (value: string | number) =>
               percentFormat ? `${value}%` : value.toLocaleString(),
           },
         },
       },
     }),
-    [view, percentFormat],
+    [view, percentFormat, yLabel],
   );
 
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
@@ -586,13 +611,13 @@ const ZoningAllowanceStackedBarChart = ({
         legend: {
           display: true,
           labels: {
-            generateLabels: (chart: any) =>
+            generateLabels: (chart: ChartJS) =>
               stackKeys.map((key) => {
                 const mainIndex = chart.data.datasets.findIndex(
-                  (ds: any) => ds.label === `${key}`,
+                  (ds) => ds.label === `${key}`,
                 );
                 const compareIndex = chart.data.datasets.findIndex(
-                  (ds: any) => ds.label === `${key}`,
+                  (ds) => ds.label === `${key}`,
                 );
 
                 const mainMeta = chart.getDatasetMeta(mainIndex);
@@ -613,11 +638,15 @@ const ZoningAllowanceStackedBarChart = ({
                 };
               }),
           },
-          onClick: (_e: any, legendItem: any, legend: any) => {
+          onClick: (
+            _e: ChartEvent,
+            legendItem: LegendItem,
+            legend: LegendElement<'bar'>,
+          ) => {
             const chart = legend.chart;
             const key = legendItem.text;
 
-            chart.data.datasets.forEach((ds: any, idx: number) => {
+            chart.data.datasets.forEach((ds, idx) => {
               if (ds.label?.startsWith(key)) {
                 const meta = chart.getDatasetMeta(idx);
                 meta.hidden = !(meta.hidden ?? false);
@@ -629,8 +658,8 @@ const ZoningAllowanceStackedBarChart = ({
         },
         tooltip: {
           callbacks: {
-            label: (ctx: any) =>
-              `${ctx.dataset.label}: ${ctx.raw?.toLocaleString?.() ?? ctx.raw}`,
+            label: (ctx: TooltipItem<'bar'>) =>
+              `${ctx.dataset.label}: ${(ctx.raw as number | undefined)?.toLocaleString() ?? ctx.raw}`,
           },
         },
       },

@@ -8,8 +8,6 @@ Six categories matching the Annual Report:
   Associate's Degree      – B15003_021
   Bachelor's Degree       – B15003_022
   Postgraduate Degree     – B15003_023–025
-
-Output: vt_acs5_b_education_tidy.parquet
 """
 
 from datetime import datetime
@@ -17,6 +15,7 @@ from datetime import datetime
 import pandas as pd
 
 from data_collection.base import ALL_GEOS, VarGroup, run_acs_b_scrape
+from query.clock import EASTERN_STD_TIME
 
 TOTAL = "B15003_001E"
 S = "Educational Attainment"
@@ -41,7 +40,7 @@ fetch_specs = {
     "B15003": [TOTAL] + [f"B15003_{str(i).zfill(3)}E" for i in range(2, 26)],
 }
 
-MAX_YEAR = datetime.now().year - 1
+MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
 YEARS = range(2009, MAX_YEAR)
 
@@ -55,10 +54,8 @@ def collect(years: range = YEARS, geos=None, append=False) -> pd.DataFrame:
         df = run_acs_b_scrape(
             fetch_specs,
             var_groups,
-            "vt_acs5_b_education_tidy.parquet",
             year=year,
             geos=geos,
-            append=append,
         )
         if df is not None:
             frames.append(df)
@@ -78,7 +75,6 @@ if __name__ == "__main__":
         choices=list(ALL_GEOS),
         default=list(ALL_GEOS),
     )
-    p.add_argument("--append", action="store_true")
 
     args = p.parse_args()
 
