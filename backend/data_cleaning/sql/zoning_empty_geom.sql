@@ -1,8 +1,8 @@
 -- Parts of a town that no zoning district covers: the "we have no zoning
 -- information here" layer.
 --
--- Both inputs are WGS84 (zoning_raw ships as EPSG:4326; town_boundaries is
--- normalised to it in build/FIPS_data.py), so the difference is taken directly.
+-- Both inputs are WGS84 (every lake geometry is reprojected to EPSG:4326 in
+-- lake_build.py), so the difference is taken directly.
 --
 -- ST_MakeValid before the union matters: several districts are self-intersecting
 -- and ST_Union_Agg raises a topology error on them otherwise.
