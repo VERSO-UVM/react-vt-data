@@ -153,7 +153,7 @@ dev-api: build-pod build-api run-api
 [group("Frontend Container")]
 [working-directory("frontend")]
 build-frontend:
-    podman build -t localhost/frontend -f dockerfile .
+    podman build -t localhost/frontend --build-arg NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY="$NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY" -f dockerfile .
 
 [doc("run the frontend image (detached)")]
 [group("Frontend Container")]
@@ -171,7 +171,7 @@ dev-frontend: build-pod build-frontend run-frontend
 [group("Maintenance")]
 [working-directory("frontend")]
 build-frontend-maintenance:
-    podman build -t localhost/frontend:maintenance --build-arg NEXT_PUBLIC_MAINTENANCE_MODE=true -f dockerfile .
+    podman build -t localhost/frontend:maintenance --build-arg NEXT_PUBLIC_MAINTENANCE_MODE=true --build-arg NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY="$NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY" -f dockerfile .
 
 [doc("swap the running frontend container for the maintenance-mode one (api + pod stay up)")]
 [group("Maintenance")]
