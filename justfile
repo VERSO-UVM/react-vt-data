@@ -11,6 +11,8 @@ mcp_host := env("MCP_HOST", "127.0.0.1")
 mcp_port := env("MCP_PORT", "6768")
 # Pass named variables without placing bearer-token values in podman arguments.
 mcp_container_env := "-e MCP_ENABLED -e MCP_AUTH_MODE -e MCP_BEARER_TOKENS -e MCP_ALLOWED_HOSTS -e MCP_ALLOWED_ORIGINS -e MCP_MAX_ROWS -e MCP_MAX_BYTES -e MCP_QUERY_TIMEOUT -e MCP_MAX_CONCURRENCY -e MCP_RATE_LIMIT -e MCP_MAX_REQUEST_BYTES -e MCP_REQUEST_BODY_TIMEOUT"
+# Data chat (docs/architecture/data-chat.md); the provider key is passed by name.
+chat_container_env := "-e CHAT_ENABLED -e CHAT_MODEL -e OPENROUTER_API_KEY -e OPENAI_API_KEY -e CHAT_MAX_MODEL_REQUESTS -e CHAT_MAX_TOOL_CALLS -e CHAT_MAX_OUTPUT_TOKENS -e CHAT_PREVIEW_ROWS -e CHAT_MAX_HISTORY_MESSAGES -e CHAT_MAX_MESSAGE_CHARS -e CHAT_MAX_HISTORY_CHARS -e CHAT_RATE_LIMIT -e CHAT_CHART_MAX_ROWS"
 # Host-specific podman flags. Empty by default (Docker, macOS, rootful podman).
 # On the VM with rootless podman, override:  just podman_flags="--userns=keep-id:uid=1000,gid=1000"
 podman_flags := env("PODMAN_FLAGS", "")
@@ -36,6 +38,44 @@ local-frontend:
 [group("CLI Rapid Development")]
 local-dev:
     uvx honcho start
+
+################
+# Data Chat #
+################
+
+[doc("run the API with Data Chat on, plus the frontend (open http://localhost:3000/chat/)")]
+[group("Data Chat")]
+chat-dev:
+    CHAT_ENABLED=1 uvx honcho start
+
+[doc("compare models on the eval chats, e.g. just chat-eval openai/gpt-6.1-sol openai/gpt-6-luna")]
+[group("Data Chat")]
+[working-directory("backend")]
+chat-eval +models:
+    uv run python -m evals.chat run --models {{ models }}
+
+[doc("list the eval chats")]
+[group("Data Chat")]
+[working-directory("backend")]
+chat-eval-cases:
+    uv run python -m evals.chat cases
+
+[doc("list tool-capable OpenRouter models by price, e.g. just chat-eval-models qwen")]
+[group("Data Chat")]
+[working-directory("backend")]
+chat-eval-models filter="":
+    uv run python -m evals.chat models {{ if filter == "" { "" } else { "--filter " + filter } }}
+
+[doc("serve saved eval runs side by side at http://localhost:3000/chat/evals/")]
+[group("Data Chat")]
+chat-eval-ui:
+    CHAT_ENABLED=1 CHAT_EVALS_DIR="{{ justfile_directory() }}/backend/evals/chat/results" uvx honcho start
+
+[doc("run the Data Chat and eval tests (no network or API key needed)")]
+[group("Data Chat")]
+[working-directory("backend")]
+test-chat:
+    uv run pytest -q tests/test_chat.py tests/test_chat_evals.py
 
 ################
 # MCP Development #
@@ -134,13 +174,13 @@ build-api:
 [group("API Container")]
 [working-directory("backend")]
 run-api:
-    podman run --pod app --name api -d --rm -v "{{ DATA_DIR }}:/data:ro,z" {{ mcp_container_env }} localhost/my-api
+    podman run --pod app --name api -d --rm -v "{{ DATA_DIR }}:/data:ro,z" {{ mcp_container_env }} {{ chat_container_env }} localhost/my-api
 
 [doc("build the api image and then check it with more error printing (non detached)")]
 [group("API Container")]
 [working-directory("backend")]
 run-check-api: build-api
-    podman run --pod app -v "{{ DATA_DIR }}:/data:ro,z" {{ mcp_container_env }} localhost/my-api
+    podman run --pod app -v "{{ DATA_DIR }}:/data:ro,z" {{ mcp_container_env }} {{ chat_container_env }} localhost/my-api
 
 [doc("everything to get the api up and running")]
 [group("API Container")]

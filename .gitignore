@@ -64,3 +64,6 @@ backend/Data/Census/**/*.csv
 frontend/tsconfig.tsbuildinfo
 
 tmp/
+
+# Data Chat eval runs (docs/guides/chat-evals.md)
+backend/evals/chat/results/

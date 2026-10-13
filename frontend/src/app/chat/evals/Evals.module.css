@@ -1,0 +1,64 @@
+/* Eval comparison page: one column per model, side by side. Neutral grays to
+   match the chat page; color only marks pass/fail and best values. */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.summary {
+  font-variant-numeric: tabular-nums;
+}
+
+.best {
+  font-weight: 700;
+}
+
+.case {
+  padding-top: 8px;
+  border-top: 1px solid #e2e4e8;
+}
+
+.columns {
+  display: grid;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e2e4e8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.criteria {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.criterion {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 8px;
+  align-items: start;
+  line-height: 1.4;
+}
+
+.question {
+  align-self: flex-end;
+  max-width: 90%;
+  padding: 6px 12px;
+  border-radius: 14px 14px 4px 14px;
+  background: #e9ebee;
+  font-size: var(--mantine-font-size-sm);
+}
