@@ -13,6 +13,10 @@ venv/
 *tidy.csv*
 *.ipynb
 
+# Logs
+*.log
+**.log.*
+
 # Large geodata files — not for version control
 backend/Data/Parcels/
 
