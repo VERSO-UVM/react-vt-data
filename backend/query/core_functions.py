@@ -69,7 +69,12 @@ def filter_options(
     for label in labels:
         col = colmap[label]
         rows = db.execute(f'SELECT DISTINCT "{col}" FROM {table} ORDER BY 1').fetchall()
-        values = [r[0] for r in rows if r[0] is not None]
+        # BOOLEAN columns -> "True"/"False" (options are typed as strings)
+        values = [
+            str(r[0]) if isinstance(r[0], bool) else r[0]
+            for r in rows
+            if r[0] is not None
+        ]
         order = CUSTOM_OPTION_ORDER.get(col)
         if order:
             unranked_values = [v for v in values if v not in order]

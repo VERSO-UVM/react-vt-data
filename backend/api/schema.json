@@ -49,7 +49,8 @@
         "County": "county",
         "Jurisdiction": "town",
         "Category": "category",
-        "Vacant Land": "vacant_land"
+        "Vacant Land": "vacant_land",
+        "Out-of-State Owner": "out_of_state_owner"
       },
       "range": {
         "Parcel Size (ac)": "acres"
