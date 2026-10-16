@@ -1,6 +1,6 @@
 # Documentation
 
-New here? Start with the [Codebase Primer](Codebase_Primer.md). Setup and
+New here? Start with the [Codebase Primer](codebase_primer.md). Setup and
 day-to-day commands are in the [root README](../README.md).
 
 ## Layout
@@ -9,24 +9,23 @@ day-to-day commands are in the [root README](../README.md).
 | ------------------------------ | --------------------------------------------------------------------- |
 | [architecture/](architecture/) | How the system is built and why: pipeline, containers, filter design  |
 | [datasets/](datasets/)         | One page per raw lake table (`lake.RAW.*`): source, columns, quirks   |
-| [guides/](guides/)             | Task-oriented how-tos and runbooks (MCP setup, deployment)            |
-| [reports/](reports/)           | Dated audits and findings; snapshots that are not kept up to date     |
-| [archive/](archive/)           | Superseded designs, meeting notes, and old planning; kept for history |
+| [guides/](guides/)             | Task-oriented how-tos and runbooks (MCP setup, deployment, data coverage notes)             |
+| [reports/](reports/)           | Dated issue audits and findings; Old Office of Engagement report examples in which this tool attempts to emulate automatically |
+
 
 ## Conventions
 
-- File names are lowercase `kebab-case.md` (the primer is the one exception).
-  Dataset pages are named after the lake table: `docs/datasets/<table>.md`.
-- Dated reports are prefixed `YYYY-MM-DD-`.
-- Link with relative paths so links work on GitHub and in an editor.
+- File names are lowercase `snake_case.md`
+  Dataset pages are named after the lake.RAW table: `docs/datasets/<table>.md`.
+- Dated reports are prefixed with `YYYYMMDD`.
+- Link repo files with relative paths so links work on GitHub and in an editor.
 - Format with Prettier (`frontend/node_modules/.bin/prettier --write docs/**/*.md`).
-- Move a doc to `archive/` instead of deleting it when its design is replaced.
 
 ## Dataset pages
 
 Pages with a full column reference are marked ✅; the rest are placeholders
-waiting for someone to fill in the table. Copy [zoning](datasets/zoning.md) as the
-template.
+waiting for someone to fill in the table. Copy [zoning](datasets/zoning.md) 
+to use as the dataset documentation template.
 
 | Table                                                    | Status |
 | -------------------------------------------------------- | ------ |
