@@ -14,13 +14,11 @@ from pydantic import BaseModel, ConfigDict, Field, WithJsonSchema, model_validat
 from data_tools.models import TOOL_MODELS, GeoType
 from data_tools.service import DataToolService
 
-# Tools whose results are row tables a chart can draw.
-CHARTABLE_TOOLS = (
-    "query_data",
-    "get_timeseries",
-    "compare_places",
-    "get_zoning_summary",
-)
+# The only data tools a chart or ranking may reference: their results are row
+# tables. Everything that checks this uses this one type.
+ChartableTool = Literal[
+    "query_data", "get_timeseries", "compare_places", "get_zoning_summary"
+]
 # The resolver owns paging; a reference never pins a page.
 PAGING_FIELDS = ("limit", "cursor")
 
@@ -87,9 +85,7 @@ REF_ARGS_SCHEMA = {
 class DataRef(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    tool: Literal[
-        "query_data", "get_timeseries", "compare_places", "get_zoning_summary"
-    ]
+    tool: ChartableTool
     # Validated and stored as a plain dict; only the schema shown to models
     # lists the fields (see RefArgs).
     args: Annotated[dict[str, Any], WithJsonSchema(REF_ARGS_SCHEMA)]

@@ -1,5 +1,6 @@
 """Data chat tests use a tiny warehouse and the scripted demo model, never a real LLM."""
 
+import asyncio
 import json
 
 import duckdb
@@ -8,8 +9,10 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from pydantic_ai import ToolReturn
+from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.models.function import FunctionModel
 
-from chat.agent import chart_tool, preview, rank_tool
+from chat.agent import build_agent, chart_tool, preview, rank_tool, stream_answer
 from chat.charts import ChartSpec, DataRef, overlapping_rows, resolve_rows
 from chat.config import ChatSettings
 from chat.demo import CHART
@@ -321,3 +324,32 @@ def test_ref_args_schema_lists_fields_for_models():
     assert "filters" in args["properties"]
     nulls = DataRef(tool="get_timeseries", args={"dataset_id": INCOME, "years": None})
     assert nulls.args == {"dataset_id": INCOME}
+
+
+@pytest.mark.parametrize(
+    ("status", "phrase"),
+    [
+        (402, "usage limit"),
+        (429, "busy"),
+        (401, "isn't configured"),
+        (400, "couldn't handle"),
+        (503, "unavailable"),
+    ],
+)
+def test_provider_http_errors_end_the_turn_with_a_specific_message(
+    warehouse, status, phrase
+):
+    async def fails(_messages, _info):
+        raise ModelHTTPError(status_code=status, model_name="some/model")
+        yield ""  # an async generator, like a streaming model
+
+    settings = ChatSettings(model="demo", warehouse_path=warehouse)
+    agent = build_agent(settings, DataToolService(warehouse))
+
+    async def run():
+        with agent.override(model=FunctionModel(stream_function=fails)):
+            return [e async for e in stream_answer(agent, settings, "hi", [])]
+
+    events = asyncio.run(run())
+    assert events[-1]["type"] == "error"
+    assert phrase in events[-1]["message"]

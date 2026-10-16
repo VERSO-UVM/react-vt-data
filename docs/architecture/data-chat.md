@@ -21,22 +21,23 @@ Decisions so far:
 
 ## v0 scope
 
-| In v0                                                                                   | Deferred until storage is decided                   |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `CHAT_ENABLED` flag and `GET /api/chat/status`                                          | Spend ledger and the monthly cap                    |
-| `POST /api/chat` SSE route, stateless (history comes from the client, capped in size)   | Accounts and login                                  |
-| The data tools, in-process (with previews trimmed for the model)                        | Server-side chat history and conversation logging   |
-| `render_chart` tool using data references, and `POST /api/chat/data` to resolve them    | PDF report blocks                                   |
-| `/chat` page; chats saved in localStorage like the working report                       | Session workspace handles that persist across turns |
-| Per-turn bounds: output length, tool-loop iterations, maximum history size              |                                                     |
-| In-memory per-IP rate limit (same approach as the MCP's; per worker, resets on restart) |                                                     |
-| A dedicated OpenAI project and key with its own monthly budget                          |                                                     |
+| In v0                                                                                              | Deferred until storage is decided                   |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `CHAT_ENABLED` flag and `GET /api/chat/status`                                                     | Spend ledger and the monthly cap                    |
+| `POST /api/chat` SSE route, stateless (history comes from the client, capped in size)              | Accounts and login                                  |
+| The data tools, in-process (with previews trimmed for the model)                                   | Server-side chat history and conversation logging   |
+| `render_chart` tool using data references, and `POST /api/chat/data` to resolve them               | PDF report blocks                                   |
+| `/chat` page; chats saved in localStorage like the working report                                  | Session workspace handles that persist across turns |
+| Per-turn bounds: output length, tool-loop iterations, maximum history size                         |                                                     |
+| In-memory per-IP rate limit (same approach as the MCP's; per worker, resets on restart)            |                                                     |
+| A dedicated OpenRouter key with a credit limit (spent: HTTP 402, chat says it hit its usage limit) |                                                     |
 
-**Risk with no cap:** once the flag is on, the endpoint is public, and nothing
-in our code limits total monthly spend. Until the ledger exists, the per-turn
-bounds, the in-memory rate limit, and the OpenAI project budget are the only
-protection. Keep `CHAT_ENABLED` off in production, or enable it only for short,
-watched test windows.
+**Risk with no spend cap:** once the flag is on, nothing in our code limits
+total monthly spend. Until the ledger exists, the per-turn bounds, the
+in-memory rate limit, and the OpenRouter key's credit limit are the only
+protection. So keep `CHAT_ENABLED` off in production, and turn it on only in a
+UVM-only QA environment (on the VACC, not reachable from the internet) for
+internal testers. That environment is a prerequisite for enabling chat anywhere.
 
 ## v0 implementation map
 
@@ -181,7 +182,17 @@ app, so they're a later fallback, not the main path.
 | Self-hosted on the UVM VM (rootless podman + gVisor, or a locked-down subprocess) | Direct, read-only mount of the warehouse                                      | No marginal cost                                                          | We have no root on the VM. Running untrusted model-written code next to production data on a university VM is a security and ops burden we don't need.  |
 | In-browser (Pyodide / DuckDB-WASM)                                                | Ship small extracts to the client                                             | Free                                                                      | Cute, but the warehouse is ~700 MB, and results become invisible to the agent unless sent back.                                                         |
 
-Third-party rates change often. Check current pricing before you pick one. **Recommendation:** use the hosted interpreter from whichever provider we're on, because it means no new vendor or secrets. If we want the sandbox to stay provider-neutral (to go with Pydantic AI), use E2B or Modal.
+Third-party rates change often. Check current pricing before you pick one. **Recommendation:** hold off until QA and the evals show questions that the data tools (and later SQL) can't answer. When we need one, use a provider-neutral sandbox (E2B or Modal): models now go through OpenRouter, which doesn't expose providers' hosted interpreters, and a neutral sandbox keeps model choice a config value. See [Adding a sandbox later](#adding-a-sandbox-later).
+
+## Adding a sandbox later
+
+A sketch, so the work is scoped when the time comes:
+
+1. **A `run_python` tool** taking `code` and `inputs`: a list of data references, the same `DataRef` charts use. The backend resolves each reference with `resolve_rows`, writes it into the sandbox as a CSV or Parquet file, runs the code (pandas available) with a time and memory limit, and returns stdout plus a small table preview to the model.
+2. **Isolation:** the sandbox gets only those files. No network, no secrets, no warehouse access, and a fresh sandbox per question.
+3. **Showing results:** computed rows aren't a warehouse query, so a chart can't reference them. Either let `render_chart` accept a small inline table (capped rows) for sandbox output, or save the output as a session table first, which needs the storage decision (tier T3).
+4. **Limits and cost:** a separate `CHAT_SANDBOX` flag, a cap on executions per question, and sandbox time recorded next to token cost in the eval results.
+5. **Evals first:** add cases that need computation (growth rates across all towns, correlations) and run them before and after, so the sandbox earns its place with numbers.
 
 ## Decision 4: what $300 buys
 
@@ -207,7 +218,7 @@ depth, from the inside out:
    - Before a turn: **reserve** a worst-case estimate. Refuse if `spent + reserved + estimate > cap`. Reserving prevents concurrent requests from overshooting together.
    - After each model response: settle the actual cost from reported usage (input, cached input, cache writes, output) × a price table in config, plus sandbox time if used.
    - Window resets on the 1st of the month (America/New_York). Optional soft threshold (e.g. 80%) to lower effort or switch to a cheaper model.
-5. **Provider backstop**: a dedicated OpenAI project and API key for chat, with a monthly budget set slightly above the app cap. Check whether the project budget hard-stops requests or only sends alerts; if it only alerts, our ledger is the real cap.
+5. **Provider backstop**: a dedicated OpenRouter key for chat with a credit limit slightly above the app cap. OpenRouter rejects requests once the limit is spent (HTTP 402), and the chat turns that into "Data Chat has reached its usage limit for now." Confirm this in the OpenRouter dashboard before relying on it.
 6. **Reconcile** (optional, later): a nightly job compares the ledger with the provider's usage/cost API.
 
 When the cap is reached, `GET /api/chat/status` returns `{ "available": false, "resets_at": "2026-11-01" }` and the UI shows: _"Data Chat has reached its monthly usage limit and will be back on November 1."_
@@ -249,11 +260,26 @@ FastAPI chat router (mounted only if CHAT_ENABLED)
 | 2     | Read-only SQL tool behind its own flag after a security review; a small eval set of real planner questions, which we also use to compare GPT-6.1 Sol against Claude Sonnet 5.5.            |
 | 3     | Sandbox, if evals show the need. Otherwise skip.                                                                                                                                           |
 
-## Open questions
+## Decisions from review (2026-10-16)
 
-1. Are we comfortable reversing the MCP's no-arbitrary-SQL rule for the chat agent (Phase 2)?
-2. May we log conversations (anonymized) to build evals? This needs a visible notice.
-3. Does an OpenAI project budget hard-stop requests, or only alert? This decides whether item 5 above is a real backstop.
+- **SQL (tier T2):** yes, behind its own flag. Log every query so we can check
+  that pre-written tools weren't the better choice, verify results with evals,
+  and promote queries that keep coming up into proper tools (cheaper and more
+  consistent). Logging needs the storage decision, or a log file to start.
+- **Conversation logging:** when we add it, show a banner on the chat page;
+  ask for consent once there are user accounts.
+- **Where chat runs:** UVM-only QA environment first (see v0 scope).
+- **Sandbox:** hold until QA shows the need (see Adding a sandbox later).
+
+## Still open
+
+1. Budget: the monthly amount, and whether heavy users could ever bring their
+   own OpenRouter key or pay for more (a question for Emma).
+2. Whether the OpenRouter key's credit limit hard-stops requests as expected
+   (confirm in the dashboard).
+3. Which model becomes the default: compare GPT-6.1 Sol and DeepSeek V4.1
+   Flash with `--repeat 3`, and check where OpenRouter routes DeepSeek requests
+   and what those providers retain.
 
 ## Sources
 

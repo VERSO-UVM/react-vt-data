@@ -25,7 +25,7 @@ from pydantic_ai import (
     UsageLimits,
     UserPromptPart,
 )
-from pydantic_ai.exceptions import ModelAPIError, UserError
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UserError
 
 from chat.charts import (
     FILTERS_HINT,
@@ -160,7 +160,14 @@ def chart_tool(service: DataToolService, settings: ChatSettings) -> Tool:
         except Exception as exc:  # noqa: BLE001 -- the model gets a safe message
             return {"error": tool_error(exc, "render_chart")}
         missing = check_columns(spec, resolved["columns"])
-        overlap = None if missing else overlapping_rows(spec, resolved["rows"])
+        if missing:
+            return {
+                "error": f"Columns not in the referenced result: {', '.join(missing)}",
+                "available_columns": resolved["columns"],
+            }
+        if not resolved["rows"]:
+            return {"error": "The referenced query returned no rows; nothing to chart"}
+        overlap = overlapping_rows(spec, resolved["rows"])
         if overlap is not None:
             point = f"{spec.x} and {spec.series}" if spec.series else spec.x
             hint = (
@@ -173,13 +180,6 @@ def chart_tool(service: DataToolService, settings: ChatSettings) -> Tool:
                 "error": f"Several rows share the same {point}, so the chart would "
                 f"hide some of them. {hint}"
             }
-        if missing:
-            return {
-                "error": f"Columns not in the referenced result: {', '.join(missing)}",
-                "available_columns": resolved["columns"],
-            }
-        if not resolved["rows"]:
-            return {"error": "The referenced query returned no rows; nothing to chart"}
         return ToolReturn(
             return_value={
                 "rendered": True,
@@ -257,6 +257,21 @@ def build_agent(settings: ChatSettings, service: DataToolService) -> Agent:
         defer_model_check=True,
         model_settings=model_settings,
     )
+
+
+def http_error_message(status: int) -> str:
+    """What to tell the user when the model provider answers with an error."""
+    if status == 402:
+        # OpenRouter's reply once the key's credit limit is spent: the spend
+        # backstop until we have a ledger of our own.
+        return "Data Chat has reached its usage limit for now. Try again later."
+    if status in (401, 403, 404):
+        return "Chat isn't configured on this server yet."
+    if status in (408, 429):
+        return "The language model is busy right now. Try again in a minute."
+    if status < 500:
+        return "The language model couldn't handle that request. Try rephrasing it or starting a new chat."
+    return "The language model service is unavailable. Try again shortly."
 
 
 def turn_cost(messages: list[ModelMessage]) -> float | None:
@@ -351,6 +366,15 @@ async def stream_answer(
         # Usually a missing provider API key or an unknown model name.
         logger.error("Chat model configuration error: %s", exc)
         yield {"type": "error", "message": "Chat isn't configured on this server yet."}
+    except ModelHTTPError as exc:
+        # The status says what to do: limit reached, busy, misconfigured, or
+        # down. The body can hold provider details, so it isn't logged.
+        logger.error(
+            "Chat model request failed: HTTP %s from %s",
+            exc.status_code,
+            exc.model_name,
+        )
+        yield {"type": "error", "message": http_error_message(exc.status_code)}
     except ModelAPIError as exc:
         logger.error("Chat model request failed (%s)", type(exc).__name__)
         yield {
