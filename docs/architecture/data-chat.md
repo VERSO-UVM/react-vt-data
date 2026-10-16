@@ -21,16 +21,16 @@ Decisions so far:
 
 ## v0 scope
 
-| In v0                                                                                              | Deferred until storage is decided                   |
-| -------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `CHAT_ENABLED` flag and `GET /api/chat/status`                                                     | Spend ledger and the monthly cap                    |
-| `POST /api/chat` SSE route, stateless (history comes from the client, capped in size)              | Accounts and login                                  |
-| The data tools, in-process (with previews trimmed for the model)                                   | Server-side chat history and conversation logging   |
-| `render_chart` tool using data references, and `POST /api/chat/data` to resolve them               | PDF report blocks                                   |
-| `/chat` page; chats saved in localStorage like the working report                                  | Session workspace handles that persist across turns |
-| Per-turn bounds: output length, tool-loop iterations, maximum history size                         |                                                     |
-| In-memory per-IP rate limit (same approach as the MCP's; per worker, resets on restart)            |                                                     |
-| A dedicated OpenRouter key with a credit limit (spent: HTTP 402, chat says it hit its usage limit) |                                                     |
+| In v0                                                                                   | Deferred until storage is decided                   |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `CHAT_ENABLED` flag and `GET /api/chat/status`                                          | Spend ledger and the monthly cap                    |
+| `POST /api/chat` SSE route, stateless (history comes from the client, capped in size)   | Accounts and login                                  |
+| The data tools, in-process (with previews trimmed for the model)                        | Server-side chat history and conversation logging   |
+| `render_chart` tool using data references, and `POST /api/chat/data` to resolve them    | PDF report blocks                                   |
+| `/chat` page; chats saved in localStorage like the working report                       | Session workspace handles that persist across turns |
+| Per-turn bounds: output length, tool-loop iterations, maximum history size              |                                                     |
+| In-memory per-IP rate limit (same approach as the MCP's; per worker, resets on restart) |                                                     |
+| A dedicated OpenRouter key with a credit limit, which hard-stops requests once spent    |                                                     |
 
 **Risk with no spend cap:** once the flag is on, nothing in our code limits
 total monthly spend. Until the ledger exists, the per-turn bounds, the
@@ -218,7 +218,11 @@ depth, from the inside out:
    - Before a turn: **reserve** a worst-case estimate. Refuse if `spent + reserved + estimate > cap`. Reserving prevents concurrent requests from overshooting together.
    - After each model response: settle the actual cost from reported usage (input, cached input, cache writes, output) × a price table in config, plus sandbox time if used.
    - Window resets on the 1st of the month (America/New_York). Optional soft threshold (e.g. 80%) to lower effort or switch to a cheaper model.
-5. **Provider backstop**: a dedicated OpenRouter key for chat with a credit limit slightly above the app cap. OpenRouter rejects requests once the limit is spent (HTTP 402), and the chat turns that into "Data Chat has reached its usage limit for now." Confirm this in the OpenRouter dashboard before relying on it.
+5. **Provider backstop**: a dedicated key with a hard spend limit slightly above the app cap. Both providers support one (checked 2026-10-16):
+   - **OpenRouter:** an optional credit limit per API key. Once it's spent, that key's requests fail even if the account has credit. The docs give 402 ("insufficient credits") in one place and 403 with `error.metadata.limit_source: "openrouter_key_limit"` in another. A limit can reset on a schedule or never; `GET /api/v1/key` shows what's left.
+   - **OpenAI** (only for a direct `openai:` model): a project or organization hard limit, which must be switched on ("Enforce a hard limit"); spend alerts alone don't block anything. Hitting it returns 429 with `project_spend_limit_exceeded` (or `organization_spend_limit_exceeded`).
+   - Enforcement isn't instant on OpenAI, so spend can slightly exceed the limit; set it a little under what we can afford.
+   - **Known gap:** the chat only recognizes 402 as "usage limit reached". An OpenRouter 403 key-limit error would read as "isn't configured", and an OpenAI 429 spend-limit error as "busy, try again". Reading `limit_source` or the error code from the response body would fix both.
 6. **Reconcile** (optional, later): a nightly job compares the ledger with the provider's usage/cost API.
 
 When the cap is reached, `GET /api/chat/status` returns `{ "available": false, "resets_at": "2026-11-01" }` and the UI shows: _"Data Chat has reached its monthly usage limit and will be back on November 1."_
@@ -275,13 +279,14 @@ FastAPI chat router (mounted only if CHAT_ENABLED)
 
 1. Budget: the monthly amount, and whether heavy users could ever bring their
    own OpenRouter key or pay for more (a question for Emma).
-2. Whether the OpenRouter key's credit limit hard-stops requests as expected
-   (confirm in the dashboard).
-3. Which model becomes the default: compare GPT-6.1 Sol and DeepSeek V4.1
+2. Which model becomes the default: compare GPT-6.1 Sol and DeepSeek V4.1
    Flash with `--repeat 3`, and check where OpenRouter routes DeepSeek requests
    and what those providers retain.
 
 ## Sources
+
+- OpenRouter limits (per-key credit limits): https://openrouter.ai/docs/api-reference/limits
+- OpenAI spend limits: https://developers.openai.com/api/docs/guides/spend-limits
 
 - OpenAI API pricing: https://developers.openai.com/api/docs/pricing (GPT-6.1 Sol rates, Code Interpreter containers)
 - Claude rates and code-execution pricing: Anthropic API docs, as of 2026-09-25
