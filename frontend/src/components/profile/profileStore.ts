@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -76,3 +77,17 @@ export const useProfile = create<ProfileStore>()(
     },
   ),
 );
+
+// Whether the saved profile has loaded from localStorage. Pages are statically
+// exported, so on a full page load React's hydration render gets the store's
+// defaults (Vermont vs. Vermont) from useProfile(), and the saved profile only
+// arrives on the next render. Wait for this before fetching by location or
+// seeding local state from the profile. Client-side navigation is already
+// hydrated, so this is true from the first render there.
+export function useProfileHydrated(): boolean {
+  return useSyncExternalStore(
+    (onChange) => useProfile.persist.onFinishHydration(onChange),
+    () => useProfile.persist.hasHydrated(),
+    () => false,
+  );
+}

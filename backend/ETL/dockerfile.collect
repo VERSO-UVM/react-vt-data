@@ -16,6 +16,8 @@ RUN uv run python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')
 
 # The source data collection scripts (source --> destination)
 COPY --chown=app:app ./data_collection /code/data_collection
+# data_collection imports query.clock (query/__init__ is lazy, so this is light)
+COPY --chown=app:app ./query /code/query
 # The master script file to run data collection
 COPY --chown=app:app ./run_data_collection.py /code/run_data_collection.py
 

@@ -15,7 +15,11 @@ import {
   Stack,
   Text,
 } from '@mantine/core';
-import { useProfile, Location } from '@/components/profile/profileStore';
+import {
+  useProfile,
+  useProfileHydrated,
+  Location,
+} from '@/components/profile/profileStore';
 import {
   DemographicsDashboard,
   LandUseDashboard,
@@ -191,6 +195,8 @@ export default function ReportsByTopic({
   const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Skip the hydration render's default locations (see useProfileHydrated).
+  const hydrated = useProfileHydrated();
 
   // ---------------------------------------------------------------------------
   // Fetch both locations whenever section or location names change — plus,
@@ -200,6 +206,7 @@ export default function ReportsByTopic({
   // section, since it's supplementary to the primary table.
   // ---------------------------------------------------------------------------
   useEffect(() => {
+    if (!hydrated) return;
     const cfg = SECTIONS[section];
     // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch effect: reset status before the async request
     setLoading(true);
@@ -212,9 +219,6 @@ export default function ReportsByTopic({
     ) => postSection(cfg, url, location, endpoint);
 
     const timeseriesKeys = Object.keys(cfg.timeseries ?? {});
-    // Ignore a response once the locations change again: the first fetch
-    // (made before the saved profile loads) can otherwise land last and
-    // show the default places' numbers under the profile's names.
     let cancelled = false;
 
     Promise.all([
@@ -258,7 +262,7 @@ export default function ReportsByTopic({
     // .name changes whenever type/county/town does (it's derived from them),
     // so it's a reliable proxy for "the location changed" without needing
     // the whole objects in the dependency array.
-  }, [section, myLocation.name, comparison.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hydrated, section, myLocation.name, comparison.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Section-wide data (cfg.allAreas) doesn't depend on the locations, so it's

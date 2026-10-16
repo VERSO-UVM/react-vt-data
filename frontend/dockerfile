@@ -47,6 +47,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_MAINTENANCE_MODE=false
 ENV NEXT_PUBLIC_MAINTENANCE_MODE=$NEXT_PUBLIC_MAINTENANCE_MODE
 
+# Web3Forms access key for the contact form. Inlined at build time, so pass
+# with --build-arg NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY=...
+ARG NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY
+ENV NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY=$NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY
+
 # Build Next.js application
 RUN --mount=type=cache,target=/app/.next/cache \
     npm run build;
