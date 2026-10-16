@@ -80,7 +80,9 @@ function removeStaleFilters(
     const sel = filters[labels[i]];
     const selVal = Array.isArray(sel) ? sel[0] : undefined;
     if (selVal == null) break; // nothing picked at/after this level yet
-    if (node?.[selVal] == null) {
+    // Leaf levels (Prevalence Measure) map to null/{} -- test key presence,
+    // not value, or a valid leaf pick is pruned and re-defaulted in a loop.
+    if (node == null || !(selVal in node)) {
       staleFrom = i;
       break;
     }
