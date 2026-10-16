@@ -10,9 +10,12 @@ eventual target is a hard **$300/month** cap.
 
 Decisions so far:
 
-- **Model:** GPT-6.1 Sol by default, reached through OpenRouter so any model is
-  a config change (`CHAT_MODEL`). Compare candidates with the eval suite before
-  switching: [guides/chat-evals.md](../guides/chat-evals.md).
+- **Model:** Claude Haiku 5.5 by default, chosen with the eval suite over
+  GPT-6.1 Sol and DeepSeek V4.1 Flash (see Decision 4). Models are reached
+  through OpenRouter, so changing one is a config change (`CHAT_MODEL`); compare
+  candidates first: [guides/chat-evals.md](../guides/chat-evals.md).
+- **Data routing:** every OpenRouter request sets `data_collection: "deny"`, so
+  it never goes to a provider that stores or trains on inputs.
 - **Feature flag:** backend environment flag only. No invite codes or per-user gating.
 - **v0 has no database and no spend cap.** Chats live in the browser's
   localStorage, and the browser sends the conversation history with each request,
@@ -194,17 +197,32 @@ A sketch, so the work is scoped when the time comes:
 4. **Limits and cost:** a separate `CHAT_SANDBOX` flag, a cap on executions per question, and sandbox time recorded next to token cost in the eval results.
 5. **Evals first:** add cases that need computation (growth rates across all towns, correlations) and run them before and after, so the sandbox earns its place with numbers.
 
-## Decision 4: what $300 buys
+## Decision 4: model and what $300 buys
 
-Rough per-question estimate for an agentic answer: ~5 model calls, ~75K input tokens total (mostly re-sent context), ~4K output tokens. Assumes ~80% of input is served from the prompt cache. **These are planning numbers.** Models use very different numbers of reasoning tokens for the same question, so measure real usage in the first week before trusting any comparison.
+Measured with the eval suite on 2026-10-16: 5 chats (6 questions, one chat has
+a follow-up), each played 3 times per model and graded by Claude Opus 5.5
+against live warehouse data, with `data_collection: "deny"` routing.
 
-| Model                    | Input / cached input / output per MTok | ≈ cost per question | ≈ questions per $300 |
-| ------------------------ | -------------------------------------- | ------------------- | -------------------- |
-| **GPT-6.1 Sol** (chosen) | $2.00 / $0.10 / $10.00                 | $0.08               | ~3,600               |
-| Claude Sonnet 5.5        | $2.00 / $0.20 / $10.00                 | $0.09               | ~3,300               |
-| Claude Opus 5.5          | $4.00 / $0.20 / $20.00                 | $0.17               | ~1,750               |
+| Model                          | Price in / out per MTok | Score | Judge quality | Cost / chat | Time / chat | Errors | ≈ chats per $300 |
+| ------------------------------ | ----------------------- | ----- | ------------- | ----------- | ----------- | ------ | ---------------- |
+| **Claude Haiku 5.5** (default) | $0.10 / $0.50           | 91%   | 7.6/10        | $0.019      | 18s         | 0      | ~16,000          |
+| GPT-6.1 Sol                    | $2.00 / $10.00          | 89%   | 7.1/10        | $0.042      | 50s         | 2      | ~7,000           |
+| DeepSeek V4.1 Flash            | $0.013 / $0.60          | 87%   | 7.5/10        | $0.009      | 19s         | 0      | ~34,000          |
 
-GPT-6.1 Sol and Sonnet 5.5 have the same list price. Sol's cheaper cache reads give it a small edge on long agent loops. Both are about half the cost of Opus 5.5. Sol's input and output rates double and 1.5×, respectively, past 272K input tokens. Our conversations should stay well under that, but cap context per conversation to be sure. Keep the system prompt and tool list byte-stable at the start of every request so caching keeps working.
+- **Haiku 5.5** was the most consistent: no case averaged below 82%, and it had
+  no errors. It runs only on Anthropic, AWS, Google, and Azure.
+- **GPT-6.1 Sol** was perfect on three cases but averaged 67% on the jobs
+  breakdown and 77% on the ranking. Its two errors were a timeout and running
+  out of steps, and an earlier run had chats stall for over 8 minutes.
+- **DeepSeek V4.1 Flash** is half Haiku's price, but was weaker on the forecast
+  and comparison cases. OpenRouter serves it through about 35 third-party
+  hosts, many running reduced-precision (fp4) builds, so quality can vary by
+  host.
+
+Costs are per eval chat. Real questions may be longer or chattier, so treat
+the last column as an upper bound on volume until we log real usage. The earlier
+planning estimate (about $0.08 per question for Sol) was roughly double Sol's
+measured cost and four times Haiku's.
 
 ## Budget cap design (deferred, not in v0)
 
@@ -279,9 +297,6 @@ FastAPI chat router (mounted only if CHAT_ENABLED)
 
 1. Budget: the monthly amount, and whether heavy users could ever bring their
    own OpenRouter key or pay for more (a question for Emma).
-2. Which model becomes the default: compare GPT-6.1 Sol and DeepSeek V4.1
-   Flash with `--repeat 3`, and check where OpenRouter routes DeepSeek requests
-   and what those providers retain.
 
 ## Sources
 

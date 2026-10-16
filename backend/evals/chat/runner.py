@@ -7,6 +7,7 @@ import json
 import subprocess
 import time
 from collections.abc import Callable
+from contextlib import aclosing
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -21,12 +22,24 @@ from .judge import GENERAL_CRITERIA, build_judge, judge_chat
 
 RESULTS_DIR = Path(__file__).with_name("results")
 CHART_PREVIEW_ROWS = 15
+# Seconds before a stuck turn or judgment is abandoned. Normal turns take
+# 10-80 s; a stalled provider can otherwise hold a run for many minutes.
+TURN_TIMEOUT = 180.0
+JUDGE_TIMEOUT = 180.0
 
 
 async def play_chat(
-    agent, settings: ChatSettings, service: DataToolService, case: Case
+    agent,
+    settings: ChatSettings,
+    service: DataToolService,
+    case: Case,
+    turn_timeout: float = TURN_TIMEOUT,
 ) -> list[dict[str, Any]]:
-    """Ask each of the case's questions in order, as the chat page would."""
+    """Ask each of the case's questions in order, as the chat page would.
+
+    A turn that runs past `turn_timeout` seconds (a stalled provider, say) ends
+    with an error instead of holding up the whole run.
+    """
     history: list[dict[str, str]] = []
     turns = []
     for question in case.turns:
@@ -34,22 +47,34 @@ async def play_chat(
         answer, error, usage = "", None, {}
         steps: dict[str, dict[str, Any]] = {}
         charts: list[dict[str, Any]] = []
-        async for event in stream_answer(
-            agent, settings, question, to_history(history)
-        ):
-            kind = event["type"]
-            if kind == "text":
-                answer += event["delta"]
-            elif kind == "tool_call":
-                steps[event["id"]] = {"name": event["name"], "ok": True, "error": None}
-            elif kind == "tool_result" and event["id"] in steps:
-                steps[event["id"]].update(ok=event["ok"], error=event["error"])
-            elif kind == "chart":
-                charts.append(event["chart"])
-            elif kind == "done":
-                usage = event["usage"]
-            elif kind == "error":
-                error = event["message"]
+        try:
+            async with asyncio.timeout(turn_timeout):
+                # aclosing: a timed-out turn still closes the model stream.
+                async with aclosing(
+                    stream_answer(agent, settings, question, to_history(history))
+                ) as events:
+                    async for event in events:
+                        kind = event["type"]
+                        if kind == "text":
+                            answer += event["delta"]
+                        elif kind == "tool_call":
+                            steps[event["id"]] = {
+                                "name": event["name"],
+                                "ok": True,
+                                "error": None,
+                            }
+                        elif kind == "tool_result" and event["id"] in steps:
+                            steps[event["id"]].update(
+                                ok=event["ok"], error=event["error"]
+                            )
+                        elif kind == "chart":
+                            charts.append(event["chart"])
+                        elif kind == "done":
+                            usage = event["usage"]
+                        elif kind == "error":
+                            error = event["message"]
+        except TimeoutError:
+            error = f"Timed out after {turn_timeout:.0f}s"
         turns.append(
             {
                 "question": question,
@@ -136,17 +161,26 @@ async def run_one(
     service: DataToolService,
     references: list[dict[str, Any]],
     judge,
+    turn_timeout: float = TURN_TIMEOUT,
+    judge_timeout: float = JUDGE_TIMEOUT,
 ) -> dict[str, Any]:
     settings = ChatSettings(model=model, warehouse_path=service.warehouse_path)
     agent = build_agent(settings, service)
-    turns = await play_chat(agent, settings, service, case)
+    turns = await play_chat(agent, settings, service, case, turn_timeout)
     checks = automatic_checks(case, turns)
     verdict = None
     if judge is not None:
         try:
-            verdict = await judge_chat(
-                judge, case.title, case.criteria + GENERAL_CRITERIA, references, turns
-            )
+            async with asyncio.timeout(judge_timeout):
+                verdict = await judge_chat(
+                    judge,
+                    case.title,
+                    case.criteria + GENERAL_CRITERIA,
+                    references,
+                    turns,
+                )
+        except TimeoutError:
+            verdict = {"error": f"The judge timed out after {judge_timeout:.0f}s"}
         except Exception as exc:  # noqa: BLE001 -- keep the chat; report the judge failure
             verdict = {"error": f"{type(exc).__name__}: {exc}"}
     costs = [t["usage"].get("cost_usd") for t in turns]
@@ -220,39 +254,30 @@ async def run_eval(
     service: DataToolService | None = None,
     judge=None,
     on_result: Callable[[dict[str, Any]], None] | None = None,
+    save_dir: Path | None = None,
+    turn_timeout: float = TURN_TIMEOUT,
+    judge_timeout: float = JUDGE_TIMEOUT,
 ) -> dict[str, Any]:
-    """Run every case for every model (times `repeat`) and judge each chat."""
+    """Run every case for every model (times `repeat`) and judge each chat.
+
+    With `save_dir`, the run is saved when it starts and after every chat,
+    marked incomplete until the end, so an interrupted run keeps its finished
+    chats and the comparison page can show progress.
+    """
     service = service or DataToolService()
     if judge is None and judge_model:
         judge = build_judge(judge_model)
     references = {c.id: [r.run(service) for r in c.reference] for c in cases}
-    gate = asyncio.Semaphore(concurrency)
-
-    async def job(model: str, case: Case, n: int):
-        async with gate:
-            result = await run_one(
-                model,
-                case,
-                n,
-                service=service,
-                references=references[case.id],
-                judge=judge,
-            )
-        if on_result:
-            on_result(result)
-        return result
-
-    results = await asyncio.gather(
-        *(job(m, c, n) for m in models for c in cases for n in range(repeat))
-    )
     created = datetime.now(UTC)
-    return {
+    run: dict[str, Any] = {
         "run_id": created.strftime("%Y%m%d-%H%M%S"),
         "created_at": created.isoformat(),
         "git_sha": _git_sha(),
         "judge_model": judge_model,
         "models": models,
         "repeat": repeat,
+        "total": len(models) * len(cases) * repeat,
+        "complete": False,
         "cases": [
             {
                 "id": c.id,
@@ -264,13 +289,75 @@ async def run_eval(
             }
             for c in cases
         ],
-        "results": list(results),
-        "summary": summarize(models, list(results)),
+        "results": [],
+        "summary": summarize(models, []),
     }
+
+    def checkpoint() -> None:
+        run["summary"] = summarize(models, run["results"])
+        if save_dir is not None:
+            save_run(run, save_dir)
+
+    checkpoint()
+    gate = asyncio.Semaphore(concurrency)
+
+    async def job(model: str, case: Case, n: int):
+        async with gate:
+            result = await run_one(
+                model,
+                case,
+                n,
+                service=service,
+                references=references[case.id],
+                judge=judge,
+                turn_timeout=turn_timeout,
+                judge_timeout=judge_timeout,
+            )
+        run["results"].append(result)
+        checkpoint()
+        if on_result:
+            on_result(result)
+
+    await asyncio.gather(
+        *(job(m, c, n) for m in models for c in cases for n in range(repeat))
+    )
+    run["complete"] = True
+    checkpoint()
+    return run
+
+
+def merge_runs(base: dict[str, Any], *others: dict[str, Any]) -> dict[str, Any]:
+    """Add other runs' models to `base`, e.g. a candidate tried later.
+
+    The runs must cover the same cases with the same judge and repeat count, so
+    the merged comparison stays like for like.
+    """
+    merged = {**base, "models": list(base["models"]), "results": list(base["results"])}
+    case_ids = [c["id"] for c in base["cases"]]
+    for other in others:
+        if [c["id"] for c in other["cases"]] != case_ids:
+            raise ValueError(f"Run {other['run_id']} covers different cases")
+        if other.get("judge_model") != base.get("judge_model"):
+            raise ValueError(f"Run {other['run_id']} used a different judge")
+        if other.get("repeat") != base.get("repeat"):
+            raise ValueError(f"Run {other['run_id']} used a different repeat count")
+        overlap = set(other["models"]) & set(merged["models"])
+        if overlap:
+            raise ValueError(f"Both runs include {', '.join(sorted(overlap))}")
+        merged["models"] += other["models"]
+        merged["results"] += other["results"]
+    merged["total"] = sum(r.get("total", len(r["results"])) for r in (base, *others))
+    merged["complete"] = all(r.get("complete", True) for r in (base, *others))
+    merged["merged_from"] = [r["run_id"] for r in others]
+    merged["summary"] = summarize(merged["models"], merged["results"])
+    return merged
 
 
 def save_run(run: dict[str, Any], out_dir: Path = RESULTS_DIR) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{run['run_id']}.json"
-    path.write_text(json.dumps(run, indent=2, default=str))
+    # Write then rename, so a reader never sees a half-written file.
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(run, indent=2, default=str))
+    tmp.replace(path)
     return path

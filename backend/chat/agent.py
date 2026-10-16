@@ -36,7 +36,7 @@ from chat.charts import (
     overlapping_rows,
     resolve_rows,
 )
-from chat.config import ChatSettings, model_name
+from chat.config import PROVIDER_ROUTING, ChatSettings, model_name
 from data_tools.models import TOOL_DESCRIPTIONS, TOOL_MODELS
 from data_tools.service import DataToolService
 
@@ -244,6 +244,7 @@ def build_agent(settings: ChatSettings, service: DataToolService) -> Agent:
     elif model.startswith("openrouter:"):
         # Ask OpenRouter to report each response's cost (see turn_cost).
         model_settings["openrouter_usage"] = {"include": True}
+        model_settings["openrouter_provider"] = PROVIDER_ROUTING
     tools = [
         data_tool(service, name, settings.preview_rows) for name in AGENT_DATA_TOOLS
     ]

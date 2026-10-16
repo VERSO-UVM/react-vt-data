@@ -353,3 +353,12 @@ def test_provider_http_errors_end_the_turn_with_a_specific_message(
     events = asyncio.run(run())
     assert events[-1]["type"] == "error"
     assert phrase in events[-1]["message"]
+
+
+def test_openrouter_models_report_cost_and_skip_data_collecting_providers(warehouse):
+    settings = ChatSettings(
+        model="anthropic/claude-haiku-5.5", warehouse_path=warehouse
+    )
+    agent = build_agent(settings, DataToolService(warehouse))
+    assert agent.model_settings["openrouter_provider"] == {"data_collection": "deny"}
+    assert agent.model_settings["openrouter_usage"] == {"include": True}

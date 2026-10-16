@@ -64,7 +64,10 @@ function runLabel(run: EvalRunListItem) {
     hour: 'numeric',
     minute: '2-digit',
   });
-  return `${when} · ${run.models.map(shortModel).join(', ')}`;
+  const progress = run.complete
+    ? ''
+    : ` · in progress (${run.finished}/${run.total})`;
+  return `${when} · ${run.models.map(shortModel).join(', ')}${progress}`;
 }
 
 /** Which model is best in each summary column (higher or lower wins). */
@@ -316,6 +319,19 @@ export default function EvalsPage() {
     };
   }, [runId]);
 
+  // A run still in progress saves after every chat; refresh it until done
+  // without resetting the chosen models.
+  const inProgress = run?.complete === false;
+  useEffect(() => {
+    if (!runId || !inProgress) return;
+    const timer = setInterval(() => {
+      fetchEvalRun(runId)
+        .then(setRun)
+        .catch(() => {});
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, [runId, inProgress]);
+
   const summary = useMemo(
     () => run?.summary.filter((s) => models.includes(s.model)) ?? [],
     [run, models],
@@ -381,6 +397,16 @@ export default function EvalsPage() {
             </div>
 
             {error && <Alert color="red">{error}</Alert>}
+
+            {inProgress && run && (
+              <Group gap="xs">
+                <Loader size="xs" color="gray" />
+                <Text size="sm" c="dimmed">
+                  In progress: {run.results.length} of {run.total ?? '?'} chats
+                  finished. Updates every 15 seconds.
+                </Text>
+              </Group>
+            )}
 
             {run && models.length > 0 && (
               <>

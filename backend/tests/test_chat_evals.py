@@ -16,7 +16,7 @@ from data_tools.service import DataToolService
 from evals.chat.__main__ import load_dotenv, split_models
 from evals.chat.cases import Case, load_cases
 from evals.chat.judge import GENERAL_CRITERIA, Verdict
-from evals.chat.runner import automatic_checks, run_eval, save_run
+from evals.chat.runner import automatic_checks, merge_runs, run_eval, save_run
 
 
 @pytest.fixture
@@ -162,3 +162,87 @@ def test_cli_helpers(tmp_path, monkeypatch):
     load_dotenv(env)
     assert os.environ["EVAL_TEST_KEY"] == "from-file"
     assert os.environ["EVAL_TEST_SET"] == "from-shell"
+
+
+def test_stuck_turn_times_out_without_stopping_the_run(service, monkeypatch):
+    async def hang(_messages, _info):
+        await asyncio.sleep(30)
+        yield ""
+
+    monkeypatch.setattr(
+        "chat.demo.demo_model", lambda: FunctionModel(stream_function=hang)
+    )
+    one_turn = CASE.model_copy(update={"turns": ["How has income changed?"]})
+    run = asyncio.run(
+        run_eval(
+            ["demo"], [one_turn], judge_model=None, service=service, turn_timeout=0.2
+        )
+    )
+    (result,) = run["results"]
+    assert result["turns"][0]["error"] == "Timed out after 0s"
+    assert not result["checks"][0]["passed"]
+    assert run["complete"] is True
+
+
+def test_run_is_saved_after_every_chat(service, tmp_path):
+    seen: list[tuple[int, bool]] = []
+
+    def on_result(_result):
+        (path,) = tmp_path.glob("*.json")
+        saved = json.loads(path.read_text())
+        seen.append((len(saved["results"]), saved["complete"]))
+
+    run = asyncio.run(
+        run_eval(
+            ["demo"],
+            [CASE],
+            judge_model=None,
+            repeat=2,
+            concurrency=1,
+            service=service,
+            on_result=on_result,
+            save_dir=tmp_path,
+        )
+    )
+    assert seen == [(1, False), (2, False)]
+    saved = json.loads(next(tmp_path.glob("*.json")).read_text())
+    assert saved["complete"] is True and saved["total"] == 2
+    assert len(saved["results"]) == len(run["results"]) == 2
+
+
+def test_merge_adds_models_only_when_runs_match():
+    def run(run_id, model, repeat=1, judge="j"):
+        return {
+            "run_id": run_id,
+            "judge_model": judge,
+            "repeat": repeat,
+            "models": [model],
+            "cases": [{"id": "income"}],
+            "total": 1,
+            "complete": True,
+            "results": [
+                {
+                    "model": model,
+                    "case_id": "income",
+                    "repeat": 0,
+                    "turns": [{"error": None}],
+                    "judge": {"quality": 8},
+                    "score": 0.9,
+                    "cost_usd": 0.01,
+                    "latency_s": 5,
+                    "tokens": 100,
+                }
+            ],
+        }
+
+    merged = merge_runs(run("a", "m1"), run("b", "m2"))
+    assert merged["run_id"] == "a"
+    assert merged["models"] == ["m1", "m2"]
+    assert merged["total"] == 2 and merged["merged_from"] == ["b"]
+    assert [s["model"] for s in merged["summary"]] == ["m1", "m2"]
+    with pytest.raises(ValueError, match="different judge"):
+        merge_runs(run("a", "m1"), run("b", "m2", judge="other"))
+    with pytest.raises(ValueError, match="repeat"):
+        merge_runs(run("a", "m1"), run("b", "m2", repeat=3))
+    with pytest.raises(ValueError, match="Both runs include"):
+        merge_runs(run("a", "m1"), run("b", "m1"))

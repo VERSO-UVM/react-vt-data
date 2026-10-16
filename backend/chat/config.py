@@ -8,8 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # Models are reached through OpenRouter, so trying a different one is a config
-# change (docs/guides/chat-evals.md compares candidates).
-DEFAULT_MODEL = "openai/gpt-6.1-sol"
+# change. Haiku 5.5 won the eval comparison against GPT-6.1 Sol and DeepSeek V4.1
+# Flash (docs/guides/chat-evals.md).
+DEFAULT_MODEL = "anthropic/claude-haiku-5.5"
+
+# OpenRouter routing for every chat and judge request: skip providers that
+# store or train on inputs, since users' questions and our data go to them.
+PROVIDER_ROUTING = {"data_collection": "deny"}
 
 
 def model_name(model: str) -> str:

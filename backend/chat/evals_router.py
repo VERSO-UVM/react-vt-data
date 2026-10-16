@@ -37,6 +37,10 @@ def create_evals_router(results_dir: Path) -> APIRouter:
                     "judge_model": run.get("judge_model"),
                     "cases": len(run.get("cases", [])),
                     "summary": run.get("summary", []),
+                    # Runs save after every chat; older runs lack these.
+                    "complete": run.get("complete", True),
+                    "finished": len(run.get("results", [])),
+                    "total": run.get("total", len(run.get("results", []))),
                 }
             )
         return JSONResponse(runs, headers=NO_STORE)

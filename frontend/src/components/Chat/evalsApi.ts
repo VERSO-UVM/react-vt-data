@@ -82,6 +82,10 @@ export interface EvalRunListItem {
   judge_model: string | null;
   cases: number;
   summary: EvalSummary[];
+  /** Runs save after every chat; false while one is still going. */
+  complete: boolean;
+  finished: number;
+  total: number;
 }
 
 /** One saved run: every model's transcript for every case. */
@@ -95,6 +99,9 @@ export interface FullEvalRun {
   cases: EvalCase[];
   results: EvalResult[];
   summary: EvalSummary[];
+  /** Missing on runs saved before progress saving existed (complete). */
+  complete?: boolean;
+  total?: number;
 }
 
 /** null when the API has no eval endpoint (not started with CHAT_EVALS_DIR). */

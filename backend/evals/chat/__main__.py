@@ -20,7 +20,14 @@ from pathlib import Path
 
 from .cases import load_cases
 from .judge import DEFAULT_JUDGE
-from .runner import RESULTS_DIR, run_eval, save_run
+from .runner import (
+    JUDGE_TIMEOUT,
+    RESULTS_DIR,
+    TURN_TIMEOUT,
+    merge_runs,
+    run_eval,
+    save_run,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -90,6 +97,7 @@ def cmd_run(args) -> int:
     print(
         f"Running {len(cases)} chats x {len(models)} models x {args.repeat} "
         f"= {total} chats; judge: {judge or 'none'}\n"
+        f"Saving to {args.out} after every chat (watch it on /chat/evals/).\n"
     )
 
     def progress(result: dict) -> None:
@@ -108,9 +116,12 @@ def cmd_run(args) -> int:
             repeat=args.repeat,
             concurrency=args.concurrency,
             on_result=progress,
+            save_dir=Path(args.out),
+            turn_timeout=args.turn_timeout,
+            judge_timeout=args.judge_timeout,
         )
     )
-    path = save_run(run, Path(args.out))
+    path = Path(args.out) / f"{run['run_id']}.json"
     print()
     print_summary(run)
     judge_cost = [
@@ -124,6 +135,20 @@ def cmd_run(args) -> int:
     print(
         "Compare them side by side: just chat-eval-ui, then open http://localhost:3000/chat/evals/"
     )
+    return 0
+
+
+def cmd_merge(args) -> int:
+    """Fold other runs' models into a base run, saved under the base's id."""
+    out = Path(args.out)
+
+    def load(run_id: str) -> dict:
+        return json.loads((out / f"{run_id}.json").read_text())
+
+    run = merge_runs(load(args.base), *(load(r) for r in args.others))
+    path = save_run(run, out)
+    print_summary(run)
+    print(f"\nSaved {path}")
     return 0
 
 
@@ -180,8 +205,28 @@ def main(argv: list[str] | None = None) -> int:
         "--no-judge", action="store_true", help="Skip judging; only automatic checks"
     )
     run.add_argument("--concurrency", type=int, default=3, help="Chats running at once")
+    run.add_argument(
+        "--turn-timeout",
+        type=float,
+        default=TURN_TIMEOUT,
+        help=f"Seconds before a stuck turn is abandoned (default {TURN_TIMEOUT:.0f})",
+    )
+    run.add_argument(
+        "--judge-timeout",
+        type=float,
+        default=JUDGE_TIMEOUT,
+        help=f"Seconds before a stuck judgment is abandoned (default {JUDGE_TIMEOUT:.0f})",
+    )
     run.add_argument("--out", default=str(RESULTS_DIR), help="Where to save the run")
     run.set_defaults(func=cmd_run)
+
+    merge = sub.add_parser(
+        "merge", help="Add other runs' models to a base run (same cases and judge)"
+    )
+    merge.add_argument("base", help="Run id to merge into (keeps its id)")
+    merge.add_argument("others", nargs="+", help="Run ids to fold in")
+    merge.add_argument("--out", default=str(RESULTS_DIR), help="Results folder")
+    merge.set_defaults(func=cmd_merge)
 
     sub.add_parser("cases", help="List the eval cases").set_defaults(func=cmd_cases)
 

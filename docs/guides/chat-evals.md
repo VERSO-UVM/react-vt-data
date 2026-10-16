@@ -18,7 +18,7 @@ OPENROUTER_API_KEY=sk-or-...
 ## Run a comparison
 
 ```sh
-just chat-eval openai/gpt-6.1-sol openai/gpt-6-luna deepseek/deepseek-v4.1-flash
+just chat-eval anthropic/claude-haiku-5.5 openai/gpt-6.1-sol deepseek/deepseek-v4.1-flash --repeat 3
 ```
 
 Models are OpenRouter slugs. Each one plays every chat in
@@ -27,20 +27,29 @@ prints as chats finish, followed by a summary:
 
 ```text
 Model                         Score  Quality  $/chat   Time/chat  Tokens   Errors
-openai/gpt-6.1-sol            96%    8.0/10   $0.0540  43s        114,312  0
-openai/gpt-6-luna             74%    5.8/10   $0.0042  40s        100,048  1
-deepseek/deepseek-v4.1-flash  87%    7.6/10   $0.0108  25s        211,011  0
+anthropic/claude-haiku-5.5    91%    7.6/10   $0.0188  18s        176,887  0
+openai/gpt-6.1-sol            89%    7.1/10   $0.0423  50s        83,107   2
+deepseek/deepseek-v4.1-flash  87%    7.5/10   $0.0087  19s        175,426  0
 ```
 
 Options go after the models:
 
-| Option            | Use                                                                      |
-| ----------------- | ------------------------------------------------------------------------ |
-| `--cases ID ...`  | Only these cases (`just chat-eval-cases` lists them)                     |
-| `--repeat N`      | Play each chat N times; models vary run to run, so use 3 before deciding |
-| `--judge SLUG`    | A different judge (default `anthropic/claude-opus-5.5`)                  |
-| `--no-judge`      | Automatic checks only, no judge cost                                     |
-| `--concurrency N` | Chats running at once (default 3)                                        |
+| Option              | Use                                                                          |
+| ------------------- | ---------------------------------------------------------------------------- |
+| `--cases ID ...`    | Only these cases (`just chat-eval-cases` lists them)                         |
+| `--repeat N`        | Play each chat N times; models vary run to run, so use 3 before deciding     |
+| `--judge SLUG`      | A different judge (default `anthropic/claude-opus-5.5`)                      |
+| `--no-judge`        | Automatic checks only, no judge cost                                         |
+| `--concurrency N`   | Chats running at once (default 3)                                            |
+| `--turn-timeout S`  | Abandon a stuck turn after S seconds and record it as an error (default 180) |
+| `--judge-timeout S` | Same for a stuck judgment (default 180)                                      |
+
+To add a model to an existing comparison later, run it with the same options,
+then fold it in (the runs must share cases, judge, and repeat count):
+
+```sh
+cd backend && uv run python -m evals.chat merge BASE_RUN_ID NEW_RUN_ID
+```
 
 To find candidates, list tool-capable models by price (cheapest output first):
 
@@ -64,7 +73,9 @@ anything that failed and why, and the full answer with its charts rendered
 exactly as in the chat. Read the transcripts, not just the scores: the judge is
 good but not infallible.
 
-Runs are saved as JSON in `backend/evals/chat/results/` (ignored by git). Share
+Runs are saved as JSON in `backend/evals/chat/results/` (ignored by git),
+after every chat, so an interrupted run keeps what finished and the comparison
+page can show a run in progress (it refreshes every 15 seconds). Share
 a run by sending its file; drop it into someone else's results folder to view it.
 
 ## How scoring works
@@ -82,9 +93,10 @@ a run by sending its file; drop it into someone else's results folder to view it
 - **Cost** is what OpenRouter reported for the chat's model calls (judge cost
   is printed separately). A chat that ended in an error shows no cost.
 
-A first full run (5 chats × 3 models) cost $0.34 in chat calls (one errored
-chat not counted) plus $0.52 for the judge, so judging dominates when the
-candidates are cheap.
+The run above (5 chats × 3 models × 3 repeats = 45 chats) cost $0.96 in chat
+calls (two failed Sol chats report no cost) plus $1.67 for the judge, so
+judging dominates when the candidates are cheap. Use `--no-judge` for quick
+smoke tests.
 
 ## Add a case
 
@@ -123,7 +135,9 @@ Guidelines:
 
 ## Switch the chat's model
 
-Set `CHAT_MODEL` in `.env` to any slug that did well, then restart the API:
+The default is `anthropic/claude-haiku-5.5` (see the comparison in
+[architecture/data-chat.md](../architecture/data-chat.md)). To try another,
+set `CHAT_MODEL` in `.env` to any slug that did well, then restart the API:
 
 ```dotenv
 CHAT_MODEL=deepseek/deepseek-v4.1-flash

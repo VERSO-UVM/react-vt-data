@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, PromptedOutput
 
 from chat.agent import turn_cost
-from chat.config import model_name
+from chat.config import PROVIDER_ROUTING, model_name
 
 DEFAULT_JUDGE = "anthropic/claude-opus-5.5"
 
@@ -54,6 +54,7 @@ def build_judge(model: str = DEFAULT_JUDGE) -> Agent:
     settings: dict[str, Any] = {"max_tokens": 8000}
     if name.startswith("openrouter:"):
         settings["openrouter_usage"] = {"include": True}
+        settings["openrouter_provider"] = PROVIDER_ROUTING
     # Prompted (JSON in the reply) rather than tool output: some judge models
     # reject forced tool calls, and this works the same on every provider.
     return Agent(
