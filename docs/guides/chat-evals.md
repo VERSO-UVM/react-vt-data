@@ -73,6 +73,10 @@ anything that failed and why, and the full answer with its charts rendered
 exactly as in the chat. Read the transcripts, not just the scores: the judge is
 good but not infallible.
 
+When a run informs a decision, add an entry to
+[reports/chat-eval-history.md](../reports/chat-eval-history.md), the record of
+every comparison so far.
+
 Runs are saved as JSON in `backend/evals/chat/results/` (ignored by git),
 after every chat, so an interrupted run keeps what finished and the comparison
 page can show a run in progress (it refreshes every 15 seconds). Share

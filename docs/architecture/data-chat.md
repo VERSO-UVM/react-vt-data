@@ -199,7 +199,8 @@ A sketch, so the work is scoped when the time comes:
 
 ## Decision 4: model and what $300 buys
 
-Measured with the eval suite on 2026-10-16: 5 chats (6 questions, one chat has
+Measured with the eval suite on 2026-10-16 (earlier runs and per-case scores:
+[reports/chat-eval-history.md](../reports/chat-eval-history.md)): 5 chats (6 questions, one chat has
 a follow-up), each played 3 times per model and graded by Claude Opus 5.5
 against live warehouse data, with `data_collection: "deny"` routing.
 
