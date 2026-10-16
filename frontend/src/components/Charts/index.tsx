@@ -33,6 +33,7 @@ export {
 } from './TrendCharts';
 export { EmploymentAreaChart } from './EmploymentAreaChart';
 export { AgeAreaChart } from './AgeAreaChart';
+export { AgentChart, renderTableAgent } from './AgentChart';
 
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import {

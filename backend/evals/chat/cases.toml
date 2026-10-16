@@ -1,0 +1,109 @@
+# Data Chat eval cases. See docs/guides/chat-evals.md.
+#
+# Each case is one chat: `turns` are the user's messages in order (later turns
+# see the agent's earlier answers). The judge grades every answer against:
+#   - `criteria`, plus the general criteria in evals/chat/judge.py, and
+#   - `reference` queries, run against the live warehouse at eval time and
+#     shown to the judge as ground truth. Write criteria relative to the
+#     reference ("matches the reference") rather than hard-coding numbers, so
+#     cases survive a warehouse rebuild.
+# Automatic checks (no judge): the chat finishes without an error, stays under
+# `max_words` per answer, and, when `expect_chart` is set, shows a chart or
+# table of one of those kinds.
+#
+# Reference `tool` is any data tool (query_data, get_timeseries, ...). Add
+# `sort_by` (and optionally `descending`, `top`) to rank every row, the same
+# way the agent's rank_rows tool does.
+# Where a reference pins a year, update it when the warehouse adds a newer one.
+
+[[case]]
+id = "income-trend"
+title = "Trend: household income over time"
+capability = "trend"
+turns = ["How has median household income in Addison County changed since 2011?"]
+expect_chart = ["line"]
+criteria = [
+  "Gives Addison County's median household income for 2011 and for the latest available year, matching the reference within rounding.",
+  "Says the dollar figures are not adjusted for inflation (or adjusts them and states how).",
+  "Names the American Community Survey (ACS) five-year estimates as the source.",
+]
+
+[[case.reference]]
+label = "Addison County median household income by year"
+tool = "get_timeseries"
+args = { dataset_id = "acs5_ts_household_income", location_ids = ["50001"] }
+
+[[case]]
+id = "renter-burden-ranking"
+title = "Ranking: cost-burdened renters by town"
+capability = "ranking"
+turns = ["Which 10 towns in Chittenden County have the highest share of cost-burdened renters?"]
+expect_chart = ["bar", "table"]
+criteria = [
+  "Lists the highest-ranked towns in the same order as the reference (at least the top five), with percentages matching within rounding.",
+  "Says which year or five-year period the ranking uses, and it is the latest available.",
+  "Warns that towns with very few renter households (such as St. George) have unreliable rates.",
+  "Explains that cost-burdened means paying 30% or more of household income on rent.",
+]
+
+[[case.reference]]
+label = "Top 10 Chittenden County towns by share of cost-burdened renters, 2020-2024 ACS"
+tool = "query_data"
+args = { dataset_id = "acs5_ts_income_burden", geo_type = "county_subdivision", years = [2024], filters = { Variable = ["Renters"], county_fips = ["50007"] } }
+sort_by = "Percent"
+top = 10
+
+[[case]]
+id = "home-values-follow-up"
+title = "Comparison with a follow-up question"
+capability = "comparison"
+turns = [
+  "Compare median home values in Burlington and Montpelier.",
+  "How does Rutland city compare?",
+]
+criteria = [
+  "The first answer gives Burlington's and Montpelier's median home values for the same year, matching the reference.",
+  "The follow-up adds Rutland city's value for that same year and compares it with Burlington and Montpelier without the user restating them.",
+  "Describes the values as ACS estimates of what owners think their homes are worth (or owner-occupied home values), not sale prices.",
+  "Never compares values from different years as if they were the same year.",
+]
+
+[[case.reference]]
+label = "Median home value, Burlington city, Montpelier city, and Rutland city, 2020 onward"
+tool = "get_timeseries"
+args = { dataset_id = "acs5_ts_median_home_value", location_ids = ["5000710675", "5002346000", "5002161225"], year_min = 2020 }
+
+[[case]]
+id = "jobs-mix"
+title = "Breakdown: jobs by sector over time"
+capability = "breakdown"
+turns = ["How has the mix of jobs by sector changed in Chittenden County?"]
+expect_chart = ["area", "stacked_bar", "line", "bar"]
+criteria = [
+  "Names which sectors grew and which shrank between the earliest and latest years, consistent with the reference.",
+  "Compares the same quarter across years (or annual averages), never mixing quarters.",
+  "Explains that these count jobs located in the county (QCEW), not employed residents.",
+  "Does not add the 'Total' row to the sectors or chart it as if it were a sector.",
+]
+
+[[case.reference]]
+label = "Chittenden County jobs by sector, fourth quarter, first and last years available"
+tool = "query_data"
+args = { dataset_id = "qcew_employment_by_sector", location_ids = ["50007"], years = [2014, 2023], filters = { quarter = [4] } }
+
+[[case]]
+id = "forecast-limits"
+title = "Limits: a question the data can't answer"
+capability = "honesty"
+turns = ["What will Burlington's population be in 2030, and how many new homes will it need?"]
+criteria = [
+  "Says the data has no population projections or housing-need estimates instead of inventing a 2030 figure.",
+  "Any forward-looking figure is clearly labeled as a rough extrapolation from the reference with its method stated, not presented as a forecast.",
+  "Offers what the data can show instead, such as Burlington's historical population or housing units.",
+  "Any historical numbers it gives match the reference.",
+]
+
+[[case.reference]]
+label = "Burlington city population by census year"
+tool = "get_timeseries"
+args = { dataset_id = "acs5_ts_historic_population", location_ids = ["5000710675"] }

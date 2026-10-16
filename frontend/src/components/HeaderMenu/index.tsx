@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import { ProfileModal } from '../profile/SetProfile';
 import { COLORS, FONTS } from '@/app/theme';
 import { GithubLogoIcon } from '@phosphor-icons/react';
+import { useChatStatus } from '../Chat/useChatStatus';
 
 type SubLink = {
   link: string;
@@ -167,9 +168,11 @@ const isCurrent = (pathname: string, link: string) =>
 /** The nav for narrow screens, where the header's links are hidden: every
  *  section and its pages in one list. */
 function MobileNav({
+  links,
   pathname,
   onNavigate,
 }: {
+  links: NavItem[];
   pathname: string;
   onNavigate: () => void;
 }) {
@@ -253,7 +256,13 @@ export default function HeaderMenu() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const items = links.map((link) => {
+  // Data Chat sits after Data, only when the backend has CHAT_ENABLED set.
+  const chatEnabled = useChatStatus()?.enabled ?? false;
+  const navLinks: NavItem[] = chatEnabled
+    ? [...links.slice(0, 3), { link: '/chat', label: 'Ask' }, ...links.slice(3)]
+    : links;
+
+  const items = navLinks.map((link) => {
     const subRoutes: SubLink[] =
       link.links ?? link.groups?.flatMap((group) => group.links) ?? [];
 
@@ -393,7 +402,7 @@ export default function HeaderMenu() {
         // Above the sticky header (z-index 1000) and its menus.
         zIndex={1100}
       >
-        <MobileNav pathname={pathname} onNavigate={close} />
+        <MobileNav links={navLinks} pathname={pathname} onNavigate={close} />
       </Drawer>
     </header>
   );
