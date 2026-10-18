@@ -344,7 +344,7 @@ export default function HeaderMenu() {
           <Group gap="lg" wrap="nowrap">
             <Anchor href="/">
               <Image
-                src="/images/VDC_logo.jpg"
+                src="/images/VDC_logo.webp"
                 alt="Logo"
                 w={140}
                 h={50}
