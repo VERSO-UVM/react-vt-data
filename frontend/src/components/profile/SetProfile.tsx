@@ -30,6 +30,7 @@ import {
   YEAR_MAX_OVERALL,
   Location,
 } from './profileStore';
+import { usePathname } from 'next/navigation';
 import county_town_names from '@/data/county_town_names.json';
 import {
   IconCalendarStats,
@@ -425,9 +426,13 @@ export const ProfileModal: React.FC = () => {
   // Read the live store: during the first client render useProfile() still
   // returns the server snapshot (profileSet: false), which reopened the
   // dialog on every load even for users with a saved profile.
+  // Not on the home page, whose hero already prompts for a profile; the
+  // dialog there covered the page and delayed its first paint.
+  const pathname = usePathname();
   useEffect(() => {
+    if (pathname === '/') return;
     if (hydrated && !useProfile.getState().profileSet) openProfileModal();
-  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hydrated, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [tempMyLocation, setTempMyLocation] = useState<Location>(myLocation);
   const [tempComparison, setTempComparison] = useState<Location>(comparison);
