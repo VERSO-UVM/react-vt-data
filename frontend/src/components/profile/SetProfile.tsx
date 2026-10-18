@@ -473,6 +473,7 @@ export const ProfileModal: React.FC = () => {
         opened={opened}
         onClose={closeProfileModal}
         title="Profile"
+        closeButtonProps={{ 'aria-label': 'Close profile' }}
         radius="xl"
         centered
         size={900}
@@ -643,6 +644,8 @@ export const ProfileModal: React.FC = () => {
                   onChange={setTempYearRange}
                   marks={YEAR_MARKS}
                   label={(v) => String(v)}
+                  thumbFromLabel="Start year"
+                  thumbToLabel="End year"
                   color={COLORS.spruce}
                 />
               </Box>
