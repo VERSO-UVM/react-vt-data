@@ -10,7 +10,6 @@ import {
   Group,
   Image,
   Menu,
-  UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import classes from './HeaderMenu.module.css';
@@ -317,9 +316,7 @@ export default function HeaderMenu() {
               href={link.link}
               className={`${classes.link} ${active ? classes.active : ''}`}
             >
-              <UnstyledButton style={{ display: 'flex', alignItems: 'center' }}>
-                <span className={classes.linkLabel}>{link.label}</span>
-              </UnstyledButton>
+              <span className={classes.linkLabel}>{link.label}</span>
             </Link>
           </Menu.Target>
           <Menu.Dropdown>{menuItems}</Menu.Dropdown>
@@ -332,9 +329,7 @@ export default function HeaderMenu() {
         key={link.link}
         className={`${classes.link} ${active ? classes.active : ''}`}
       >
-        <UnstyledButton style={{ display: 'flex', alignItems: 'center' }}>
-          <span className={classes.linkLabel}>{link.label}</span>
-        </UnstyledButton>
+        <span className={classes.linkLabel}>{link.label}</span>
       </Link>
     );
   });
@@ -359,7 +354,7 @@ export default function HeaderMenu() {
             <Badge
               visibleFrom="xs"
               style={{
-                color: COLORS.birch,
+                color: COLORS.spruceDeep,
                 background: COLORS.amber,
                 fontFamily: FONTS.mono,
               }}
