@@ -265,14 +265,12 @@ function HeroSection({
               </motion.span>
             </Title>
 
+            {/* Slide only, no fade or delay: this text is the page's LCP
+                element, and an opacity-0 start holds LCP until JS runs. */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                delay: 1.75,
-                ease: [0.22, 1, 0.36, 1],
-              }}
+              initial={{ y: 12 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
               <Text
                 size="lg"
