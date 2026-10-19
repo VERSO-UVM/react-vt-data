@@ -12,7 +12,7 @@
 import os
 from pathlib import Path
 
-import pandas as pd
+import geopandas as gpd
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "Data"))
@@ -23,9 +23,10 @@ DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "Data"))
 # ---------------------------------------------------------------------------
 
 
-# Read footprint data from local download (too big for API call)
-def fetch_footprints() -> pd.DataFrame | None:
-    df = pd.read_parquet(DATA_DIR / "footprints" / "building_footprints.parquet")
+# Read footprint data from local download (too big for API call).
+# Read as GeoParquet so the file's CRS is kept and lake_build can reproject it.
+def fetch_footprints() -> gpd.GeoDataFrame:
+    df = gpd.read_parquet(DATA_DIR / "footprints" / "building_footprints.parquet")
     return df
 
 

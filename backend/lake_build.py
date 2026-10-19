@@ -13,6 +13,9 @@ DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "Data"))
 LAKE_PATH = DATA_DIR / "lake"
 STORAGE_PATH = DATA_DIR / "lake.files"
 
+# Standard CRS for all geometry in the lake (WGS84, what the web maps expect)
+LAKE_CRS = "EPSG:4326"
+
 
 def get_connection() -> duckdb.DuckDBPyConnection:
     """
@@ -48,6 +51,31 @@ def get_connection() -> duckdb.DuckDBPyConnection:
     return con
 
 
+def geometry_to_wkb(name: str, gdf: gpd.GeoDataFrame) -> pd.DataFrame:
+    """
+    Reproject a GeoDataFrame to LAKE_CRS and encode its geometry as WKB.
+
+    WKB stores only coordinates, not the CRS, so this is the last point where
+    the source CRS is known. Reprojecting here keeps every lake table in one CRS.
+    """
+    if gdf.crs is None:
+        raise ValueError(
+            f"GeoDataFrame for {name!r} has no CRS; cannot reproject to {LAKE_CRS}."
+        )
+
+    df = gdf.to_crs(LAKE_CRS)
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Geometry column does not contain geometry",
+            category=UserWarning,
+        )
+        df["geometry"] = df["geometry"].to_wkb()
+
+    return df
+
+
 def insert_year(
     name: str,
     df: pd.DataFrame,
@@ -66,15 +94,7 @@ def insert_year(
         years_list = list(years)
 
     if isinstance(df, gpd.GeoDataFrame):
-        df = df.copy()
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message="Geometry column does not contain geometry",
-                category=UserWarning,
-            )
-            df["geometry"] = df["geometry"].to_wkb()
+        df = geometry_to_wkb(name, df)
 
     # If no lake connection, create one
     own_connection = con is None
@@ -163,15 +183,7 @@ def replace_table(
     Replace an entire table in the DuckLake with the updated new one.
     """
     if isinstance(df, gpd.GeoDataFrame):
-        df = df.copy()
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                message="Geometry column does not contain geometry",
-                category=UserWarning,
-            )
-            df["geometry"] = df["geometry"].to_wkb()
+        df = geometry_to_wkb(name, df)
 
     own_connection = con is None
     if own_connection:

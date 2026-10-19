@@ -21,6 +21,7 @@
 
 1. **COLLECTION:** Data is collected from external sources within the [`backend/data_collection/`](../../backend/data_collection/) folder, with APIs preferred whenever available. Direct downloads and locally stored tables are used when an API is unavailable or does not provide the required data. Raw data is loaded into the DuckLake `RAW` schema with minimal transformations so that the original source data is preserved.
 
+- **Geometry is reprojected to EPSG:4326 (WGS84) on load.** Every table is written through `insert_year()` or `replace_table()` in [`backend/lake_build.py`](../../backend/lake_build.py), which reprojects any GeoDataFrame to EPSG:4326 before encoding geometry as WKB. WKB does not store the CRS, so this guarantees every lake geometry shares one CRS. Collectors must return geometry as a GeoDataFrame with a declared CRS; a GeoDataFrame without one raises an error.
 - The collection process is orchestrated using the `just get-data {start_year} {end_year}` justfile recipe, which collects data given the specified year range (inclusive).
 - Files called upon: [`backend/run_data_collection.py`](../../backend/run_data_collection.py)
 - Separate data file collectors live within [`backend/data_collection/`](../../backend/data_collection/)
