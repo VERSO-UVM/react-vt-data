@@ -183,57 +183,6 @@ function StatNumber({
 }
 
 /* ---------------------------------------------------------------
-   Topographic contour — the page's one signature motif. Vermont
-   is read through its elevation lines; a single set of contour
-   paths draws itself in on load, then sits quietly as texture.
-----------------------------------------------------------------*/
-function ContourMark({
-  width = 260,
-  height = 300,
-}: {
-  width?: number;
-  height?: number;
-}) {
-  const paths = [
-    'M10,220 C60,180 90,240 140,200 C190,160 220,210 250,180',
-    'M0,180 C50,150 80,190 130,160 C180,130 210,170 260,150',
-    'M20,140 C60,115 90,145 130,120 C170,95 200,125 240,110',
-    'M30,100 C60,82 90,102 120,85 C150,68 175,90 210,75',
-  ];
-  return (
-    <svg
-      width={width}
-      height={height}
-      viewBox="0 0 260 300"
-      fill="none"
-      style={{
-        position: 'absolute',
-        right: -10,
-        bottom: 20,
-        pointerEvents: 'none',
-      }}
-    >
-      {paths.map((d, i) => (
-        <motion.path
-          key={d}
-          d={d}
-          stroke={i === 0 ? COLORS.amber : COLORS.spruce}
-          strokeOpacity={i === 0 ? 0.55 : 0.16}
-          strokeWidth={1.4}
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{
-            duration: 1.6,
-            delay: 0.2 + i * 0.15,
-            ease: 'easeInOut',
-          }}
-        />
-      ))}
-    </svg>
-  );
-}
-
-/* ---------------------------------------------------------------
    Hero
 ----------------------------------------------------------------*/
 function HeroSection({
@@ -266,7 +215,6 @@ function HeroSection({
         paddingBottom: 88,
       }}
     >
-      <ContourMark />
       <Container size="xl">
         <Grid gap="md" align="center">
           <Grid.Col span={{ base: 12, md: 7 }}>
@@ -317,14 +265,12 @@ function HeroSection({
               </motion.span>
             </Title>
 
+            {/* Slide only, no fade or delay: this text is the page's LCP
+                element, and an opacity-0 start holds LCP until JS runs. */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.6,
-                delay: 1.75,
-                ease: [0.22, 1, 0.36, 1],
-              }}
+              initial={{ y: 12 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             >
               <Text
                 size="lg"
