@@ -1,4 +1,5 @@
 import argparse
+import logging
 from datetime import datetime
 
 from data_collection import (
@@ -20,6 +21,7 @@ from data_collection import (
     zoning,
 )
 from lake_build import get_connection, insert_year, replace_table
+from logger.logging import setup_etl_logging
 from query.clock import EASTERN_STD_TIME
 
 YEARLY_SCRAPERS = [
@@ -46,6 +48,8 @@ STATIC_SCRAPERS = [
 
 MAX_YEAR = datetime.now(EASTERN_STD_TIME).year - 1
 
+logger = logging.getLogger(__name__)
+
 
 def run_scraper(
     scraper,
@@ -56,7 +60,7 @@ def run_scraper(
     """Run a scraper and write its output to DuckLake."""
     name = scraper.__name__.split(".")[-1]
 
-    print(f"Collecting \033[1m{name}\033[0m data ...")
+    logger.info("Collecting %s data ...", name)
 
     if yearly:
         if years is None:
@@ -70,14 +74,14 @@ def run_scraper(
 
     for table_name, df in outputs.items():
         full_name = f"RAW.{table_name}"
-        print(f"Loading {full_name}")
+        logger.info("Loading %s", full_name)
 
         if yearly:
             insert_year(full_name, df, years, con=con)
         else:
             replace_table(full_name, df, con=con)
 
-    print(f"Completed {name}")
+    logger.info("Completed %s", name)
 
 
 def run_master_scrape(
@@ -98,7 +102,7 @@ def run_master_scrape(
             s for s in STATIC_SCRAPERS if s.__name__.split(".")[-1] == scraper_name
         ]
         if not yearly_scrapers and not static_scrapers:
-            print(f"No scraper found matching '{scraper_name}'")
+            logger.error("No scraper found matching '%s'", scraper_name)
             return
 
     con = get_connection()
@@ -109,30 +113,31 @@ def run_master_scrape(
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=True, years=years)
-            except Exception as e:  # noqa: BLE001
+            except Exception:
                 failed.append(name)
-                print(f"FAILED {name}: {e}")
+                logger.exception("FAILED %s", name)
 
         for scraper in static_scrapers:
             name = scraper.__name__.split(".")[-1]
             try:
                 run_scraper(scraper, con=con, yearly=False)
-            except Exception as e:  # noqa: BLE001
+            except Exception:
                 failed.append(name)
-                print(f"FAILED {name}: {e}")
+                logger.exception("FAILED %s", name)
 
     finally:
         con.close()
 
-    print("\nData collection process completed.")
+    logger.info("Data collection process completed.")
     if failed:
-        print(f"Failed scrapers: {', '.join(failed)}")
+        logger.error("Failed scrapers: %s", ", ".join(failed))
     else:
-        print("All scrapers completed successfully.")
+        logger.info("All scrapers completed successfully.")
 
 
 def main():
     """Run the master scraper from the command line."""
+    setup_etl_logging("collect")
     parser = argparse.ArgumentParser()
     parser.add_argument("start_year", type=int)
     parser.add_argument("end_year", type=int)
@@ -148,7 +153,7 @@ def main():
             f"start_year ({args.start_year}) cannot be greater than end_year ({args.end_year})."
         )
 
-    print(f"Collecting data from {args.start_year} to {args.end_year}")
+    logger.info("Collecting data from %s to %s", args.start_year, args.end_year)
 
     run_master_scrape(
         start_year=args.start_year,
