@@ -104,7 +104,6 @@ def clean(con: duckdb.DuckDBPyConnection):
 
 def main(con: duckdb.DuckDBPyConnection):
     clean(con)
-    print("Successfully built ambulance service tables.")
 
 
 if __name__ == "__main__":
