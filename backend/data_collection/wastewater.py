@@ -10,10 +10,13 @@
         https://verso-uvm.github.io/Wastewater-Infrastructure-Mapping/data.html
 """
 
+import logging
 import warnings
 
 import pandas as pd
 from pyogrio import read_dataframe
+
+logger = logging.getLogger(__name__)
 
 WWTF_URL = "https://raw.githubusercontent.com/VERSO-UVM/Wastewater-Infrastructure-Mapping/refs/heads/main/data/Vermont_Treatment_Facilities.geojson"
 SERVICE_AREA_URL = "https://raw.githubusercontent.com/VERSO-UVM/Wastewater-Infrastructure-Mapping/main/data/Vermont_Service_Areas.geojson"
@@ -92,7 +95,7 @@ def load_soil_septic_multi() -> dict[str, pd.DataFrame]:
         try:
             dfs[f"ww_soil_suitability_{rpc}"] = fetch_soil_septic_single(rpc)
         except FileNotFoundError:
-            print(f"Skipping missing soil suitability data for {rpc}")
+            logger.warning("Skipping missing soil suitability data for %s", rpc)
 
     return dfs
 

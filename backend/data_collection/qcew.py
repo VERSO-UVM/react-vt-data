@@ -16,6 +16,7 @@ Key agglvl_code values (for county area files):
 Columns: County | year | quarter | quarter_label | sector | employment | employment_4qma
 """
 
+import logging
 import time
 from datetime import datetime
 from io import StringIO
@@ -25,6 +26,8 @@ import requests
 
 from data_collection.parallel import pmap
 from query.clock import EASTERN_STD_TIME
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -107,7 +110,7 @@ def fetch_quarter(year: int, quarter: int, area_fips: str) -> pd.DataFrame | Non
         df.columns = df.columns.str.strip()
         return df
     except Exception as e:  # noqa: BLE001 -- skip and keep the run going
-        print(f"  SKIP {year}Q{quarter} / {area_fips}: {e}")
+        logger.warning("SKIP %sQ%s / %s: %s", year, quarter, area_fips, e)
         return None
 
 
@@ -221,17 +224,17 @@ def process_county(area_fips: str, county_name: str, year: int) -> pd.DataFrame:
 def run_qcew_scrape(years: range = YEARS) -> pd.DataFrame:
     def one(task):
         year, fips, name = task
-        print(f"{name} County {year} ...")
+        logger.debug("%s County %s ...", name, year)
         df = process_county(fips, name, year)
         if df.empty:
-            print(f"No data: {name} County {year}")
+            logger.warning("No data: %s County %s", name, year)
         return df
 
     tasks = [(y, f, n) for y in years for f, n in VT_COUNTIES.items()]
     all_frames = [df for df in pmap(one, tasks) if not df.empty]
 
     if not all_frames:
-        print("No data fetched.")
+        logger.warning("No data fetched.")
         return pd.DataFrame()
 
     combined = pd.concat(all_frames, ignore_index=True)

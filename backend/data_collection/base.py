@@ -2,6 +2,7 @@
 Shared utilities for ACS 5-Year Census B-table scrapers.
 """
 
+import logging
 import os
 import time
 from dataclasses import dataclass
@@ -13,6 +14,8 @@ import requests
 from data_collection.census import split_name_col
 from data_collection.parallel import pmap
 from query.clock import EASTERN_STD_TIME
+
+logger = logging.getLogger(__name__)
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -73,7 +76,7 @@ def fetch(
         "key": API_KEY,
     }
     if params.get("key") is None:
-        print("API key is either missing or set to None.")
+        logger.error("API key is either missing or set to None.")
         return None
 
     if in_clause:  # state/national geos have no "in" clause
@@ -90,7 +93,7 @@ def fetch(
                 df[c] = pd.to_numeric(df[c], errors="coerce")
         return df
     except Exception as e:  # noqa: BLE001 -- skip and keep the run going
-        print(f"  SKIP {year} / {for_clause}: {e}")
+        logger.warning("SKIP %s / %s: %s", year, for_clause, e)
         return None
 
 
@@ -104,11 +107,11 @@ def pct(val: float, total: float) -> float | None:
         if total and total > 0:
             return round((val / total) * 100, 1)
     except OverflowError:
-        print(f"OverflowError computing pct({val}, {total})")
+        logger.warning("OverflowError computing pct(%s, %s)", val, total)
     except FloatingPointError:
-        print(f"FloatingPointError computing pct({val}, {total})")
+        logger.warning("FloatingPointError computing pct(%s, %s)", val, total)
     except ValueError:
-        print(f"ValueError computing pct({val}, {total})")
+        logger.warning("ValueError computing pct(%s, %s)", val, total)
     return None
 
 
@@ -169,13 +172,13 @@ def run_acs_b_scrape(
     Returns:
         pd.DataFrame: tidy DataFrame of the fetched data
     """
-    print(f"\n=== {year} ===")
+    logger.debug("=== %s ===", year)
 
     def fetch_geo(geo):
         geo_label, for_clause, in_clause = geo
         merged = None
         for table_name, codes in fetch_specs.items():
-            print(f"  {year} / {table_name} / {geo_label}...")
+            logger.debug("%s / %s / %s...", year, table_name, geo_label)
             df = fetch(year, codes, for_clause, in_clause)
             if df is None:
                 return None
@@ -198,7 +201,7 @@ def run_acs_b_scrape(
     all_frames = [m for m in pmap(fetch_geo, geos) if m is not None]
 
     if not all_frames:
-        print("No data fetched.")
+        logger.warning("No data fetched.")
         return pd.DataFrame()
 
     combined = pd.concat(all_frames, ignore_index=True, sort=False)
