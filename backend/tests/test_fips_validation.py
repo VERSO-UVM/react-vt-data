@@ -162,32 +162,32 @@ def test_ids_duplicate(tables):
     )
 
 
-# def test_ids_wrong_length(tables):
-#     df = tables["vt_county_lines"]
-#     df.loc[0, "CNTYGEOID"] = "5001"
-#     assert_problem(
-#         fips.check_ids("vt_county_lines", df),
-#         "vt_county_lines: CNTYGEOID badly formatted: 5001",
-#     )
+def test_ids_wrong_length(tables):
+    df = tables["vt_county_lines"]
+    df.loc[0, "CNTYGEOID"] = "5001"
+    assert_problem(
+        fips.check_ids("vt_county_lines", df),
+        "vt_county_lines: CNTYGEOID badly formatted: 5001",
+    )
 
 
-# def test_ids_not_digits(tables):
-#     df = tables["vt_town_lines"]
-#     df.loc[0, "GEOID"] = "50027ABCDE"
-#     assert_problem(
-#         fips.check_ids("vt_town_lines", df),
-#         "vt_town_lines: GEOID badly formatted: 50027ABCDE",
-#     )
+def test_ids_not_digits(tables):
+    df = tables["vt_town_lines"]
+    df.loc[0, "GEOID"] = "50027ABCDE"
+    assert_problem(
+        fips.check_ids("vt_town_lines", df),
+        "vt_town_lines: GEOID badly formatted: 50027ABCDE",
+    )
 
 
-# def test_ids_wrong_state(tables):
-#     # New Hampshire's state FIPS is 33: the wrong state's file was committed
-#     df = tables["vt_county_lines"]
-#     df.loc[0, "CNTYGEOID"] = "33001"
-#     assert_problem(
-#         fips.check_ids("vt_county_lines", df),
-#         "vt_county_lines: CNTYGEOID badly formatted: 33001",
-#     )
+def test_ids_wrong_state(tables):
+    # New Hampshire's state FIPS is 33: the wrong state's file was committed
+    df = tables["vt_county_lines"]
+    df.loc[0, "CNTYGEOID"] = "33001"
+    assert_problem(
+        fips.check_ids("vt_county_lines", df),
+        "vt_county_lines: CNTYGEOID badly formatted: 33001",
+    )
 
 
 # ---------------------------------------------------------------------------
