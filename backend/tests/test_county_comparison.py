@@ -1,0 +1,203 @@
+"""
+Tests for the Statewide County Comparison routes, run against a small
+in-memory acs5_dp_combined_tidy instead of the warehouse.
+
+Census files one education level under different label paths and measure
+names across vintages; the route should stitch them into a single value per
+place per year, for the 14 counties plus Vermont and the United States.
+
+Set COUNTY_COMPARISON_WAREHOUSE to also check every built indicator against
+real data:
+
+    COUNTY_COMPARISON_WAREHOUSE=/abs/path/warehouse.duckdb \\
+        uv run pytest tests/test_county_comparison.py
+"""
+
+import os
+
+import duckdb
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from api.routes.post_routes import post_acs5_db
+from query.county_comparison import INDICATORS
+
+EDU = "EDUCATIONAL ATTAINMENT"
+ADULTS = "Population 25 years and over"
+ESSEX = "Essex County, Vermont"
+
+# (year, name, geo_type, subcategory, variable, measure, value)
+ROWS = [
+    # 2010-2016 path
+    (
+        2012,
+        ESSEX,
+        "county",
+        "Percent bachelor's degree or higher",
+        "Total",
+        "Percent",
+        15.5,
+    ),
+    # 2017 path, with the 2017-2018 measure name
+    (
+        2017,
+        ESSEX,
+        "county",
+        ADULTS,
+        "Percent bachelor's degree or higher",
+        "Percent Estimate",
+        14.7,
+    ),
+    # 2018+ path; the count (Estimate) must be ignored
+    (2020, ESSEX, "county", ADULTS, "Bachelor's degree or higher", "Percent", 18.4),
+    (2020, ESSEX, "county", ADULTS, "Bachelor's degree or higher", "Estimate", 876.0),
+    # benchmarks
+    (2020, "Vermont", "state", ADULTS, "Bachelor's degree or higher", "Percent", 39.7),
+    (
+        2020,
+        "United States",
+        "national",
+        ADULTS,
+        "Bachelor's degree or higher",
+        "Percent",
+        32.9,
+    ),
+    # a town and a different level: neither belongs in the result
+    (
+        2020,
+        "Lunenburg town, Essex County, Vermont",
+        "town",
+        ADULTS,
+        "Bachelor's degree or higher",
+        "Percent",
+        12.0,
+    ),
+    (2020, ESSEX, "county", ADULTS, "Bachelor's degree", "Percent", 11.0),
+]
+
+
+def _client(monkeypatch, conn=None) -> TestClient:
+    if conn is None:
+        conn = duckdb.connect()
+        conn.execute(
+            """
+            CREATE TABLE acs5_dp_combined_tidy (
+                year BIGINT, name VARCHAR, geo_type VARCHAR, "table" VARCHAR,
+                category VARCHAR, subcategory VARCHAR, variable VARCHAR,
+                measure VARCHAR, value DOUBLE
+            )
+            """
+        )
+        for year, name, geo, sub, var, measure, value in ROWS:
+            conn.execute(
+                "INSERT INTO acs5_dp_combined_tidy VALUES (?, ?, ?, 'DP02', ?, ?, ?, ?, ?)",
+                [year, name, geo, EDU, sub, var, measure, value],
+            )
+    monkeypatch.setattr(post_acs5_db, "DB", conn)
+    app = FastAPI()
+    app.include_router(post_acs5_db.router)
+    return TestClient(app)
+
+
+def _rows(client, indicator="edu_bachelors_or_higher"):
+    response = client.post(
+        "/load/acs5-db/county-comparison", json={"indicator": indicator}
+    )
+    assert response.status_code == 200, response.text
+    return [
+        (r["year"], r["place"], r["geo_type"], r["value"])
+        for r in response.json()["data"]
+    ]
+
+
+def _expect(got, expected, what):
+    __tracebackhide__ = True
+    if got != expected:
+        pytest.fail(f"{what}\nExpected: {expected}\nGot:      {got}", pytrace=False)
+
+
+def test_stitches_every_label_path_into_one_series(monkeypatch):
+    essex = [
+        (y, v) for y, place, _, v in _rows(_client(monkeypatch)) if place == "Essex"
+    ]
+    _expect(
+        essex,
+        [(2012, 15.5), (2017, 14.7), (2020, 18.4)],
+        "Essex bachelor's or higher by year",
+    )
+
+
+def test_returns_counties_and_benchmarks_but_not_towns(monkeypatch):
+    places_2020 = [(p, g) for y, p, g, _ in _rows(_client(monkeypatch)) if y == 2020]
+    _expect(
+        places_2020,
+        [("Essex", "county"), ("United States", "national"), ("Vermont", "state")],
+        "2020 places",
+    )
+
+
+def test_metadata_describes_the_indicator(monkeypatch):
+    body = (
+        _client(monkeypatch)
+        .post(
+            "/load/acs5-db/county-comparison",
+            json={"indicator": "edu_bachelors_or_higher"},
+        )
+        .json()
+    )
+    _expect(
+        (body["metadata"]["label"], body["metadata"]["units"]),
+        ("Bachelor's degree or higher", "percent"),
+        "metadata label and units",
+    )
+
+
+@pytest.mark.parametrize("indicator", ["poverty", "not_a_thing"])
+def test_unbuilt_or_unknown_indicator_is_404(monkeypatch, indicator):
+    response = _client(monkeypatch).post(
+        "/load/acs5-db/county-comparison", json={"indicator": indicator}
+    )
+    _expect(
+        (response.status_code, response.json()["detail"]),
+        (404, f"Unknown indicator: {indicator}"),
+        "response",
+    )
+
+
+def test_indicator_list_marks_coming_soon(monkeypatch):
+    options = (
+        _client(monkeypatch)
+        .get("/load/acs5-db/county-comparison/indicators")
+        .json()["data"]
+    )
+    available = {o["key"] for o in options if o["available"]}
+    soon = {o["key"] for o in options if not o["available"]}
+    _expect(len(available), 9, "number of built education indicators")
+    _expect(
+        "poverty" in soon and "farm_acreage" in soon,
+        True,
+        "poverty and farm acreage are coming soon",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Real-data check: every built indicator has exactly 16 places (14 counties,
+# Vermont, United States) in every year it covers.
+# ---------------------------------------------------------------------------
+
+WAREHOUSE = os.environ.get("COUNTY_COMPARISON_WAREHOUSE")
+
+
+@pytest.mark.skipif(
+    not WAREHOUSE, reason="Set COUNTY_COMPARISON_WAREHOUSE for real-data checks"
+)
+@pytest.mark.parametrize("indicator", [i.key for i in INDICATORS if i.available])
+def test_warehouse_has_16_places_every_year(monkeypatch, indicator):
+    client = _client(monkeypatch, duckdb.connect(WAREHOUSE, read_only=True))
+    per_year: dict[int, list[str]] = {}
+    for year, place, _, _ in _rows(client, indicator):
+        per_year.setdefault(year, []).append(place)
+    bad = {y: len(p) for y, p in per_year.items() if len(p) != 16 or len(set(p)) != 16}
+    _expect(bad, {}, f"{indicator}: years without exactly 16 distinct places")
+    _expect(min(per_year), 2010, f"{indicator}: first year")

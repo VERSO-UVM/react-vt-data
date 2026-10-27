@@ -11,6 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
+  LabelList,
 } from 'recharts';
 import * as d3 from 'd3';
 
@@ -791,10 +792,83 @@ const CompareHBarChart = ({
   return <BarJS data={data} options={options} />;
 };
 
+// ---------------------------------------------------------------------------
+// RankedBarChart — one bar per place, sorted, each bar its own color, value
+// printed on top. Built for side-by-side county comparisons that get
+// screenshotted into slides.
+// data:                [{<xField>, <yField>, <color field>}], already sorted
+// chartParams.color:   field holding each bar's color
+// chartParams.unit:    'percent' adds a % to labels and the axis
+// chartParams.yLabel:  column name for the value in the table view
+// ---------------------------------------------------------------------------
+
+const RankedBarChart = ({
+  chart,
+  view,
+  onPlotData,
+}: {
+  chart: ChartItem<DataRow>;
+  view?: 'gallery' | 'report';
+  onPlotData?: (rows: DataRow[]) => void;
+}) => {
+  const isPdfMode = usePdfMode();
+  const rows = stableRows(chart.data);
+  const { xField, yField } = chart;
+  const colorField = chart.chartParams?.color ?? 'color';
+  const isPercent = chart.chartParams?.unit === 'percent';
+  const yLabel = (chart.chartParams?.yLabel as string | undefined) ?? yField;
+  const fmt = (v: unknown) =>
+    v == null
+      ? ''
+      : `${Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 })}${isPercent ? '%' : ''}`;
+
+  // The table view shows place and value only, not the bar colors.
+  useEffect(() => {
+    onPlotData?.(rows.map((r) => ({ Place: r[xField], [yLabel]: r[yField] })));
+  }, [rows, xField, yField, yLabel, onPlotData]);
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={rows} margin={{ top: 24, right: 10, left: 0, bottom: 5 }}>
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#e0d8cc"
+          vertical={false}
+        />
+        <XAxis
+          dataKey={xField}
+          interval={0}
+          angle={-40}
+          textAnchor="end"
+          height={90}
+          tick={{ fontSize: 12 }}
+        />
+        <YAxis tick={{ fontSize: 12 }} tickFormatter={fmt} />
+        <Tooltip formatter={(v) => [fmt(v), yLabel]} />
+        <Bar
+          dataKey={yField}
+          isAnimationActive={view !== 'gallery' && !isPdfMode}
+        >
+          {rows.map((r, i) => (
+            <Cell key={i} fill={r[colorField] as string} />
+          ))}
+          <LabelList
+            dataKey={yField}
+            position="top"
+            formatter={fmt}
+            style={{ fontSize: 11, fontWeight: 600, fill: '#1B211D' }}
+          />
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
+
 export {
   SamePerXBarChart,
   DiffPerXBarChart,
   CompareDiffPerXBarChart,
   CompareHBarChart,
   ZoningAllowanceStackedBarChart,
+  RankedBarChart,
 };

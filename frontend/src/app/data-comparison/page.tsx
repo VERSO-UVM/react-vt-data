@@ -20,6 +20,13 @@ const pages = [
       'Comprehensive, high-level timeseries summary across all four Census Data Profile tables. Every published demographic, economic, housing, and social characteristic is browsable through a cascading filter (table → category → subcategory → variable → measure). Good for broad longitudinal exploration and cross-topic comparisons.',
   },
   {
+    href: '/data-comparison/county-comparison',
+    label: 'Statewide County Comparison',
+    tag: 'All 14 counties · VT · US',
+    description:
+      'Rank all 14 Vermont counties on one variable, with Vermont and the United States as benchmarks. Highlight a group of counties, such as the Northeast Kingdom, to see how they compare to the rest of the state. Good for presentations and slides.',
+  },
+  {
     href: '/data-comparison/reports-by-topic',
     label: 'Topic Reports',
     tag: 'B01001 · B15003 · B25 · B23 · B19',
@@ -43,7 +50,7 @@ export default function DataComparisonHub() {
       </Center>
 
       <Container size="md">
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
           {pages.map((p) => (
             <Card
               key={p.href}
