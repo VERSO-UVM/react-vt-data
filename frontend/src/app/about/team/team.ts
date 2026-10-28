@@ -56,8 +56,8 @@ export const TEAM: TeamMember[] = [
   // },
   {
     name: 'Michael Robinette',
-    role: 'Software Developer',
-    bio: 'Michael Robinette is a PhD student in Complex Systems and Data Science, serving as a Software Developer for the Vermont Data Collaborative at the Leahy Institute for Rural Partnerships. His research uses natural language processing, network science, and mathematical modeling to study how information spreads and evolves as it moves through complex systems. ',
+    role: 'Data Engineer',
+    bio: 'Michael Robinette is a PhD student in Complex Systems and Data Science, maintaining and developing data infrastructure for the Vermont Data Collaborative at the Leahy Institute for Rural Partnerships. His research uses natural language processing, network science, and mathematical modeling to study how information spreads and evolves as it moves through complex systems.',
     image: '/images/our-team/Michael_Robinette.jpg',
   },
   {
