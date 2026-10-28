@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -63,8 +64,22 @@ def setup_etl_logging(name: str, level: int = logging.INFO) -> None:
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
 
+    # requests errors embed the full URL, including the Census API key.
+    def redact_key(record: logging.LogRecord) -> bool:
+        record.msg = re.sub(r"key=[^&\s'\"]+", "key=***", record.getMessage())
+        record.args = None
+        return True
+
+    file_handler.addFilter(redact_key)
+    console_handler.addFilter(redact_key)
+
     logging.basicConfig(
         level=logging.DEBUG,
         format=f"%(asctime)s - {name} - %(name)s - %(levelname)s - %(message)s",
         handlers=[file_handler, console_handler],
     )
+
+    # Third-party request logs include full URLs, and the Census key goes in
+    # the query string. Keep them out of the log file.
+    for noisy in ("urllib3", "requests"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
