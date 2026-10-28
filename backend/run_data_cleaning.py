@@ -1,9 +1,13 @@
 import argparse
+import logging
 import pkgutil
 from importlib import import_module
 
 import data_cleaning as cleaning
 from lake_build import get_connection
+from logger.logging import setup_etl_logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_cleaners(script_name: str | None = None):
@@ -38,33 +42,34 @@ def run_master_clean(script_name: str | None = None):
         cleaners = get_cleaners(script_name)
 
         if script_name and not cleaners:
-            print(f"No cleaner found matching '{script_name}'")
+            logger.error("No cleaner found matching '%s'", script_name)
             return
 
         for cleaner in cleaners:
             name = cleaner.__name__.split(".")[-1]
-            print(f"Running {name}...")
+            logger.info("Running %s...", name)
 
             try:
                 cleaner.main(con)
-                print(f"\033[32mCompleted\033[0m {name}")
+                logger.info("Completed %s", name)
 
-            except Exception as e:  # noqa: BLE001 -- isolate any cleaner failure so the rest still run
+            except Exception:
                 failed.append(name)
-                print(f"\033[31mFAILED\033[0m {name}: {e}")
+                logger.exception("FAILED %s", name)
 
     finally:
         con.close()
 
-    print("\nCleaning ETL process completed.")
+    logger.info("Cleaning ETL process completed.")
 
     if failed:
-        print(f"Failed cleaners: {', '.join(failed)}")
+        logger.error("Failed cleaners: %s", ", ".join(failed))
     else:
-        print("All cleaners completed successfully.")
+        logger.info("All cleaners completed successfully.")
 
 
 def main():
+    setup_etl_logging("clean")
     parser = argparse.ArgumentParser(description="Run data cleaning scripts.")
     parser.add_argument(
         "script_name",

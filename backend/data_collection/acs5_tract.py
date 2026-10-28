@@ -16,6 +16,7 @@ raw estimate and margin of error, Census sentinels (negative codes) left as
 is so the cleaner can treat them as missing rather than as values.
 """
 
+import logging
 import os
 import time
 from datetime import UTC, datetime
@@ -24,6 +25,8 @@ import pandas as pd
 import requests
 
 from data_collection.parallel import pmap
+
+logger = logging.getLogger(__name__)
 
 API_KEY = os.environ.get("CENSUS_API_KEY")
 BASE_URL = "https://api.census.gov/data/{year}/acs/acs5"
@@ -46,8 +49,8 @@ def fetch_table(year: int, table: str) -> pd.DataFrame:
     }
 
     if params.get("key") is None:
-        print("API key is either missing or set to None.")
-        return pd.DataFrame
+        logger.error("API key is either missing or set to None.")
+        return pd.DataFrame()
 
     r = requests.get(BASE_URL.format(year=year), params=params, timeout=60)
     r.raise_for_status()
@@ -88,7 +91,7 @@ def collect(years: range = YEARS) -> pd.DataFrame:
 
     def fetch_one(task):
         year, table = task
-        print(f"  {table} / tracts / {year}...")
+        logger.debug("%s / tracts / %s...", table, year)
         df = fetch_table(year, table)
         time.sleep(0.1)
         return df

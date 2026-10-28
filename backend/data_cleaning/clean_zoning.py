@@ -9,6 +9,7 @@
 python -m data_cleaning.clean_zoning
 """
 
+import logging
 from pathlib import Path
 
 import duckdb
@@ -21,6 +22,8 @@ from data_cleaning.geo_lookup import (
     town_lookup_joins_sql,
 )
 from query.sql_render import render_sql
+
+logger = logging.getLogger(__name__)
 
 SQL_PATH = Path(__file__).resolve().parent / "sql"
 # Town and zoning-district boundaries were digitised separately, so subtracting
@@ -111,9 +114,10 @@ def fix_missing_geoids(
             raw_df.loc[rows, "GEO_ID"] = geoid_by_name[census_name]
         # If there is a mismatch between the names, log it!
         else:
-            print(
-                "No census match for zoning Municipal_Name"
-                + f"\033[1m{name}\033[0m to Census name \033[1m{census_name}\033[0m"
+            logger.warning(
+                "No census match for zoning Municipal_Name %s to Census name %s",
+                name,
+                census_name,
             )
         if new_name:
             raw_df.loc[rows, "Municipal_Name"] = new_name

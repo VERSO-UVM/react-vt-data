@@ -1,3 +1,4 @@
+import logging
 import os
 import warnings
 from collections.abc import Iterable
@@ -6,6 +7,10 @@ from pathlib import Path
 import duckdb
 import geopandas as gpd
 import pandas as pd
+
+from logger.logging import setup_etl_logging
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -213,14 +218,15 @@ def main():
     This is the entry point used by the container:
         python -m lake_build
     """
-    print(f"DATA_DIR: {DATA_DIR}")
-    print(f"LAKE_PATH: {LAKE_PATH}")
-    print(f"STORAGE_PATH: {STORAGE_PATH}")
+    setup_etl_logging("lake")
+    logger.info("DATA_DIR: %s", DATA_DIR)
+    logger.info("LAKE_PATH: %s", LAKE_PATH)
+    logger.info("STORAGE_PATH: %s", STORAGE_PATH)
 
     con = get_connection()
 
     try:
-        print("DuckLake build completed successfully.")
+        logger.info("DuckLake build completed successfully.")
     finally:
         con.close()
 

@@ -21,6 +21,7 @@ COPY --chown=app:app ./query /code/query
 # The master script file to run data collection
 COPY --chown=app:app ./run_data_collection.py /code/run_data_collection.py
 
+COPY --chown=app:app ./logger /code/logger
 COPY --chown=app:app ./lake_build.py /code/lake_build.py
 
 
