@@ -35,18 +35,6 @@ function BlogCard({ blog }: { blog: Blog }) {
         >
           Source: {blog.source}
         </Text>
-
-        <Badge
-          variant="light"
-          style={{
-            backgroundColor: blog.published
-              ? COLORS.birchDim
-              : 'rgba(221, 154, 47, 0.15)',
-            color: blog.published ? COLORS.slate : COLORS.amber,
-          }}
-        >
-          {blog.published ? blog.date : 'Coming soon'}
-        </Badge>
       </Group>
 
       <Title
@@ -54,7 +42,7 @@ function BlogCard({ blog }: { blog: Blog }) {
         style={{
           fontFamily: FONTS.display,
           color: COLORS.ink,
-          fontSize: 20,
+          fontSize: 21,
           lineHeight: 1.35,
         }}
       >
