@@ -9,7 +9,7 @@ day-to-day commands are in the [root README](../README.md).
 | ------------------------------ | --------------------------------------------------------------------- |
 | [architecture/](architecture/) | How the system is built and why: pipeline, containers, filter design  |
 | [datasets/](datasets/)         | One page per raw lake table (`lake.RAW.*`): source, columns, quirks   |
-| [guides/](guides/)             | Task-oriented how-tos and runbooks (MCP setup, deployment, data coverage notes)             |
+| [guides/](guides/)             | Task-oriented how-tos and runbooks (MCP setup, deployment, data coverage notes, publishing a data blog post) |
 | [reports/](reports/)           | Dated issue audits and findings; Old Office of Engagement report examples in which this tool attempts to emulate automatically |
 
 
