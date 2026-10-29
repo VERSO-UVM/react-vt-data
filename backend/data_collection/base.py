@@ -1,5 +1,8 @@
 """
 Shared utilities for ACS 5-Year Census B-table scrapers.
+
+Census annotation values (negative sentinels such as -666666666) are missing
+data, so a row with any missing component is null rather than a partial sum.
 """
 
 import logging
@@ -115,6 +118,14 @@ def pct(val: float, total: float) -> float | None:
     return None
 
 
+def estimates(df: pd.DataFrame, codes: list[str]) -> pd.DataFrame:
+    """Estimates for `codes`: NaN where absent or a Census annotation value
+    (https://www.census.gov/data/developers/data-sets/acs-1year/notes-on-acs-estimate-and-annotation-values.html).
+    No real estimate is negative."""
+    est = df.reindex(columns=codes)
+    return est.where(est >= 0)
+
+
 def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.DataFrame:
     base = pd.DataFrame(
         {
@@ -127,8 +138,9 @@ def compute_tidy_generic(df: pd.DataFrame, var_groups: list[VarGroup]) -> pd.Dat
     )
 
     def row_sum(codes: list[str]) -> pd.Series:
-        # reindex: codes absent from df become all-NaN columns, then count as 0
-        return df.reindex(columns=codes).fillna(0).sum(axis=1)
+        """The sum of `codes`; null when any code is missing, since an
+        incomplete sum is not an estimate."""
+        return estimates(df, codes).sum(axis=1, min_count=len(codes))
 
     frames = []
     for var in var_groups:

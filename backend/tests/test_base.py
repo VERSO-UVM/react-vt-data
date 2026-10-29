@@ -5,7 +5,8 @@ Tests for data_collection/base.py:
 
 import pandas as pd
 import pytest
-from data_collection_OLD.base import VarGroup, compute_tidy_generic, pct
+
+from data_collection.base import VarGroup, compute_tidy_generic, pct
 
 # ---------------------------------------------------------------------------
 # pct()
@@ -115,12 +116,52 @@ class TestComputeTidyGeneric:
         assert len(result) == 2
         assert set(result["Variable"]) == {"Metric A", "Metric B"}
 
-    def test_missing_code_treated_as_zero(self):
-        """A code absent from the row (NaN/None) should contribute 0."""
-        df = _make_df(B01001_002E=[None])
+    def test_missing_code_makes_value_null(self):
+        """An absent code makes the sum null, not a partial sum."""
+        df = _make_df(B01001_002E=[500.0])
         groups = [VarGroup("X", "S", ["B01001_002E", "B_MISSING"])]
         result = compute_tidy_generic(df, groups)
-        assert result.iloc[0]["Value"] == 0
+        assert pd.isna(result.iloc[0]["Value"])
+
+    def test_sentinel_estimate_is_null(self):
+        """-666666666 (too few sample observations) is not a value."""
+        df = _make_df(B19013_001E=[-666666666.0])
+        groups = [VarGroup("Median HH Income", "Income", ["B19013_001E"])]
+        result = compute_tidy_generic(df, groups)
+        assert pd.isna(result.iloc[0]["Value"])
+
+    def test_one_sentinel_component_makes_sum_and_percent_null(self):
+        df = _make_df(
+            B01001_001E=[1000.0], B01001_003E=[40.0], B01001_027E=[-666666666.0]
+        )
+        groups = [
+            VarGroup("Under 5", "Age", ["B01001_003E", "B01001_027E"], ["B01001_001E"])
+        ]
+        row = compute_tidy_generic(df, groups).iloc[0]
+        assert pd.isna(row["Value"])
+        assert pd.isna(row["Percent"])
+
+    def test_two_sentinel_components_do_not_sum(self):
+        """Two sentinels once summed to -1,333,333,332."""
+        df = _make_df(B25003_002E=[-666666666.0], B25003_003E=[-666666666.0])
+        groups = [VarGroup("Occupied", "Housing", ["B25003_002E", "B25003_003E"])]
+        assert pd.isna(compute_tidy_generic(df, groups).iloc[0]["Value"])
+
+    def test_sentinel_denominator_makes_percent_null(self):
+        df = _make_df(B23025_001E=[-999999999.0], B23025_002E=[650.0])
+        groups = [VarGroup("LFP Rate", "Labor", ["B23025_002E"], ["B23025_001E"])]
+        row = compute_tidy_generic(df, groups).iloc[0]
+        assert row["Value"] == 650.0
+        assert pd.isna(row["Percent"])
+
+    def test_real_zero_is_kept(self):
+        df = _make_df(B01001_001E=[1000.0], B01001_003E=[0.0], B01001_027E=[0.0])
+        groups = [
+            VarGroup("Under 5", "Age", ["B01001_003E", "B01001_027E"], ["B01001_001E"])
+        ]
+        row = compute_tidy_generic(df, groups).iloc[0]
+        assert row["Value"] == 0
+        assert row["Percent"] == 0.0
 
     def test_passthrough_base_columns(self):
         df = _make_df(B01001_001E=[100.0])
