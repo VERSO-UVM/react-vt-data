@@ -5,7 +5,11 @@ SELECT
     section AS Section,
     variable AS Variable,
     value AS Value,
-    percent AS Percent
+    value_moe AS Value_MOE,
+    value_reliability AS Value_Reliability,
+    percent AS Percent,
+    percent_moe AS Percent_MOE,
+    percent_reliability AS Percent_Reliability
 FROM {{ table }}
 {{ where_string }}
 ORDER BY year, Section, Variable

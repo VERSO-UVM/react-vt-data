@@ -126,6 +126,8 @@ ACS5_TREE_LABELS = ["Location"]
 
 # The cleaned timeseries tables store their measure columns in snake_case, but
 # the frontend charts read these Title_Case field names, so responses keep them.
+# Where a series has a 90% margin of error, it follows as `<field>_MOE`, with
+# its reliability label (high, medium or low) as `<field>_Reliability`.
 TIMESERIES_FIELD_NAMES = {
     "median_age": "Median_Age",
     "age_dependency_ratio": "Age_Dependency_Ratio",
@@ -134,6 +136,11 @@ TIMESERIES_FIELD_NAMES = {
     "total_housing_units": "Total_Housing_Units",
     "median_home_value": "Median_Home_Value",
     "percent": "Percent",
+}
+TIMESERIES_FIELD_NAMES |= {
+    f"{column}_{suffix.lower()}": f"{field}_{suffix}"
+    for column, field in TIMESERIES_FIELD_NAMES.items()
+    for suffix in ("MOE", "Reliability")
 }
 
 
