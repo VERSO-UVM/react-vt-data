@@ -520,11 +520,13 @@ def county_comparison(request: CountyComparisonRequest):
     rows = DB.execute(sql, params).df()
     return make_response(
         data=rows,
+        # Source and caveats come from the registry; the rest describes the
+        # indicator picked.
         metadata={
+            **get_metadata("DP TABLES"),
             "label": indicator.label,
             "topic": indicator.topic,
             "description": indicator.description,
             "units": indicator.units,
-            "source": f"U.S. Census Bureau, ACS 5-year estimates, {indicator.table}",
         },
     )

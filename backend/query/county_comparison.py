@@ -15,11 +15,22 @@ and its percent is stored as measure "Percent Estimate" in 2017-2018 but
 "Percent" otherwise. Each Indicator lists every path and measure it has
 used, so the query stitches them into one series per place.
 
+Some categories also change name every year, e.g. "INCOME AND BENEFITS (IN
+2024 INFLATION-ADJUSTED DOLLARS)", so `category` is a SQL LIKE pattern.
+
 Indicators not built yet are listed with available=False so the page can show
 them as "coming soon".
 """
 
 from dataclasses import dataclass
+from pathlib import Path
+
+from query.sql_render import _placeholder, filter_clauses, render_sql
+
+SQL_PATH = (
+    Path(__file__).resolve().parent / "sql" / "acs5" / "acs5_dp_county_comparison.sql"
+)
+SOURCE_TABLE = "acs5_dp_combined_tidy"
 
 # Geographies the comparison shows: the 14 counties plus two benchmarks.
 GEO_TYPES = ("county", "state", "national")
@@ -37,7 +48,7 @@ class Indicator:
     description: str = ""
     units: str = "percent"
     table: str = ""
-    category: str = ""
+    category: str = ""  # SQL LIKE pattern; a plain name matches exactly
     paths: tuple[tuple[str, str], ...] = ()  # (subcategory, variable)
     measures: tuple[str, ...] = PERCENT_MEASURES
     available: bool = True
@@ -102,7 +113,25 @@ INDICATORS = [
     _coming_soon("disability", "Disability"),
     _coming_soon("unemployment", "Unemployment"),
     _coming_soon("poverty", "Poverty"),
-    _coming_soon("median_household_income", "Median household income"),
+    Indicator(
+        key="median_household_income",
+        label="Median household income",
+        topic="Income",
+        # Each year is in that year's dollars, as Census publishes it (the
+        # same as the Census Variable Comparison); not adjusted across years.
+        description=(
+            "Median household income, in dollars of the survey year "
+            "(not adjusted for inflation between years)."
+        ),
+        units="dollars",
+        table="DP03",
+        category="INCOME AND BENEFITS (IN % INFLATION-ADJUSTED DOLLARS)",
+        paths=(
+            ("Median household income (dollars)", "Total"),  # 2010-2012
+            ("Total households", "Median household income (dollars)"),  # 2013+
+        ),
+        measures=("Estimate",),
+    ),
     _coming_soon("population_density", "Population density"),
     _coming_soon("farm_acreage", "Farm acreage"),
 ]
@@ -126,34 +155,28 @@ def indicator_options() -> list[dict]:
 
 
 def comparison_query(indicator: Indicator) -> tuple[str, list]:
-    """SQL and params for one row per place per year.
+    """Render the comparison query for one indicator; returns (sql, params).
 
-    `place` is the short display name ("Essex", "Vermont", "United States").
-    Should two stitched paths ever overlap in a year, the row with measure
-    "Percent" wins so each place still gets a single bar.
+    Rows are {place, geo_type, year, value}, where `place` is the short display
+    name ("Essex", "Vermont", "United States"). Values travel as $N
+    placeholders: execute with `DB.execute(sql, params)`.
     """
-    path_sql = " OR ".join(
-        "(subcategory = ? AND variable = ?)" for _ in indicator.paths
+    params: list = []
+    clauses = filter_clauses(
+        {
+            "table": [indicator.table],
+            "measure": list(indicator.measures),
+            "geo_type": list(GEO_TYPES),
+        },
+        params,
     )
-    params: list = [indicator.table, indicator.category]
-    params += [label for path in indicator.paths for label in path]
-    params += list(indicator.measures)
-    params += list(GEO_TYPES)
-    sql = f"""--sql
-        SELECT regexp_replace(name, ' County, Vermont$', '') AS place,
-               geo_type,
-               CAST(year AS INTEGER) AS year,
-               CAST(value AS DOUBLE) AS value
-        FROM acs5_dp_combined_tidy
-        WHERE "table" = ?
-          AND category = ?
-          AND ({path_sql})
-          AND measure IN ({", ".join("?" for _ in indicator.measures)})
-          AND geo_type IN ({", ".join("?" for _ in GEO_TYPES)})
-          AND value IS NOT NULL
-        QUALIFY row_number() OVER (
-            PARTITION BY name, year ORDER BY measure = 'Percent' DESC
-        ) = 1
-        ORDER BY year, place
-    """
-    return sql, params
+    clauses.append(f"category LIKE {_placeholder(indicator.category, params)}")
+    paths = " OR ".join(
+        f"(subcategory = {_placeholder(sub, params)}"
+        f" AND variable = {_placeholder(var, params)})"
+        for sub, var in indicator.paths
+    )
+    clauses.append(f"({paths})")
+    clauses.append("value IS NOT NULL")
+    where_string = "WHERE " + "\n    AND ".join(clauses)
+    return render_sql(SQL_PATH, table=SOURCE_TABLE, where_string=where_string), params

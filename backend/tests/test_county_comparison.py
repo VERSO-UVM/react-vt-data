@@ -6,10 +6,11 @@ Census files one education level under different label paths and measure
 names across vintages; the route should stitch them into a single value per
 place per year, for the 14 counties plus Vermont and the United States.
 
-Set COUNTY_COMPARISON_WAREHOUSE to also check every built indicator against
+Set MCP_LIVE_WAREHOUSE (the repo's real-data test variable, as in
+test_mcp_live.py) to also check every built indicator against
 real data:
 
-    COUNTY_COMPARISON_WAREHOUSE=/abs/path/warehouse.duckdb \\
+    MCP_LIVE_WAREHOUSE=/abs/path/warehouse.duckdb \\
         uv run pytest tests/test_county_comparison.py
 """
 
@@ -20,6 +21,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from api.metadata_registry import get_metadata
 from api.routes.post_routes import post_acs5_db
 from query.county_comparison import INDICATORS
 
@@ -77,6 +79,46 @@ ROWS = [
 ]
 
 
+INCOME = "INCOME AND BENEFITS (IN {} INFLATION-ADJUSTED DOLLARS)"
+MEDIAN_HH = "Median household income (dollars)"
+
+# (year, name, geo_type, category, subcategory, variable, measure, value):
+# the category names the year's dollars, and the label path changes in 2013.
+INCOME_ROWS = [
+    (
+        2012,
+        ESSEX,
+        "county",
+        INCOME.format(2012),
+        MEDIAN_HH,
+        "Total",
+        "Estimate",
+        41000.0,
+    ),
+    (
+        2020,
+        ESSEX,
+        "county",
+        INCOME.format(2020),
+        "Total households",
+        MEDIAN_HH,
+        "Estimate",
+        50000.0,
+    ),
+    # Census publishes no percent for a median; the empty row must be ignored
+    (
+        2020,
+        ESSEX,
+        "county",
+        INCOME.format(2020),
+        "Total households",
+        MEDIAN_HH,
+        "Percent",
+        None,
+    ),
+]
+
+
 def _client(monkeypatch, conn=None) -> TestClient:
     if conn is None:
         conn = duckdb.connect()
@@ -93,6 +135,11 @@ def _client(monkeypatch, conn=None) -> TestClient:
             conn.execute(
                 "INSERT INTO acs5_dp_combined_tidy VALUES (?, ?, ?, 'DP02', ?, ?, ?, ?, ?)",
                 [year, name, geo, EDU, sub, var, measure, value],
+            )
+        for year, name, geo, cat, sub, var, measure, value in INCOME_ROWS:
+            conn.execute(
+                "INSERT INTO acs5_dp_combined_tidy VALUES (?, ?, ?, 'DP03', ?, ?, ?, ?, ?)",
+                [year, name, geo, cat, sub, var, measure, value],
             )
     monkeypatch.setattr(post_acs5_db, "DB", conn)
     app = FastAPI()
@@ -151,6 +198,11 @@ def test_metadata_describes_the_indicator(monkeypatch):
         ("Bachelor's degree or higher", "percent"),
         "metadata label and units",
     )
+    _expect(
+        body["metadata"]["source"],
+        get_metadata("DP TABLES")["source"],
+        "metadata source (from api/metadata_registry.py)",
+    )
 
 
 @pytest.mark.parametrize("indicator", ["poverty", "not_a_thing"])
@@ -173,11 +225,20 @@ def test_indicator_list_marks_coming_soon(monkeypatch):
     )
     available = {o["key"] for o in options if o["available"]}
     soon = {o["key"] for o in options if not o["available"]}
-    _expect(len(available), 9, "number of built education indicators")
+    _expect(len(available), 10, "number of built indicators (9 education + income)")
     _expect(
         "poverty" in soon and "farm_acreage" in soon,
         True,
         "poverty and farm acreage are coming soon",
+    )
+
+
+def test_income_joins_yearly_categories_and_label_paths(monkeypatch):
+    rows = _rows(_client(monkeypatch), "median_household_income")
+    _expect(
+        [(y, p, v) for y, p, _, v in rows],
+        [(2012, "Essex", 41000.0), (2020, "Essex", 50000.0)],
+        "Essex median household income by year",
     )
 
 
@@ -186,12 +247,10 @@ def test_indicator_list_marks_coming_soon(monkeypatch):
 # Vermont, United States) in every year it covers.
 # ---------------------------------------------------------------------------
 
-WAREHOUSE = os.environ.get("COUNTY_COMPARISON_WAREHOUSE")
+WAREHOUSE = os.environ.get("MCP_LIVE_WAREHOUSE")
 
 
-@pytest.mark.skipif(
-    not WAREHOUSE, reason="Set COUNTY_COMPARISON_WAREHOUSE for real-data checks"
-)
+@pytest.mark.skipif(not WAREHOUSE, reason="Set MCP_LIVE_WAREHOUSE for real-data checks")
 @pytest.mark.parametrize("indicator", [i.key for i in INDICATORS if i.available])
 def test_warehouse_has_16_places_every_year(monkeypatch, indicator):
     client = _client(monkeypatch, duckdb.connect(WAREHOUSE, read_only=True))
