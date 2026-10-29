@@ -189,18 +189,6 @@ export default function DataBlogsPage() {
 
       {/* Posts */}
       <Container size="xl" py={{ base: 50, sm: 70 }}>
-        <Text
-          mb="lg"
-          style={{
-            fontFamily: FONTS.mono,
-            fontSize: 12,
-            letterSpacing: '0.12em',
-            color: COLORS.slate,
-          }}
-        >
-          FIRST POSTS ARRIVING THIS WINTER
-        </Text>
-
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
           {BLOGS.map((blog) => (
             <BlogCard key={blog.slug} blog={blog} />
