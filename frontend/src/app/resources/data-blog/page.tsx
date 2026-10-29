@@ -192,9 +192,9 @@ export default function DataBlogsPage() {
               lineHeight: 1.7,
             }}
           >
-            Short, chart-driven posts that dig into a single dataset — what the
-            numbers say about housing, health, and hazards in Vermont towns, and
-            where to explore them yourself on the platform.
+            Data-driven posts that dig into available data here on the platform.
+            What the numbers say about housing, health, and land in state areas,
+            and where to explore the data yourself on the platform.
           </Text>
         </Container>
       </Box>
