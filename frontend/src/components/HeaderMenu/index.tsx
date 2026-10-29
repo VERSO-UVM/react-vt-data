@@ -91,6 +91,7 @@ const links: NavItem[] = [
       { link: '/resources/white-papers', label: 'White Papers' },
       { link: '/resources/announcements', label: 'Announcements' },
       { link: '/resources/tutorials', label: 'Tutorials' },
+      { link: '/resources/data-blog', label: 'Data Blog' },
       {
         link: 'https://github.com/VERSO-UVM/react-vt-data',
         label: 'GitHub',
