@@ -11,7 +11,12 @@ import {
 
 import { COLORS, FONTS } from '@/app/theme';
 import { BLOGS } from '../blogs';
-import { loadBlogHtml } from '../content/loadBlogContent';
+import {
+  loadBlogCharts,
+  loadBlogHtml,
+  splitOnCharts,
+} from '../content/loadBlogContent';
+import { BlogChart } from './BlogChart';
 import styles from './content.module.css';
 
 export function generateStaticParams() {
@@ -30,7 +35,10 @@ export default async function BlogPage({
   if (!blog || !blog.published) {
     notFound();
   }
-  const contentHtml = await loadBlogHtml(blog.slug);
+  const [contentHtml, charts] = await Promise.all([
+    loadBlogHtml(blog.slug),
+    loadBlogCharts(blog.slug),
+  ]);
   return (
     <Box
       style={{
@@ -61,6 +69,14 @@ export default async function BlogPage({
           >
             Data Blog · {blog.source}
           </Text>
+
+          <Group gap={6} mt="sm">
+            {blog.tags.map((tag) => (
+              <Badge key={tag} variant="outline" color={COLORS.amberSoft}>
+                {tag}
+              </Badge>
+            ))}
+          </Group>
 
           <Title
             order={1}
@@ -129,8 +145,20 @@ export default async function BlogPage({
             lineHeight: 1.8,
             color: COLORS.ink,
           }}
-          dangerouslySetInnerHTML={{ __html: contentHtml }}
-        />
+        >
+          {splitOnCharts(contentHtml).map((part, i) => {
+            if (i % 2 === 0) {
+              return <div key={i} dangerouslySetInnerHTML={{ __html: part }} />;
+            }
+            const spec = charts[part];
+            if (!spec) {
+              throw new Error(
+                `Blog "${slug}": no chart "${part}" in charts.json`,
+              );
+            }
+            return <BlogChart key={i} spec={spec} />;
+          })}
+        </Box>
       </Container>
     </Box>
   );
