@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Badge,
   Box,
   Card,
+  Chip,
   Container,
   Group,
   Image,
@@ -15,6 +17,8 @@ import * as motion from 'motion/react-client';
 
 import { COLORS, FONTS } from '@/app/theme';
 import { BLOGS, Blog } from './blogs';
+
+const TAGS = [...new Set(BLOGS.flatMap((blog) => blog.tags))].sort();
 
 // -----------------------------------------------------------------------------
 // Blog card
@@ -52,6 +56,14 @@ function BlogCard({ blog }: { blog: Blog }) {
       <Text size="sm" mt="sm" style={{ lineHeight: 1.65, color: COLORS.slate }}>
         {blog.summary}
       </Text>
+
+      <Group gap={6} mt="md">
+        {blog.tags.map((tag) => (
+          <Badge key={tag} variant="light" color={COLORS.spruce} size="sm">
+            {tag}
+          </Badge>
+        ))}
+      </Group>
 
       <Group gap="xs" mt="lg">
         <Image
@@ -118,6 +130,11 @@ function BlogCard({ blog }: { blog: Blog }) {
 // -----------------------------------------------------------------------------
 
 export default function DataBlogsPage() {
+  const [selected, setSelected] = useState<string[]>([]);
+  const visible = selected.length
+    ? BLOGS.filter((blog) => blog.tags.some((tag) => selected.includes(tag)))
+    : BLOGS;
+
   return (
     <Box
       style={{
@@ -189,8 +206,18 @@ export default function DataBlogsPage() {
 
       {/* Posts */}
       <Container size="xl" py={{ base: 50, sm: 70 }}>
+        <Chip.Group multiple value={selected} onChange={setSelected}>
+          <Group gap="xs" mb="xl">
+            {TAGS.map((tag) => (
+              <Chip key={tag} value={tag} color="spruce" variant="outline">
+                {tag}
+              </Chip>
+            ))}
+          </Group>
+        </Chip.Group>
+
         <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-          {BLOGS.map((blog) => (
+          {visible.map((blog) => (
             <BlogCard key={blog.slug} blog={blog} />
           ))}
         </SimpleGrid>

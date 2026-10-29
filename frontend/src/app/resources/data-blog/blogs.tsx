@@ -7,11 +7,13 @@ export type Blog = {
   date: string;
   source: string;
   slug: string;
+  tags: string[];
   published: boolean;
 };
 
 // Placeholders until the first posts go out — flip `published` and add a
-// content/<slug>/content.docx to make one live.
+// content/<slug>/content.docx to make one live. For interactive charts, add
+// content/<slug>/charts.json and put a [chart:<id>] paragraph in the docx.
 export const BLOGS: Blog[] = [
   {
     title: "Vermont's Community Health Indicators",
@@ -21,6 +23,7 @@ export const BLOGS: Blog[] = [
     date: 'November 15th, 2026',
     source: 'CDC PLACES',
     slug: 'vermont-community-health-indicators',
+    tags: ['Community Health', 'Poverty', 'Health Insurance'],
     published: false,
   },
   {
@@ -31,6 +34,7 @@ export const BLOGS: Blog[] = [
     date: 'December 2026',
     source: 'Census ACS-5',
     slug: 'vermont-rent-burden',
+    tags: ['Housing'],
     published: false,
   },
   {
@@ -41,6 +45,7 @@ export const BLOGS: Blog[] = [
     date: 'January 2027',
     source: 'FEMA NFHL',
     slug: 'building-in-the-floodplain',
+    tags: ['Flood Hazard', 'Housing'],
     published: false,
   },
 ];
