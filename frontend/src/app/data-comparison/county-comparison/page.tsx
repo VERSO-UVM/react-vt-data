@@ -64,12 +64,13 @@ const COUNTIES = Object.keys(county_town_names);
 const DEFAULT_INDICATOR = 'edu_bachelors_or_higher';
 
 // Theme colors, matching the app's other charts: amber is the comparison
-// accent (as in the Census Variable Comparison), spruce and slate the
-// benchmarks, and the muted blue-grey of TrendCharts' compare lines the rest.
+// accent (as in the Census Variable Comparison), spruce and TrendCharts'
+// compare blue the benchmarks (slate was too close to spruce to tell apart),
+// and the muted blue-grey of TrendCharts' compare lines the rest.
 const BAR_COLORS = {
   highlight: COLORS.amber,
   state: COLORS.spruce,
-  national: COLORS.slate,
+  national: '#1c7ed6',
   other: '#b3c0cc',
 };
 
