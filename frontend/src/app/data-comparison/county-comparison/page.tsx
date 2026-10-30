@@ -24,6 +24,7 @@ import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
 import county_town_names from '@/data/county_town_names.json';
 import { DataRow } from '@/types/cachedCharts';
+import { Interest } from '@/components/profile/profileStore';
 import { COLORS, FONTS } from '@/app/theme';
 
 // ---------------------------------------------------------------------------
@@ -70,6 +71,17 @@ const BAR_COLORS = {
   state: COLORS.spruce,
   national: COLORS.slate,
   other: '#b3c0cc',
+};
+
+// The profile interest (INTEREST_OPTIONS) each topic falls under. AddChart
+// hides the Add button when a chart's categories match none of the user's
+// interests, so the raw topic names can't be used as categories.
+const TOPIC_INTERESTS: Record<string, Interest> = {
+  'Educational attainment': 'Education',
+  Income: 'Labor & Economy',
+  Unemployment: 'Labor & Economy',
+  Poverty: 'Labor & Economy',
+  Disability: 'Demographics',
 };
 
 const LEGEND = [
@@ -151,24 +163,36 @@ export default function CountyComparisonPage() {
   }, []);
 
   useEffect(() => {
+    // Set by the cleanup when the indicator changes again, so a slower
+    // response for an earlier pick can't overwrite the newer one.
+    let stale = false;
     axios
       .post(`${BASE_API_URL}/load/acs5-db/county-comparison`, { indicator })
       .then((res) => {
+        if (stale) return;
         const data: ComparisonRow[] = res.data.data;
         setRows(data);
         setMeta(res.data.metadata);
         setDataError(false);
         // Keep the chosen year if the new variable has it, else the latest.
         const years = data.map((r) => r.year);
-        setYear((y) =>
-          y != null && years.includes(y) ? y : Math.max(...years),
-        );
+        setYear((y) => {
+          if (y != null && years.includes(y)) return y;
+          return years.length > 0 ? Math.max(...years) : null;
+        });
       })
       .catch(() => {
+        if (stale) return;
         setRows([]);
+        setMeta(null);
         setDataError(true);
       })
-      .finally(() => setLoadedFor(indicator));
+      .finally(() => {
+        if (!stale) setLoadedFor(indicator);
+      });
+    return () => {
+      stale = true;
+    };
   }, [indicator]);
 
   const error = optionsError
@@ -195,20 +219,30 @@ export default function CountyComparisonPage() {
     [rows, year, highlighted],
   );
 
-  const chartItem = createChartItem({
-    title: `${meta?.description ?? ''} ${meta?.source ?? ''}`.trim(),
-    description: `${meta?.label ?? ''}, Vermont counties (${year ?? ''})`,
-    xField: 'place',
-    yField: 'value',
-    subtype: 'RankedBarChart',
-    data: chartData,
-    categories: [meta?.topic ?? 'Demographics'],
-    chartParams: {
-      color: 'color',
-      unit: meta?.units,
-      yLabel: meta?.label,
-    },
-  });
+  // Memoized with an id fixed per variable and year: ChartStack keys the card
+  // on it and AddChart uses it to tell whether the chart is in the report, so
+  // a fresh random id each render would remount the card and allow duplicates.
+  const chartItem = useMemo(
+    () => ({
+      ...createChartItem({
+        title: meta?.description ?? '',
+        description: `${meta?.label ?? ''}, Vermont counties (${year ?? ''})`,
+        xField: 'place',
+        yField: 'value',
+        subtype: 'RankedBarChart',
+        data: chartData,
+        categories: [(meta && TOPIC_INTERESTS[meta.topic]) ?? 'Demographics'],
+        metadata: { source: meta?.source },
+        chartParams: {
+          color: 'color',
+          unit: meta?.units,
+          yLabel: meta?.label,
+        },
+      }),
+      id: `county-comparison-${indicator}-${year ?? ''}`,
+    }),
+    [meta, year, chartData, indicator],
+  );
 
   return (
     <Box style={{ backgroundColor: COLORS.birch, minHeight: '100vh' }}>
