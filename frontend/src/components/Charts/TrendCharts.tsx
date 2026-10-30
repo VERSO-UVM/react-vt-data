@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -16,6 +17,20 @@ import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 import MultiRowNotice from './MultiRowNotice';
 import { lineName, splitIntoLines } from './seriesLines';
+import {
+  MarginNote,
+  anyLowReliability,
+  hasMargins,
+  marginBand,
+  moeField,
+  moeKey,
+  plotValue,
+  reliabilityDots,
+  reliabilityKey,
+  reliabilityOf,
+  sumMoe,
+  withMargin,
+} from './margins';
 
 // tidy ACS-style row consumed by the trend charts
 interface TrendRow extends DataRow {
@@ -45,6 +60,9 @@ const FORMATTERS: Record<
     unit?: string;
     axisFormatter?: (v: number) => string;
     tooltip: (v: unknown, decimals?: number) => string;
+    /** A margin of error, shown after the value as "value ± margin" at the
+     *  value's precision. */
+    margin: (moe: number, decimals?: number) => string;
   }
 > = {
   currency: {
@@ -53,6 +71,8 @@ const FORMATTERS: Record<
       v != null
         ? `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
         : '—',
+    margin: (m) =>
+      `$${m.toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
   },
   percent: {
     unit: '%',
@@ -60,15 +80,36 @@ const FORMATTERS: Record<
       v != null
         ? `${decimals != null ? Number(v).toFixed(decimals) : v}%`
         : '—',
+    margin: (m, decimals) => `${decimals != null ? m.toFixed(decimals) : m}%`,
   },
   number: {
     axisFormatter: (v) => `${(v / 1000).toFixed(0)}k`,
     tooltip: (v) => (v != null ? Number(v).toLocaleString() : '—'),
+    margin: (m) => m.toLocaleString('en-US', { maximumFractionDigits: 0 }),
   },
   years: {
     axisFormatter: (v) => Number(v).toFixed(0),
     tooltip: (v) => (v != null ? `${Number(v).toFixed(1)} years` : '—'),
+    margin: (m) => m.toFixed(1),
   },
+};
+
+/** Tooltip text for a line's value: its margin follows it when the plot
+ *  point has one, and a low-reliability estimate says so. */
+const tooltipText = (
+  fmt: (typeof FORMATTERS)[FormatType],
+  value: unknown,
+  item: { dataKey?: unknown; payload?: DataRow },
+  decimals?: number,
+) => {
+  const key = String(item.dataKey);
+  return withMargin(
+    fmt.tooltip(value, decimals),
+    item.payload?.[moeKey(key)],
+    item.payload?.[reliabilityKey(key)],
+    (m) => fmt.margin(m, decimals),
+    ' (low reliability)',
+  );
 };
 
 const useToggle = () => {
@@ -180,23 +221,38 @@ export const SingleSeriesTrendChart = <TData,>({
     [data],
   );
 
+  const margins =
+    hasMargins(data, valueField) || hasMargins(compareData, valueField);
+
   const plotData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    const valueAt = (rows: DataRow[], year: unknown) =>
-      rows.find((r) => r.year === year)?.[valueField] ?? null;
+    const rowAt = (rows: DataRow[], year: unknown) =>
+      rows.find((r) => r.year === year);
     return years.map((year) => {
       const pt: DataRow = { year };
       own.lines.forEach((line, i) => {
-        pt[lineKey(seriesName, i)] = valueAt(line.rows, year);
+        plotValue(
+          pt,
+          lineKey(seriesName, i),
+          rowAt(line.rows, year),
+          valueField,
+          margins,
+        );
       });
       if (compareData && compareData.length > 0) {
         other.lines.forEach((line, i) => {
-          pt[`${lineKey(seriesName, i)} (cmp)`] = valueAt(line.rows, year);
+          plotValue(
+            pt,
+            `${lineKey(seriesName, i)} (cmp)`,
+            rowAt(line.rows, year),
+            valueField,
+            margins,
+          );
         });
       }
       return pt;
     });
-  }, [years, data, compareData, own, other, seriesName, valueField]);
+  }, [years, data, compareData, own, other, seriesName, valueField, margins]);
 
   useEffect(() => {
     onPlotData?.(plotData);
@@ -205,6 +261,8 @@ export const SingleSeriesTrendChart = <TData,>({
   if (!data || data.length === 0) return null; // early return now AFTER all hooks
 
   const fmt = FORMATTERS[format];
+  const percent = format === 'percent';
+  const hasCompare = compareData.length > 0;
 
   return (
     <>
@@ -218,8 +276,11 @@ export const SingleSeriesTrendChart = <TData,>({
           Click legend items to show or hide locations.
         </Text>
       )}
+      {margins && !isGallery && (
+        <MarginNote lowReliability={anyLowReliability(plotData)} />
+      )}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <ComposedChart
           data={plotData}
           margin={
             isGallery
@@ -240,7 +301,11 @@ export const SingleSeriesTrendChart = <TData,>({
             tickFormatter={fmt.axisFormatter}
           />
           {!isGallery && (
-            <Tooltip formatter={(v) => fmt.tooltip(v, decimals)} />
+            <Tooltip
+              formatter={(v, _name, item) =>
+                tooltipText(fmt, v, item, decimals)
+              }
+            />
           )}
           {!isGallery && (
             <Legend
@@ -252,6 +317,27 @@ export const SingleSeriesTrendChart = <TData,>({
               wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
             />
           )}
+          {margins &&
+            own.lines.map((_, i) =>
+              marginBand({
+                dataKey: ownKey(i),
+                color,
+                percent,
+                hide: hidden.has(ownKey(i)),
+                type: 'monotone',
+              }),
+            )}
+          {margins &&
+            hasCompare &&
+            other.lines.map((_, i) =>
+              marginBand({
+                dataKey: otherKey(i),
+                color: compareColor,
+                percent,
+                hide: hidden.has(otherKey(i)),
+                type: 'monotone',
+              }),
+            )}
           {own.lines.map((_, i) => (
             <Line
               legendType="plainline"
@@ -262,14 +348,18 @@ export const SingleSeriesTrendChart = <TData,>({
               stroke={color}
               strokeWidth={lineWidth}
               strokeDasharray={SPLIT_DASHES[i % SPLIT_DASHES.length]}
-              dot={own.lines.length > 1}
+              dot={
+                margins
+                  ? reliabilityDots(ownKey(i), color, own.lines.length > 1)
+                  : own.lines.length > 1
+              }
               animationBegin={0}
               isAnimationActive={!isGallery && !isPdfMode}
               animationDuration={!isGallery ? 1500 : 0}
               hide={hidden.has(ownKey(i))}
             />
           ))}
-          {compareData.length > 0 &&
+          {hasCompare &&
             other.lines.map((_, i) => (
               <Line
                 legendType="plainline"
@@ -280,14 +370,22 @@ export const SingleSeriesTrendChart = <TData,>({
                 stroke={compareColor}
                 strokeWidth={lineWidth}
                 strokeDasharray={SPLIT_DASHES[i % SPLIT_DASHES.length]}
-                dot={other.lines.length > 1}
+                dot={
+                  margins
+                    ? reliabilityDots(
+                        otherKey(i),
+                        compareColor,
+                        other.lines.length > 1,
+                      )
+                    : other.lines.length > 1
+                }
                 animationBegin={0}
                 isAnimationActive={!isGallery && !isPdfMode}
                 animationDuration={!isGallery ? 1500 : 0}
                 hide={hidden.has(otherKey(i))}
               />
             ))}
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </>
   );
@@ -328,27 +426,31 @@ export interface MultiSeriesConfig {
   nameSuffix?: boolean;
 }
 
-// The series' value for a year; summed series add up their matches.
-const getValue = (
+// Puts a summed series' value for a year on a plot point (Demographics 65+),
+// with the sum's margin when the chart has margins.
+const plotSum = (
+  pt: DataRow,
+  key: string,
   rows: TrendRow[],
   year: number,
   s: SeriesDef,
   valueField: string,
+  margins: boolean,
 ) => {
-  if (s.aggregateFrom) {
-    const sum = s.aggregateFrom.reduce((acc, label) => {
-      const v = (rows.find((r) => r.year === year && r.Variable === label)?.[
-        valueField
-      ] ?? 0) as number;
-      return acc + v;
-    }, 0);
-    return sum > 0 ? Math.round(sum * 10) / 10 : null;
-  }
-  const label = s.matchVariable ?? s.key;
-  return (
-    rows.find((r) => r.year === year && r.Variable === label)?.[valueField] ??
-    null
+  const parts = s.aggregateFrom!.map((label) =>
+    rows.find((r) => r.year === year && r.Variable === label),
   );
+  const sum = parts.reduce(
+    (acc, r) => acc + ((r?.[valueField] ?? 0) as number),
+    0,
+  );
+  const value = sum > 0 ? Math.round(sum * 10) / 10 : null;
+  pt[key] = value;
+  if (!margins) return;
+  const moe =
+    value == null ? null : sumMoe(parts.map((r) => r?.[moeField(valueField)]));
+  pt[moeKey(key)] = moe == null ? null : Math.round(moe * 10) / 10;
+  pt[reliabilityKey(key)] = reliabilityOf(value, moe);
 };
 
 export const MultiSeriesTrendChart = <TData,>({
@@ -420,30 +522,43 @@ export const MultiSeriesTrendChart = <TData,>({
     [data],
   );
 
+  const margins =
+    hasMargins(data, valueField) || hasMargins(compareData, valueField);
+
   const plotData = useMemo(() => {
     if (!data || data.length === 0) return [];
     return years.map((year) => {
       const pt: DataRow = { year };
       series.forEach((s, si) => {
-        pt[s.key] = getValue(data, year, s, valueField);
-        if (compareData && compareData.length > 0)
-          pt[`${s.key} (cmp)`] = getValue(compareData, year, s, valueField);
-        if (s.aggregateFrom) return;
+        if (s.aggregateFrom) {
+          plotSum(pt, s.key, data, year, s, valueField, margins);
+          if (compareData && compareData.length > 0)
+            plotSum(
+              pt,
+              `${s.key} (cmp)`,
+              compareData,
+              year,
+              s,
+              valueField,
+              margins,
+            );
+          return;
+        }
         const { own, other } = splitSeries[si];
         const at = (line: { rows: DataRow[] }) =>
-          line.rows.find((r) => r.year === year)?.[valueField] ?? null;
+          line.rows.find((r) => r.year === year);
         own.lines.forEach((line, i) => {
-          if (i === 0) pt[s.key] = at(line);
-          else pt[extraKey(s, i)] = at(line);
+          const key = i === 0 ? s.key : extraKey(s, i);
+          plotValue(pt, key, at(line), valueField, margins);
         });
         other.lines.forEach((line, i) => {
-          if (i === 0) pt[`${s.key} (cmp)`] = at(line);
-          else pt[`${extraKey(s, i)} (cmp)`] = at(line);
+          const key = i === 0 ? s.key : extraKey(s, i);
+          plotValue(pt, `${key} (cmp)`, at(line), valueField, margins);
         });
       });
       return pt;
     });
-  }, [years, data, compareData, series, valueField, splitSeries]);
+  }, [years, data, compareData, series, valueField, splitSeries, margins]);
 
   useEffect(() => {
     onPlotData?.(plotData);
@@ -452,6 +567,8 @@ export const MultiSeriesTrendChart = <TData,>({
   if (!data || data.length === 0) return null;
 
   const fmt = FORMATTERS[format];
+  const percent = format === 'percent';
+  const hasCompare = compareData.length > 0;
 
   return (
     <>
@@ -460,7 +577,7 @@ export const MultiSeriesTrendChart = <TData,>({
         maxPerYear={maxPerYear}
         duplicates={duplicates}
       />
-      {compareData.length > 0 && !isGallery && (
+      {hasCompare && !isGallery && (
         <CompareNote name={labels?.[1] ?? 'Comparison'} />
       )}
       {!isGallery && (
@@ -468,8 +585,11 @@ export const MultiSeriesTrendChart = <TData,>({
           Click legend items to show or hide categories.
         </Text>
       )}
+      {margins && !isGallery && (
+        <MarginNote lowReliability={anyLowReliability(plotData)} />
+      )}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <ComposedChart
           data={plotData}
           margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
         >
@@ -485,7 +605,11 @@ export const MultiSeriesTrendChart = <TData,>({
             domain={['auto', 'auto']}
             tickFormatter={fmt.axisFormatter}
           />
-          {!isGallery && <Tooltip formatter={(v) => fmt.tooltip(v)} />}
+          {!isGallery && (
+            <Tooltip
+              formatter={(v, _name, item) => tooltipText(fmt, v, item)}
+            />
+          )}
           {!isGallery && (
             <Legend
               iconSize={LEGEND_ICON_SIZE}
@@ -496,6 +620,25 @@ export const MultiSeriesTrendChart = <TData,>({
               wrapperStyle={{ fontSize: isGallery ? 12 : 16 }}
             />
           )}
+          {margins &&
+            series.flatMap((s) => [
+              marginBand({
+                dataKey: s.key,
+                color: s.color,
+                percent,
+                hide: hidden.has(s.key),
+              }),
+              ...(hasCompare
+                ? [
+                    marginBand({
+                      dataKey: `${s.key} (cmp)`,
+                      color: s.color,
+                      percent,
+                      hide: hidden.has(s.key),
+                    }),
+                  ]
+                : []),
+            ])}
           {series.map((s) => (
             <Line
               legendType="plainline"
@@ -506,7 +649,7 @@ export const MultiSeriesTrendChart = <TData,>({
               }
               stroke={s.color}
               strokeWidth={2}
-              dot={false}
+              dot={margins && reliabilityDots(s.key, s.color, false)}
               isAnimationActive={!isGallery && !isPdfMode}
               animationDuration={!isGallery ? 1500 : 0}
               hide={hidden.has(s.key)}
@@ -531,7 +674,7 @@ export const MultiSeriesTrendChart = <TData,>({
                 />
               )),
           )}
-          {compareData.length > 0 &&
+          {hasCompare &&
             series.flatMap((s, si) =>
               splitSeries[si].other.lines
                 .slice(1)
@@ -551,7 +694,7 @@ export const MultiSeriesTrendChart = <TData,>({
                   />
                 )),
             )}
-          {compareData.length > 0 &&
+          {hasCompare &&
             series.map((s) => (
               <Line
                 key={`${s.key}-cmp`}
@@ -565,11 +708,13 @@ export const MultiSeriesTrendChart = <TData,>({
                 legendType="none"
                 isAnimationActive={!isGallery && !isPdfMode}
                 animationDuration={!isGallery ? 1500 : 0}
-                dot={false}
+                dot={
+                  margins && reliabilityDots(`${s.key} (cmp)`, s.color, false)
+                }
                 hide={hidden.has(s.key)}
               />
             ))}
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </>
   );
