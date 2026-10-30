@@ -37,6 +37,11 @@ GEO_TYPES = ("county", "state", "national")
 PERCENT_MEASURES = ("Percent", "Percent Estimate")
 
 EDUCATION = "EDUCATIONAL ATTAINMENT"
+POVERTY = (
+    "PERCENTAGE OF FAMILIES AND PEOPLE WHOSE INCOME IN THE PAST 12 MONTHS IS "
+    "BELOW THE POVERTY LEVEL"
+)
+DISABILITY = "DISABILITY STATUS OF THE CIVILIAN NONINSTITUTIONALIZED POPULATION"
 ADULTS_25_PLUS = "Population 25 years and over"
 
 
@@ -72,8 +77,39 @@ def _education(key: str, label: str, *names: str) -> Indicator:
     )
 
 
-def _coming_soon(key: str, label: str) -> Indicator:
-    return Indicator(key=key, label=label, topic=label, available=False)
+def _poverty(key: str, label: str, who: str, *paths: tuple[str, str]) -> Indicator:
+    """A poverty rate. Census moved most groups under "All people" or "All
+    families" over the years, so `paths` lists each heading it has used; the
+    years each covers are noted beside it."""
+    return Indicator(
+        key=key,
+        label=label,
+        topic="Poverty",
+        description=(
+            f"Percent of {who} whose income in the past 12 months is below "
+            "the poverty level."
+        ),
+        table="DP03",
+        category=POVERTY,
+        paths=paths,
+    )
+
+
+def _disability(key: str, label: str, who: str, group: str) -> Indicator:
+    """Percent of a group with a disability. Census publishes these percents
+    from 2013 only, so the series starts there."""
+    return Indicator(
+        key=key,
+        label=label,
+        topic="Disability",
+        description=(
+            f"Percent of {who} in the civilian noninstitutionalized population "
+            "with a disability."
+        ),
+        table="DP02",
+        category=DISABILITY,
+        paths=((group, "With a disability"),),
+    )
 
 
 INDICATORS = [
@@ -110,9 +146,109 @@ INDICATORS = [
         "Graduate or professional degree",
         "Graduate or professional degree",
     ),
-    _coming_soon("disability", "Disability"),
-    _coming_soon("unemployment", "Unemployment"),
-    _coming_soon("poverty", "Poverty"),
+    _disability(
+        "disability_all_people",
+        "With a disability: all people",
+        "all people",
+        "Total Civilian Noninstitutionalized Population",
+    ),
+    _disability(
+        "disability_children",
+        "With a disability: children under 18",
+        "children under 18",
+        "Under 18 years",
+    ),
+    _disability(
+        "disability_adults_18_64",
+        "With a disability: adults 18 to 64",
+        "adults 18 to 64",
+        "18 to 64 years",
+    ),
+    _disability(
+        "disability_seniors",
+        "With a disability: adults 65 and over",
+        "adults 65 and over",
+        "65 years and over",
+    ),
+    Indicator(
+        key="unemployment_rate",
+        label="Unemployment rate",
+        topic="Unemployment",
+        description="Percent of the civilian labor force that is unemployed.",
+        table="DP03",
+        category="EMPLOYMENT STATUS",
+        paths=(
+            ("Percent Unemployed", "Total"),  # 2010-2012
+            ("Civilian labor force", "Percent Unemployed"),  # 2013-2014
+            ("Civilian labor force", "Unemployment Rate"),  # 2015+
+        ),
+    ),
+    _poverty(
+        "poverty_all_people",
+        "Poverty rate: all people",
+        "all people",
+        ("All people", "Total"),
+    ),
+    _poverty(
+        "poverty_children",
+        "Poverty rate: children under 18",
+        "children under 18",
+        ("Under 18 years", "Total"),  # 2010-2015
+        ("All people", "Under 18 years"),  # 2016+
+    ),
+    _poverty(
+        "poverty_adults",
+        "Poverty rate: adults 18 and over",
+        "adults 18 and over",
+        ("18 years and over", "Total"),  # 2010-2015
+        ("All people", "18 years and over"),  # 2016+
+    ),
+    _poverty(
+        "poverty_adults_18_64",
+        "Poverty rate: adults 18 to 64",
+        "adults 18 to 64",
+        ("18 years and over", "18 to 64 years"),  # 2010-2012
+        ("18 to 64 years", "Total"),  # 2013-2015
+        ("All people", "18 years and over: 18 to 64 years"),  # 2016+
+    ),
+    _poverty(
+        "poverty_seniors",
+        "Poverty rate: adults 65 and over",
+        "adults 65 and over",
+        ("18 years and over", "65 years and over"),  # 2010-2012
+        ("65 years and over", "Total"),  # 2013-2015
+        ("All people", "18 years and over: 65 years and over"),  # 2016+
+    ),
+    _poverty(
+        "poverty_families",
+        "Poverty rate: all families",
+        "all families",
+        ("All families", "Total"),
+    ),
+    _poverty(
+        "poverty_families_children",
+        "Poverty rate: families with children under 18",
+        "families with related children under 18",
+        ("All families", "With related children under 18 years"),  # 2010-2014
+        # 2015+
+        ("All families", "With related children of the householder under 18 years"),
+    ),
+    _poverty(
+        "poverty_married_couple",
+        "Poverty rate: married-couple families",
+        "married-couple families",
+        ("Married couple families", "Total"),  # 2010-2018
+        ("All families", "Married couple families"),  # 2019+
+    ),
+    _poverty(
+        "poverty_female_householder",
+        "Poverty rate: families with a female householder, no spouse",
+        # Census wording: "no husband present" through 2018, "no spouse
+        # present" from 2019.
+        "families with a female householder and no spouse present",
+        ("Families with female householder, no husband present", "Total"),
+        ("All families", "Families with female householder, no spouse present"),
+    ),
     Indicator(
         key="median_household_income",
         label="Median household income",
@@ -132,8 +268,6 @@ INDICATORS = [
         ),
         measures=("Estimate",),
     ),
-    _coming_soon("population_density", "Population density"),
-    _coming_soon("farm_acreage", "Farm acreage"),
 ]
 
 INDICATORS_BY_KEY = {i.key: i for i in INDICATORS}
@@ -177,6 +311,8 @@ def comparison_query(indicator: Indicator) -> tuple[str, list]:
         for sub, var in indicator.paths
     )
     clauses.append(f"({paths})")
-    clauses.append("value IS NOT NULL")
+    # Census marks unavailable values with negative sentinels; drop them along
+    # with nulls, as query/acs5.py does.
+    clauses.append("value >= 0")
     where_string = "WHERE " + "\n    AND ".join(clauses)
     return render_sql(SQL_PATH, table=SOURCE_TABLE, where_string=where_string), params
