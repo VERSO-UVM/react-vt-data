@@ -23,7 +23,7 @@ from fastapi.testclient import TestClient
 
 from api.metadata_registry import get_metadata
 from api.routes.post_routes import post_acs5_db
-from query.county_comparison import INDICATORS, INDICATORS_BY_KEY
+from query.county_comparison_indicators import INDICATORS, INDICATORS_BY_KEY
 
 EDU = "EDUCATIONAL ATTAINMENT"
 ADULTS = "Population 25 years and over"
