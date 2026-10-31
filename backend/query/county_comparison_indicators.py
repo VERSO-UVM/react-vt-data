@@ -260,3 +260,18 @@ INDICATORS = [
 ]
 
 INDICATORS_BY_KEY = {i.key: i for i in INDICATORS}
+
+
+def indicator_options() -> list[dict]:
+    """The picker list: every indicator, built or not, without its SQL paths."""
+    return [
+        {
+            "key": i.key,
+            "label": i.label,
+            "topic": i.topic,
+            "description": i.description,
+            "units": i.units,
+            "available": i.available,
+        }
+        for i in INDICATORS
+    ]

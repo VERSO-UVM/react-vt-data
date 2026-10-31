@@ -18,8 +18,11 @@ from query.acs5 import (
     get_poverty_uninsured_timeseries,
 )
 from query.core_functions import to_export_geo
-from query.county_comparison import comparison_query, indicator_options
-from query.county_comparison_indicators import INDICATORS_BY_KEY
+from query.county_comparison import comparison_query
+from query.county_comparison_indicators import (
+    INDICATORS_BY_KEY,
+    indicator_options,
+)
 from query.dp_variable_names import add_variable_names
 from query.production_db import get_db
 

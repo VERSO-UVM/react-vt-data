@@ -7,7 +7,7 @@ Data Profile measure. The indicators themselves are defined in
 
 from pathlib import Path
 
-from query.county_comparison_indicators import INDICATORS, Indicator
+from query.county_comparison_indicators import Indicator
 from query.sql_render import _placeholder, filter_clauses, render_sql
 
 SQL_PATH = (
@@ -17,21 +17,6 @@ SOURCE_TABLE = "acs5_dp_combined_tidy"
 
 # Geographies the comparison shows: the 14 counties plus two benchmarks.
 GEO_TYPES = ("county", "state", "national")
-
-
-def indicator_options() -> list[dict]:
-    """The picker list: every indicator, built or not, without its SQL paths."""
-    return [
-        {
-            "key": i.key,
-            "label": i.label,
-            "topic": i.topic,
-            "description": i.description,
-            "units": i.units,
-            "available": i.available,
-        }
-        for i in INDICATORS
-    ]
 
 
 def comparison_query(indicator: Indicator) -> tuple[str, list]:
