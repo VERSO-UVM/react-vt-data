@@ -105,11 +105,15 @@ export const reliabilityOf = (
   return cv < 0.15 ? 'high' : cv <= 0.3 ? 'medium' : 'low';
 };
 
-/** Whether any value in the plot rows has low reliability. */
-export const anyLowReliability = (rows: DataRow[]) =>
+/** Whether any value in the plot rows has low reliability. Comparison values
+ *  count only `withCmp`, since tables hide them until asked. */
+export const anyLowReliability = (rows: DataRow[], withCmp = true) =>
   rows.some((pt) =>
     Object.entries(pt).some(
-      ([k, v]) => v === 'low' && withoutCmp(k).endsWith(RELIABILITY_SUFFIX),
+      ([k, v]) =>
+        v === 'low' &&
+        (withCmp || !k.endsWith(CMP_SUFFIX)) &&
+        withoutCmp(k).endsWith(RELIABILITY_SUFFIX),
     ),
   );
 
@@ -127,9 +131,60 @@ export const withMargin = (
     ? `${text} ±\u00a0${formatMoe(moe)}${reliability === 'low' ? lowFlag : ''}`
     : text;
 
+/** Which field a tidy-table row's cell shows: its share or its count. */
+export type FieldOf = (row: DataRow | undefined) => 'Percent' | 'Value';
+
+const formatField = (field: 'Percent' | 'Value', v: number) =>
+  field === 'Percent' ? `${v.toFixed(1)}%` : v.toLocaleString();
+
+/** A tidy-table cell: the value `fieldOf` picks, with its margin of error and
+ *  an asterisk for a low-reliability estimate. The on-screen tables and the
+ *  PDF report's own table renderer both use it, so they read the same. */
+export const cellText = (row: DataRow | undefined, fieldOf: FieldOf) => {
+  const field = fieldOf(row);
+  const value = row?.[field];
+  if (typeof value !== 'number') return '—';
+  return withMargin(
+    formatField(field, value),
+    row?.[moeField(field)],
+    row?.[reliabilityField(field)],
+    (m) => formatField(field, m),
+    '*',
+  );
+};
+
+/** The margin (`moeField`) or reliability label (`reliabilityField`) of the
+ *  value a tidy-table row's cell shows. */
+export const cellCompanion = (
+  row: DataRow | undefined,
+  fieldOf: FieldOf,
+  name: (field: string) => string,
+) => {
+  const field = fieldOf(row);
+  return row && row[field] != null ? (row[name(field)] ?? null) : null;
+};
+
+/** Whether the cells for `rows` show any margin, and any low-reliability
+ *  estimate: what a table's footnote needs to explain. */
+export const cellMarginFlags = (rows: DataRow[], fieldOf: FieldOf) => ({
+  margins: rows.some((r) => cellCompanion(r, fieldOf, moeField) != null),
+  lowReliability: rows.some(
+    (r) => cellCompanion(r, fieldOf, reliabilityField) === 'low',
+  ),
+});
+
 // A CV over 30% means a margin of at least 0.30 × 1.645 ≈ half the estimate.
 const LOW_RELIABILITY =
   'Low reliability: the margin of error is about half the estimate or more.';
+
+/** The footnote text for a table with margins. */
+export const marginFootnote = (lowReliability: boolean) =>
+  '± is the margin of error: the true value is likely (90%) within that ' +
+  `range.${lowReliability ? ` * ${LOW_RELIABILITY}` : ''}`;
+
+// Recharts draws a lone point's dot even with dot={false}; for a band, that
+// would be a faint stray dot at the top of the range.
+const noDot = () => <g />;
 
 /** The shaded range behind a trend line. Call it as a function inside the
  *  chart, not as a component, so Recharts sees the Area itself. */
@@ -155,6 +210,7 @@ export const marginBand = ({
     fillOpacity={0.15}
     legendType="none"
     tooltipType="none"
+    dot={noDot}
     activeDot={false}
     isAnimationActive={false}
     hide={hide}
@@ -173,14 +229,19 @@ export const reliabilityDots = (
     cy,
     index,
     payload,
+    points,
   }: {
     cx?: number;
     cy?: number;
     index?: number;
     payload?: DataRow;
+    points?: readonly unknown[];
   }) {
     const low = payload?.[reliabilityKey(dataKey)] === 'low';
-    if (cx == null || cy == null || (!low && !allDots))
+    // Recharts draws no line through a single point, so its dot is the only
+    // mark the series gets.
+    const only = points?.length === 1;
+    if (cx == null || cy == null || (!low && !allDots && !only))
       return <g key={index} />;
     return (
       <circle
@@ -221,7 +282,6 @@ export const MarginFootnote = ({
   lowReliability: boolean;
 }) => (
   <Text size="xs" c="dimmed" mt={4}>
-    ± is the margin of error: the true value is likely (90%) within that range.
-    {lowReliability && ` * ${LOW_RELIABILITY}`}
+    {marginFootnote(lowReliability)}
   </Text>
 );

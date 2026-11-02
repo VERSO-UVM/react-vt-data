@@ -73,6 +73,18 @@ type MarginDataset = { intervals?: ([number, number] | null)[] };
 
 const marginWhiskers: Plugin<'bar'> = {
   id: 'marginWhiskers',
+  // Chart.js scales the y-axis to the bars alone. Raise it to the tallest
+  // visible whisker here, on every layout, so hiding a series in the legend
+  // drops its whiskers' headroom too.
+  afterDataLimits(chartJS, { scale }) {
+    if (scale.id !== 'y') return;
+    chartJS.data.datasets.forEach((dataset, di) => {
+      const { intervals } = dataset as MarginDataset;
+      if (!intervals || !chartJS.isDatasetVisible(di)) return;
+      for (const range of intervals)
+        if (range && range[1] > scale.max) scale.max = range[1];
+    });
+  },
   afterDatasetsDraw(chartJS) {
     const { ctx } = chartJS;
     const y = chartJS.scales.y;
@@ -314,7 +326,9 @@ const CompareDiffPerXBarChartSVG = ({
   }
 
   const percent = chart.chartParams.percentFormat ?? false;
-  const margins = hasMargins(filteredData, chart.yField);
+  const margins =
+    hasMargins(filteredData, chart.yField) ||
+    hasMargins(filteredCompareData, chart.yField);
 
   // Merge primary + compare into one array for grouped bars
   const merged = filteredData.map((entry, i) => ({
@@ -487,10 +501,6 @@ const CompareDiffPerXBarChart = ({
   const options = useMemo(() => {
     const format = (v: number) =>
       percentFormat ? `${v}%` : v.toLocaleString();
-    // Chart.js scales to the bars alone; leave room for the whiskers.
-    const whiskerTops = data.datasets.flatMap((ds) =>
-      (ds.intervals ?? []).map((range) => range?.[1] ?? 0),
-    );
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -517,9 +527,6 @@ const CompareDiffPerXBarChart = ({
       scales: {
         y: {
           title: { display: !!yLabel, text: yLabel },
-          suggestedMax: whiskerTops.length
-            ? Math.max(...whiskerTops)
-            : undefined,
           ticks: {
             callback: (value: string | number) =>
               percentFormat ? `${value}%` : value.toLocaleString(),
@@ -527,7 +534,7 @@ const CompareDiffPerXBarChart = ({
         },
       },
     };
-  }, [view, percentFormat, yLabel, data, plotData, yField]);
+  }, [view, percentFormat, yLabel, plotData, yField]);
 
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
   if (!margins) return <BarJS data={data} options={options} />;

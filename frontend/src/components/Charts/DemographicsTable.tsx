@@ -6,10 +6,12 @@ import { COLORS } from '@/app/theme';
 import * as XLSX from 'xlsx';
 import { saveWorksheet } from './TableView';
 import {
+  FieldOf,
   MarginFootnote,
+  cellCompanion,
+  cellMarginFlags,
+  cellText,
   moeField,
-  reliabilityField,
-  withMargin,
 } from './margins';
 
 // tidy ACS row shape consumed by the demographics tables
@@ -24,27 +26,6 @@ const HOME_BG = 'var(--mantine-color-green-0)';
 const COMP_BG = 'var(--mantine-color-blue-0)';
 const SPLIT_BORDER = '1px solid var(--mantine-color-gray-3)';
 
-/** The field a row's cell shows. */
-type FieldOf = (row: AcsRow | undefined) => 'Percent' | 'Value';
-
-const formatField = (field: 'Percent' | 'Value', v: number) =>
-  field === 'Percent' ? `${v.toFixed(1)}%` : v.toLocaleString();
-
-// A cell's value, with its margin of error (see margins.tsx) and an asterisk
-// for a low-reliability estimate.
-const cellText = (row: AcsRow | undefined, fieldOf: FieldOf) => {
-  const field = fieldOf(row);
-  const value = row?.[field];
-  if (typeof value !== 'number') return '—';
-  return withMargin(
-    formatField(field, value),
-    row?.[moeField(field)],
-    row?.[reliabilityField(field)],
-    (m) => formatField(field, m),
-    '*',
-  );
-};
-
 const DemographicsTableBase = ({
   chart,
   fieldOf,
@@ -57,14 +38,11 @@ const DemographicsTableBase = ({
   const hasCompare = compareData.length > 0;
   const [showCompare, setShowCompare] = useState(false);
 
-  // The margin or reliability label of the value a row's cell shows.
-  const companion = (r: AcsRow | undefined, name: (field: string) => string) =>
-    r?.[fieldOf(r)] != null ? r[name(fieldOf(r))] : null;
+  // The export always writes the comparison columns, but the footnote
+  // explains only the cells on screen.
   const allRows = [...data, ...compareData];
-  const margins = allRows.some((r) => companion(r, moeField) != null);
-  const lowReliability = allRows.some(
-    (r) => companion(r, reliabilityField) === 'low',
-  );
+  const exported = cellMarginFlags(allRows, fieldOf);
+  const shown = cellMarginFlags(showCompare ? allRows : data, fieldOf);
 
   const labels = chart.chartParams?.legendLabels as
     [string, string] | undefined;
@@ -87,7 +65,8 @@ const DemographicsTableBase = ({
     const sub = hasCompare ? [homeLabel, compareLabel] : [];
     const width = hasCompare ? 2 : 1;
     const num = (r: AcsRow | undefined) => r?.[fieldOf(r)] ?? '';
-    const moe = (r: AcsRow | undefined) => companion(r, moeField) ?? '';
+    const moe = (r: AcsRow | undefined) =>
+      cellCompanion(r, fieldOf, moeField) ?? '';
     const header = [
       'Variable',
       ...years.flatMap((y) => (hasCompare ? [y, ''] : [y])),
@@ -105,7 +84,7 @@ const DemographicsTableBase = ({
     ];
     const body = variables.flatMap((variable) => [
       line(String(variable), num, variable),
-      ...(margins ? [line(`${variable} MOE`, moe, variable)] : []),
+      ...(exported.margins ? [line(`${variable} MOE`, moe, variable)] : []),
     ]);
     const rows = hasCompare
       ? [header, ['', ...years.flatMap(() => sub)], ...body]
@@ -232,7 +211,9 @@ const DemographicsTableBase = ({
           </Table.Tbody>
         </Table>
       </ScrollArea>
-      {margins && <MarginFootnote lowReliability={lowReliability} />}
+      {shown.margins && (
+        <MarginFootnote lowReliability={shown.lowReliability} />
+      )}
     </Box>
   );
 };

@@ -22,6 +22,12 @@ import {
   StyleSheet,
 } from '@react-pdf/renderer';
 import { ChartItem } from '@/types/cachedCharts';
+import {
+  FieldOf,
+  cellMarginFlags,
+  cellText,
+  marginFootnote,
+} from '@/components/Charts/margins';
 import { PdfChartEntry, PdfSection } from './types';
 
 // ---------------------------------------------------------------------------
@@ -202,6 +208,11 @@ const s = StyleSheet.create({
     color: '#888',
     marginTop: 8,
   },
+  tableFootnote: {
+    fontSize: 7,
+    color: '#666',
+    marginTop: 4,
+  },
   noteCard: {
     backgroundColor: '#f9f9f9',
     padding: 8,
@@ -221,24 +232,12 @@ const s = StyleSheet.create({
 // Table renderer
 // ---------------------------------------------------------------------------
 
-type RenderCellFn = (row: any) => string;
-
-const renderTablePercent: RenderCellFn = (row) =>
-  row?.Percent != null ? `${row.Percent.toFixed(1)}%` : '—';
-
-const renderTableValue: RenderCellFn = (row) =>
-  row?.Value != null ? Number(row.Value).toLocaleString() : '—';
-
-const renderTableMixed: RenderCellFn = (row) => {
-  if (row?.Percent != null) return `${row.Percent.toFixed(1)}%`;
-  if (row?.Value != null) return Number(row.Value).toLocaleString();
-  return '—';
-};
-
-function getCellRenderer(subtype: string): RenderCellFn {
-  if (subtype === 'renderTable') return renderTablePercent;
-  if (subtype === 'renderTableMixed') return renderTableMixed;
-  return renderTableValue; // renderTableEstimates and anything else
+// The field each table subtype shows, as in Charts/DemographicsTable.tsx.
+function getFieldOf(subtype: string): FieldOf {
+  if (subtype === 'renderTable') return () => 'Percent';
+  if (subtype === 'renderTableMixed')
+    return (row) => (row?.Percent != null ? 'Percent' : 'Value');
+  return () => 'Value'; // renderTableEstimates and anything else
 }
 
 const PdfTableSection = ({ chart }: { chart: ChartItem<any> }) => {
@@ -251,44 +250,50 @@ const PdfTableSection = ({ chart }: { chart: ChartItem<any> }) => {
   const variables = Array.from(
     new Set(data.map((r) => r.Variable)),
   ) as string[];
-  const renderCell = getCellRenderer(chart.subtype);
+  const fieldOf = getFieldOf(chart.subtype);
+  const { margins, lowReliability } = cellMarginFlags(data, fieldOf);
 
   const findRow = (variable: string, year: number) =>
     data.find((r) => r.Variable === variable && r.year === year);
 
   return (
-    <View style={s.tableContainer}>
-      {/* Header */}
-      <View style={s.tableHeaderRow}>
-        <Text style={s.labelHeaderCell}>Variable</Text>
-        {years.map((y) => (
-          <Text key={y} style={s.yearHeaderCell}>
-            {y}
-          </Text>
+    <>
+      <View style={s.tableContainer}>
+        {/* Header */}
+        <View style={s.tableHeaderRow}>
+          <Text style={s.labelHeaderCell}>Variable</Text>
+          {years.map((y) => (
+            <Text key={y} style={s.yearHeaderCell}>
+              {y}
+            </Text>
+          ))}
+        </View>
+
+        {/* Rows */}
+        {variables.map((variable, idx) => (
+          <View
+            key={variable}
+            style={[
+              s.tableRow,
+              idx % 2 === 0 ? { backgroundColor: '#fafafa' } : {},
+            ]}
+          >
+            <Text style={s.labelCell}>{variable}</Text>
+            {years.map((year) => {
+              const row = findRow(variable, year);
+              return (
+                <Text key={year} style={s.yearCell}>
+                  {cellText(row, fieldOf)}
+                </Text>
+              );
+            })}
+          </View>
         ))}
       </View>
-
-      {/* Rows */}
-      {variables.map((variable, idx) => (
-        <View
-          key={variable}
-          style={[
-            s.tableRow,
-            idx % 2 === 0 ? { backgroundColor: '#fafafa' } : {},
-          ]}
-        >
-          <Text style={s.labelCell}>{variable}</Text>
-          {years.map((year) => {
-            const row = findRow(variable, year);
-            return (
-              <Text key={year} style={s.yearCell}>
-                {renderCell(row)}
-              </Text>
-            );
-          })}
-        </View>
-      ))}
-    </View>
+      {margins && (
+        <Text style={s.tableFootnote}>{marginFootnote(lowReliability)}</Text>
+      )}
+    </>
   );
 };
 

@@ -143,6 +143,21 @@ TIMESERIES_FIELD_NAMES |= {
     for suffix in ("MOE", "Reliability")
 }
 
+# The tidy tables' columns the tidy endpoints return, under the Title Case
+# names the frontend reads. A warehouse built before margins were collected
+# has no margin columns; its responses just leave them out.
+TIDY_FIELD_NAMES = {
+    "year": "year",
+    "section": "Section",
+    "variable": "Variable",
+    "value": "Value",
+    "value_moe": "Value_MOE",
+    "value_reliability": "Value_Reliability",
+    "percent": "Percent",
+    "percent_moe": "Percent_MOE",
+    "percent_reliability": "Percent_Reliability",
+}
+
 
 def _acs5_source(
     table: str,
@@ -179,6 +194,9 @@ def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
     sql, params = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
 
     result = DB.execute(sql, params).df()
+    result = result[[c for c in TIDY_FIELD_NAMES if c in result.columns]].rename(
+        columns=TIDY_FIELD_NAMES
+    )
 
     if result.empty:
         logger.error(

@@ -141,9 +141,17 @@ export const TableView = <TData extends DataRow>({
   const cmpKeys = allKeys.filter((k) => k.endsWith(CMP_SUFFIX));
   const hasCompare =
     cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
-  const margins = allKeys.some(isMarginKey);
+  // The footnote explains only the cells on screen, and comparison cells stay
+  // hidden until "Show Comparison".
+  const withCmp = hasCompare && showCompare;
+  const margins = rows.some((r) =>
+    Object.entries(r).some(
+      ([k, v]) =>
+        v != null && isMarginKey(k) && (withCmp || !k.endsWith(CMP_SUFFIX)),
+    ),
+  );
   const footnote = margins && (
-    <MarginFootnote lowReliability={anyLowReliability(rows)} />
+    <MarginFootnote lowReliability={anyLowReliability(rows, withCmp)} />
   );
 
   const handleExport = () => exportRowsToExcel(chart, rows);
