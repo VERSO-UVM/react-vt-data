@@ -12,6 +12,7 @@ import {
   cellMarginFlags,
   cellText,
   moeField,
+  useShowMargins,
 } from './margins';
 
 // tidy ACS row shape consumed by the demographics tables
@@ -37,6 +38,7 @@ const DemographicsTableBase = ({
   const compareData = chart.compareData ?? [];
   const hasCompare = compareData.length > 0;
   const [showCompare, setShowCompare] = useState(false);
+  const show = useShowMargins();
 
   // The export always writes the comparison columns, but the footnote
   // explains only the cells on screen.
@@ -173,7 +175,7 @@ const DemographicsTableBase = ({
                   if (!showCompare) {
                     return (
                       <Table.Td key={year}>
-                        {cellText(mainRow, fieldOf)}
+                        {cellText(mainRow, fieldOf, show)}
                       </Table.Td>
                     );
                   }
@@ -189,7 +191,7 @@ const DemographicsTableBase = ({
                             textAlign: 'right',
                           }}
                         >
-                          {cellText(mainRow, fieldOf)}
+                          {cellText(mainRow, fieldOf, show)}
                         </div>
                         <div
                           style={{
@@ -200,7 +202,7 @@ const DemographicsTableBase = ({
                             textAlign: 'right',
                           }}
                         >
-                          {cellText(cmpRow, fieldOf)}
+                          {cellText(cmpRow, fieldOf, show)}
                         </div>
                       </div>
                     </Table.Td>
@@ -212,7 +214,7 @@ const DemographicsTableBase = ({
         </Table>
       </ScrollArea>
       {shown.margins && (
-        <MarginFootnote lowReliability={shown.lowReliability} />
+        <MarginFootnote lowReliability={shown.lowReliability} show={show} />
       )}
     </Box>
   );

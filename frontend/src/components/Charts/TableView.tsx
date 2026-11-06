@@ -21,6 +21,7 @@ import {
   isMarginKey,
   moeKey,
   reliabilityKey,
+  useShowMargins,
   withMargin,
 } from './margins';
 
@@ -44,8 +45,9 @@ const formatCell = (v: unknown) => {
 };
 
 // A value's cell, with its margin of error (see margins.tsx) when the row
-// has one and an asterisk for a low-reliability estimate.
-const valueCell = (row: DataRow | undefined, key: string) =>
+// has one and margins are shown, and an asterisk for a low-reliability
+// estimate.
+const valueCell = (row: DataRow | undefined, key: string, show: boolean) =>
   row?.[key] == null
     ? formatCell(row?.[key])
     : withMargin(
@@ -54,6 +56,7 @@ const valueCell = (row: DataRow | undefined, key: string) =>
         row[reliabilityKey(key)],
         formatNumber,
         '*',
+        show,
       );
 
 /** Write a worksheet to a one-sheet .xlsx named after the chart and download it. */
@@ -127,6 +130,7 @@ export const TableView = <TData extends DataRow>({
 }: TableViewProps<TData>) => {
   const rows = (rowsOverride ?? chart.tableData ?? chart.data) as DataRow[];
   const [showCompare, setShowCompare] = useState(false);
+  const show = useShowMargins();
   const usePivot = !!chart.trendChart;
 
   if (!rows || rows.length === 0) return null;
@@ -151,7 +155,10 @@ export const TableView = <TData extends DataRow>({
     ),
   );
   const footnote = margins && (
-    <MarginFootnote lowReliability={anyLowReliability(rows, withCmp)} />
+    <MarginFootnote
+      lowReliability={anyLowReliability(rows, withCmp)}
+      show={show}
+    />
   );
 
   const handleExport = () => exportRowsToExcel(chart, rows);
@@ -246,7 +253,7 @@ export const TableView = <TData extends DataRow>({
                     if (!showCompare || !hasCompare) {
                       return (
                         <Table.Td key={String(x)}>
-                          {valueCell(row, key)}
+                          {valueCell(row, key, show)}
                         </Table.Td>
                       );
                     }
@@ -261,7 +268,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {valueCell(row, key)}
+                            {valueCell(row, key, show)}
                           </div>
                           <div
                             style={{
@@ -272,7 +279,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {valueCell(row, `${key}${CMP_SUFFIX}`)}
+                            {valueCell(row, `${key}${CMP_SUFFIX}`, show)}
                           </div>
                         </div>
                       </Table.Td>
@@ -327,7 +334,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {valueCell(row, column)}
+                            {valueCell(row, column, show)}
                           </div>
                           <div
                             style={{
@@ -338,7 +345,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {valueCell(row, `${column}${CMP_SUFFIX}`)}
+                            {valueCell(row, `${column}${CMP_SUFFIX}`, show)}
                           </div>
                         </div>
                       </Table.Td>
@@ -346,7 +353,9 @@ export const TableView = <TData extends DataRow>({
                   }
 
                   return (
-                    <Table.Td key={column}>{valueCell(row, column)}</Table.Td>
+                    <Table.Td key={column}>
+                      {valueCell(row, column, show)}
+                    </Table.Td>
                   );
                 })}
               </Table.Tr>

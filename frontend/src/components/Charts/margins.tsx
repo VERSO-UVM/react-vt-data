@@ -5,10 +5,43 @@
 // backend/data_cleaning/margins.py) as `<field>_Reliability`.
 
 import { Area } from 'recharts';
-import { Text } from '@mantine/core';
+import { Switch, Text } from '@mantine/core';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { DataRow } from '@/types/cachedCharts';
 
 export type Reliability = 'high' | 'medium' | 'low';
+
+/** Whether charts and tables show margins of error: one setting for every
+ *  chart, saved in localStorage, on by default. Low-reliability marks (hollow
+ *  dots, "*") show either way, since they matter most to someone who has
+ *  hidden the detail. */
+const useMarginPreference = create<{
+  show: boolean;
+  setShow: (show: boolean) => void;
+}>()(
+  persist((set) => ({ show: true, setShow: (show) => set({ show }) }), {
+    name: 'show-margins',
+  }),
+);
+
+export const useShowMargins = () => useMarginPreference((s) => s.show);
+
+/** The current setting, for code outside React (the PDF report). */
+export const showMarginsNow = () => useMarginPreference.getState().show;
+
+/** The show/hide switch, for a chart card that has margins to show. */
+export const MarginsSwitch = () => {
+  const { show, setShow } = useMarginPreference();
+  return (
+    <Switch
+      size="xs"
+      label="Margins of error"
+      checked={show}
+      onChange={(e) => setShow(e.currentTarget.checked)}
+    />
+  );
+};
 
 /** The API fields holding `field`'s margin of error and reliability label. */
 export const moeField = (field: string) => `${field}_MOE`;
@@ -118,18 +151,22 @@ export const anyLowReliability = (rows: DataRow[], withCmp = true) =>
   );
 
 /** "value ± margin" for a tooltip or table cell, plus `lowFlag` when the
- *  estimate has low reliability. Without a margin, just the value. A
- *  no-break space keeps "± margin" together when a narrow cell wraps. */
+ *  estimate has low reliability. Without a margin, or when margins are hidden
+ *  (`show` false), the value and the flag. A no-break space keeps "± margin"
+ *  together when a narrow cell wraps. */
 export const withMargin = (
   text: string,
   moe: unknown,
   reliability: unknown,
   formatMoe: (moe: number) => string,
   lowFlag: string,
-) =>
-  typeof moe === 'number'
-    ? `${text} ±\u00a0${formatMoe(moe)}${reliability === 'low' ? lowFlag : ''}`
-    : text;
+  show = true,
+) => {
+  const flag = reliability === 'low' ? lowFlag : '';
+  return show && typeof moe === 'number'
+    ? `${text} ±\u00a0${formatMoe(moe)}${flag}`
+    : `${text}${flag}`;
+};
 
 /** Which field a tidy-table row's cell shows: its share or its count. */
 export type FieldOf = (row: DataRow | undefined) => 'Percent' | 'Value';
@@ -140,7 +177,11 @@ const formatField = (field: 'Percent' | 'Value', v: number) =>
 /** A tidy-table cell: the value `fieldOf` picks, with its margin of error and
  *  an asterisk for a low-reliability estimate. The on-screen tables and the
  *  PDF report's own table renderer both use it, so they read the same. */
-export const cellText = (row: DataRow | undefined, fieldOf: FieldOf) => {
+export const cellText = (
+  row: DataRow | undefined,
+  fieldOf: FieldOf,
+  show = true,
+) => {
   const field = fieldOf(row);
   const value = row?.[field];
   if (typeof value !== 'number') return '—';
@@ -150,6 +191,7 @@ export const cellText = (row: DataRow | undefined, fieldOf: FieldOf) => {
     row?.[reliabilityField(field)],
     (m) => formatField(field, m),
     '*',
+    show,
   );
 };
 
@@ -177,10 +219,16 @@ export const cellMarginFlags = (rows: DataRow[], fieldOf: FieldOf) => ({
 const LOW_RELIABILITY =
   'Low reliability: the margin of error is about half the estimate or more.';
 
-/** The footnote text for a table with margins. */
-export const marginFootnote = (lowReliability: boolean) =>
-  '± is the margin of error: the true value is likely (90%) within that ' +
-  `range.${lowReliability ? ` * ${LOW_RELIABILITY}` : ''}`;
+/** The footnote text for a table with margins; with margins hidden, only the
+ *  low-reliability note, if any. */
+export const marginFootnote = (lowReliability: boolean, show = true) => {
+  const low = lowReliability ? `* ${LOW_RELIABILITY}` : '';
+  if (!show) return low;
+  return (
+    '± is the margin of error: the true value is likely (90%) within that ' +
+    `range.${low && ` ${low}`}`
+  );
+};
 
 // Recharts draws a lone point's dot even with dot={false}; for a band, that
 // would be a faint stray dot at the top of the range.
@@ -261,30 +309,44 @@ export const reliabilityDots = (
 export const MarginNote = ({
   lowReliability,
   bars = false,
+  show = true,
 }: {
   lowReliability: boolean;
   bars?: boolean;
-}) => (
-  <Text size="xs" c="dimmed" mb={4}>
-    {bars ? 'The black line on each bar shows' : 'Shading shows'} the margin of
-    error: the true value is likely (90%) within it.
-    {lowReliability &&
-      (bars
-        ? ' Hover over a bar to see whether its estimate has low reliability.'
-        : ' Hollow dots mark low-reliability estimates, whose margin is about half the estimate or more.')}
-  </Text>
-);
+  /** Whether the margins are drawn; hidden, only the low-reliability note
+   *  remains. */
+  show?: boolean;
+}) => {
+  const low =
+    lowReliability &&
+    (bars
+      ? 'Hover over a bar to see whether its estimate has low reliability.'
+      : 'Hollow dots mark low-reliability estimates, whose margin is about half the estimate or more.');
+  if (!show && !low) return null;
+  return (
+    <Text size="xs" c="dimmed" mb={4}>
+      {show &&
+        `${bars ? 'The black line on each bar shows' : 'Shading shows'} the margin of error: the true value is likely (90%) within it. `}
+      {low}
+    </Text>
+  );
+};
 
 /** The footnote for a table with margins. */
 export const MarginFootnote = ({
   lowReliability,
+  show = true,
 }: {
   lowReliability: boolean;
-}) => (
-  <Text size="xs" c="dimmed" mt={4}>
-    {marginFootnote(lowReliability)}
-  </Text>
-);
+  show?: boolean;
+}) => {
+  const text = marginFootnote(lowReliability, show);
+  return text ? (
+    <Text size="xs" c="dimmed" mt={4}>
+      {text}
+    </Text>
+  ) : null;
+};
 
 /** A comparison map tooltip's margins, keyed by measure: the backend
  *  (query/comparison.py) sends them under this key beside the values. */

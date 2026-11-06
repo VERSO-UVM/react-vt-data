@@ -38,6 +38,7 @@ import { BASE_API_URL } from '@/config';
 import { ChartStack } from '@/components/Charts';
 import { createChartItem } from '@/utils/itemFactory';
 import { identityField, identityNames } from '@/components/Charts/seriesLines';
+import { useShowMargins } from '@/components/Charts/margins';
 import county_town_names from '@/data/county_town_names.json';
 import { DataRow } from '@/types/cachedCharts';
 import { COLORS, FONTS } from '@/app/theme';
@@ -232,7 +233,8 @@ function ValueCard({
   /** Which of several values this is (see ValueRow). */
   valueLabel?: string | null;
   value: string;
-  /** The value's margin of error, formatted, when it has one. */
+  /** The value's margin of error, formatted, when it has one and margins
+   *  are shown. */
   margin?: string | null;
   lowReliability?: boolean;
   accent: string;
@@ -271,10 +273,11 @@ function ValueCard({
       >
         {value}
       </Text>
-      {margin && (
+      {(margin || lowReliability) && (
         <Text size="sm" c={COLORS.slate} mt={8}>
-          ± {margin}
-          {lowReliability && ' · low reliability'}
+          {[margin && `± ${margin}`, lowReliability && 'low reliability']
+            .filter(Boolean)
+            .join(' · ')}
         </Text>
       )}
     </Paper>
@@ -360,6 +363,7 @@ function StatusPanel({
 
 export default function DPExplorerPage() {
   const { myLocation, comparison, yearMax } = useProfile();
+  const showMargins = useShowMargins();
 
   // ---------------------------------------------------------------------------
   // Side A defaults from profile myLocation
@@ -648,7 +652,7 @@ export default function DPExplorerPage() {
   const valueRows = pairValues(pointsA, pointsB);
   const fmtMoe = (row?: DataRow) => {
     const m = row?.Value_MOE;
-    if (typeof m !== 'number') return null;
+    if (!showMargins || typeof m !== 'number') return null;
     return isPercent ? `${m}%` : m.toLocaleString();
   };
   const isLow = (row?: DataRow) => row?.Value_Reliability === 'low';

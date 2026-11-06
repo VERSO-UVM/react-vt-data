@@ -28,6 +28,7 @@ import {
   reliabilityKey,
   reliabilityOf,
   sumMoe,
+  useShowMargins,
   withMargin,
 } from './margins';
 
@@ -99,6 +100,7 @@ const tooltipText = (
   fmt: (typeof FORMATTERS)[FormatType],
   value: unknown,
   item: { dataKey?: unknown; payload?: DataRow },
+  show: boolean,
   decimals?: number,
 ) => {
   const key = String(item.dataKey);
@@ -108,6 +110,7 @@ const tooltipText = (
     item.payload?.[reliabilityKey(key)],
     (m) => fmt.margin(m, decimals),
     ' (low reliability)',
+    show,
   );
 };
 
@@ -222,6 +225,7 @@ export const SingleSeriesTrendChart = <TData,>({
 
   const margins =
     hasMargins(data, valueField) || hasMargins(compareData, valueField);
+  const show = useShowMargins();
 
   const plotData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -276,7 +280,7 @@ export const SingleSeriesTrendChart = <TData,>({
         </Text>
       )}
       {margins && !isGallery && (
-        <MarginNote lowReliability={anyLowReliability(plotData)} />
+        <MarginNote lowReliability={anyLowReliability(plotData)} show={show} />
       )}
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
@@ -302,7 +306,7 @@ export const SingleSeriesTrendChart = <TData,>({
           {!isGallery && (
             <Tooltip
               formatter={(v, _name, item) =>
-                tooltipText(fmt, v, item, decimals)
+                tooltipText(fmt, v, item, show, decimals)
               }
             />
           )}
@@ -317,6 +321,7 @@ export const SingleSeriesTrendChart = <TData,>({
             />
           )}
           {margins &&
+            show &&
             own.lines.map((_, i) =>
               marginBand({
                 dataKey: ownKey(i),
@@ -327,6 +332,7 @@ export const SingleSeriesTrendChart = <TData,>({
               }),
             )}
           {margins &&
+            show &&
             hasCompare &&
             other.lines.map((_, i) =>
               marginBand({
@@ -523,6 +529,7 @@ export const MultiSeriesTrendChart = <TData,>({
 
   const margins =
     hasMargins(data, valueField) || hasMargins(compareData, valueField);
+  const show = useShowMargins();
 
   const plotData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -585,7 +592,7 @@ export const MultiSeriesTrendChart = <TData,>({
         </Text>
       )}
       {margins && !isGallery && (
-        <MarginNote lowReliability={anyLowReliability(plotData)} />
+        <MarginNote lowReliability={anyLowReliability(plotData)} show={show} />
       )}
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
@@ -606,7 +613,7 @@ export const MultiSeriesTrendChart = <TData,>({
           />
           {!isGallery && (
             <Tooltip
-              formatter={(v, _name, item) => tooltipText(fmt, v, item)}
+              formatter={(v, _name, item) => tooltipText(fmt, v, item, show)}
             />
           )}
           {!isGallery && (
@@ -620,6 +627,7 @@ export const MultiSeriesTrendChart = <TData,>({
             />
           )}
           {margins &&
+            show &&
             series.flatMap((s) => [
               marginBand({
                 dataKey: s.key,
@@ -1148,6 +1156,7 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
   ).sort((a, b) => Number(a) - Number(b));
 
   const margins = hasMargins(data, 'Value') || hasMargins(compareData, 'Value');
+  const show = useShowMargins();
 
   const plotData = allYears.map((year) => {
     const pt: DataRow = { year };
@@ -1171,7 +1180,9 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
         maxPerYear={Math.max(primary.maxPerX, compare.maxPerX)}
         duplicates={primary.duplicates + compare.duplicates}
       />
-      {margins && <MarginNote lowReliability={anyLowReliability(plotData)} />}
+      {margins && (
+        <MarginNote lowReliability={anyLowReliability(plotData)} show={show} />
+      )}
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={plotData}
@@ -1195,11 +1206,13 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
                 item.payload?.[reliabilityKey(key)],
                 (m) => m.toLocaleString(),
                 ' (low reliability)',
+                show,
               );
             }}
           />
           <Legend iconSize={LEGEND_ICON_SIZE} />
           {margins &&
+            show &&
             primary.lines.map((_, i) =>
               marginBand({
                 dataKey: `primary${i}`,
@@ -1209,6 +1222,7 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
               }),
             )}
           {margins &&
+            show &&
             compareData.length > 0 &&
             compare.lines.map((_, i) =>
               marginBand({

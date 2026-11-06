@@ -27,6 +27,7 @@ import {
   cellMarginFlags,
   cellText,
   marginFootnote,
+  showMarginsNow,
 } from '@/components/Charts/margins';
 import { PdfChartEntry, PdfSection } from './types';
 
@@ -252,6 +253,9 @@ const PdfTableSection = ({ chart }: { chart: ChartItem<any> }) => {
   ) as string[];
   const fieldOf = getFieldOf(chart.subtype);
   const { margins, lowReliability } = cellMarginFlags(data, fieldOf);
+  // Margins as the viewer set them on screen.
+  const show = showMarginsNow();
+  const footnote = margins && marginFootnote(lowReliability, show);
 
   const findRow = (variable: string, year: number) =>
     data.find((r) => r.Variable === variable && r.year === year);
@@ -283,16 +287,14 @@ const PdfTableSection = ({ chart }: { chart: ChartItem<any> }) => {
               const row = findRow(variable, year);
               return (
                 <Text key={year} style={s.yearCell}>
-                  {cellText(row, fieldOf)}
+                  {cellText(row, fieldOf, show)}
                 </Text>
               );
             })}
           </View>
         ))}
       </View>
-      {margins && (
-        <Text style={s.tableFootnote}>{marginFootnote(lowReliability)}</Text>
-      )}
+      {footnote && <Text style={s.tableFootnote}>{footnote}</Text>}
     </>
   );
 };

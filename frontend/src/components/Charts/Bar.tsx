@@ -46,6 +46,7 @@ import {
   plotValue,
   reliabilityField,
   reliabilityKey,
+  useShowMargins,
   withMargin,
 } from './margins';
 import {
@@ -330,6 +331,7 @@ const CompareDiffPerXBarChartSVG = ({
   const margins =
     hasMargins(filteredData, chart.yField) ||
     hasMargins(filteredCompareData, chart.yField);
+  const show = useShowMargins();
 
   // Merge primary + compare into one array for grouped bars
   const merged = filteredData.map((entry, i) => ({
@@ -365,19 +367,19 @@ const CompareDiffPerXBarChartSVG = ({
           {merged.map((_, i) => (
             <Cell key={i} fill={colors[i]} />
           ))}
-          {margins && (
+          {margins && show && (
             <ErrorBar dataKey="primaryError" width={6} stroke="#333" />
           )}
         </Bar>
         <Bar dataKey="compare" name={legendLabels[1]} fill="#999">
-          {margins && (
+          {margins && show && (
             <ErrorBar dataKey="compareError" width={6} stroke="#333" />
           )}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
-  if (!margins) return plot;
+  if (!margins || !show) return plot;
 
   return (
     <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -424,6 +426,7 @@ const CompareDiffPerXBarChart = ({
   const margins =
     hasMargins(filteredData, chart.yField) ||
     hasMargins(filteredCompareData, chart.yField);
+  const show = useShowMargins();
 
   // Derive exact plottable rows and report back to ChartCard for TableView
   const plotData = useMemo(() => {
@@ -467,19 +470,21 @@ const CompareDiffPerXBarChart = ({
           label: primaryLabel,
           data: filteredData.map((entry) => entry[yField] as number),
           backgroundColor: colors,
-          intervals: margins
-            ? plotData.map((pt) => intervalAt(pt, yField, percentFormat))
-            : undefined,
+          intervals:
+            margins && show
+              ? plotData.map((pt) => intervalAt(pt, yField, percentFormat))
+              : undefined,
         },
         {
           label: compareLabel,
           data: filteredCompareData.map((entry) => entry[yField] as number),
           backgroundColor: filteredCompareData.map(() => '#D3D3D3'),
-          intervals: margins
-            ? plotData.map((pt) =>
-                intervalAt(pt, `${yField} (cmp)`, percentFormat),
-              )
-            : undefined,
+          intervals:
+            margins && show
+              ? plotData.map((pt) =>
+                  intervalAt(pt, `${yField} (cmp)`, percentFormat),
+                )
+              : undefined,
         },
       ],
     };
@@ -494,6 +499,7 @@ const CompareDiffPerXBarChart = ({
     primaryLabel,
     compareLabel,
     margins,
+    show,
     plotData,
     percentFormat,
   ]);
@@ -520,6 +526,7 @@ const CompareDiffPerXBarChart = ({
                 pt?.[reliabilityKey(key)],
                 format,
                 ' (low reliability)',
+                show,
               );
             },
           },
@@ -535,7 +542,7 @@ const CompareDiffPerXBarChart = ({
         },
       },
     };
-  }, [view, percentFormat, yLabel, plotData, yField]);
+  }, [view, percentFormat, yLabel, plotData, yField, show]);
 
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
   if (!margins) return <BarJS data={data} options={options} />;
@@ -543,7 +550,11 @@ const CompareDiffPerXBarChart = ({
   return (
     <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {view !== 'gallery' && (
-        <MarginNote lowReliability={anyLowReliability(plotData)} bars />
+        <MarginNote
+          lowReliability={anyLowReliability(plotData)}
+          bars
+          show={show}
+        />
       )}
       <Box style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         <BarJS data={data} options={options} plugins={MARGIN_PLUGINS} />
@@ -951,6 +962,7 @@ const RankedBarChart = ({
   const yLabel = (chart.chartParams?.yLabel as string | undefined) ?? yField;
   const percent = unit === 'percent';
   const margins = hasMargins(rows, yField);
+  const show = useShowMargins();
   const fmt = (v: unknown, short = false) => {
     if (v == null) return '';
     const n = Number(v);
@@ -964,10 +976,10 @@ const RankedBarChart = ({
   const fmtShort = (v: unknown) => fmt(v, true);
   const plotRows: Record<string, unknown>[] = useMemo(
     () =>
-      margins
+      margins && show
         ? rows.map((r) => ({ ...r, error: errorOffsets(r, yField, percent) }))
         : rows,
-    [rows, margins, yField, percent],
+    [rows, margins, show, yField, percent],
   );
 
   // The table view shows place and value only, not the bar colors, with the
@@ -1041,6 +1053,7 @@ const RankedBarChart = ({
               item.payload?.[reliabilityField(yField)],
               (m) => fmt(m),
               ' (low reliability)',
+              show,
             ),
             yLabel,
           ]}
@@ -1052,7 +1065,9 @@ const RankedBarChart = ({
           {rows.map((r, i) => (
             <Cell key={i} fill={r[colorField] as string} />
           ))}
-          {margins && <ErrorBar dataKey="error" width={6} stroke="#333" />}
+          {margins && show && (
+            <ErrorBar dataKey="error" width={6} stroke="#333" />
+          )}
           <LabelList dataKey={yField} position="top" content={valueLabel} />
         </Bar>
       </BarChart>
@@ -1065,6 +1080,7 @@ const RankedBarChart = ({
       <MarginNote
         lowReliability={rows.some((r) => r[reliabilityField(yField)] === 'low')}
         bars
+        show={show}
       />
       <Box style={{ flex: 1, minHeight: 0 }}>{plot}</Box>
     </Box>
