@@ -7,6 +7,7 @@ collected still serves its map without them.
 """
 
 import duckdb
+import pytest
 
 from query import comparison
 
@@ -34,7 +35,14 @@ MEDIAN_AGE = [
 
 def _db(margins: bool) -> duckdb.DuckDBPyConnection:
     con = duckdb.connect()
-    con.execute("LOAD spatial")
+    # The comparison queries build GeoJSON with the spatial extension, which a
+    # fresh environment (CI) doesn't have yet; installing is a no-op once it's
+    # there.
+    try:
+        con.install_extension("spatial")
+        con.load_extension("spatial")
+    except duckdb.Error as e:
+        pytest.skip(f"DuckDB spatial extension unavailable: {e}")
     con.execute(
         """
         CREATE TABLE vt_town_lines_geom AS
