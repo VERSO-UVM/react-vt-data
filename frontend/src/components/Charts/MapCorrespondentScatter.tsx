@@ -19,6 +19,11 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { COLORS } from '@/app/theme';
+import {
+  isTooltipMeta,
+  tooltipLowReliability,
+  withTooltipMargin,
+} from './margins';
 
 type Legend = {
   measures: [string, string];
@@ -53,18 +58,21 @@ function makeScatterDot(activeId: string | null) {
     if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
     const isActive =
       activeId != null && String(tooltip?.__title__ ?? '') === activeId;
+    // Hollow, in its map color, when either value has low reliability, as on
+    // the trend charts.
+    const low = !!tooltip && tooltipLowReliability(tooltip);
     return (
       <circle
         cx={cx}
         cy={cy}
         r={isActive ? ACTIVE_POINT_RADIUS : POINT_RADIUS}
-        fill={fill}
+        fill={low ? '#fff' : fill}
         fillOpacity={isActive ? 1 : 0.85}
         // Every dot gets a hairline stroke, not just the active one — the
         // low/low bivariate cell renders as a near-white fill that would
         // otherwise vanish against the chart's white background.
-        stroke={isActive ? COLORS.ink : 'rgba(0,0,0,0.35)'}
-        strokeWidth={isActive ? 2 : 1}
+        stroke={isActive ? COLORS.ink : low ? fill : 'rgba(0,0,0,0.35)'}
+        strokeWidth={isActive || low ? 2 : 1}
       />
     );
   };
@@ -78,9 +86,9 @@ function PointTooltip({ content }: { content: Record<string, unknown> }) {
       <Divider my={4} />
       {Object.entries(content).map(
         ([k, v]) =>
-          k !== '__title__' && (
+          !isTooltipMeta(k) && (
             <div key={k} style={{ fontSize: 12 }}>
-              <b>{k}:</b> {String(v)}
+              <b>{k}:</b> {String(withTooltipMargin(content, k, v))}
             </div>
           ),
       )}
@@ -123,12 +131,19 @@ export default function VariableScatter({
     .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
 
   if (points.length === 0) return null;
+  const anyLow = points.some((p) => tooltipLowReliability(p.tooltip));
 
   return (
     <Box>
-      <Text size="sm" fw={500} mb="sm">
+      <Text size="sm" fw={500} mb={anyLow ? 4 : 'sm'}>
         {my} vs. {mx}
       </Text>
+      {anyLow && (
+        <Text size="xs" c="dimmed" mb="sm">
+          Hollow dots mark places where either estimate has low reliability: its
+          margin of error is about half the estimate or more.
+        </Text>
+      )}
       <ResponsiveContainer width="100%" height={360}>
         <ScatterChart margin={{ top: 8, right: 16, bottom: 32, left: 8 }}>
           <CartesianGrid stroke="var(--mantine-color-gray-2)" />

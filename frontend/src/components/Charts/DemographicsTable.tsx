@@ -5,6 +5,15 @@ import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { COLORS } from '@/app/theme';
 import * as XLSX from 'xlsx';
 import { saveWorksheet } from './TableView';
+import {
+  FieldOf,
+  MarginFootnote,
+  cellCompanion,
+  cellMarginFlags,
+  cellText,
+  moeField,
+  useShowMargins,
+} from './margins';
 
 // tidy ACS row shape consumed by the demographics tables
 interface AcsRow extends DataRow {
@@ -20,18 +29,22 @@ const SPLIT_BORDER = '1px solid var(--mantine-color-gray-3)';
 
 const DemographicsTableBase = ({
   chart,
-  renderCell,
-  exportValue,
+  fieldOf,
 }: {
   chart: ChartItem<AcsRow>;
-  renderCell: (row: AcsRow | undefined) => React.ReactNode;
-  /** The number behind a cell, for the Excel export. */
-  exportValue: (row: AcsRow | undefined) => number | null;
+  fieldOf: FieldOf;
 }) => {
   const data = chart.data;
   const compareData = chart.compareData ?? [];
   const hasCompare = compareData.length > 0;
   const [showCompare, setShowCompare] = useState(false);
+  const show = useShowMargins();
+
+  // The export always writes the comparison columns, but the footnote
+  // explains only the cells on screen.
+  const allRows = [...data, ...compareData];
+  const exported = cellMarginFlags(allRows, fieldOf);
+  const shown = cellMarginFlags(showCompare ? allRows : data, fieldOf);
 
   const labels = chart.chartParams?.legendLabels as
     [string, string] | undefined;
@@ -48,21 +61,32 @@ const DemographicsTableBase = ({
   ) => rows.find((r) => r.Variable === variable && r.year === year);
 
   // Mirrors the table: a "Variable" column, then one column per year that
-  // splits in two (main place | comparison) under a merged year header.
+  // splits in two (main place | comparison) under a merged year header. With
+  // margins, each variable's row is followed by a row of its margins.
   const exportTable = () => {
     const sub = hasCompare ? [homeLabel, compareLabel] : [];
     const width = hasCompare ? 2 : 1;
-    const num = (r: AcsRow | undefined) => exportValue(r) ?? '';
+    const num = (r: AcsRow | undefined) => r?.[fieldOf(r)] ?? '';
+    const moe = (r: AcsRow | undefined) =>
+      cellCompanion(r, fieldOf, moeField) ?? '';
     const header = [
       'Variable',
       ...years.flatMap((y) => (hasCompare ? [y, ''] : [y])),
     ];
-    const body = variables.map((variable) => [
-      variable,
+    const line = (
+      label: string,
+      cell: (r: AcsRow | undefined) => unknown,
+      variable?: string,
+    ) => [
+      label,
       ...years.flatMap((year) => [
-        num(findRow(data, variable, year)),
-        ...(hasCompare ? [num(findRow(compareData, variable, year))] : []),
+        cell(findRow(data, variable, year)),
+        ...(hasCompare ? [cell(findRow(compareData, variable, year))] : []),
       ]),
+    ];
+    const body = variables.flatMap((variable) => [
+      line(String(variable), num, variable),
+      ...(exported.margins ? [line(`${variable} MOE`, moe, variable)] : []),
     ]);
     const rows = hasCompare
       ? [header, ['', ...years.flatMap(() => sub)], ...body]
@@ -150,7 +174,9 @@ const DemographicsTableBase = ({
                   const mainRow = findRow(data, variable, year);
                   if (!showCompare) {
                     return (
-                      <Table.Td key={year}>{renderCell(mainRow)}</Table.Td>
+                      <Table.Td key={year}>
+                        {cellText(mainRow, fieldOf, show)}
+                      </Table.Td>
                     );
                   }
                   const cmpRow = findRow(compareData, variable, year);
@@ -165,7 +191,7 @@ const DemographicsTableBase = ({
                             textAlign: 'right',
                           }}
                         >
-                          {renderCell(mainRow)}
+                          {cellText(mainRow, fieldOf, show)}
                         </div>
                         <div
                           style={{
@@ -176,7 +202,7 @@ const DemographicsTableBase = ({
                             textAlign: 'right',
                           }}
                         >
-                          {renderCell(cmpRow)}
+                          {cellText(cmpRow, fieldOf, show)}
                         </div>
                       </div>
                     </Table.Td>
@@ -187,43 +213,27 @@ const DemographicsTableBase = ({
           </Table.Tbody>
         </Table>
       </ScrollArea>
+      {shown.margins && (
+        <MarginFootnote lowReliability={shown.lowReliability} show={show} />
+      )}
     </Box>
   );
 };
 
 export const renderTable = ({ chart }: { chart: ChartItem<AcsRow> }) => (
-  <DemographicsTableBase
-    chart={chart}
-    renderCell={(row) =>
-      row?.Percent != null ? `${row.Percent.toFixed(1)}%` : '—'
-    }
-    exportValue={(row) => row?.Percent ?? null}
-  />
+  <DemographicsTableBase chart={chart} fieldOf={() => 'Percent'} />
 );
 
 export const renderTableEstimates = ({
   chart,
 }: {
   chart: ChartItem<AcsRow>;
-}) => (
-  <DemographicsTableBase
-    chart={chart}
-    renderCell={(row) =>
-      row?.Value != null ? row.Value.toLocaleString() : '—'
-    }
-    exportValue={(row) => row?.Value ?? null}
-  />
-);
+}) => <DemographicsTableBase chart={chart} fieldOf={() => 'Value'} />;
 
 /** Shows Percent when available, falls back to Value — for mixed tables like Housing. */
 export const renderTableMixed = ({ chart }: { chart: ChartItem<AcsRow> }) => (
   <DemographicsTableBase
     chart={chart}
-    renderCell={(row) => {
-      if (row?.Percent != null) return `${row.Percent.toFixed(1)}%`;
-      if (row?.Value != null) return row.Value.toLocaleString();
-      return '—';
-    }}
-    exportValue={(row) => row?.Percent ?? row?.Value ?? null}
+    fieldOf={(row) => (row?.Percent != null ? 'Percent' : 'Value')}
   />
 );

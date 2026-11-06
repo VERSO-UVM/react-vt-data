@@ -129,18 +129,21 @@ def compile_filters(sources: list[FilterSource], params: list) -> tuple[str, str
     return cte_block, join_block
 
 
-def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> tuple[str, list]:
+def sql_filter_block(
+    sql_path: Path, sources: list[FilterSource], **extra
+) -> tuple[str, list]:
     """Render a query template with compiled filters; returns (sql, params).
 
     Only the fragments the template actually references are compiled, so `params`
     contains exactly the values behind the $N placeholders present in the SQL.
+    `extra` is passed to the template as is (e.g. a flag for optional columns).
     Execute with `DB.execute(sql, params)`.
     """
     source_text = sql_path.read_text()
     used = meta.find_undeclared_variables(JINJA_ENV.parse(source_text))
 
     params: list = []
-    context: dict = {}
+    context: dict = dict(extra)
     if used & {"cte_filter_block", "join_filter_block"}:
         cte_block, join_block = compile_filters(sources, params)
         context["cte_filter_block"] = cte_block

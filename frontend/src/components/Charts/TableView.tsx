@@ -15,6 +15,15 @@ import {
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { COLORS } from '@/app/theme';
 import { FileXlsIcon } from '@phosphor-icons/react';
+import {
+  MarginFootnote,
+  anyLowReliability,
+  isMarginKey,
+  moeKey,
+  reliabilityKey,
+  useShowMargins,
+  withMargin,
+} from './margins';
 
 interface TableViewProps<TData> {
   chart: ChartItem<TData>;
@@ -26,12 +35,29 @@ const COMP_BG = 'var(--mantine-color-blue-0)';
 const SPLIT_BORDER = '1px solid var(--mantine-color-gray-3)';
 const CMP_SUFFIX = ' (cmp)';
 
+const formatNumber = (v: number) =>
+  v.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
 const formatCell = (v: unknown) => {
   if (v == null) return '—';
-  if (typeof v === 'number')
-    return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  if (typeof v === 'number') return formatNumber(v);
   return String(v);
 };
+
+// A value's cell, with its margin of error (see margins.tsx) when the row
+// has one and margins are shown, and an asterisk for a low-reliability
+// estimate.
+const valueCell = (row: DataRow | undefined, key: string, show: boolean) =>
+  row?.[key] == null
+    ? formatCell(row?.[key])
+    : withMargin(
+        formatCell(row[key]),
+        row[moeKey(key)],
+        row[reliabilityKey(key)],
+        formatNumber,
+        '*',
+        show,
+      );
 
 /** Write a worksheet to a one-sheet .xlsx named after the chart and download it. */
 export function saveWorksheet<TData>(
@@ -104,6 +130,7 @@ export const TableView = <TData extends DataRow>({
 }: TableViewProps<TData>) => {
   const rows = (rowsOverride ?? chart.tableData ?? chart.data) as DataRow[];
   const [showCompare, setShowCompare] = useState(false);
+  const show = useShowMargins();
   const usePivot = !!chart.trendChart;
 
   if (!rows || rows.length === 0) return null;
@@ -118,6 +145,21 @@ export const TableView = <TData extends DataRow>({
   const cmpKeys = allKeys.filter((k) => k.endsWith(CMP_SUFFIX));
   const hasCompare =
     cmpKeys.length > 0 && rows.some((r) => cmpKeys.some((k) => r[k] != null));
+  // The footnote explains only the cells on screen, and comparison cells stay
+  // hidden until "Show Comparison".
+  const withCmp = hasCompare && showCompare;
+  const margins = rows.some((r) =>
+    Object.entries(r).some(
+      ([k, v]) =>
+        v != null && isMarginKey(k) && (withCmp || !k.endsWith(CMP_SUFFIX)),
+    ),
+  );
+  const footnote = margins && (
+    <MarginFootnote
+      lowReliability={anyLowReliability(rows, withCmp)}
+      show={show}
+    />
+  );
 
   const handleExport = () => exportRowsToExcel(chart, rows);
 
@@ -184,7 +226,7 @@ export const TableView = <TData extends DataRow>({
     );
 
     const seriesKeys = allKeys.filter(
-      (k) => k !== xKey && !k.endsWith(CMP_SUFFIX),
+      (k) => k !== xKey && !k.endsWith(CMP_SUFFIX) && !isMarginKey(k),
     );
 
     const findRow = (x: unknown) => rows.find((r) => r[xKey] === x);
@@ -208,15 +250,13 @@ export const TableView = <TData extends DataRow>({
                   <Table.Td>{key}</Table.Td>
                   {xValues.map((x) => {
                     const row = findRow(x);
-                    const mainVal = row?.[key];
                     if (!showCompare || !hasCompare) {
                       return (
                         <Table.Td key={String(x)}>
-                          {formatCell(mainVal)}
+                          {valueCell(row, key, show)}
                         </Table.Td>
                       );
                     }
-                    const cmpVal = row?.[`${key}${CMP_SUFFIX}`];
                     return (
                       <Table.Td key={String(x)} style={{ padding: 0 }}>
                         <div style={{ display: 'flex', minWidth: 90 }}>
@@ -228,7 +268,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {formatCell(mainVal)}
+                            {valueCell(row, key, show)}
                           </div>
                           <div
                             style={{
@@ -239,7 +279,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {formatCell(cmpVal)}
+                            {valueCell(row, `${key}${CMP_SUFFIX}`, show)}
                           </div>
                         </div>
                       </Table.Td>
@@ -250,13 +290,16 @@ export const TableView = <TData extends DataRow>({
             </Table.Tbody>
           </Table>
         </ScrollArea>
+        {footnote}
       </Box>
     );
   }
 
   // --- MODE B: DIRECT TABLE (FOR BAR CHARTS) ---
   // Determine standard columns vs comparison columns
-  const baseColumns = allKeys.filter((k) => !k.endsWith(CMP_SUFFIX));
+  const baseColumns = allKeys.filter(
+    (k) => !k.endsWith(CMP_SUFFIX) && !isMarginKey(k),
+  );
 
   return (
     <Box h="100%">
@@ -275,7 +318,6 @@ export const TableView = <TData extends DataRow>({
             {rows.map((row, i) => (
               <Table.Tr key={i}>
                 {baseColumns.map((column) => {
-                  const mainVal = row[column];
                   const cmpVal = row[`${column}${CMP_SUFFIX}`];
                   const isComparableCell =
                     hasCompare && showCompare && cmpVal != null;
@@ -292,7 +334,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {formatCell(mainVal)}
+                            {valueCell(row, column, show)}
                           </div>
                           <div
                             style={{
@@ -303,7 +345,7 @@ export const TableView = <TData extends DataRow>({
                               textAlign: 'right',
                             }}
                           >
-                            {formatCell(cmpVal)}
+                            {valueCell(row, `${column}${CMP_SUFFIX}`, show)}
                           </div>
                         </div>
                       </Table.Td>
@@ -311,7 +353,9 @@ export const TableView = <TData extends DataRow>({
                   }
 
                   return (
-                    <Table.Td key={column}>{formatCell(mainVal)}</Table.Td>
+                    <Table.Td key={column}>
+                      {valueCell(row, column, show)}
+                    </Table.Td>
                   );
                 })}
               </Table.Tr>
@@ -319,6 +363,7 @@ export const TableView = <TData extends DataRow>({
           </Table.Tbody>
         </Table>
       </ScrollArea>
+      {footnote}
     </Box>
   );
 };
