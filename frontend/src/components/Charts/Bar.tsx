@@ -44,6 +44,7 @@ import {
   moeField,
   moeKey,
   plotValue,
+  reliabilityField,
   reliabilityKey,
   withMargin,
 } from './margins';
@@ -948,6 +949,8 @@ const RankedBarChart = ({
   const colorField = chart.chartParams?.color ?? 'color';
   const unit = chart.chartParams?.unit;
   const yLabel = (chart.chartParams?.yLabel as string | undefined) ?? yField;
+  const percent = unit === 'percent';
+  const margins = hasMargins(rows, yField);
   const fmt = (v: unknown, short = false) => {
     if (v == null) return '';
     const n = Number(v);
@@ -956,18 +959,66 @@ const RankedBarChart = ({
         ? `$${(n / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
         : `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
     const num = n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    return unit === 'percent' ? `${num}%` : num;
+    return percent ? `${num}%` : num;
   };
   const fmtShort = (v: unknown) => fmt(v, true);
+  const plotRows: Record<string, unknown>[] = useMemo(
+    () =>
+      margins
+        ? rows.map((r) => ({ ...r, error: errorOffsets(r, yField, percent) }))
+        : rows,
+    [rows, margins, yField, percent],
+  );
 
-  // The table view shows place and value only, not the bar colors.
+  // The table view shows place and value only, not the bar colors, with the
+  // value's margin where it has one.
   useEffect(() => {
-    onPlotData?.(rows.map((r) => ({ Place: r[xField], [yLabel]: r[yField] })));
-  }, [rows, xField, yField, yLabel, onPlotData]);
+    onPlotData?.(
+      rows.map((r) => ({
+        Place: r[xField],
+        [yLabel]: r[yField],
+        ...(margins && {
+          [moeKey(yLabel)]: r[moeField(yField)] ?? null,
+          [reliabilityKey(yLabel)]: r[reliabilityField(yField)] ?? null,
+        }),
+      })),
+    );
+  }, [rows, xField, yField, yLabel, margins, onPlotData]);
 
-  return (
+  // Each bar's value sits above its whisker, not under it.
+  const valueLabel = (props: {
+    x?: unknown;
+    y?: unknown;
+    width?: unknown;
+    height?: unknown;
+    value?: unknown;
+    index?: number;
+  }) => {
+    const x = Number(props.x);
+    const y = Number(props.y);
+    const width = Number(props.width);
+    const height = Number(props.height);
+    const error = plotRows[props.index ?? -1]?.error as number[] | null;
+    const value = Number(props.value);
+    const above = error && value > 0 ? (error[1] / value) * height : 0;
+    return (
+      <text
+        x={x + width / 2}
+        y={y - above - 6}
+        textAnchor="middle"
+        style={{ fontSize: 11, fontWeight: 600, fill: '#1B211D' }}
+      >
+        {fmtShort(props.value)}
+      </text>
+    );
+  };
+
+  const plot = (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={rows} margin={{ top: 24, right: 10, left: 0, bottom: 5 }}>
+      <BarChart
+        data={plotRows}
+        margin={{ top: 24, right: 10, left: 0, bottom: 5 }}
+      >
         <CartesianGrid
           strokeDasharray="3 3"
           stroke="#e0d8cc"
@@ -982,7 +1033,18 @@ const RankedBarChart = ({
           tick={{ fontSize: 12 }}
         />
         <YAxis tick={{ fontSize: 12 }} tickFormatter={fmtShort} />
-        <Tooltip formatter={(v) => [fmt(v), yLabel]} />
+        <Tooltip
+          formatter={(v, _name, item) => [
+            withMargin(
+              fmt(v),
+              item.payload?.[moeField(yField)],
+              item.payload?.[reliabilityField(yField)],
+              (m) => fmt(m),
+              ' (low reliability)',
+            ),
+            yLabel,
+          ]}
+        />
         <Bar
           dataKey={yField}
           isAnimationActive={view !== 'gallery' && !isPdfMode}
@@ -990,15 +1052,22 @@ const RankedBarChart = ({
           {rows.map((r, i) => (
             <Cell key={i} fill={r[colorField] as string} />
           ))}
-          <LabelList
-            dataKey={yField}
-            position="top"
-            formatter={fmtShort}
-            style={{ fontSize: 11, fontWeight: 600, fill: '#1B211D' }}
-          />
+          {margins && <ErrorBar dataKey="error" width={6} stroke="#333" />}
+          <LabelList dataKey={yField} position="top" content={valueLabel} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+  );
+  if (!margins || view === 'gallery') return plot;
+
+  return (
+    <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <MarginNote
+        lowReliability={rows.some((r) => r[reliabilityField(yField)] === 'low')}
+        bars
+      />
+      <Box style={{ flex: 1, minHeight: 0 }}>{plot}</Box>
+    </Box>
   );
 };
 

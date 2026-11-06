@@ -285,3 +285,44 @@ export const MarginFootnote = ({
     {marginFootnote(lowReliability)}
   </Text>
 );
+
+/** A comparison map tooltip's margins, keyed by measure: the backend
+ *  (query/comparison.py) sends them under this key beside the values. */
+const TOOLTIP_MARGINS = '__margins__';
+type TooltipMargins = Record<
+  string,
+  { moe: number; reliability: Reliability | null }
+>;
+
+/** Whether a map tooltip key holds data for the card (`__title__`,
+ *  `__margins__`) rather than a field to list. */
+export const isTooltipMeta = (key: string) =>
+  key.startsWith('__') && key.endsWith('__');
+
+const tooltipMargin = (tooltip: Record<string, unknown>, key: string) =>
+  (tooltip[TOOLTIP_MARGINS] as TooltipMargins | undefined)?.[key];
+
+/** A map tooltip field's value as "value ± margin" when the tooltip carries
+ *  its margin; otherwise the value as is. */
+export const withTooltipMargin = (
+  tooltip: Record<string, unknown>,
+  key: string,
+  value: unknown,
+) => {
+  const margin = tooltipMargin(tooltip, key);
+  return margin
+    ? withMargin(
+        String(value),
+        margin.moe,
+        margin.reliability,
+        (m) => m.toLocaleString(),
+        ' (low reliability)',
+      )
+    : value;
+};
+
+/** Whether any value in a map tooltip has low reliability. */
+export const tooltipLowReliability = (tooltip: Record<string, unknown>) =>
+  Object.values(
+    (tooltip[TOOLTIP_MARGINS] as TooltipMargins | undefined) ?? {},
+  ).some((m) => m.reliability === 'low');

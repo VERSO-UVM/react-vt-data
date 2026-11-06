@@ -21,6 +21,7 @@ import {
 } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
 import { COLORS, FONTS } from '@/app/theme';
+import { isTooltipMeta, withTooltipMargin } from '@/components/Charts/margins';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { MapRef } from 'react-map-gl/maplibre';
 
@@ -454,7 +455,7 @@ export default function VTMap({
             <Stack gap={4}>
               {Object.entries(tooltip.content).map(
                 ([k, v]) =>
-                  k !== '__title__' &&
+                  !isTooltipMeta(k) &&
                   v !== null &&
                   v !== undefined &&
                   v !== '' && (
@@ -474,7 +475,13 @@ export default function VTMap({
                         ta="right"
                         style={{ color: COLORS.ink }}
                       >
-                        {formatDetailValue(k, v)}
+                        {String(
+                          withTooltipMargin(
+                            tooltip.content,
+                            k,
+                            formatDetailValue(k, v),
+                          ),
+                        )}
                       </Text>
                     </Group>
                   ),
@@ -537,9 +544,15 @@ export default function VTMap({
               {(() => {
                 // Named `fields` rather than `Map` to avoid shadowing the
                 // react-map-gl `Map` component imported at the top of this file.
-                const fields = Object.entries(selected).filter(
-                  ([k]) => k !== '__title__',
-                );
+                const fields = Object.entries(selected)
+                  .filter(([k]) => !isTooltipMeta(k))
+                  .map(
+                    ([k, v]) =>
+                      [k, withTooltipMargin(selected, k, v)] as [
+                        string,
+                        unknown,
+                      ],
+                  );
                 const claimed = new Set<string>();
 
                 const sections = DETAIL_GROUPS.map((group) => {

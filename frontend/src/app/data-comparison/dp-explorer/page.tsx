@@ -224,12 +224,17 @@ function ValueCard({
   location,
   valueLabel,
   value,
+  margin,
+  lowReliability,
   accent,
 }: {
   location: string;
   /** Which of several values this is (see ValueRow). */
   valueLabel?: string | null;
   value: string;
+  /** The value's margin of error, formatted, when it has one. */
+  margin?: string | null;
+  lowReliability?: boolean;
   accent: string;
 }) {
   return (
@@ -266,6 +271,12 @@ function ValueCard({
       >
         {value}
       </Text>
+      {margin && (
+        <Text size="sm" c={COLORS.slate} mt={8}>
+          ± {margin}
+          {lowReliability && ' · low reliability'}
+        </Text>
+      )}
     </Paper>
   );
 }
@@ -635,6 +646,12 @@ export default function DPExplorerPage() {
   const fmtVal = (v: number | null) =>
     v != null ? (isPercent ? `${v}%` : Number(v).toLocaleString()) : '—';
   const valueRows = pairValues(pointsA, pointsB);
+  const fmtMoe = (row?: DataRow) => {
+    const m = row?.Value_MOE;
+    if (typeof m !== 'number') return null;
+    return isPercent ? `${m}%` : m.toLocaleString();
+  };
+  const isLow = (row?: DataRow) => row?.Value_Reliability === 'low';
 
   // ---------------------------------------------------------------------------
   // Render
@@ -954,6 +971,8 @@ export default function DPExplorerPage() {
                           location={makeLabel(sideA)}
                           valueLabel={row.label}
                           value={fmtVal(a)}
+                          margin={a != null ? fmtMoe(row.a) : null}
+                          lowReliability={isLow(row.a)}
                           accent={COLORS.spruce}
                         />
                       </Grid.Col>
@@ -970,6 +989,8 @@ export default function DPExplorerPage() {
                           location={makeLabel(sideB)}
                           valueLabel={row.label}
                           value={fmtVal(b)}
+                          margin={b != null ? fmtMoe(row.b) : null}
+                          lowReliability={isLow(row.b)}
                           accent={COLORS.amber}
                         />
                       </Grid.Col>

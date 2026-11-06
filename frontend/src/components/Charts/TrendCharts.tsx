@@ -7,7 +7,6 @@ import {
   ComposedChart,
   Legend,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -1148,13 +1147,17 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
     new Set([...data, ...compareData].map((r) => r.year)),
   ).sort((a, b) => Number(a) - Number(b));
 
+  const margins = hasMargins(data, 'Value') || hasMargins(compareData, 'Value');
+
   const plotData = allYears.map((year) => {
     const pt: DataRow = { year };
     primary.lines.forEach((line, i) => {
-      pt[`primary${i}`] = line.rows.find((r) => r.year === year)?.Value ?? null;
+      const row = line.rows.find((r) => r.year === year);
+      plotValue(pt, `primary${i}`, row, 'Value', margins);
     });
     compare.lines.forEach((line, i) => {
-      pt[`compare${i}`] = line.rows.find((r) => r.year === year)?.Value ?? null;
+      const row = line.rows.find((r) => r.year === year);
+      plotValue(pt, `compare${i}`, row, 'Value', margins);
     });
     return pt;
   });
@@ -1168,8 +1171,9 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
         maxPerYear={Math.max(primary.maxPerX, compare.maxPerX)}
         duplicates={primary.duplicates + compare.duplicates}
       />
+      {margins && <MarginNote lowReliability={anyLowReliability(plotData)} />}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <ComposedChart
           data={plotData}
           margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
         >
@@ -1183,11 +1187,37 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
             domain={['auto', 'auto']}
           />
           <Tooltip
-            formatter={(value) => {
-              return (Number(value) || 0).toLocaleString();
+            formatter={(value, _name, item) => {
+              const key = String(item.dataKey);
+              return withMargin(
+                (Number(value) || 0).toLocaleString(),
+                item.payload?.[moeKey(key)],
+                item.payload?.[reliabilityKey(key)],
+                (m) => m.toLocaleString(),
+                ' (low reliability)',
+              );
             }}
           />
           <Legend iconSize={LEGEND_ICON_SIZE} />
+          {margins &&
+            primary.lines.map((_, i) =>
+              marginBand({
+                dataKey: `primary${i}`,
+                color: PRIMARY_SHADES[i % PRIMARY_SHADES.length],
+                percent: !!isPercent,
+                type: 'monotone',
+              }),
+            )}
+          {margins &&
+            compareData.length > 0 &&
+            compare.lines.map((_, i) =>
+              marginBand({
+                dataKey: `compare${i}`,
+                color: COMPARE_SHADES[i % COMPARE_SHADES.length],
+                percent: !!isPercent,
+                type: 'monotone',
+              }),
+            )}
           {primary.lines.map((_, i) => (
             <Line
               legendType="plainline"
@@ -1197,7 +1227,15 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
               name={lineName(primaryName, primary, i)}
               stroke={PRIMARY_SHADES[i % PRIMARY_SHADES.length]}
               strokeWidth={2}
-              dot={primary.lines.length > 1}
+              dot={
+                margins
+                  ? reliabilityDots(
+                      `primary${i}`,
+                      PRIMARY_SHADES[i % PRIMARY_SHADES.length],
+                      primary.lines.length > 1,
+                    )
+                  : primary.lines.length > 1
+              }
             />
           ))}
           {compareData.length > 0 &&
@@ -1211,10 +1249,18 @@ export const DPTrendChart = ({ chart }: { chart: ChartItem<TrendRow> }) => {
                 stroke={COMPARE_SHADES[i % COMPARE_SHADES.length]}
                 strokeWidth={1.5}
                 strokeDasharray="6 4"
-                dot={compare.lines.length > 1}
+                dot={
+                  margins
+                    ? reliabilityDots(
+                        `compare${i}`,
+                        COMPARE_SHADES[i % COMPARE_SHADES.length],
+                        compare.lines.length > 1,
+                      )
+                    : compare.lines.length > 1
+                }
               />
             ))}
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </>
   );

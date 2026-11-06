@@ -19,11 +19,12 @@ SOURCE_TABLE = "acs5_dp_combined_tidy"
 GEO_TYPES = ("county", "state", "national")
 
 
-def comparison_query(indicator: Indicator) -> tuple[str, list]:
+def comparison_query(indicator: Indicator, margins: bool = False) -> tuple[str, list]:
     """Render the comparison query for one indicator; returns (sql, params).
 
     Rows are {place, geo_type, year, value}, where `place` is the short display
-    name ("Essex", "Vermont", "United States"). Values travel as $N
+    name ("Essex", "Vermont", "United States"), plus value_MOE and
+    value_Reliability when `margins` (the table has them). Values travel as $N
     placeholders: execute with `DB.execute(sql, params)`.
     """
     params: list = []
@@ -46,4 +47,7 @@ def comparison_query(indicator: Indicator) -> tuple[str, list]:
     # with nulls, as query/acs5.py does.
     clauses.append("value >= 0")
     where_string = "WHERE " + "\n    AND ".join(clauses)
-    return render_sql(SQL_PATH, table=SOURCE_TABLE, where_string=where_string), params
+    sql = render_sql(
+        SQL_PATH, table=SOURCE_TABLE, where_string=where_string, margins=margins
+    )
+    return sql, params

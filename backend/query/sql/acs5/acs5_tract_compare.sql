@@ -3,6 +3,12 @@
 SELECT
     a.variable,
     COALESCE(a.percent, a.value) AS value,
+    {% if margins %}
+        -- The share's margin and reliability label, where the warehouse has
+        -- them.
+        a.percent_moe AS moe,
+        a.percent_reliability AS reliability,
+    {% endif %}
     a.geoid,
     a.name,
     ST_ASGEOJSON(ST_GEOMFROMWKB(t.geometry)) AS geometry
