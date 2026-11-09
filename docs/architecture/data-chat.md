@@ -16,7 +16,9 @@ Decisions so far:
   candidates first: [guides/chat-evals.md](../guides/chat-evals.md).
 - **Data routing:** every OpenRouter request sets `data_collection: "deny"`, so
   it never goes to a provider that stores or trains on inputs.
-- **Feature flag:** backend environment flag only. No invite codes or per-user gating.
+- **Feature flag:** a backend environment flag, plus an optional shared access
+  code (`CHAT_ACCESS_CODE`) for testers until there are accounts. See
+  [Feature flag design](#feature-flag-design).
 - **v0 has no database and no spend cap.** Chats live in the browser's
   localStorage, and the browser sends the conversation history with each request,
   so the server stores nothing. The budget ledger, accounts, and server-side chat
@@ -44,18 +46,19 @@ internal testers. That environment is a prerequisite for enabling chat anywhere.
 
 ## v0 implementation map
 
-| Piece                | Where                                                                                           |
-| -------------------- | ----------------------------------------------------------------------------------------------- |
-| Flag + mount         | `backend/api/main.py` (`CHAT_ENABLED`), settings in `backend/chat/config.py`                    |
-| Agent (Pydantic AI)  | `backend/chat/agent.py`: data tools with trimmed previews, `render_chart`, event streaming      |
-| Chart contract       | `backend/chat/charts.py`: `ChartSpec`, `DataRef`, `resolve_rows`                                |
-| Routes               | `backend/chat/router.py`: `GET /api/chat/status`, `POST /api/chat` (SSE), `POST /api/chat/data` |
-| Offline model        | `backend/chat/demo.py` (`CHAT_MODEL=demo`), for UI work without an API key                      |
-| Tests                | `backend/tests/test_chat.py` (fixture warehouse + demo model, no network)                       |
-| Page                 | `frontend/src/app/chat/page.tsx`; nav link in `HeaderMenu` appears only when status is enabled  |
-| Client, store, chart | `frontend/src/components/Chat/` (localStorage store, SSE client, `ChatChart`)                   |
-| Report chart         | `frontend/src/components/Charts/AgentChart.tsx` (subtype `AgentChart`, works in working report) |
-| Deploy               | `frontend/nginx.conf` (`/api/chat` unbuffered + client IP), `justfile` `chat_container_env`     |
+| Piece                | Where                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Flag + mount         | `backend/api/main.py` (`CHAT_ENABLED`), settings in `backend/chat/config.py`                                             |
+| Agent (Pydantic AI)  | `backend/chat/agent.py`: data tools with trimmed previews, `render_chart`, event streaming                               |
+| Chart contract       | `backend/chat/charts.py`: `ChartSpec`, `DataRef`, `resolve_rows`                                                         |
+| Routes               | `backend/chat/router.py`: `GET /api/chat/status`, `POST /api/chat` (SSE), `POST /api/chat/data`, `POST /api/chat/unlock` |
+| Access code          | `backend/chat/access.py` (signed cookie); `frontend/src/components/Chat/AccessCodeForm.tsx`                              |
+| Offline model        | `backend/chat/demo.py` (`CHAT_MODEL=demo`), for UI work without an API key                                               |
+| Tests                | `backend/tests/test_chat.py` (fixture warehouse + demo model, no network)                                                |
+| Page                 | `frontend/src/app/chat/page.tsx`; nav link in `HeaderMenu` appears only when status is enabled                           |
+| Client, store, chart | `frontend/src/components/Chat/` (localStorage store, SSE client, `ChatChart`)                                            |
+| Report chart         | `frontend/src/components/Charts/AgentChart.tsx` (subtype `AgentChart`, works in working report)                          |
+| Deploy               | `frontend/nginx.conf` (`/api/chat` unbuffered + client IP), `justfile` `chat_container_env`                              |
 
 Run locally with the demo model: `CHAT_ENABLED=1 CHAT_MODEL=demo just local-api`
 and `just local-frontend`, then open `/chat`.
@@ -248,13 +251,14 @@ When the cap is reached, `GET /api/chat/status` returns `{ "available": false, "
 
 ## Feature flag design
 
-One backend environment flag:
+A backend environment flag, and a shared access code for testers:
 
 - `CHAT_ENABLED` (backend env). The chat router is only mounted when it's set, the same pattern as `MCP_ENABLED`. Off means the endpoints don't exist.
-- The frontend calls `GET /api/chat/status` → `{ enabled, available, resets_at }`. The nav entry and chat page render only when `enabled` is true. If the call fails or the route is missing (flag off, or the GitHub Pages build with no API), chat stays hidden.
-- Flipping the flag needs an API restart, not a frontend rebuild.
+- `CHAT_ACCESS_CODE` (backend env, optional). When set, `/chat` asks for the code and `POST /api/chat/unlock` checks it (10 tries per IP per hour). The right code sets an HttpOnly cookie, signed with a key derived from the code and valid for `CHAT_ACCESS_DAYS` (default 30). `POST /api/chat` and `POST /api/chat/data` answer 401 without it. Changing the code signs everyone out; there's no way to sign out one person.
+- The frontend calls `GET /api/chat/status` → `{ enabled, available, resets_at, unlocked }`. The nav entry appears only when `enabled` and `unlocked` are both true, so testers go to `/chat` directly to enter the code. If the call fails or the route is missing (flag off, or the GitHub Pages build with no API), chat stays hidden.
+- Flipping the flag or changing the code needs an API restart, not a frontend rebuild.
 
-Trade-off: there's no "on for testers only" state. To test in production we turn it on for everyone, so the per-client throttle and global cap have to be in place before the first time we enable it. Local and staging testing just set the flag in `.env`.
+The code is a stopgap until accounts (likely a magic link and a token): anyone given it can pass it on, so it limits who runs up the bill, not who can see data that's already public. The check is one FastAPI dependency (`require_access` in `chat/router.py`), which a login check can replace. Local testing can leave the code unset.
 
 ## Proposed request flow
 

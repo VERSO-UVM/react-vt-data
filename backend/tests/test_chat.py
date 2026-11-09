@@ -12,11 +12,12 @@ from pydantic_ai import ToolReturn
 from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.models.function import FunctionModel
 
+from chat import access
 from chat.agent import build_agent, chart_tool, preview, rank_tool, stream_answer
 from chat.charts import ChartSpec, DataRef, overlapping_rows, resolve_rows
 from chat.config import ChatSettings
 from chat.demo import CHART
-from chat.router import ChatMessage, bounded_history, create_router
+from chat.router import UNLOCK_ATTEMPTS, ChatMessage, bounded_history, create_router
 from data_tools.service import DataToolService
 
 INCOME = "acs5_ts_household_income"
@@ -193,6 +194,7 @@ def test_status_route(warehouse):
         "enabled": True,
         "available": True,
         "resets_at": None,
+        "unlocked": True,
     }
 
 
@@ -244,6 +246,66 @@ def test_rate_limit_is_per_client(warehouse):
     limited = ask(client)
     assert limited.status_code == 429
     assert "hourly" in limited.json()["detail"]
+
+
+def test_chat_needs_the_access_code_when_one_is_set(warehouse):
+    client = make_client(warehouse, access_code="maple")
+    assert client.get("/api/chat/status").json()["unlocked"] is False
+    assert ask(client).status_code == 401
+    assert client.post("/api/chat/data", json=CHART["data"]).status_code == 401
+
+    assert client.post("/api/chat/unlock", json={"code": "birch"}).status_code == 403
+    unlocked = client.post("/api/chat/unlock", json={"code": " maple "})
+    assert unlocked.status_code == 200
+    assert unlocked.json()["unlocked"] is True
+    cookie = unlocked.headers["set-cookie"]
+    assert "HttpOnly" in cookie and "Path=/api/chat" in cookie
+    # The test client is plain http, so the cookie can't be Secure.
+    assert "Secure" not in cookie
+
+    assert client.get("/api/chat/status").json()["unlocked"] is True
+    assert ask(client).status_code == 200
+    assert client.post("/api/chat/data", json=CHART["data"]).status_code == 200
+
+
+def test_access_cookie_is_secure_over_https(warehouse):
+    settings = ChatSettings(model="demo", warehouse_path=warehouse, access_code="maple")
+    app = FastAPI()
+    app.include_router(create_router(settings), prefix="/api")
+    client = TestClient(app, base_url="https://testserver")
+    response = client.post("/api/chat/unlock", json={"code": "maple"})
+    assert "Secure" in response.headers["set-cookie"]
+
+
+def test_changing_the_code_signs_everyone_out(warehouse):
+    old = make_client(warehouse, access_code="maple")
+    old.post("/api/chat/unlock", json={"code": "maple"})
+    new = make_client(warehouse, access_code="birch")
+    new.cookies = old.cookies
+    assert new.get("/api/chat/status").json()["unlocked"] is False
+    assert ask(new).status_code == 401
+
+
+def test_unlock_attempts_are_rate_limited_even_for_the_right_code(warehouse):
+    client = make_client(warehouse, access_code="maple")
+    for _ in range(UNLOCK_ATTEMPTS):
+        client.post("/api/chat/unlock", json={"code": "wrong"})
+    limited = client.post("/api/chat/unlock", json={"code": "maple"})
+    assert limited.status_code == 429
+    assert client.get("/api/chat/status").json()["unlocked"] is False
+
+
+def test_access_tokens_expire_and_reject_tampering():
+    token = access.issue_token("maple", max_age=60, now=1_000)
+    assert access.token_valid("maple", token, now=1_059)
+    assert not access.token_valid("maple", token, now=1_061)
+    assert not access.token_valid("birch", token, now=1_000)
+    expires, _, signature = token.partition(".")
+    assert not access.token_valid(
+        "maple", f"{int(expires) + 999}.{signature}", now=1_000
+    )
+    assert not access.token_valid("maple", "garbage", now=1_000)
+    assert not access.token_valid("maple", None)
 
 
 def test_tool_call_limit_ends_turn_with_a_readable_error(warehouse):

@@ -2,7 +2,8 @@
 
 /**
  * Data Chat (v0): ask questions about the warehouse. Hidden unless the backend
- * sets CHAT_ENABLED; chats live in localStorage. See
+ * sets CHAT_ENABLED, and behind an access code when it sets CHAT_ACCESS_CODE;
+ * chats live in localStorage. See
  * docs/architecture/data-chat.md.
  */
 import { useEffect, useRef, useState } from 'react';
@@ -36,7 +37,11 @@ import { streamChat } from '@/components/Chat/api';
 import { AnswerMarkdown, Steps } from '@/components/Chat/AnswerParts';
 import { ChatChart } from '@/components/Chat/ChatChart';
 import { type ChatTurn, toHistory, useChat } from '@/components/Chat/chatStore';
-import { useChatStatus } from '@/components/Chat/useChatStatus';
+import { AccessCodeForm } from '@/components/Chat/AccessCodeForm';
+import {
+  refreshChatStatus,
+  useChatStatus,
+} from '@/components/Chat/useChatStatus';
 import {
   type Location,
   useProfile,
@@ -245,6 +250,7 @@ export default function ChatPage() {
       lastFlush = Date.now();
       update((t) => ({ ...t, content: answer }));
     };
+    let failed = false;
     try {
       for await (const event of streamChat(
         toHistory([...prior, userTurn]),
@@ -288,6 +294,7 @@ export default function ChatPage() {
             }));
             break;
           case 'error':
+            failed = true;
             update((t) => ({ ...t, error: event.message }));
             break;
         }
@@ -309,6 +316,8 @@ export default function ChatPage() {
       }));
       setStreaming(false);
       abortRef.current = null;
+      // If the access code changed or expired, this brings back the code form.
+      if (failed) refreshChatStatus();
     }
   }
 
@@ -330,6 +339,8 @@ export default function ChatPage() {
       </Container>
     );
   }
+
+  if (!status.unlocked) return <AccessCodeForm />;
 
   return (
     <Container size="xl" py="lg">
