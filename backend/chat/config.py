@@ -48,6 +48,11 @@ class ChatSettings:
     rate_limit: int = 30
     # Rows /api/chat/data returns for one chart reference.
     chart_max_rows: int = 5_000
+    # Shared code people enter to use chat (chat/access.py). Unset, chat is
+    # open to anyone who can reach it, which is only fine locally.
+    access_code: str | None = None
+    # How long an entered code is remembered in that browser.
+    access_days: int = 30
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> ChatSettings:
@@ -68,6 +73,8 @@ class ChatSettings:
                 max_history_chars=int(env.get("CHAT_MAX_HISTORY_CHARS", "40000")),
                 rate_limit=int(env.get("CHAT_RATE_LIMIT", "30")),
                 chart_max_rows=int(env.get("CHAT_CHART_MAX_ROWS", "5000")),
+                access_code=env.get("CHAT_ACCESS_CODE", "").strip() or None,
+                access_days=int(env.get("CHAT_ACCESS_DAYS", "30")),
             )
         except ValueError:
             # Don't echo environment contents, which can sit next to secrets.

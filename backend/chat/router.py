@@ -1,4 +1,6 @@
-"""HTTP routes for the data chat. Mounted only when CHAT_ENABLED is set.
+"""HTTP routes for the data chat. Mounted only when CHAT_ENABLED is set, and
+when CHAT_ACCESS_CODE is set the chat and data routes need the cookie that
+POST /api/chat/unlock gives for the right code (chat/access.py).
 
 Streaming protocol for POST /api/chat: server-sent events, one JSON object per
 ``data:`` line, each with a ``type``:
@@ -20,10 +22,11 @@ from collections import defaultdict, deque
 from typing import Literal
 
 import anyio
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, model_validator
 
+from chat import access
 from chat.agent import build_agent, stream_answer, to_history, tool_error
 from chat.charts import DataRef, resolve_rows
 from chat.config import ChatSettings
@@ -43,6 +46,10 @@ class ChatRequest(BaseModel):
         if self.messages[-1].role != "user":
             raise ValueError("The last message must be the user's question")
         return self
+
+
+class UnlockRequest(BaseModel):
+    code: str = Field(max_length=200)
 
 
 class RateLimiter:
@@ -94,6 +101,15 @@ def bounded_history(
     return question, kept
 
 
+# Code attempts per client IP per rolling hour, so the code can't be guessed by
+# trying many.
+UNLOCK_ATTEMPTS = 10
+
+
+def client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
 def create_router(
     settings: ChatSettings | None = None, service: DataToolService | None = None
 ) -> APIRouter:
@@ -101,20 +117,64 @@ def create_router(
     service = service or DataToolService(settings.warehouse_path)
     agent = build_agent(settings, service)
     limiter = RateLimiter(settings.rate_limit)
+    unlock_limiter = RateLimiter(UNLOCK_ATTEMPTS)
     router = APIRouter(prefix="/chat", tags=["chat"])
 
-    @router.get("/status")
-    def status(response: Response):
-        # The API caches GETs for an hour; flipping the flag must show at once.
-        response.headers["Cache-Control"] = "no-store"
-        # v0 has no spend cap, so chat is always available while enabled.
-        return {"enabled": True, "available": True, "resets_at": None}
+    def unlocked(request: Request) -> bool:
+        code = settings.access_code
+        return code is None or access.token_valid(
+            code, request.cookies.get(access.COOKIE_NAME)
+        )
 
-    @router.post("")
+    def require_access(request: Request) -> None:
+        if not unlocked(request):
+            raise HTTPException(401, "Enter the access code to use chat.")
+
+    def status_body(is_unlocked: bool) -> dict:
+        # v0 has no spend cap, so chat is always available while enabled.
+        return {
+            "enabled": True,
+            "available": True,
+            "resets_at": None,
+            "unlocked": is_unlocked,
+        }
+
+    @router.get("/status")
+    def status(request: Request, response: Response):
+        # The API caches GETs for an hour; flipping the flag (or entering the
+        # code) must show at once.
+        response.headers["Cache-Control"] = "no-store"
+        return status_body(unlocked(request))
+
+    @router.post("/unlock")
+    def unlock(body: UnlockRequest, request: Request, response: Response):
+        code = settings.access_code
+        if code is None:
+            return status_body(True)
+        # Every attempt counts, checked before the code so a client over the
+        # limit learns nothing even from the right one.
+        if not unlock_limiter.allow(client_ip(request)):
+            raise HTTPException(429, "Too many tries. Try again in an hour.")
+        if not access.code_matches(code, body.code):
+            raise HTTPException(403, "That code didn't work.")
+        max_age = settings.access_days * 24 * 3600
+        response.set_cookie(
+            access.COOKIE_NAME,
+            access.issue_token(code, max_age),
+            max_age=max_age,
+            path="/api/chat",
+            httponly=True,
+            samesite="lax",
+            # nginx passes on the public scheme; local http dev can't keep a
+            # Secure cookie in every browser.
+            secure=request.url.scheme == "https",
+        )
+        return status_body(True)
+
+    @router.post("", dependencies=[Depends(require_access)])
     async def chat(body: ChatRequest, request: Request):
         question, history = bounded_history(body.messages, settings)
-        client = request.client.host if request.client else "unknown"
-        if not limiter.allow(client):
+        if not limiter.allow(client_ip(request)):
             raise HTTPException(
                 429, "You've reached the hourly question limit. Try again later."
             )
@@ -131,7 +191,7 @@ def create_router(
             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
         )
 
-    @router.post("/data")
+    @router.post("/data", dependencies=[Depends(require_access)])
     async def chart_data(ref: DataRef):
         try:
             return await anyio.to_thread.run_sync(

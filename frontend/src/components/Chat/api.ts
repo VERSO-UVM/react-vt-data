@@ -1,7 +1,9 @@
 /**
  * Client for the data chat API (backend/chat/router.py). The chat routes only
  * exist when the backend sets CHAT_ENABLED, so every caller must treat a
- * failed status check as "chat is off".
+ * failed status check as "chat is off". When the backend also sets
+ * CHAT_ACCESS_CODE, entering the code sets an HttpOnly cookie, so every request
+ * sends credentials (the dev frontend calls the API on another port).
  */
 import { BASE_API_URL } from '@/config';
 import type { AgentChartKind } from '@/components/Charts/AgentChart';
@@ -44,6 +46,8 @@ export interface ChatStatus {
   enabled: boolean;
   available: boolean;
   resets_at: string | null;
+  // False until this browser has entered the access code.
+  unlocked: boolean;
 }
 
 export type ChatEvent =
@@ -70,11 +74,18 @@ export interface HistoryMessage {
   content: string;
 }
 
-const OFF: ChatStatus = { enabled: false, available: false, resets_at: null };
+const OFF: ChatStatus = {
+  enabled: false,
+  available: false,
+  resets_at: null,
+  unlocked: false,
+};
 
 export async function fetchChatStatus(): Promise<ChatStatus> {
   try {
-    const res = await fetch(`${BASE_API_URL}/chat/status`);
+    const res = await fetch(`${BASE_API_URL}/chat/status`, {
+      credentials: 'include',
+    });
     if (!res.ok) return OFF;
     return (await res.json()) as ChatStatus;
   } catch {
@@ -99,6 +110,7 @@ export async function* streamChat(
 ): AsyncGenerator<ChatEvent> {
   const res = await fetch(`${BASE_API_URL}/chat`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ messages }),
     signal,
@@ -129,9 +141,22 @@ export async function* streamChat(
 export async function fetchChartData(ref: DataRef): Promise<ChartData> {
   const res = await fetch(`${BASE_API_URL}/chat/data`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(ref),
   });
   if (!res.ok) throw new Error(await errorMessage(res));
   return (await res.json()) as ChartData;
+}
+
+/** Send the access code; resolves to the new status, or throws the reason. */
+export async function unlockChat(code: string): Promise<ChatStatus> {
+  const res = await fetch(`${BASE_API_URL}/chat/unlock`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) throw new Error(await errorMessage(res));
+  return (await res.json()) as ChatStatus;
 }
