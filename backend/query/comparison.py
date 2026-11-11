@@ -30,6 +30,8 @@ DB = get_db()
 logger = logging.getLogger(__name__)
 sql_dir = Path(__file__).resolve().parent / "sql"
 
+# A value's 90% margin of error and reliability label, where the source has them
+MARGIN_COLUMNS = ("moe", "reliability")
 MIN_COMPLETE_ROWS = 3  # fewest geographies a composite index can be fit from
 # Census ACS sentinel for a suppressed/not-applicable estimate (e.g. median age
 # in a town too small to estimate). Never a real value, so drop it up front.
@@ -223,6 +225,14 @@ def dataset_for_table(table: str) -> str:
         raise ValueError(f"unregistered comparison table: {table}") from e
 
 
+def _has_margins(table: str) -> bool:
+    """Whether `table` carries ACS margins of error. A warehouse built before
+    margins were collected has none, and the ACS templates then leave their
+    `moe`/`reliability` columns out (CDC PLACES never has them)."""
+    columns = {row[0] for row in DB.execute(f"DESCRIBE {table}").fetchall()}
+    return "percent_moe" in columns
+
+
 def _fetch(cfg: dict, extra_filters: dict | None = None) -> pd.DataFrame:
     filters = dict(extra_filters or {})
     if "geo_type" in cfg:
@@ -230,7 +240,9 @@ def _fetch(cfg: dict, extra_filters: dict | None = None) -> pd.DataFrame:
     filters["year"] = [_latest_year(cfg["table"])]
 
     source = FilterSource(filter_table=cfg["table"], filters=filters)
-    sql, params = sql_filter_block(cfg["sql"], [source])
+    sql, params = sql_filter_block(
+        cfg["sql"], [source], margins=_has_margins(cfg["table"])
+    )
     df = DB.execute(sql, params).df()
 
     df = df.rename(
@@ -241,6 +253,9 @@ def _fetch(cfg: dict, extra_filters: dict | None = None) -> pd.DataFrame:
             cfg["name_col"]: "name",
         }
     )
+    for column in MARGIN_COLUMNS:
+        if column not in df.columns:
+            df[column] = None
     return df[df["data_value"] != ACS_SENTINEL]
 
 
@@ -261,7 +276,8 @@ def _single_variable(
     filters = dict(extra_filters or {})
     filters[cfg["var_col"]] = [var]
     df = _fetch(cfg, filters)
-    sub = df[df["measure"] == var][["geoid", "geometry", "data_value", "name"]].copy()
+    columns = ["geoid", "geometry", "data_value", "name", *MARGIN_COLUMNS]
+    sub = df[df["measure"] == var][columns].copy()
     # Rows whose Jurisdiction/geo-id failed to match a geometry (a handful of
     # unparsed or non-geographic entries in the source tidy table) carry no
     # geoid at all. Left in, two such rows from either side of a comparison
@@ -299,7 +315,8 @@ def compare_variables(
     its Crude and Age-adjusted rows, doubling every geography on the map).
     """
     d1 = _single_variable(dataset1, level, var1, filters1)
-    d2 = _single_variable(dataset2, level, var2, filters2)[["geoid", "data_value"]]
+    d2 = _single_variable(dataset2, level, var2, filters2)
+    d2 = d2[["geoid", "data_value", *MARGIN_COLUMNS]]
 
     d1["bin"], edges_x = _bin3(d1["data_value"])
     d2["bin"], edges_y = _bin3(d2["data_value"])
@@ -321,6 +338,20 @@ def compare_variables(
             var1: round(r.data_value_1, 2),
             var2: round(r.data_value_2, 2),
         }
+        margins = {
+            var: {
+                "moe": round(moe, 2),
+                "reliability": reliability if pd.notna(reliability) else None,
+            }
+            for var, moe, reliability in [
+                (var1, r.moe_1, r.reliability_1),
+                (var2, r.moe_2, r.reliability_2),
+            ]
+            if pd.notna(moe)
+        }
+        if margins:
+            # Read by the map tooltip, which shows each value with its margin.
+            tooltip["__margins__"] = margins
         features.append(
             {
                 "type": "Feature",

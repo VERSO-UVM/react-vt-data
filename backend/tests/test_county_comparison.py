@@ -349,3 +349,38 @@ def test_warehouse_has_16_places_every_year(monkeypatch, indicator):
     first = 2013 if INDICATORS_BY_KEY[indicator].topic == "Disability" else 2010
     _expect(min(per_year), first, f"{indicator}: first year")
     _expect(max(per_year), 2024, f"{indicator}: last year")
+
+
+def test_margins_come_with_their_values(monkeypatch):
+    conn = duckdb.connect()
+    conn.execute(
+        """
+        CREATE TABLE acs5_dp_combined_tidy (
+            year BIGINT, name VARCHAR, geo_type VARCHAR, "table" VARCHAR,
+            category VARCHAR, subcategory VARCHAR, variable VARCHAR,
+            measure VARCHAR, value DOUBLE, moe DOUBLE, reliability VARCHAR
+        )
+        """
+    )
+    conn.execute(
+        "INSERT INTO acs5_dp_combined_tidy VALUES "
+        "(2020, ?, 'county', 'DP02', ?, ?, 'Bachelor''s degree or higher', "
+        "'Percent', 18.4, 2.6, 'high')",
+        [ESSEX, EDU, ADULTS],
+    )
+    response = _client(monkeypatch, conn).post(
+        "/load/acs5-db/county-comparison", json={"indicator": "edu_bachelors_or_higher"}
+    )
+    (row,) = response.json()["data"]
+    assert (row["value"], row["value_MOE"], row["value_Reliability"]) == (
+        18.4,
+        2.6,
+        "high",
+    )
+
+
+def test_warehouse_without_margins_leaves_them_out(monkeypatch):
+    response = _client(monkeypatch).post(
+        "/load/acs5-db/county-comparison", json={"indicator": "edu_bachelors_or_higher"}
+    )
+    assert all("value_MOE" not in row for row in response.json()["data"])

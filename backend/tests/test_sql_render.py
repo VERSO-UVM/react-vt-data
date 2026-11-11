@@ -291,10 +291,13 @@ def test_templates_pass_sqlfluff():
     assert violations == [], [str(v) for v in violations]
 
 
+@pytest.mark.parametrize("margins", [True, False])
 @pytest.mark.parametrize("template", sorted(QUERY_TEMPLATE_SOURCES))
-def test_rendered_query_sql_parses(template):
+def test_rendered_query_sql_parses(template, margins):
+    # `margins` adds the ACS templates' optional margin columns; the rest
+    # ignore it.
     sql, _params = sql_filter_block(
-        BACKEND / template, QUERY_TEMPLATE_SOURCES[template]
+        BACKEND / template, QUERY_TEMPLATE_SOURCES[template], margins=margins
     )
     _assert_parses(sql, template)
 

@@ -448,12 +448,14 @@ def dp_combined_tree():
 # (see query/dp_variable_names.py).
 DP_IDENTITY_COLUMNS = ("variable_code", "source_label")
 
+# Each value's 90% margin of error and reliability label, under the names the
+# frontend reads beside Value. A warehouse built before margins were collected
+# has neither, and responses then leave them out.
+DP_MARGIN_COLUMNS = {"moe": "Value_MOE", "reliability": "Value_Reliability"}
 
-def _dp_identity_columns() -> list[str]:
-    present = {
-        row[0] for row in DB.execute("DESCRIBE acs5_dp_combined_tidy").fetchall()
-    }
-    return [c for c in DP_IDENTITY_COLUMNS if c in present]
+
+def _dp_columns() -> set[str]:
+    return {row[0] for row in DB.execute("DESCRIBE acs5_dp_combined_tidy").fetchall()}
 
 
 @router.post("/load/acs5-db/dp-combined/series")
@@ -465,8 +467,12 @@ def dp_combined_series(request: DPSeriesRequest):
     in a stable order so each keeps its place across years: by variable code
     when the warehouse has it, otherwise by load order.
     """
-    identity = _dp_identity_columns()
+    present = _dp_columns()
+    identity = [c for c in DP_IDENTITY_COLUMNS if c in present]
     extra = "".join(f", {c}" for c in identity)
+    extra += "".join(
+        f", {c} AS {name}" for c, name in DP_MARGIN_COLUMNS.items() if c in present
+    )
     tiebreak = "variable_code" if "variable_code" in identity else "rowid"
     rows = DB.execute(
         f"""--sql
@@ -512,11 +518,12 @@ def county_comparison_indicators():
 @router.post("/load/acs5-db/county-comparison")
 def county_comparison(request: CountyComparisonRequest):
     """Return {place, geo_type, year, value} for each county, Vermont and the
-    United States, every year the indicator has data."""
+    United States, every year the indicator has data, with value_MOE and
+    value_Reliability where the warehouse has margins."""
     indicator = INDICATORS_BY_KEY.get(request.indicator)
     if indicator is None or not indicator.available:
         raise HTTPException(404, f"Unknown indicator: {request.indicator}")
-    sql, params = comparison_query(indicator)
+    sql, params = comparison_query(indicator, margins="moe" in _dp_columns())
     rows = DB.execute(sql, params).df()
     return make_response(
         data=rows,

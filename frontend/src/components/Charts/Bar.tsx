@@ -4,6 +4,7 @@ import { useMemo, useEffect } from 'react';
 import {
   BarChart,
   Bar,
+  ErrorBar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -28,11 +29,26 @@ import {
   ChartEvent,
   LegendItem,
   LegendElement,
+  Plugin,
 } from 'chart.js';
 ChartJS.register(CategoryScale, LinearScale, BarElement, TooltipJS, LegendJS);
 
 import { ChartItem, DataRow } from '@/types/cachedCharts';
 import { usePdfMode } from '@/contexts/PdfModeContext';
+import {
+  MarginNote,
+  anyLowReliability,
+  hasMargins,
+  interval,
+  intervalAt,
+  moeField,
+  moeKey,
+  plotValue,
+  reliabilityField,
+  reliabilityKey,
+  useShowMargins,
+  withMargin,
+} from './margins';
 import {
   Box,
   Group,
@@ -52,6 +68,68 @@ const d3Schemes = d3 as unknown as Record<string, readonly string[]>;
 // which replays the animation.
 const EMPTY_ROWS: DataRow[] = [];
 const stableRows = (rows?: DataRow[]) => (rows?.length ? rows : EMPTY_ROWS);
+
+// A bar dataset may carry `intervals`, each bar's margin-of-error range (see
+// margins.tsx); this plugin draws them as capped whiskers over the bars.
+type MarginDataset = { intervals?: ([number, number] | null)[] };
+
+const marginWhiskers: Plugin<'bar'> = {
+  id: 'marginWhiskers',
+  // Chart.js scales the y-axis to the bars alone. Raise it to the tallest
+  // visible whisker here, on every layout, so hiding a series in the legend
+  // drops its whiskers' headroom too.
+  afterDataLimits(chartJS, { scale }) {
+    if (scale.id !== 'y') return;
+    chartJS.data.datasets.forEach((dataset, di) => {
+      const { intervals } = dataset as MarginDataset;
+      if (!intervals || !chartJS.isDatasetVisible(di)) return;
+      for (const range of intervals)
+        if (range && range[1] > scale.max) scale.max = range[1];
+    });
+  },
+  afterDatasetsDraw(chartJS) {
+    const { ctx } = chartJS;
+    const y = chartJS.scales.y;
+    chartJS.data.datasets.forEach((dataset, di) => {
+      const { intervals } = dataset as MarginDataset;
+      if (!intervals || !chartJS.isDatasetVisible(di)) return;
+      ctx.save();
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1.5;
+      chartJS.getDatasetMeta(di).data.forEach((bar, i) => {
+        const range = intervals[i];
+        if (!range) return;
+        const top = y.getPixelForValue(range[1]);
+        const bottom = y.getPixelForValue(range[0]);
+        const { width } = bar.getProps(['width'], true) as { width: number };
+        const cap = Math.min(6, width / 4);
+        ctx.beginPath();
+        ctx.moveTo(bar.x, top);
+        ctx.lineTo(bar.x, bottom);
+        ctx.moveTo(bar.x - cap, top);
+        ctx.lineTo(bar.x + cap, top);
+        ctx.moveTo(bar.x - cap, bottom);
+        ctx.lineTo(bar.x + cap, bottom);
+        ctx.stroke();
+      });
+      ctx.restore();
+    });
+  },
+};
+const MARGIN_PLUGINS = [marginWhiskers];
+
+/** A row's margin as Recharts ErrorBar offsets below and above its value. */
+const errorOffsets = (
+  row: DataRow | undefined,
+  field: string,
+  percent: boolean,
+) => {
+  const value = row?.[field];
+  const moe = row?.[moeField(field)];
+  if (typeof value !== 'number' || typeof moe !== 'number') return null;
+  const [low, high] = interval(value, moe, percent);
+  return [value - low, high - value];
+};
 
 const SamePerXBarChart = ({
   chart,
@@ -249,14 +327,22 @@ const CompareDiffPerXBarChartSVG = ({
     colors = filteredData.map((_, i) => colorScale(i.toString()));
   }
 
+  const percent = chart.chartParams.percentFormat ?? false;
+  const margins =
+    hasMargins(filteredData, chart.yField) ||
+    hasMargins(filteredCompareData, chart.yField);
+  const show = useShowMargins();
+
   // Merge primary + compare into one array for grouped bars
   const merged = filteredData.map((entry, i) => ({
     [chart.xField]: entry[chart.xField],
     primary: entry[chart.yField],
     compare: filteredCompareData[i]?.[chart.yField] ?? null,
+    primaryError: errorOffsets(entry, chart.yField, percent),
+    compareError: errorOffsets(filteredCompareData[i], chart.yField, percent),
   }));
 
-  return (
+  const plot = (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
         data={merged}
@@ -281,10 +367,25 @@ const CompareDiffPerXBarChartSVG = ({
           {merged.map((_, i) => (
             <Cell key={i} fill={colors[i]} />
           ))}
+          {margins && show && (
+            <ErrorBar dataKey="primaryError" width={6} stroke="#333" />
+          )}
         </Bar>
-        <Bar dataKey="compare" name={legendLabels[1]} fill="#999" />
+        <Bar dataKey="compare" name={legendLabels[1]} fill="#999">
+          {margins && show && (
+            <ErrorBar dataKey="compareError" width={6} stroke="#333" />
+          )}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
+  );
+  if (!margins || !show) return plot;
+
+  return (
+    <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <MarginNote lowReliability={false} bars />
+      <Box style={{ flex: 1, minHeight: 0 }}>{plot}</Box>
+    </Box>
   );
 };
 
@@ -322,19 +423,22 @@ const CompareDiffPerXBarChart = ({
     return cmp.length ? alignByX(filteredData, cmp, chart.xField) : cmp;
   }, [compareRows, filteredData, includeCategories, chart.xField]);
 
+  const margins =
+    hasMargins(filteredData, chart.yField) ||
+    hasMargins(filteredCompareData, chart.yField);
+  const show = useShowMargins();
+
   // Derive exact plottable rows and report back to ChartCard for TableView
   const plotData = useMemo(() => {
     return filteredData.map((entry, i) => {
       const cmpEntry = filteredCompareData[i];
-      return {
-        [chart.xField]: entry[chart.xField],
-        [chart.yField]: entry[chart.yField],
-        ...(cmpEntry
-          ? { [`${chart.yField} (cmp)`]: cmpEntry[chart.yField] }
-          : {}),
-      };
+      const pt: DataRow = { [chart.xField]: entry[chart.xField] };
+      plotValue(pt, chart.yField, entry, chart.yField, margins);
+      if (cmpEntry)
+        plotValue(pt, `${chart.yField} (cmp)`, cmpEntry, chart.yField, margins);
+      return pt;
     });
-  }, [filteredData, filteredCompareData, chart.xField, chart.yField]);
+  }, [filteredData, filteredCompareData, chart.xField, chart.yField, margins]);
 
   useEffect(() => {
     onPlotData?.(plotData);
@@ -346,6 +450,7 @@ const CompareDiffPerXBarChart = ({
   const primaryLabel = chart.chartParams?.legendLabels?.[0] ?? yField;
   const compareLabel =
     chart.chartParams?.legendLabels?.[1] ?? `${yField} (compare)`;
+  const percentFormat = chart.chartParams?.percentFormat ?? false;
 
   const data = useMemo(() => {
     let colors: string[];
@@ -365,11 +470,21 @@ const CompareDiffPerXBarChart = ({
           label: primaryLabel,
           data: filteredData.map((entry) => entry[yField] as number),
           backgroundColor: colors,
+          intervals:
+            margins && show
+              ? plotData.map((pt) => intervalAt(pt, yField, percentFormat))
+              : undefined,
         },
         {
           label: compareLabel,
           data: filteredCompareData.map((entry) => entry[yField] as number),
           backgroundColor: filteredCompareData.map(() => '#D3D3D3'),
+          intervals:
+            margins && show
+              ? plotData.map((pt) =>
+                  intervalAt(pt, `${yField} (cmp)`, percentFormat),
+                )
+              : undefined,
         },
       ],
     };
@@ -383,12 +498,17 @@ const CompareDiffPerXBarChart = ({
     colorScheme,
     primaryLabel,
     compareLabel,
+    margins,
+    show,
+    plotData,
+    percentFormat,
   ]);
 
-  const percentFormat = chart.chartParams?.percentFormat ?? false;
   const yLabel = chart.chartParams?.yLabel;
-  const options = useMemo(
-    () => ({
+  const options = useMemo(() => {
+    const format = (v: number) =>
+      percentFormat ? `${v}%` : v.toLocaleString();
+    return {
       responsive: true,
       maintainAspectRatio: false,
       animation: view === 'gallery' ? (false as const) : undefined,
@@ -397,8 +517,17 @@ const CompareDiffPerXBarChart = ({
         tooltip: {
           callbacks: {
             label: (context: TooltipItem<'bar'>) => {
-              const value = context.parsed.y ?? 0;
-              return percentFormat ? `${value}%` : value.toLocaleString();
+              const key =
+                context.datasetIndex === 0 ? yField : `${yField} (cmp)`;
+              const pt = plotData[context.dataIndex];
+              return withMargin(
+                format(context.parsed.y ?? 0),
+                pt?.[moeKey(key)],
+                pt?.[reliabilityKey(key)],
+                format,
+                ' (low reliability)',
+                show,
+              );
             },
           },
         },
@@ -412,13 +541,26 @@ const CompareDiffPerXBarChart = ({
           },
         },
       },
-    }),
-    [view, percentFormat, yLabel],
-  );
+    };
+  }, [view, percentFormat, yLabel, plotData, yField, show]);
 
   if (isPdfMode) return <CompareDiffPerXBarChartSVG chart={chart} />;
+  if (!margins) return <BarJS data={data} options={options} />;
 
-  return <BarJS data={data} options={options} />;
+  return (
+    <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {view !== 'gallery' && (
+        <MarginNote
+          lowReliability={anyLowReliability(plotData)}
+          bars
+          show={show}
+        />
+      )}
+      <Box style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+        <BarJS data={data} options={options} plugins={MARGIN_PLUGINS} />
+      </Box>
+    </Box>
+  );
 };
 
 type AllowanceRow = {
@@ -818,6 +960,9 @@ const RankedBarChart = ({
   const colorField = chart.chartParams?.color ?? 'color';
   const unit = chart.chartParams?.unit;
   const yLabel = (chart.chartParams?.yLabel as string | undefined) ?? yField;
+  const percent = unit === 'percent';
+  const margins = hasMargins(rows, yField);
+  const show = useShowMargins();
   const fmt = (v: unknown, short = false) => {
     if (v == null) return '';
     const n = Number(v);
@@ -826,18 +971,66 @@ const RankedBarChart = ({
         ? `$${(n / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
         : `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
     const num = n.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    return unit === 'percent' ? `${num}%` : num;
+    return percent ? `${num}%` : num;
   };
   const fmtShort = (v: unknown) => fmt(v, true);
+  const plotRows: Record<string, unknown>[] = useMemo(
+    () =>
+      margins && show
+        ? rows.map((r) => ({ ...r, error: errorOffsets(r, yField, percent) }))
+        : rows,
+    [rows, margins, show, yField, percent],
+  );
 
-  // The table view shows place and value only, not the bar colors.
+  // The table view shows place and value only, not the bar colors, with the
+  // value's margin where it has one.
   useEffect(() => {
-    onPlotData?.(rows.map((r) => ({ Place: r[xField], [yLabel]: r[yField] })));
-  }, [rows, xField, yField, yLabel, onPlotData]);
+    onPlotData?.(
+      rows.map((r) => ({
+        Place: r[xField],
+        [yLabel]: r[yField],
+        ...(margins && {
+          [moeKey(yLabel)]: r[moeField(yField)] ?? null,
+          [reliabilityKey(yLabel)]: r[reliabilityField(yField)] ?? null,
+        }),
+      })),
+    );
+  }, [rows, xField, yField, yLabel, margins, onPlotData]);
 
-  return (
+  // Each bar's value sits above its whisker, not under it.
+  const valueLabel = (props: {
+    x?: unknown;
+    y?: unknown;
+    width?: unknown;
+    height?: unknown;
+    value?: unknown;
+    index?: number;
+  }) => {
+    const x = Number(props.x);
+    const y = Number(props.y);
+    const width = Number(props.width);
+    const height = Number(props.height);
+    const error = plotRows[props.index ?? -1]?.error as number[] | null;
+    const value = Number(props.value);
+    const above = error && value > 0 ? (error[1] / value) * height : 0;
+    return (
+      <text
+        x={x + width / 2}
+        y={y - above - 6}
+        textAnchor="middle"
+        style={{ fontSize: 11, fontWeight: 600, fill: '#1B211D' }}
+      >
+        {fmtShort(props.value)}
+      </text>
+    );
+  };
+
+  const plot = (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={rows} margin={{ top: 24, right: 10, left: 0, bottom: 5 }}>
+      <BarChart
+        data={plotRows}
+        margin={{ top: 24, right: 10, left: 0, bottom: 5 }}
+      >
         <CartesianGrid
           strokeDasharray="3 3"
           stroke="#e0d8cc"
@@ -852,7 +1045,19 @@ const RankedBarChart = ({
           tick={{ fontSize: 12 }}
         />
         <YAxis tick={{ fontSize: 12 }} tickFormatter={fmtShort} />
-        <Tooltip formatter={(v) => [fmt(v), yLabel]} />
+        <Tooltip
+          formatter={(v, _name, item) => [
+            withMargin(
+              fmt(v),
+              item.payload?.[moeField(yField)],
+              item.payload?.[reliabilityField(yField)],
+              (m) => fmt(m),
+              ' (low reliability)',
+              show,
+            ),
+            yLabel,
+          ]}
+        />
         <Bar
           dataKey={yField}
           isAnimationActive={view !== 'gallery' && !isPdfMode}
@@ -860,15 +1065,25 @@ const RankedBarChart = ({
           {rows.map((r, i) => (
             <Cell key={i} fill={r[colorField] as string} />
           ))}
-          <LabelList
-            dataKey={yField}
-            position="top"
-            formatter={fmtShort}
-            style={{ fontSize: 11, fontWeight: 600, fill: '#1B211D' }}
-          />
+          {margins && show && (
+            <ErrorBar dataKey="error" width={6} stroke="#333" />
+          )}
+          <LabelList dataKey={yField} position="top" content={valueLabel} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
+  );
+  if (!margins || view === 'gallery') return plot;
+
+  return (
+    <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <MarginNote
+        lowReliability={rows.some((r) => r[reliabilityField(yField)] === 'low')}
+        bars
+        show={show}
+      />
+      <Box style={{ flex: 1, minHeight: 0 }}>{plot}</Box>
+    </Box>
   );
 };
 

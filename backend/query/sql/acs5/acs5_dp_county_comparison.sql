@@ -9,7 +9,11 @@ SELECT
     REGEXP_REPLACE(name, ' County, Vermont$', '') AS place,
     geo_type,
     CAST(year AS INTEGER) AS year,
-    CAST(value AS DOUBLE) AS value
+    CAST(value AS DOUBLE) AS value{% if margins %},
+    -- Named for the frontend, which reads a field's margin as <field>_MOE.
+    moe AS value_MOE,
+    reliability AS value_Reliability
+{% endif %}
 FROM {{ table }}
 {{ where_string }}
 ORDER BY year, place

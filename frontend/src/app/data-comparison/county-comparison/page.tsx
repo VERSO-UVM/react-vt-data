@@ -45,6 +45,10 @@ interface ComparisonRow {
   geo_type: 'county' | 'state' | 'national';
   year: number;
   value: number;
+  /** The value's 90% margin of error and reliability label, where the
+   *  warehouse has them. */
+  value_MOE?: number | null;
+  value_Reliability?: string | null;
 }
 
 interface ComparisonMeta {
@@ -215,6 +219,8 @@ export default function CountyComparisonPage() {
         .map((r) => ({
           place: r.place,
           value: r.value,
+          value_MOE: r.value_MOE ?? null,
+          value_Reliability: r.value_Reliability ?? null,
           color: barColor(r, highlighted),
         })),
     [rows, year, highlighted],
