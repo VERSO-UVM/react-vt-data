@@ -141,10 +141,14 @@ That's a few dozen tokens however large the result is.
   plus counts) before they reach the model. The model reads enough to write the
   narrative; full rows go to the browser by reference. This is also the biggest
   lever on token cost, since tool results are re-sent on every loop iteration.
-  For the same reason the agent's `list_datasets` result is a compact listing
-  (`compact_datasets` in `chat/agent.py`): caveats shared by several datasets
-  are stated once, and lineage and column plumbing are left to
-  `describe_dataset`. The MCP's `list_datasets` is unchanged.
+- **The dataset list is in the instructions,** not behind a tool
+  (`dataset_catalog` in `chat/agent.py`). Every question needs it, so listing
+  it up front saves a model request, and as part of the fixed prefix it is
+  cached (see Decision 4). It is a compact listing: caveats shared by several
+  datasets are stated once, and lineage and column plumbing are left to
+  `describe_dataset`. It is built when the API starts, so restart the API after
+  replacing the warehouse; if the warehouse can't be read then, the agent keeps
+  a `list_datasets` tool instead. The MCP's `list_datasets` is unchanged.
 - **Fits the existing types:** `ItemDataRef` in `frontend/src/types/cachedCharts.ts`
   describes exactly this, though nothing uses it yet. Agent charts become ordinary
   `ChartItem`s with a `dataRef`, so "Add to working report" works with the current
@@ -227,10 +231,12 @@ against live warehouse data, with `data_collection: "deny"` routing.
   hosts, many running reduced-precision (fp4) builds, so quality can vary by
   host.
 
-These runs predate prompt caching. Claude requests now mark the tool
-definitions, the instructions, and the newest message as cacheable
-(`build_agent` in `chat/agent.py`), so each later request of a turn reads the
-repeated prefix at the cached rate; the turn's `usage` reports
+These runs predate prompt caching and the dataset list in the instructions.
+Claude requests now mark the tool definitions, the instructions (with the
+dataset list), and the newest message as cacheable (`build_agent` in
+`chat/agent.py`). The fixed prefix is about 42,000 characters and is shared by
+every question while the cache is warm; within a turn, each later request also
+reads the earlier tool results at the cached rate. The turn's `usage` reports
 `cache_read_tokens` and `cache_write_tokens`. Other providers ignore the
 markers. Re-run the evals to measure the new cost.
 

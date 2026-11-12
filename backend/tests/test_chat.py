@@ -122,6 +122,42 @@ def test_dataset_list_is_compact_and_states_shared_caveats_once(service):
     )
 
 
+def seen_by_model(agent, settings):
+    """The instructions and tool names one request hands the model."""
+    seen = {}
+
+    async def answers(_messages, info):
+        seen["instructions"] = info.instructions
+        seen["tools"] = [tool.name for tool in info.function_tools]
+        yield "ok"
+
+    async def run():
+        with agent.override(model=FunctionModel(stream_function=answers)):
+            return [e async for e in stream_answer(agent, settings, "hi", [])]
+
+    assert asyncio.run(run())[-1]["type"] == "done"
+    return seen
+
+
+def test_datasets_are_listed_in_the_instructions_not_behind_a_tool(warehouse):
+    settings = ChatSettings(model="demo", warehouse_path=warehouse)
+    seen = seen_by_model(build_agent(settings, DataToolService(warehouse)), settings)
+    assert INCOME in seen["instructions"]
+    assert "shared_caveats" in seen["instructions"]
+    assert "list_datasets" not in seen["tools"]
+    assert "list_datasets" not in seen["instructions"]
+    assert "describe_dataset" in seen["tools"]
+
+
+def test_agent_keeps_the_dataset_tool_when_the_warehouse_cant_be_read(tmp_path):
+    missing = tmp_path / "absent.duckdb"
+    settings = ChatSettings(model="demo", warehouse_path=missing)
+    seen = seen_by_model(build_agent(settings, DataToolService(missing)), settings)
+    assert "list_datasets" in seen["tools"]
+    assert "Start with list_datasets" in seen["instructions"]
+    assert INCOME not in seen["instructions"]
+
+
 def test_data_ref_drops_paging_and_validates_tool_args():
     ref = DataRef(
         tool="get_timeseries",
@@ -476,7 +512,10 @@ def openrouter_requests(warehouse, slug):
                         "index": 0,
                         "id": "call_1",
                         "type": "function",
-                        "function": {"name": "list_datasets", "arguments": "{}"},
+                        "function": {
+                            "name": "describe_dataset",
+                            "arguments": json.dumps({"dataset_id": INCOME}),
+                        },
                     }
                 ],
             }
@@ -535,6 +574,8 @@ def test_claude_requests_mark_the_repeated_prefix_as_cacheable(warehouse):
         assert [cache_marked(tool) for tool in body["tools"]][-1]
         assert cache_marked(body["messages"][0])
         assert cache_marked(body["messages"][-1])
+        # The dataset list rides in the cached instructions.
+        assert INCOME in json.dumps(body["messages"][0])
     assert bodies[1]["messages"][-1]["role"] == "tool"
     usage = events[-1]["usage"]
     assert usage["cache_read_tokens"] == 14

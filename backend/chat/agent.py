@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import AsyncIterator
 from typing import Any
@@ -45,14 +46,24 @@ logger = logging.getLogger(__name__)
 # export_data returns inline CSV, which the browser gets by reference instead.
 AGENT_DATA_TOOLS = tuple(name for name in TOOL_MODELS if name != "export_data")
 
+# How the agent learns which datasets exist. Normally they are listed in the
+# instructions (dataset_catalog); FIND_WITH_TOOL is the fallback when the
+# warehouse couldn't be read at startup.
+FIND_IN_PROMPT = """\
+- The datasets are listed at the end of these instructions. Pick from that
+  list, then use describe_dataset and search_variables or search_locations
+  before querying. Use returned identifiers exactly."""
+FIND_WITH_TOOL = """\
+- Start with list_datasets, then describe_dataset and search_variables or
+  search_locations before querying. Use returned identifiers exactly."""
+
 INSTRUCTIONS = """\
 You answer questions about Vermont public data (housing, demographics, economy,
 health, zoning, flood hazard, wastewater) for planners, select boards,
 developers, and reporters. Write plainly for non-technical readers.
 
 Finding data:
-- Start with list_datasets, then describe_dataset and search_variables or
-  search_locations before querying. Use returned identifiers exactly.
+{find}
 - Keep geography, year, measure, and units consistent when comparing places.
   Never average medians, interpolate missing years, or invent values. If the
   data can't answer the question, say so and suggest what it can answer.
@@ -184,12 +195,36 @@ def compact_datasets(result: dict[str, Any]) -> dict[str, Any]:
     return {
         "datasets": compact,
         "shared_caveats": {key: caveat for caveat, key in shared.items()},
-        "note": (
-            "describe_dataset returns a dataset's columns, filter values, "
-            "units and year coverage."
-        ),
         "warehouse_version": result.get("warehouse_version"),
     }
+
+
+def dataset_catalog(service: DataToolService) -> str | None:
+    """The compact dataset list as text for the instructions.
+
+    Every question needs this list, so it goes in the prompt instead of
+    behind a tool call: that saves a model request per question (models
+    often made the call two or three times), and as part of the fixed prefix
+    it is read from cache by every later request and question. None if the
+    warehouse can't be read right now; the agent then keeps list_datasets.
+    """
+    try:
+        listing = compact_datasets(service.call("list_datasets", {}))
+    except Exception as exc:  # noqa: BLE001 -- chat still starts, with the tool
+        logger.error("Chat couldn't list datasets (%s)", type(exc).__name__)
+        return None
+    return json.dumps(listing, separators=(",", ":"), default=str)
+
+
+def instructions(catalog: str | None) -> str:
+    if catalog is None:
+        return INSTRUCTIONS.format(find=FIND_WITH_TOOL)
+    return (
+        INSTRUCTIONS.format(find=FIND_IN_PROMPT)
+        + "\nDatasets (shared_caveats keys refer to the map of that name; "
+        "describe_dataset returns columns, filter values, and year coverage):\n"
+        + catalog
+    )
 
 
 def agent_schema(name: str) -> dict[str, Any]:
@@ -319,14 +354,20 @@ def build_agent(settings: ChatSettings, service: DataToolService) -> Agent:
         model_settings["openrouter_cache_tool_definitions"] = True
         model_settings["openrouter_cache_instructions"] = True
         model_settings["openrouter_cache_messages"] = True
+    # Built once: computing it per request would put it after the cached part
+    # of the instructions. A replaced warehouse shows here after a restart
+    # (describe_dataset always reads the live one).
+    catalog = dataset_catalog(service)
     tools = [
-        data_tool(service, name, settings.preview_rows) for name in AGENT_DATA_TOOLS
+        data_tool(service, name, settings.preview_rows)
+        for name in AGENT_DATA_TOOLS
+        if catalog is None or name != "list_datasets"
     ]
     tools.append(rank_tool(service, settings))
     tools.append(chart_tool(service, settings))
     return Agent(
         model,
-        instructions=INSTRUCTIONS,
+        instructions=instructions(catalog),
         tools=tools,
         # Let the API start without a provider key; requests report the problem.
         defer_model_check=True,
