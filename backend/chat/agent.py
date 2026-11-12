@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
+import time
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -41,6 +44,10 @@ from data_tools.models import TOOL_DESCRIPTIONS, TOOL_MODELS
 from data_tools.service import DataToolService
 
 logger = logging.getLogger(__name__)
+# One line per turn with counts and cost, never the question or the answer:
+# the only record of real usage until there is a spend ledger. The router
+# gives it a handler, since the API configures no INFO logging of its own.
+usage_log = logging.getLogger("chat.usage")
 
 # export_data returns inline CSV, which the browser gets by reference instead.
 AGENT_DATA_TOOLS = tuple(name for name in TOOL_MODELS if name != "export_data")
@@ -260,11 +267,26 @@ def build_agent(settings: ChatSettings, service: DataToolService) -> Agent:
     )
 
 
-def http_error_message(status: int) -> str:
-    """What to tell the user when the model provider answers with an error."""
+# How providers say a spend limit is used up when they don't answer 402:
+# OpenRouter can send 403 with metadata.limit_source "openrouter_key_limit",
+# and OpenAI sends 429 with code "project_spend_limit_exceeded" (or
+# "organization_..."). Without these, the first reads as "not configured" and
+# the second as "busy, try again".
+SPEND_LIMIT_MARKERS = ("openrouter_key_limit", "spend_limit_exceeded")
+
+
+def spend_limit_reached(status: int, body: object = None) -> bool:
     if status == 402:
-        # OpenRouter's reply once the key's credit limit is spent: the spend
-        # backstop until we have a ledger of our own.
+        return True
+    text = json.dumps(body, default=str) if body is not None else ""
+    return any(marker in text for marker in SPEND_LIMIT_MARKERS)
+
+
+def http_error_message(status: int, body: object = None) -> str:
+    """What to tell the user when the model provider answers with an error."""
+    if spend_limit_reached(status, body):
+        # The provider key's credit limit is spent: the spend backstop until
+        # we have a ledger of our own.
         return "Data Chat has reached its usage limit for now. Try again later."
     if status in (401, 403, 404):
         return "Chat isn't configured on this server yet."
@@ -298,6 +320,26 @@ def to_history(messages: list[dict[str, str]]) -> list[ModelMessage]:
     return history
 
 
+def log_turn(model: str, outcome: str, usage: dict[str, Any], seconds: float) -> None:
+    usage_log.info(
+        "chat_turn outcome=%s model=%s seconds=%.1f requests=%s tool_calls=%s "
+        "input_tokens=%s output_tokens=%s cost_usd=%s",
+        outcome,
+        model,
+        seconds,
+        *(
+            usage.get(key)
+            for key in (
+                "requests",
+                "tool_calls",
+                "input_tokens",
+                "output_tokens",
+                "cost_usd",
+            )
+        ),
+    )
+
+
 async def stream_answer(
     agent: Agent,
     settings: ChatSettings,
@@ -310,10 +352,19 @@ async def stream_answer(
         tool_calls_limit=settings.max_tool_calls,
         output_tokens_limit=settings.max_output_tokens,
     )
+    started = time.monotonic()
+    # "stopped" unless the turn finishes or fails: the reader went away.
+    outcome = "stopped"
+    usage: dict[str, Any] = {}
     try:
-        async with agent.run_stream_events(
-            prompt, message_history=history, usage_limits=limits
-        ) as events:
+        # A stalled provider would otherwise hold the stream open until the
+        # proxy gives up; evals saw chats hang for minutes.
+        async with (
+            asyncio.timeout(settings.turn_timeout),
+            agent.run_stream_events(
+                prompt, message_history=history, usage_limits=limits
+            ) as events,
+        ):
             async for event in events:
                 if isinstance(event, PartStartEvent) and isinstance(
                     event.part, TextPart
@@ -346,42 +397,59 @@ async def stream_answer(
                     if chart:
                         yield {"type": "chart", "id": part.tool_call_id, "chart": chart}
                 elif isinstance(event, AgentRunResultEvent):
-                    usage = event.result.usage
-                    yield {
-                        "type": "done",
-                        "usage": {
-                            "requests": usage.requests,
-                            "tool_calls": usage.tool_calls,
-                            "input_tokens": usage.input_tokens,
-                            "output_tokens": usage.output_tokens,
-                            "cost_usd": turn_cost(event.result.new_messages()),
-                        },
+                    run_usage = event.result.usage
+                    usage = {
+                        "requests": run_usage.requests,
+                        "tool_calls": run_usage.tool_calls,
+                        "input_tokens": run_usage.input_tokens,
+                        "output_tokens": run_usage.output_tokens,
+                        "cost_usd": turn_cost(event.result.new_messages()),
                     }
+                    outcome = "ok"
+                    yield {"type": "done", "usage": usage}
     except UsageLimitExceeded:
+        outcome = "step_limit"
         yield {
             "type": "error",
             "message": "This question needed more steps than one answer allows. "
             "Try asking something narrower.",
         }
+    except TimeoutError:
+        outcome = "timeout"
+        yield {
+            "type": "error",
+            "message": "That took too long to answer. Try again, or ask "
+            "something narrower.",
+        }
     except UserError as exc:
         # Usually a missing provider API key or an unknown model name.
+        outcome = "not_configured"
         logger.error("Chat model configuration error: %s", exc)
         yield {"type": "error", "message": "Chat isn't configured on this server yet."}
     except ModelHTTPError as exc:
         # The status says what to do: limit reached, busy, misconfigured, or
         # down. The body can hold provider details, so it isn't logged.
+        limit = spend_limit_reached(exc.status_code, exc.body)
+        outcome = "spend_limit" if limit else f"http_{exc.status_code}"
         logger.error(
             "Chat model request failed: HTTP %s from %s",
             exc.status_code,
             exc.model_name,
         )
-        yield {"type": "error", "message": http_error_message(exc.status_code)}
+        yield {
+            "type": "error",
+            "message": http_error_message(exc.status_code, exc.body),
+        }
     except ModelAPIError as exc:
+        outcome = "provider_error"
         logger.error("Chat model request failed (%s)", type(exc).__name__)
         yield {
             "type": "error",
             "message": "The language model service is unavailable. Try again shortly.",
         }
     except Exception as exc:  # noqa: BLE001 -- the stream must end with a readable event
+        outcome = "error"
         logger.error("Chat turn failed (%s)", type(exc).__name__)
         yield {"type": "error", "message": "Something went wrong answering that."}
+    finally:
+        log_turn(settings.model, outcome, usage, time.monotonic() - started)

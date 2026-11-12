@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 
 import duckdb
 import pytest
@@ -415,6 +416,74 @@ def test_provider_http_errors_end_the_turn_with_a_specific_message(
     events = asyncio.run(run())
     assert events[-1]["type"] == "error"
     assert phrase in events[-1]["message"]
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        # OpenRouter's key credit limit, when it answers 403 instead of 402.
+        (
+            403,
+            {
+                "message": "Key limit",
+                "metadata": {"limit_source": "openrouter_key_limit"},
+            },
+        ),
+        # OpenAI's project or organization hard limit.
+        (429, {"code": "project_spend_limit_exceeded", "message": "Limit reached"}),
+        (429, {"error": {"code": "organization_spend_limit_exceeded"}}),
+    ],
+)
+def test_spend_limit_errors_say_the_usage_limit_was_reached(warehouse, status, body):
+    async def fails(_messages, _info):
+        raise ModelHTTPError(status_code=status, model_name="some/model", body=body)
+        yield ""
+
+    settings = ChatSettings(model="demo", warehouse_path=warehouse)
+    agent = build_agent(settings, DataToolService(warehouse))
+
+    async def run():
+        with agent.override(model=FunctionModel(stream_function=fails)):
+            return [e async for e in stream_answer(agent, settings, "hi", [])]
+
+    assert "usage limit" in asyncio.run(run())[-1]["message"]
+
+
+def test_a_stalled_model_ends_the_turn_with_a_readable_error(warehouse):
+    async def stalls(_messages, _info):
+        await asyncio.sleep(30)
+        yield "too late"
+
+    settings = ChatSettings(model="demo", warehouse_path=warehouse, turn_timeout=0.05)
+    agent = build_agent(settings, DataToolService(warehouse))
+
+    async def run():
+        with agent.override(model=FunctionModel(stream_function=stalls)):
+            return [e async for e in stream_answer(agent, settings, "hi", [])]
+
+    events = asyncio.run(run())
+    assert [e["type"] for e in events] == ["error"]
+    assert "too long" in events[0]["message"]
+
+
+def test_each_turn_logs_usage_but_not_the_question(warehouse, caplog):
+    settings = ChatSettings(model="demo", warehouse_path=warehouse)
+    agent = build_agent(settings, DataToolService(warehouse))
+
+    async def run():
+        return [
+            e
+            async for e in stream_answer(
+                agent, settings, "A question about Winooski", []
+            )
+        ]
+
+    with caplog.at_level(logging.INFO, logger="chat.usage"):
+        asyncio.run(run())
+    (line,) = [r.getMessage() for r in caplog.records if r.name == "chat.usage"]
+    assert line.startswith("chat_turn outcome=ok model=demo ")
+    assert "requests=3 tool_calls=2" in line
+    assert "Winooski" not in line
 
 
 def test_openrouter_models_report_cost_and_skip_data_collecting_providers(warehouse):
