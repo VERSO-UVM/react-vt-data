@@ -266,7 +266,12 @@ export default function ChatPage() {
               ...t,
               steps: [
                 ...(t.steps ?? []),
-                { id: event.id, name: event.name, status: 'running' },
+                {
+                  id: event.id,
+                  name: event.name,
+                  status: 'running',
+                  args: event.args,
+                },
               ],
             }));
             break;

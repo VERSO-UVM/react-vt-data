@@ -44,6 +44,10 @@ class ChatSettings:
     max_history_messages: int = 20
     max_message_chars: int = 4_000
     max_history_chars: int = 40_000
+    # Tool calls replayed from one earlier answer, and the size of each one's
+    # arguments (see agent.to_history); larger or extra ones are dropped.
+    max_history_tool_calls: int = 12
+    max_history_tool_chars: int = 2_000
     # Questions per client IP per rolling hour, per worker process.
     rate_limit: int = 30
     # Rows /api/chat/data returns for one chart reference.

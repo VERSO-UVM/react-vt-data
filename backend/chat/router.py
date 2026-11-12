@@ -19,7 +19,7 @@ import json
 import threading
 import time
 from collections import defaultdict, deque
-from typing import Literal
+from typing import Any, Literal
 
 import anyio
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -27,15 +27,31 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, model_validator
 
 from chat import access
-from chat.agent import build_agent, stream_answer, to_history, tool_error
+from chat.agent import (
+    AGENT_TOOLS,
+    build_agent,
+    stream_answer,
+    to_history,
+    tool_error,
+)
 from chat.charts import DataRef, resolve_rows
 from chat.config import ChatSettings
 from data_tools.service import DataToolService
 
 
+class ToolUse(BaseModel):
+    """A tool call an earlier answer made, sent back so follow-ups can reuse
+    its dataset, places, and filters (agent.to_history)."""
+
+    name: str = Field(max_length=50)
+    args: dict[str, Any] = Field(default_factory=dict)
+
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1)
+    # Assistant messages only; ignored on user messages.
+    tools: list[ToolUse] = Field(default_factory=list, max_length=100)
 
 
 class ChatRequest(BaseModel):
@@ -77,23 +93,43 @@ class RateLimiter:
             return True
 
 
+def replayable_tools(
+    message: ChatMessage, settings: ChatSettings
+) -> list[dict[str, Any]]:
+    """The message's tool calls that are safe and small enough to replay.
+
+    The client sends these, so they are held to the agent's own tool names and
+    a size bound. Dropping one only costs the model a rediscovery.
+    """
+    if message.role != "assistant":
+        return []
+    tools = [
+        {"name": tool.name, "args": tool.args}
+        for tool in message.tools
+        if tool.name in AGENT_TOOLS
+        and len(json.dumps(tool.args, default=str)) <= settings.max_history_tool_chars
+    ]
+    return tools[-settings.max_history_tool_calls :]
+
+
 def bounded_history(
     messages: list[ChatMessage], settings: ChatSettings
-) -> tuple[str, list[dict[str, str]]]:
+) -> tuple[str, list[dict[str, Any]]]:
     """Split off the question and keep the newest history that fits the bounds."""
     question = messages[-1].content
     if len(question) > settings.max_message_chars:
         raise HTTPException(
             413, f"Questions are limited to {settings.max_message_chars} characters"
         )
-    kept: list[dict[str, str]] = []
+    kept: list[dict[str, Any]] = []
     total = len(question)
     for message in reversed(messages[:-1][-settings.max_history_messages :]):
         content = message.content[: settings.max_message_chars]
-        total += len(content)
+        tools = replayable_tools(message, settings)
+        total += len(content) + len(json.dumps(tools, default=str)) * bool(tools)
         if total > settings.max_history_chars:
             break
-        kept.append({"role": message.role, "content": content})
+        kept.append({"role": message.role, "content": content, "tools": tools})
     kept.reverse()
     # History must alternate starting from a user turn.
     while kept and kept[0]["role"] != "user":

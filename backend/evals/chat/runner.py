@@ -40,7 +40,7 @@ async def play_chat(
     A turn that runs past `turn_timeout` seconds (a stalled provider, say) ends
     with an error instead of holding up the whole run.
     """
-    history: list[dict[str, str]] = []
+    history: list[dict[str, Any]] = []
     turns = []
     for question in case.turns:
         started = time.monotonic()
@@ -60,6 +60,7 @@ async def play_chat(
                         elif kind == "tool_call":
                             steps[event["id"]] = {
                                 "name": event["name"],
+                                "args": event["args"],
                                 "ok": True,
                                 "error": None,
                             }
@@ -87,11 +88,19 @@ async def play_chat(
             }
         )
         if answer and not error:
-            # Same text-only history the browser sends (chatStore.toHistory).
-            notes = [f"[Chart shown: {c['title']}]" for c in charts]
+            # The same history the browser sends (chatStore.toHistory): the
+            # answer plus the tool calls that worked.
             history += [
                 {"role": "user", "content": question},
-                {"role": "assistant", "content": "\n".join([*notes, answer])},
+                {
+                    "role": "assistant",
+                    "content": answer,
+                    "tools": [
+                        {"name": step["name"], "args": step["args"]}
+                        for step in steps.values()
+                        if step["ok"]
+                    ],
+                },
             ]
     return turns
 
