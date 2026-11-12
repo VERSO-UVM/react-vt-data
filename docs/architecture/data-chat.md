@@ -227,6 +227,13 @@ against live warehouse data, with `data_collection: "deny"` routing.
   hosts, many running reduced-precision (fp4) builds, so quality can vary by
   host.
 
+These runs predate prompt caching. Claude requests now mark the tool
+definitions, the instructions, and the newest message as cacheable
+(`build_agent` in `chat/agent.py`), so each later request of a turn reads the
+repeated prefix at the cached rate; the turn's `usage` reports
+`cache_read_tokens` and `cache_write_tokens`. Other providers ignore the
+markers. Re-run the evals to measure the new cost.
+
 Costs are per eval chat. Real questions may be longer or chattier, so treat
 the last column as an upper bound on volume until we log real usage. The earlier
 planning estimate (about $0.08 per question for Sol) was roughly double Sol's

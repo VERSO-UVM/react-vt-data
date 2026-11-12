@@ -312,6 +312,13 @@ def build_agent(settings: ChatSettings, service: DataToolService) -> Agent:
         # Ask OpenRouter to report each response's cost (see turn_cost).
         model_settings["openrouter_usage"] = {"include": True}
         model_settings["openrouter_provider"] = PROVIDER_ROUTING
+        # One question is several model requests, each re-sending the tool
+        # definitions, the instructions, and every earlier tool result. Mark
+        # all three as cacheable so later requests read that prefix at the
+        # cached rate. Providers without explicit cache control ignore these.
+        model_settings["openrouter_cache_tool_definitions"] = True
+        model_settings["openrouter_cache_instructions"] = True
+        model_settings["openrouter_cache_messages"] = True
     tools = [
         data_tool(service, name, settings.preview_rows) for name in AGENT_DATA_TOOLS
     ]
@@ -421,6 +428,9 @@ async def stream_answer(
                             "tool_calls": usage.tool_calls,
                             "input_tokens": usage.input_tokens,
                             "output_tokens": usage.output_tokens,
+                            # Part of input_tokens; shows whether caching works.
+                            "cache_read_tokens": usage.cache_read_tokens,
+                            "cache_write_tokens": usage.cache_write_tokens,
                             "cost_usd": turn_cost(event.result.new_messages()),
                         },
                     }
