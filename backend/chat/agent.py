@@ -20,7 +20,9 @@ from pydantic_ai import (
     TextPart,
     TextPartDelta,
     Tool,
+    ToolCallPart,
     ToolReturn,
+    ToolReturnPart,
     UsageLimitExceeded,
     UsageLimits,
     UserPromptPart,
@@ -81,6 +83,12 @@ Charts and tables:
   variable, measure, or quarter columns, filter to the rows you mean.
 - To chart a ranking, reuse the rank_rows reference (with sort_by and top) as
   the chart's data.
+
+Follow-up questions: earlier answers keep the tool calls they made but not
+the results. Reuse their dataset ids, location ids, filters, and chart
+references instead of searching again, and call a tool again when you need
+its rows. To change a chart the user has seen, call render_chart again with
+the earlier spec adjusted.
 
 Answers:
 - Lead with a one-sentence answer, then only the key numbers with their year
@@ -285,16 +293,61 @@ def turn_cost(messages: list[ModelMessage]) -> float | None:
     return round(sum(costs), 6) if costs else None
 
 
-def to_history(messages: list[dict[str, str]]) -> list[ModelMessage]:
-    """Rebuild text-only history from the client; tool calls aren't replayed."""
+# Every tool the agent can call, so history can't name anything else.
+AGENT_TOOLS = frozenset({*AGENT_DATA_TOOLS, "rank_rows", "render_chart"})
+
+# What an earlier tool call "returned" when it is replayed from history. Rows
+# are never kept between turns: the client would have to hold and re-send
+# them, and the warehouse can answer the same call again.
+HISTORY_RESULT = "Result not kept from the earlier turn. Call again if you need it."
+HISTORY_CHART = "The chart was shown to the user."
+
+
+def to_history(messages: list[dict[str, Any]]) -> list[ModelMessage]:
+    """Rebuild history from the client's messages.
+
+    An assistant message may carry the tool calls its answer made (name and
+    arguments). They are replayed as real tool calls with a placeholder result,
+    so a follow-up ("how does Rutland compare?", "make that a bar chart") can
+    reuse the dataset, places, and chart spec without discovering them again.
+    """
     history: list[ModelMessage] = []
-    for message in messages:
+    for index, message in enumerate(messages):
         if message["role"] == "user":
             history.append(
                 ModelRequest(parts=[UserPromptPart(content=message["content"])])
             )
-        else:
-            history.append(ModelResponse(parts=[TextPart(content=message["content"])]))
+            continue
+        tools = message.get("tools") or []
+        if tools:
+            ids = [f"history_{index}_{n}" for n in range(len(tools))]
+            history.append(
+                ModelResponse(
+                    parts=[
+                        ToolCallPart(
+                            tool_name=tool["name"],
+                            args=tool["args"],
+                            tool_call_id=call_id,
+                        )
+                        for tool, call_id in zip(tools, ids, strict=True)
+                    ]
+                )
+            )
+            history.append(
+                ModelRequest(
+                    parts=[
+                        ToolReturnPart(
+                            tool_name=tool["name"],
+                            content=HISTORY_CHART
+                            if tool["name"] == "render_chart"
+                            else HISTORY_RESULT,
+                            tool_call_id=call_id,
+                        )
+                        for tool, call_id in zip(tools, ids, strict=True)
+                    ]
+                )
+            )
+        history.append(ModelResponse(parts=[TextPart(content=message["content"])]))
     return history
 
 

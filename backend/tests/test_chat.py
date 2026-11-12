@@ -8,16 +8,29 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from pydantic_ai import ToolReturn
+from pydantic_ai import ModelRequest, ModelResponse, ToolCallPart, ToolReturn
 from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.models.function import FunctionModel
 
 from chat import access
-from chat.agent import build_agent, chart_tool, preview, rank_tool, stream_answer
+from chat.agent import (
+    build_agent,
+    chart_tool,
+    preview,
+    rank_tool,
+    stream_answer,
+    to_history,
+)
 from chat.charts import ChartSpec, DataRef, overlapping_rows, resolve_rows
 from chat.config import ChatSettings
 from chat.demo import CHART
-from chat.router import UNLOCK_ATTEMPTS, ChatMessage, bounded_history, create_router
+from chat.router import (
+    UNLOCK_ATTEMPTS,
+    ChatMessage,
+    ToolUse,
+    bounded_history,
+    create_router,
+)
 from data_tools.service import DataToolService
 
 INCOME = "acs5_ts_household_income"
@@ -184,6 +197,120 @@ def test_bounded_history_keeps_newest_turns_starting_with_user():
     assert question == "user 6"
     assert [m["role"] for m in history] == ["user", "assistant"]
     assert history[0]["content"] == "user 4"
+
+
+SERIES_CALL = {"name": "get_timeseries", "args": {"dataset_id": INCOME}}
+
+
+def test_history_replays_earlier_tool_calls_without_their_results():
+    history = to_history(
+        [
+            {"role": "user", "content": "Income in Addison?"},
+            {
+                "role": "assistant",
+                "content": "It rose.",
+                "tools": [SERIES_CALL, {"name": "render_chart", "args": CHART}],
+            },
+        ]
+    )
+    _question, calls, returns, answer = history
+    assert [type(m) for m in history] == [
+        ModelRequest,
+        ModelResponse,
+        ModelRequest,
+        ModelResponse,
+    ]
+    assert [(p.tool_name, p.args) for p in calls.parts] == [
+        ("get_timeseries", {"dataset_id": INCOME}),
+        ("render_chart", CHART),
+    ]
+    # Each call is answered by id, with a placeholder instead of rows.
+    assert [p.tool_call_id for p in returns.parts] == [
+        p.tool_call_id for p in calls.parts
+    ]
+    assert "not kept" in returns.parts[0].content
+    assert "shown to the user" in returns.parts[1].content
+    assert answer.parts[0].content == "It rose."
+    # An answer with no tool calls stays a plain text message.
+    assert len(to_history([{"role": "assistant", "content": "Hi."}])) == 1
+
+
+def test_bounded_history_keeps_only_replayable_tool_calls():
+    settings = ChatSettings(max_history_tool_calls=2, max_history_tool_chars=100)
+    known = ToolUse(**SERIES_CALL)
+    messages = [
+        ChatMessage(role="user", content="q1", tools=[known]),
+        ChatMessage(
+            role="assistant",
+            content="a1",
+            tools=[
+                ToolUse(name="search_locations", args={"query": "Addison"}),
+                ToolUse(name="run_sql", args={"sql": "DROP TABLE x"}),
+                ToolUse(name="query_data", args={"dataset_id": "x" * 200}),
+                known,
+                known,
+            ],
+        ),
+        ChatMessage(role="user", content="q2"),
+    ]
+    _question, history = bounded_history(messages, settings)
+    # Tools on a user message are ignored; unknown names and oversized
+    # arguments are dropped; only the newest calls are kept.
+    assert history[0]["tools"] == []
+    assert history[1]["tools"] == [SERIES_CALL, SERIES_CALL]
+
+
+def test_follow_up_question_sees_the_earlier_tool_calls(warehouse):
+    seen = []
+
+    async def answers(messages, _info):
+        seen.extend(messages)
+        yield "Same dataset."
+
+    settings = ChatSettings(model="demo", warehouse_path=warehouse)
+    client = make_client(warehouse)
+    agent_model = FunctionModel(stream_function=answers)
+    app_agent = build_agent(settings, DataToolService(warehouse))
+
+    async def run():
+        history = to_history(
+            [
+                {"role": "user", "content": "Income in Addison?"},
+                {"role": "assistant", "content": "It rose.", "tools": [SERIES_CALL]},
+            ]
+        )
+        with app_agent.override(model=agent_model):
+            return [
+                e
+                async for e in stream_answer(
+                    app_agent, settings, "And Chittenden?", history
+                )
+            ]
+
+    events = asyncio.run(run())
+    assert events[-1]["type"] == "done"
+    replayed = [
+        part
+        for message in seen
+        for part in message.parts
+        if isinstance(part, ToolCallPart)
+    ]
+    assert [(p.tool_name, p.args) for p in replayed] == [
+        ("get_timeseries", {"dataset_id": INCOME})
+    ]
+    # The route accepts the same shape from the browser.
+    response = client.post(
+        "/api/chat",
+        json={
+            "messages": [
+                {"role": "user", "content": "Income in Addison?"},
+                {"role": "assistant", "content": "It rose.", "tools": [SERIES_CALL]},
+                {"role": "user", "content": "And Chittenden?"},
+            ]
+        },
+    )
+    assert response.status_code == 200
+    assert '"type": "done"' in response.text
 
 
 def test_status_route(warehouse):

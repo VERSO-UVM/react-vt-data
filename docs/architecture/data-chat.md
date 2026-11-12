@@ -145,6 +145,12 @@ That's a few dozen tokens however large the result is.
   describes exactly this, though nothing uses it yet. Agent charts become ordinary
   `ChartItem`s with a `dataRef`, so "Add to working report" works with the current
   store.
+- **Follow-ups reuse references too:** the browser keeps each answer's tool
+  calls (name and arguments, never results) and sends them back with the
+  history. The server replays them as tool calls with a placeholder result
+  (`to_history` in `chat/agent.py`), so "how does Rutland compare?" or "make
+  that a bar chart" starts from the dataset, places, and chart spec already
+  used. Only the agent's own tool names are accepted, within a size bound.
 
 **Chart kinds:** `line` (change over years), `bar` (compare places or
 categories; named categories draw as horizontal bars), `stacked_bar` and
