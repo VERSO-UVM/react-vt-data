@@ -141,6 +141,10 @@ That's a few dozen tokens however large the result is.
   plus counts) before they reach the model. The model reads enough to write the
   narrative; full rows go to the browser by reference. This is also the biggest
   lever on token cost, since tool results are re-sent on every loop iteration.
+  For the same reason the agent's `list_datasets` result is a compact listing
+  (`compact_datasets` in `chat/agent.py`): caveats shared by several datasets
+  are stated once, and lineage and column plumbing are left to
+  `describe_dataset`. The MCP's `list_datasets` is unchanged.
 - **Fits the existing types:** `ItemDataRef` in `frontend/src/types/cachedCharts.ts`
   describes exactly this, though nothing uses it yet. Agent charts become ordinary
   `ChartItem`s with a `dataRef`, so "Add to working report" works with the current

@@ -13,7 +13,14 @@ from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.models.function import FunctionModel
 
 from chat import access
-from chat.agent import build_agent, chart_tool, preview, rank_tool, stream_answer
+from chat.agent import (
+    build_agent,
+    chart_tool,
+    compact_datasets,
+    preview,
+    rank_tool,
+    stream_answer,
+)
 from chat.charts import ChartSpec, DataRef, overlapping_rows, resolve_rows
 from chat.config import ChatSettings
 from chat.demo import CHART
@@ -86,6 +93,30 @@ def test_preview_trims_rows_for_the_model():
     assert "render_chart" in trimmed["preview_note"]
     small = {"rows": [{"n": 1}]}
     assert preview(small, 5) is small
+
+
+def test_dataset_list_is_compact_and_states_shared_caveats_once(service):
+    full = service.call("list_datasets", {})
+    compact = compact_datasets(full)
+    assert [d["dataset_id"] for d in compact["datasets"]] == [
+        d["dataset_id"] for d in full["datasets"]
+    ]
+    assert len(json.dumps(compact)) < len(json.dumps(full, default=str)) / 2
+    income = next(d for d in compact["datasets"] if d["dataset_id"] == INCOME)
+    # Enough to query a wide series without describing it first.
+    assert "median_household_income" in income["value_columns"]
+    assert not any(c.endswith("_moe") for c in income["value_columns"])
+    assert "warehouse_table" not in income
+    # Every caveat survives, either on the dataset or once in the shared map.
+    for before, after in zip(full["datasets"], compact["datasets"], strict=True):
+        kept = after.get("caveats", []) + [
+            compact["shared_caveats"][key] for key in after.get("shared_caveats", [])
+        ]
+        assert sorted(kept) == sorted(before["caveats"])
+    assert all(
+        sum(c in d["caveats"] for d in full["datasets"]) > 1
+        for c in compact["shared_caveats"].values()
+    )
 
 
 def test_data_ref_drops_paging_and_validates_tool_args():

@@ -127,6 +127,71 @@ def preview(result: dict[str, Any], rows_shown: int) -> dict[str, Any]:
     }
 
 
+# Short gap lists are worth showing; long ones (historic census years) aren't.
+MAX_GAPS_LISTED = 10
+
+
+def compact_datasets(result: dict[str, Any]) -> dict[str, Any]:
+    """Trim list_datasets to what the model needs to pick a dataset.
+
+    The full listing repeats the same caveats on most datasets and carries
+    lineage and column plumbing that describe_dataset also returns. The model
+    reads this result on every later request of the turn, so its size is paid
+    for many times over. Caveats shared by several datasets are stated once
+    and referenced by key; nothing a reader needs is dropped.
+    """
+    datasets = result.get("datasets")
+    if not isinstance(datasets, list):
+        return result
+    counts: dict[str, int] = {}
+    for dataset in datasets:
+        for caveat in dataset.get("caveats", []):
+            counts[caveat] = counts.get(caveat, 0) + 1
+    shared = {
+        caveat: f"C{i}"
+        for i, caveat in enumerate((c for c, n in counts.items() if n > 1), start=1)
+    }
+    compact = []
+    for dataset in datasets:
+        caveats = dataset.get("caveats", [])
+        gaps = dataset.get("gaps") or []
+        entry = {
+            "dataset_id": dataset.get("dataset_id"),
+            "label": dataset.get("label"),
+            "description": dataset.get("description"),
+            "source": (dataset.get("source") or {}).get("name"),
+            "kind": dataset.get("kind"),
+            # Record datasets (zoning, wastewater) have no year.
+            "years": [dataset["year_min"], dataset.get("year_max")]
+            if dataset.get("year_min") is not None
+            else None,
+            "gaps": gaps
+            if len(gaps) <= MAX_GAPS_LISTED
+            else f"{len(gaps)} missing years; describe_dataset lists years_available",
+            "geo_type": dataset.get("fixed_geo_type"),
+            "variable_columns": dataset.get("variable_columns"),
+            # Margin columns are covered by the shared caveat that explains them.
+            "value_columns": {
+                column: unit
+                for column, unit in (dataset.get("value_columns") or {}).items()
+                if not column.endswith("_moe")
+            },
+            "shared_caveats": [shared[c] for c in caveats if c in shared],
+            "caveats": [c for c in caveats if c not in shared],
+            "available": None if dataset.get("available", True) else False,
+        }
+        compact.append({k: v for k, v in entry.items() if v not in (None, [], {})})
+    return {
+        "datasets": compact,
+        "shared_caveats": {key: caveat for caveat, key in shared.items()},
+        "note": (
+            "describe_dataset returns a dataset's columns, filter values, "
+            "units and year coverage."
+        ),
+        "warehouse_version": result.get("warehouse_version"),
+    }
+
+
 def agent_schema(name: str) -> dict[str, Any]:
     """A data tool's schema with the filter format spelled out for models."""
     schema = TOOL_MODELS[name].model_json_schema()
@@ -140,6 +205,8 @@ def data_tool(service: DataToolService, name: str, rows_shown: int) -> Tool:
     def call(**arguments: Any) -> dict[str, Any]:
         try:
             result = service.call(name, normalize_filters(arguments))
+            if name == "list_datasets":
+                return compact_datasets(result)
             return preview(result, rows_shown)
         except Exception as exc:  # noqa: BLE001 -- the model gets a safe message
             return {"error": tool_error(exc, name)}
