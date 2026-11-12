@@ -33,7 +33,8 @@ Decisions so far:
 | The data tools, in-process (with previews trimmed for the model)                        | Server-side chat history and conversation logging   |
 | `render_chart` tool using data references, and `POST /api/chat/data` to resolve them    | PDF report blocks                                   |
 | `/chat` page; chats saved in localStorage like the working report                       | Session workspace handles that persist across turns |
-| Per-turn bounds: output length, tool-loop iterations, maximum history size              |                                                     |
+| Per-turn bounds: output length, tool-loop iterations, seconds, maximum history size     |                                                     |
+| One log line per turn (`chat_turn ...`: outcome, model, tokens, cost; never the text)   |                                                     |
 | In-memory per-IP rate limit (same approach as the MCP's; per worker, resets on restart) |                                                     |
 | A dedicated OpenRouter key with a credit limit, which hard-stops requests once spent    |                                                     |
 
@@ -244,7 +245,9 @@ depth, from the inside out:
    - **OpenRouter:** an optional credit limit per API key. Once it's spent, that key's requests fail even if the account has credit. The docs give 402 ("insufficient credits") in one place and 403 with `error.metadata.limit_source: "openrouter_key_limit"` in another. A limit can reset on a schedule or never; `GET /api/v1/key` shows what's left.
    - **OpenAI** (only for a direct `openai:` model): a project or organization hard limit, which must be switched on ("Enforce a hard limit"); spend alerts alone don't block anything. Hitting it returns 429 with `project_spend_limit_exceeded` (or `organization_spend_limit_exceeded`).
    - Enforcement isn't instant on OpenAI, so spend can slightly exceed the limit; set it a little under what we can afford.
-   - **Known gap:** the chat only recognizes 402 as "usage limit reached". An OpenRouter 403 key-limit error would read as "isn't configured", and an OpenAI 429 spend-limit error as "busy, try again". Reading `limit_source` or the error code from the response body would fix both.
+   - The chat reads all three as "usage limit reached": a 402, an OpenRouter
+     403 naming `openrouter_key_limit`, and an OpenAI 429 whose code ends in
+     `spend_limit_exceeded` (`spend_limit_reached` in `chat/agent.py`).
 6. **Reconcile** (optional, later): a nightly job compares the ledger with the provider's usage/cost API.
 
 When the cap is reached, `GET /api/chat/status` returns `{ "available": false, "resets_at": "2026-11-01" }` and the UI shows: _"Data Chat has reached its monthly usage limit and will be back on November 1."_

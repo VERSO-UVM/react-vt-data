@@ -37,6 +37,9 @@ class ChatSettings:
     max_model_requests: int = 20
     max_tool_calls: int = 30
     max_output_tokens: int = 40_000
+    # Seconds one answer may take before it ends with an error, so a stalled
+    # provider can't hold a stream open.
+    turn_timeout: float = 180.0
     # Rows of each data tool result the model sees; the browser gets full rows
     # by reference through /api/chat/data.
     preview_rows: int = 20
@@ -67,6 +70,7 @@ class ChatSettings:
                 max_model_requests=int(env.get("CHAT_MAX_MODEL_REQUESTS", "20")),
                 max_tool_calls=int(env.get("CHAT_MAX_TOOL_CALLS", "30")),
                 max_output_tokens=int(env.get("CHAT_MAX_OUTPUT_TOKENS", "40000")),
+                turn_timeout=float(env.get("CHAT_TURN_TIMEOUT", "180")),
                 preview_rows=int(env.get("CHAT_PREVIEW_ROWS", "20")),
                 max_history_messages=int(env.get("CHAT_MAX_HISTORY_MESSAGES", "20")),
                 max_message_chars=int(env.get("CHAT_MAX_MESSAGE_CHARS", "4000")),
