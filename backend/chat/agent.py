@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import AsyncIterator
 from typing import Any
@@ -45,14 +46,26 @@ logger = logging.getLogger(__name__)
 # export_data returns inline CSV, which the browser gets by reference instead.
 AGENT_DATA_TOOLS = tuple(name for name in TOOL_MODELS if name != "export_data")
 
-INSTRUCTIONS = """\
+# How the agent learns which datasets exist. Normally they are listed in the
+# instructions (dataset_catalog); FIND_WITH_TOOL is the fallback when the
+# warehouse couldn't be read at startup.
+FIND_IN_PROMPT = """\
+- The datasets are listed above. Pick from that list, then use
+  describe_dataset and search_variables or search_locations before querying.
+  Use returned identifiers exactly."""
+FIND_WITH_TOOL = """\
+- Start with list_datasets, then describe_dataset and search_variables or
+  search_locations before querying. Use returned identifiers exactly."""
+
+INTRO = """\
 You answer questions about Vermont public data (housing, demographics, economy,
 health, zoning, flood hazard, wastewater) for planners, select boards,
 developers, and reporters. Write plainly for non-technical readers.
+"""
 
+RULES = """\
 Finding data:
-- Start with list_datasets, then describe_dataset and search_variables or
-  search_locations before querying. Use returned identifiers exactly.
+{find}
 - Keep geography, year, measure, and units consistent when comparing places.
   Never average medians, interpolate missing years, or invent values. If the
   data can't answer the question, say so and suggest what it can answer.
@@ -127,6 +140,98 @@ def preview(result: dict[str, Any], rows_shown: int) -> dict[str, Any]:
     }
 
 
+# Short gap lists are worth showing; long ones (historic census years) aren't.
+MAX_GAPS_LISTED = 10
+
+
+def compact_datasets(result: dict[str, Any]) -> dict[str, Any]:
+    """Trim list_datasets to what the model needs to pick a dataset.
+
+    The full listing repeats the same caveats on most datasets and carries
+    lineage and column plumbing that describe_dataset also returns. The model
+    reads this result on every later request of the turn, so its size is paid
+    for many times over. Caveats shared by several datasets are stated once
+    and referenced by key; nothing a reader needs is dropped.
+    """
+    datasets = result.get("datasets")
+    if not isinstance(datasets, list):
+        return result
+    counts: dict[str, int] = {}
+    for dataset in datasets:
+        for caveat in dataset.get("caveats", []):
+            counts[caveat] = counts.get(caveat, 0) + 1
+    shared = {
+        caveat: f"C{i}"
+        for i, caveat in enumerate((c for c, n in counts.items() if n > 1), start=1)
+    }
+    compact = []
+    for dataset in datasets:
+        caveats = dataset.get("caveats", [])
+        gaps = dataset.get("gaps") or []
+        entry = {
+            "dataset_id": dataset.get("dataset_id"),
+            "label": dataset.get("label"),
+            "description": dataset.get("description"),
+            "source": (dataset.get("source") or {}).get("name"),
+            "kind": dataset.get("kind"),
+            # Record datasets (zoning, wastewater) have no year.
+            "years": [dataset["year_min"], dataset.get("year_max")]
+            if dataset.get("year_min") is not None
+            else None,
+            "gaps": gaps
+            if len(gaps) <= MAX_GAPS_LISTED
+            else f"{len(gaps)} missing years; describe_dataset lists years_available",
+            "geo_type": dataset.get("fixed_geo_type"),
+            "variable_columns": dataset.get("variable_columns"),
+            # Margin columns are covered by the shared caveat that explains them.
+            "value_columns": {
+                column: unit
+                for column, unit in (dataset.get("value_columns") or {}).items()
+                if not column.endswith("_moe")
+            },
+            "shared_caveats": [shared[c] for c in caveats if c in shared],
+            "caveats": [c for c in caveats if c not in shared],
+            "available": None if dataset.get("available", True) else False,
+        }
+        compact.append({k: v for k, v in entry.items() if v not in (None, [], {})})
+    return {
+        "datasets": compact,
+        "shared_caveats": {key: caveat for caveat, key in shared.items()},
+        "warehouse_version": result.get("warehouse_version"),
+    }
+
+
+def dataset_catalog(service: DataToolService) -> str | None:
+    """The compact dataset list as text for the instructions.
+
+    Every question needs this list, so it goes in the prompt instead of
+    behind a tool call: that saves a model request per question (models
+    often made the call two or three times), and as part of the fixed prefix
+    it is read from cache by every later request and question. None if the
+    warehouse can't be read right now; the agent then keeps list_datasets.
+    """
+    try:
+        listing = compact_datasets(service.call("list_datasets", {}))
+    except Exception as exc:  # noqa: BLE001 -- chat still starts, with the tool
+        logger.error("Chat couldn't list datasets (%s)", type(exc).__name__)
+        return None
+    return json.dumps(listing, separators=(",", ":"), default=str)
+
+
+def instructions(catalog: str | None) -> str:
+    """The dataset list goes before the rules, not after them. With the list
+    last, the rules sat ahead of 20,000 characters of JSON, and the eval
+    scored 86% against 89% with the rules last
+    (docs/reports/chat-eval-history.md, 2026-11-13)."""
+    if catalog is None:
+        return f"{INTRO}\n{RULES.format(find=FIND_WITH_TOOL)}"
+    return (
+        f"{INTRO}\nDatasets (shared_caveats keys refer to the map of that name; "
+        "describe_dataset returns columns, filter values, and year coverage):\n"
+        f"{catalog}\n\n{RULES.format(find=FIND_IN_PROMPT)}"
+    )
+
+
 def agent_schema(name: str) -> dict[str, Any]:
     """A data tool's schema with the filter format spelled out for models."""
     schema = TOOL_MODELS[name].model_json_schema()
@@ -140,6 +245,8 @@ def data_tool(service: DataToolService, name: str, rows_shown: int) -> Tool:
     def call(**arguments: Any) -> dict[str, Any]:
         try:
             result = service.call(name, normalize_filters(arguments))
+            if name == "list_datasets":
+                return compact_datasets(result)
             return preview(result, rows_shown)
         except Exception as exc:  # noqa: BLE001 -- the model gets a safe message
             return {"error": tool_error(exc, name)}
@@ -245,14 +352,27 @@ def build_agent(settings: ChatSettings, service: DataToolService) -> Agent:
         # Ask OpenRouter to report each response's cost (see turn_cost).
         model_settings["openrouter_usage"] = {"include": True}
         model_settings["openrouter_provider"] = PROVIDER_ROUTING
+        # One question is several model requests, each re-sending the tool
+        # definitions, the instructions, and every earlier tool result. Mark
+        # all three as cacheable so later requests read that prefix at the
+        # cached rate. Providers without explicit cache control ignore these.
+        model_settings["openrouter_cache_tool_definitions"] = True
+        model_settings["openrouter_cache_instructions"] = True
+        model_settings["openrouter_cache_messages"] = True
+    # Built once: computing it per request would put it after the cached part
+    # of the instructions. A replaced warehouse shows here after a restart
+    # (describe_dataset always reads the live one).
+    catalog = dataset_catalog(service)
     tools = [
-        data_tool(service, name, settings.preview_rows) for name in AGENT_DATA_TOOLS
+        data_tool(service, name, settings.preview_rows)
+        for name in AGENT_DATA_TOOLS
+        if catalog is None or name != "list_datasets"
     ]
     tools.append(rank_tool(service, settings))
     tools.append(chart_tool(service, settings))
     return Agent(
         model,
-        instructions=INSTRUCTIONS,
+        instructions=instructions(catalog),
         tools=tools,
         # Let the API start without a provider key; requests report the problem.
         defer_model_check=True,
@@ -354,6 +474,9 @@ async def stream_answer(
                             "tool_calls": usage.tool_calls,
                             "input_tokens": usage.input_tokens,
                             "output_tokens": usage.output_tokens,
+                            # Part of input_tokens; shows whether caching works.
+                            "cache_read_tokens": usage.cache_read_tokens,
+                            "cache_write_tokens": usage.cache_write_tokens,
                             "cost_usd": turn_cost(event.result.new_messages()),
                         },
                     }
