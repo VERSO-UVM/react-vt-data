@@ -50,18 +50,20 @@ AGENT_DATA_TOOLS = tuple(name for name in TOOL_MODELS if name != "export_data")
 # instructions (dataset_catalog); FIND_WITH_TOOL is the fallback when the
 # warehouse couldn't be read at startup.
 FIND_IN_PROMPT = """\
-- The datasets are listed at the end of these instructions. Pick from that
-  list, then use describe_dataset and search_variables or search_locations
-  before querying. Use returned identifiers exactly."""
+- The datasets are listed above. Pick from that list, then use
+  describe_dataset and search_variables or search_locations before querying.
+  Use returned identifiers exactly."""
 FIND_WITH_TOOL = """\
 - Start with list_datasets, then describe_dataset and search_variables or
   search_locations before querying. Use returned identifiers exactly."""
 
-INSTRUCTIONS = """\
+INTRO = """\
 You answer questions about Vermont public data (housing, demographics, economy,
 health, zoning, flood hazard, wastewater) for planners, select boards,
 developers, and reporters. Write plainly for non-technical readers.
+"""
 
+RULES = """\
 Finding data:
 {find}
 - Keep geography, year, measure, and units consistent when comparing places.
@@ -217,13 +219,16 @@ def dataset_catalog(service: DataToolService) -> str | None:
 
 
 def instructions(catalog: str | None) -> str:
+    """The dataset list goes before the rules, not after them. With the list
+    last, the rules sat ahead of 20,000 characters of JSON, and the eval
+    scored 86% against 89% with the rules last
+    (docs/reports/chat-eval-history.md, 2026-11-13)."""
     if catalog is None:
-        return INSTRUCTIONS.format(find=FIND_WITH_TOOL)
+        return f"{INTRO}\n{RULES.format(find=FIND_WITH_TOOL)}"
     return (
-        INSTRUCTIONS.format(find=FIND_IN_PROMPT)
-        + "\nDatasets (shared_caveats keys refer to the map of that name; "
+        f"{INTRO}\nDatasets (shared_caveats keys refer to the map of that name; "
         "describe_dataset returns columns, filter values, and year coverage):\n"
-        + catalog
+        f"{catalog}\n\n{RULES.format(find=FIND_IN_PROMPT)}"
     )
 
 

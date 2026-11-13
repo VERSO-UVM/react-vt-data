@@ -147,6 +147,10 @@ def test_datasets_are_listed_in_the_instructions_not_behind_a_tool(warehouse):
     assert "list_datasets" not in seen["tools"]
     assert "list_datasets" not in seen["instructions"]
     assert "describe_dataset" in seen["tools"]
+    # The rules come after the list, where the model weighs them most.
+    assert seen["instructions"].index(INCOME) < seen["instructions"].index(
+        "Charts and tables:"
+    )
 
 
 def test_agent_keeps_the_dataset_tool_when_the_warehouse_cant_be_read(tmp_path):
