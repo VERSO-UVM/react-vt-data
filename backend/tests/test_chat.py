@@ -122,6 +122,35 @@ def test_dataset_list_is_compact_and_states_shared_caveats_once(service):
     )
 
 
+def test_sparse_series_list_their_years_instead_of_their_gaps():
+    census = [1791, *range(1800, 2021, 10)]
+    listing = {
+        "datasets": [
+            {
+                "dataset_id": "historic",
+                "year_min": 1791,
+                "year_max": 2020,
+                "years_available": census,
+                "gaps": [y for y in range(1791, 2021) if y not in census],
+            },
+            {
+                "dataset_id": "annual",
+                "year_min": 2009,
+                "year_max": 2024,
+                "years_available": [y for y in range(2009, 2025) if y != 2010],
+                "gaps": [2010],
+            },
+        ]
+    }
+    historic, annual = compact_datasets(listing)["datasets"]
+    # Decennial data reads as complete, not as 206 missing years.
+    assert historic["years_available"] == census
+    assert "gaps" not in historic
+    # A few gaps are clearer than a long list of years.
+    assert annual["gaps"] == [2010]
+    assert "years_available" not in annual
+
+
 def seen_by_model(agent, settings):
     """The instructions and tool names one request hands the model."""
     seen = {}

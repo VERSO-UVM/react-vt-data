@@ -140,7 +140,10 @@ def preview(result: dict[str, Any], rows_shown: int) -> dict[str, Any]:
     }
 
 
-# Short gap lists are worth showing; long ones (historic census years) aren't.
+# Past this many gaps, list the years that exist instead. The historic census
+# series have over 200 "missing" years between 1791 and 2020; a gap count made
+# complete decennial data read as spotty, while [1791, 1800, ..., 2020] shows
+# the pattern in about 140 characters.
 MAX_GAPS_LISTED = 10
 
 
@@ -178,9 +181,10 @@ def compact_datasets(result: dict[str, Any]) -> dict[str, Any]:
             "years": [dataset["year_min"], dataset.get("year_max")]
             if dataset.get("year_min") is not None
             else None,
-            "gaps": gaps
-            if len(gaps) <= MAX_GAPS_LISTED
-            else f"{len(gaps)} missing years; describe_dataset lists years_available",
+            "gaps": gaps if len(gaps) <= MAX_GAPS_LISTED else None,
+            "years_available": dataset.get("years_available")
+            if len(gaps) > MAX_GAPS_LISTED
+            else None,
             "geo_type": dataset.get("fixed_geo_type"),
             "variable_columns": dataset.get("variable_columns"),
             # Margin columns are covered by the shared caveat that explains them.
