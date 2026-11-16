@@ -431,15 +431,55 @@ AGENT_TOOLS = frozenset(
 HISTORY_RESULT = "Result not kept from the earlier turn. Call again if you need it."
 HISTORY_CHART = "The chart was shown to the user."
 
+# Place lookups are the exception: they are re-run and replayed with their top
+# matches. Their arguments alone don't say which id is which town, so with a
+# placeholder the model looked every place up again on each follow-up (evals,
+# 2026-11-16). A match is a name and an id, so this stays small; the newest
+# few lookups are re-run, at about 50-100 ms each.
+LOOKUP_MATCHES = 5
+MAX_REPLAYED_LOOKUPS = 6
 
-def to_history(messages: list[dict[str, Any]]) -> list[ModelMessage]:
+
+def replayed_lookup(service: DataToolService, args: dict[str, Any]) -> Any:
+    try:
+        result = service.call("search_locations", args)
+    except Exception:  # noqa: BLE001 -- fall back to the placeholder
+        return HISTORY_RESULT
+    return {
+        "locations": [
+            {key: place.get(key) for key in ("id", "name", "geo_type")}
+            for place in result.get("locations", [])[:LOOKUP_MATCHES]
+        ]
+    }
+
+
+def to_history(
+    messages: list[dict[str, Any]], service: DataToolService | None = None
+) -> list[ModelMessage]:
     """Rebuild history from the client's messages.
 
     An assistant message may carry the tool calls its answer made (name and
     arguments). They are replayed as real tool calls with a placeholder result,
     so a follow-up ("how does Rutland compare?", "make that a bar chart") can
     reuse the dataset, places, and chart spec without discovering them again.
+    With a service, the newest place lookups are replayed with their matches.
     """
+    lookups = [
+        (index, n)
+        for index, message in enumerate(messages)
+        if message["role"] == "assistant"
+        for n, tool in enumerate(message.get("tools") or [])
+        if tool["name"] == "search_locations"
+    ]
+    rerun = set(lookups[-MAX_REPLAYED_LOOKUPS:]) if service else set()
+
+    def result(index: int, n: int, tool: dict[str, Any]) -> Any:
+        if tool["name"] == "render_chart":
+            return HISTORY_CHART
+        if (index, n) in rerun:
+            return replayed_lookup(service, tool["args"])
+        return HISTORY_RESULT
+
     history: list[ModelMessage] = []
     for index, message in enumerate(messages):
         if message["role"] == "user":
@@ -467,12 +507,12 @@ def to_history(messages: list[dict[str, Any]]) -> list[ModelMessage]:
                     parts=[
                         ToolReturnPart(
                             tool_name=tool["name"],
-                            content=HISTORY_CHART
-                            if tool["name"] == "render_chart"
-                            else HISTORY_RESULT,
+                            content=result(index, n, tool),
                             tool_call_id=call_id,
                         )
-                        for tool, call_id in zip(tools, ids, strict=True)
+                        for n, (tool, call_id) in enumerate(
+                            zip(tools, ids, strict=True)
+                        )
                     ]
                 )
             )

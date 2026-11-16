@@ -17,6 +17,8 @@ from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 from chat import access
 from chat.agent import (
+    HISTORY_RESULT,
+    MAX_REPLAYED_LOOKUPS,
     build_agent,
     chart_tool,
     compact_datasets,
@@ -357,6 +359,58 @@ def test_bounded_history_keeps_only_replayable_tool_calls():
     # tool) are dropped; only the newest calls are kept.
     assert history[0]["tools"] == []
     assert history[1]["tools"] == [SERIES_CALL, SERIES_CALL]
+
+
+def lookup(query):
+    return {"name": "search_locations", "args": {"query": query}}
+
+
+def test_history_replays_place_lookups_with_their_matches(service):
+    history = to_history(
+        [
+            {"role": "user", "content": "Income in Addison?"},
+            {
+                "role": "assistant",
+                "content": "It rose.",
+                "tools": [lookup("Addison"), SERIES_CALL],
+            },
+        ],
+        service,
+    )
+    found, series = history[2].parts
+    # Which id is which place, so a follow-up needn't look it up again.
+    assert found.content == {
+        "locations": [
+            {"id": "50001", "name": "Addison County, Vermont", "geo_type": "county"}
+        ]
+    }
+    # Data rows are still never replayed.
+    assert series.content == HISTORY_RESULT
+    # Without a service, lookups get the placeholder like any other call.
+    assert (
+        to_history(
+            [{"role": "assistant", "content": "a", "tools": [lookup("Addison")]}]
+        )[1]
+        .parts[0]
+        .content
+        == HISTORY_RESULT
+    )
+
+
+def test_only_the_newest_place_lookups_are_re_run(service):
+    queries = [f"Place {n}" for n in range(MAX_REPLAYED_LOOKUPS + 2)]
+    history = to_history(
+        [
+            {
+                "role": "assistant",
+                "content": "a",
+                "tools": [lookup(q) for q in queries],
+            }
+        ],
+        service,
+    )
+    replayed = [part.content != HISTORY_RESULT for part in history[1].parts]
+    assert replayed == [False, False] + [True] * MAX_REPLAYED_LOOKUPS
 
 
 def test_follow_up_question_sees_the_earlier_tool_calls(warehouse):

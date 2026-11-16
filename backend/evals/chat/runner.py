@@ -51,7 +51,9 @@ async def play_chat(
             async with asyncio.timeout(turn_timeout):
                 # aclosing: a timed-out turn still closes the model stream.
                 async with aclosing(
-                    stream_answer(agent, settings, question, to_history(history))
+                    stream_answer(
+                        agent, settings, question, to_history(history, service)
+                    )
                 ) as events:
                     async for event in events:
                         kind = event["type"]

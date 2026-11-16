@@ -215,10 +215,11 @@ def create_router(
                 429, "You've reached the hourly question limit. Try again later."
             )
 
+        # Re-running place lookups (agent.to_history) queries the warehouse.
+        messages = await anyio.to_thread.run_sync(to_history, history, service)
+
         async def events():
-            async for event in stream_answer(
-                agent, settings, question, to_history(history)
-            ):
+            async for event in stream_answer(agent, settings, question, messages):
                 yield f"data: {json.dumps(event, default=str)}\n\n"
 
         return StreamingResponse(
