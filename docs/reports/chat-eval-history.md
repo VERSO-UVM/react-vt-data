@@ -17,6 +17,47 @@ Case columns: **Trend** = income-trend, **Rank** = renter-burden-ranking,
 **Compare** = home-values-follow-up, **Mix** = jobs-mix, **Limits** =
 forecast-limits.
 
+## 2026-11-13: dataset list in the prompt with caching, Haiku 5.5, 3 repeats
+
+- **Setup:** Claude Haiku 5.5 only, 3 repeats, 15 chats per run, all on the
+  warehouse rebuilt with margins of error on 2026-11-09. Three runs: `main`
+  as a same-day baseline (`e58f7ab8`, run `20261113-135232`); the compact
+  dataset list at the end of the instructions with prompt caching
+  (`88413638`, run `20261112-230106`); and the same with the list ahead of
+  the rules (`a5b7a259`, run `20261112-234945`).
+- **Decision:** ship the list-first version. Quality is level with `main`
+  within run-to-run variation, at about a quarter of the cost.
+
+| Version               | Score | Quality | Cost / chat | Time / chat | Tokens / chat | Errors |
+| --------------------- | ----- | ------- | ----------- | ----------- | ------------- | ------ |
+| `main` (list by tool) | 91%   | 7.5/10  | $0.0146     | 16s         | 135,528       | 0      |
+| List in prompt, last  | 86%   | 7.1/10  | $0.0041     | 14s         | 125,697       | 0      |
+| List in prompt, first | 89%   | 7.4/10  | $0.0039     | 13s         | 122,037       | 0      |
+
+| Version               | Trend | Rank | Compare | Mix | Limits |
+| --------------------- | ----- | ---- | ------- | --- | ------ |
+| `main` (list by tool) | 93%   | 97%  | 82%     | 87% | 96%    |
+| List in prompt, last  | 96%   | 90%  | 78%     | 87% | 82%    |
+| List in prompt, first | 100%  | 83%  | 89%     | 93% | 82%    |
+
+- **Cost of the runs:** $0.34 in chat calls ($0.22 of it the baseline) plus
+  $1.77 for the judge.
+- **Notes:**
+  - With caching, 72% to 94% of each chat's input tokens were read from
+    cache. Tokens per chat fell less than cost because cached tokens still
+    count as input.
+  - Charts were drawn in 6 of the 9 chats that expect one on `main` and with
+    the list first (5 of 9 with the list last). The October run drew 9 of 9,
+    so this changed with the warehouse, not with the prompt.
+  - Limits is lower with the list in the prompt in both runs: the agent
+    answers Burlington's population from ACS estimates, where on `main` it
+    uses the decennial census series the reference is built from. A possible
+    cause, not tested: the compact list describes the historic population
+    series as having "206 missing years".
+  - Rank drew no chart in the list-first run (3 of 3 on `main`): the agent
+    answered from the query preview without `rank_rows` or `render_chart`.
+    The rankings themselves were right. Cause not established.
+
 ## 2026-10-16: Haiku 5.5 vs Sol vs DeepSeek, 3 repeats (decision run)
 
 - **Setup:** 3 repeats per model, 45 chats. OpenRouter routing with
