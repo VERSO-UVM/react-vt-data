@@ -16,7 +16,8 @@ import {
   Text,
 } from '@mantine/core';
 import { CheckIcon, PlusIcon } from '@phosphor-icons/react';
-import { AgentChart } from '@/components/Charts/AgentChart';
+import { AgentChart, hasChartMargins } from '@/components/Charts/AgentChart';
+import { MarginsSwitch } from '@/components/Charts/margins';
 import { useItems } from '@/components/ItemsProvider';
 import type { ChartItem, DataRow } from '@/types/cachedCharts';
 import { fetchChartData, type ChartData, type ChartSpec } from './api';
@@ -92,6 +93,8 @@ export function ChatChart({ spec }: { spec: ChartSpec }) {
     [spec, data],
   );
   const inReport = item ? items.some((i) => i.id === item.id) : false;
+  const margins =
+    !!data && hasChartMargins(spec.kind, data.rows, spec.y, spec.columns);
   const source = data?.provenance;
   // Every caveat on one quiet line under the chart: the agent's note, the
   // chart's own notes (gaps, clipped series), truncation, then the source.
@@ -112,24 +115,28 @@ export function ChatChart({ spec }: { spec: ChartSpec }) {
           <Text fw={600} style={{ flex: 1, minWidth: 0 }}>
             {spec.title}
           </Text>
-          {item && (
-            <Button
-              size="compact-sm"
-              variant="default"
-              color="gray"
-              leftSection={
-                inReport ? <CheckIcon size={14} /> : <PlusIcon size={14} />
-              }
-              onClick={() => (inReport ? removeItem(item.id) : addItem(item))}
-              title={
-                inReport
-                  ? 'Remove from the working report'
-                  : 'Add this chart to the working report'
-              }
-            >
-              {inReport ? 'In report' : 'Add to report'}
-            </Button>
-          )}
+          {/* The controls center on each other; the title can wrap beside them. */}
+          <Group gap="sm" align="center" wrap="nowrap">
+            {margins && <MarginsSwitch />}
+            {item && (
+              <Button
+                size="compact-sm"
+                variant="default"
+                color="gray"
+                leftSection={
+                  inReport ? <CheckIcon size={14} /> : <PlusIcon size={14} />
+                }
+                onClick={() => (inReport ? removeItem(item.id) : addItem(item))}
+                title={
+                  inReport
+                    ? 'Remove from the working report'
+                    : 'Add this chart to the working report'
+                }
+              >
+                {inReport ? 'In report' : 'Add to report'}
+              </Button>
+            )}
+          </Group>
         </Group>
         {spec.y_label && (
           <Text size="xs" c="dimmed">

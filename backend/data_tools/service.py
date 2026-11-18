@@ -474,7 +474,18 @@ class DataToolService:
                     + ", ".join(sorted(unknown))
                     + ". Use describe_dataset; numeric columns must also be included in measures when measures is specified."
                 )
-            output_columns = list(dict.fromkeys(request.columns))
+            # A listed estimate brings its margin and reliability label, as
+            # with_margins does for measures; a column list can't drop them.
+            output_columns = []
+            for column in request.columns:
+                output_columns.append(column)
+                if margin := catalog.margin_column(ds, column):
+                    output_columns += [
+                        c
+                        for c in (margin, catalog.reliability_column(margin))
+                        if c in available
+                    ]
+            output_columns = list(dict.fromkeys(output_columns))
         else:
             output_columns = available + [
                 field
