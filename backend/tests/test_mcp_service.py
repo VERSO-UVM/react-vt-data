@@ -293,3 +293,47 @@ def test_deadline_interrupts_work_and_releases_slot(warehouse, monkeypatch):
     with pytest.raises(DataToolError, match="time limit"):
         service.call("list_datasets", {})
     assert service.health()["status"] == "ok"
+
+
+def test_listed_columns_keep_their_margins(tmp_path):
+    """A column list brings each estimate's margin and reliability label along,
+    and leaves them out where the warehouse predates margins."""
+    path = tmp_path / "warehouse.duckdb"
+    with duckdb.connect(str(path)) as conn:
+        conn.execute("CREATE TABLE vt_county_geoids(NAME VARCHAR, GEOID VARCHAR)")
+        conn.execute(
+            "INSERT INTO vt_county_geoids VALUES ('Addison County, Vermont', '50001')"
+        )
+        conn.execute(
+            "CREATE TABLE acs5Economics_medianHouseholdIncome_timeseries(year VARCHAR, name VARCHAR, median_household_income DOUBLE, median_household_income_moe DOUBLE, median_household_income_reliability VARCHAR, geo_type VARCHAR)"
+        )
+        conn.execute(
+            "INSERT INTO acs5Economics_medianHouseholdIncome_timeseries VALUES ('2023', 'Addison County, Vermont', 68000, 2500, 'high', 'county')"
+        )
+        conn.execute(
+            "CREATE TABLE acs5Housing_medianHomeValue_timeseries(year VARCHAR, name VARCHAR, median_home_value DOUBLE, geo_type VARCHAR)"
+        )
+        conn.execute(
+            "INSERT INTO acs5Housing_medianHomeValue_timeseries VALUES ('2023', 'Addison County, Vermont', 300000, 'county')"
+        )
+    service = DataToolService(path)
+    income = service.call(
+        "query_data",
+        {
+            "dataset_id": "acs5_ts_household_income",
+            "columns": ["name", "median_household_income"],
+        },
+    )
+    assert income["columns"] == [
+        "name",
+        "median_household_income",
+        "median_household_income_moe",
+        "median_household_income_reliability",
+    ]
+    assert income["rows"][0]["median_household_income_moe"] == 2500
+    # This table was built before margins: the list stays as asked.
+    homes = service.call(
+        "query_data",
+        {"dataset_id": "acs5_ts_median_home_value", "columns": ["median_home_value"]},
+    )
+    assert homes["columns"] == ["median_home_value"]
