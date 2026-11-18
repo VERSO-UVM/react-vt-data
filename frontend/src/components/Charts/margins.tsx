@@ -47,6 +47,26 @@ export const MarginsSwitch = () => {
 export const moeField = (field: string) => `${field}_MOE`;
 export const reliabilityField = (field: string) => `${field}_Reliability`;
 
+/** The columns holding `field`'s margin and reliability label in a data tool
+ *  row (the data chat's charts), whose names vary by table: `x_moe` with
+ *  `x_reliability`, `Value_MOE` with `Value_Reliability`, or a data profile
+ *  row's `moe` and `reliability` beside `value`. Null when no row has one. */
+export const marginColumns = (rows: DataRow[], field: string) => {
+  const candidates = [
+    [`${field}_moe`, `${field}_reliability`],
+    [`${field}_MOE`, `${field}_Reliability`],
+    ...(field === 'value' ? [['moe', 'reliability']] : []),
+  ];
+  const hit = candidates.find(([moe]) => rows.some((r) => r[moe] != null));
+  return hit ? { moe: hit[0], reliability: hit[1] } : null;
+};
+
+/** Whether a data tool column holds a margin or reliability label. */
+export const isMarginColumn = (column: string) =>
+  /_(moe|reliability)$/i.test(column) ||
+  column === 'moe' ||
+  column === 'reliability';
+
 /** Whether any row carries a margin for `field`. */
 export const hasMargins = (rows: DataRow[] | undefined, field: string) =>
   !!rows?.some((r) => r[moeField(field)] != null);
@@ -305,7 +325,26 @@ export const reliabilityDots = (
   };
 
 /** The caption for a chart with margins: shaded bands behind trend lines, or
- *  whiskers on bars. */
+ *  whiskers on bars. Hidden margins leave only the low-reliability note. */
+export const marginNoteText = (
+  lowReliability: boolean,
+  bars = false,
+  show = true,
+) => {
+  const low =
+    lowReliability &&
+    (bars
+      ? 'Hover over a bar to see whether its estimate has low reliability.'
+      : 'Hollow dots mark low-reliability estimates, whose margin is about half the estimate or more.');
+  return [
+    show &&
+      `${bars ? 'The black line on each bar shows' : 'Shading shows'} the margin of error: the true value is likely (90%) within it.`,
+    low,
+  ]
+    .filter(Boolean)
+    .join(' ');
+};
+
 export const MarginNote = ({
   lowReliability,
   bars = false,
@@ -317,19 +356,12 @@ export const MarginNote = ({
    *  remains. */
   show?: boolean;
 }) => {
-  const low =
-    lowReliability &&
-    (bars
-      ? 'Hover over a bar to see whether its estimate has low reliability.'
-      : 'Hollow dots mark low-reliability estimates, whose margin is about half the estimate or more.');
-  if (!show && !low) return null;
-  return (
+  const text = marginNoteText(lowReliability, bars, show);
+  return text ? (
     <Text size="xs" c="dimmed" mb={4}>
-      {show &&
-        `${bars ? 'The black line on each bar shows' : 'Shading shows'} the margin of error: the true value is likely (90%) within it. `}
-      {low}
+      {text}
     </Text>
-  );
+  ) : null;
 };
 
 /** The footnote for a table with margins. */
