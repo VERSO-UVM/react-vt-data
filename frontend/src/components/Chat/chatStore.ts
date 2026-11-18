@@ -26,6 +26,8 @@ export interface ChatTurn {
   steps?: ToolStep[];
   charts?: { id: string; spec: ChartSpec }[];
   error?: string;
+  // Assistant-only: true while the answer is still streaming.
+  pending?: boolean;
 }
 
 export interface Conversation {
@@ -52,6 +54,27 @@ interface ChatStore {
 
 // Keep localStorage well under its ~5 MB budget.
 const MAX_CONVERSATIONS = 30;
+
+/** An answer still streaming when the page was reloaded or closed never
+ *  finished: nothing is left to complete it. Mark it stopped when saved chats
+ *  load, so it doesn't show as working forever and can be asked again. */
+export function settleInterrupted(conversations: Conversation[]) {
+  return conversations.map((c) => ({
+    ...c,
+    turns: c.turns.map((t) => {
+      const running = t.steps?.some((s) => s.status === 'running');
+      if (!t.pending && !running) return t;
+      return {
+        ...t,
+        pending: false,
+        steps: t.steps?.map((s) =>
+          s.status === 'running' ? { ...s, status: 'error' as const } : s,
+        ),
+        error: t.error ?? 'This answer was interrupted.',
+      };
+    }),
+  }));
+}
 
 export const useChat = create<ChatStore>()(
   persist(
@@ -122,9 +145,30 @@ export const useChat = create<ChatStore>()(
           ),
         })),
     }),
-    { name: 'vt-data-chat' },
+    {
+      name: 'vt-data-chat',
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<ChatStore>;
+        return {
+          ...current,
+          ...saved,
+          conversations: settleInterrupted(saved.conversations ?? []),
+        };
+      },
+    },
   ),
 );
+
+const usable = (t: ChatTurn) =>
+  Boolean(t.content.trim()) && !(t.role === 'assistant' && t.error);
+
+/** False for a question whose answer failed or was stopped. Sending it
+ *  without an answer would put two questions in a row, and the model would
+ *  try to answer both. The newest question has no answer yet and stays. */
+const answered = (turns: ChatTurn[], i: number) => {
+  const next = turns[i + 1];
+  return !next || next.role === 'user' || usable(next);
+};
 
 /** The history the API expects; failed or empty answers are skipped. Each
  *  answer carries the tool calls that worked, which the server replays so a
@@ -132,7 +176,9 @@ export const useChat = create<ChatStore>()(
  *  before calls were recorded fall back to noting their charts by title. */
 export function toHistory(turns: ChatTurn[]): HistoryMessage[] {
   return turns
-    .filter((t) => t.content.trim() && !(t.role === 'assistant' && t.error))
+    .filter(
+      (t, i) => usable(t) && (t.role === 'assistant' || answered(turns, i)),
+    )
     .map((t) => {
       if (t.role === 'user') return { role: t.role, content: t.content };
       const tools = (t.steps ?? []).flatMap((s) =>
