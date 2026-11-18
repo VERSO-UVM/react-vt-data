@@ -115,25 +115,28 @@ export function ChatChart({ spec }: { spec: ChartSpec }) {
           <Text fw={600} style={{ flex: 1, minWidth: 0 }}>
             {spec.title}
           </Text>
-          {margins && <MarginsSwitch />}
-          {item && (
-            <Button
-              size="compact-sm"
-              variant="default"
-              color="gray"
-              leftSection={
-                inReport ? <CheckIcon size={14} /> : <PlusIcon size={14} />
-              }
-              onClick={() => (inReport ? removeItem(item.id) : addItem(item))}
-              title={
-                inReport
-                  ? 'Remove from the working report'
-                  : 'Add this chart to the working report'
-              }
-            >
-              {inReport ? 'In report' : 'Add to report'}
-            </Button>
-          )}
+          {/* The controls center on each other; the title can wrap beside them. */}
+          <Group gap="sm" align="center" wrap="nowrap">
+            {margins && <MarginsSwitch />}
+            {item && (
+              <Button
+                size="compact-sm"
+                variant="default"
+                color="gray"
+                leftSection={
+                  inReport ? <CheckIcon size={14} /> : <PlusIcon size={14} />
+                }
+                onClick={() => (inReport ? removeItem(item.id) : addItem(item))}
+                title={
+                  inReport
+                    ? 'Remove from the working report'
+                    : 'Add this chart to the working report'
+                }
+              >
+                {inReport ? 'In report' : 'Add to report'}
+              </Button>
+            )}
+          </Group>
         </Group>
         {spec.y_label && (
           <Text size="xs" c="dimmed">
