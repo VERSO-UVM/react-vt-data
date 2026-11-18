@@ -328,7 +328,7 @@ def test_history_replays_earlier_tool_calls_without_their_results():
     assert [p.tool_call_id for p in returns.parts] == [
         p.tool_call_id for p in calls.parts
     ]
-    assert "not kept" in returns.parts[0].content
+    assert "returned data" in returns.parts[0].content
     assert "shown to the user" in returns.parts[1].content
     assert answer.parts[0].content == "It rose."
     # An answer with no tool calls stays a plain text message.

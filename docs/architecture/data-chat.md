@@ -160,7 +160,9 @@ That's a few dozen tokens however large the result is.
   history. The server replays them as tool calls with a placeholder result
   (`to_history` in `chat/agent.py`), so "how does Rutland compare?" or "make
   that a bar chart" starts from the dataset, places, and chart spec already
-  used. Only the agent's own tool names are accepted, within a size bound.
+  used. The placeholder says the call returned data and the answer used it;
+  worded as a missing result, it led the model to retract earlier figures as
+  made up. Only the agent's own tool names are accepted, within a size bound.
   Place lookups are the exception to the placeholder: the newest few are
   re-run and replayed with their top matches (names and ids), since their
   arguments don't say which id is which place.

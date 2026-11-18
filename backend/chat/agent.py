@@ -104,10 +104,12 @@ Charts and tables:
   the chart's data.
 
 Follow-up questions: earlier answers keep the tool calls they made but not
-the results. Reuse their dataset ids, location ids, filters, and chart
-references instead of searching again, and call a tool again when you need
-its rows. To change a chart the user has seen, call render_chart again with
-the earlier spec adjusted.
+their rows. Those calls returned data, and the figures in earlier answers came
+from it: don't doubt or retract them just because the rows aren't shown here.
+Reuse their dataset ids, location ids, filters, and chart references instead of
+searching again, and call a tool again for values the earlier answer doesn't
+state. To change a chart the user has seen, call render_chart again with the
+earlier spec adjusted.
 
 Answers:
 - Lead with a one-sentence answer, then only the key numbers with their year
@@ -449,7 +451,12 @@ AGENT_TOOLS = frozenset(
 # What an earlier tool call "returned" when it is replayed from history. Rows
 # are never kept between turns: the client would have to hold and re-send
 # them, and the warehouse can answer the same call again.
-HISTORY_RESULT = "Result not kept from the earlier turn. Call again if you need it."
+# Worded as a success: a bare "result not kept" read as a call that returned
+# nothing, and the model retracted the earlier answer's figures as made up.
+HISTORY_RESULT = (
+    "This call returned data, and the answer that follows was based on it. "
+    "Its rows weren't kept; call again only for values that answer doesn't state."
+)
 HISTORY_CHART = "The chart was shown to the user."
 
 # Place lookups are the exception: they are re-run and replayed with their top
