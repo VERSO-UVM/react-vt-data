@@ -39,6 +39,8 @@ export const MarginsSwitch = () => {
       label="Margins of error"
       checked={show}
       onChange={(e) => setShow(e.currentTarget.checked)}
+      // Half Mantine's default gap, so the label reads as the switch's.
+      styles={{ label: { paddingInlineStart: 6 } }}
     />
   );
 };
