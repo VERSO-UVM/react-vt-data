@@ -119,6 +119,10 @@ def test_dataset_list_is_compact_and_states_shared_caveats_once(service):
     # Enough to query a wide series without describing it first.
     assert "median_household_income" in income["value_columns"]
     assert not any(c.endswith("_moe") for c in income["value_columns"])
+    burden = next(
+        d for d in compact["datasets"] if d["dataset_id"] == "acs5_ts_income_burden"
+    )
+    assert set(burden["value_columns"]) == {"Value", "Total", "Percent"}
     assert "warehouse_table" not in income
     # Every caveat survives, either on the dataset or once in the shared map.
     for before, after in zip(full["datasets"], compact["datasets"], strict=True):

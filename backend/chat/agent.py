@@ -207,7 +207,7 @@ def compact_datasets(result: dict[str, Any]) -> dict[str, Any]:
             "value_columns": {
                 column: unit
                 for column, unit in (dataset.get("value_columns") or {}).items()
-                if not column.endswith("_moe")
+                if not column.lower().endswith("_moe")
             },
             "shared_caveats": [shared[c] for c in caveats if c in shared],
             "caveats": [c for c in caveats if c not in shared],

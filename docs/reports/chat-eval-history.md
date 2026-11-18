@@ -43,8 +43,11 @@ forecast-limits.
   - Sol left Burlington, Winooski, and Essex Junction out of every Rank
     answer, reading "towns" as excluding cities, and put the Total row in its
     Mix chart or table as if it were a sector in all 3 runs.
-  - Both models often say the ranking data has no margins of error, though
-    it does.
+  - Both models said the ranking data has no margins of error, though it
+    does: four ACS catalog entries (cost burden, age dependency, median
+    earnings, health insurance) never declared their margins and kept the
+    "not included" caveat. After fixing them, Haiku's Rank rerun scored 93%
+    at 8.0/10 (run `20261118-153908`), and every answer used the margins.
   - Haiku's answers run about 170 words against the prompt's 150; Sol's about
     100.
   - Before the Mix fix, answers citing 2024 jobs were marked unsupported
