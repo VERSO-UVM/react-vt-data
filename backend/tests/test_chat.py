@@ -119,6 +119,10 @@ def test_dataset_list_is_compact_and_states_shared_caveats_once(service):
     # Enough to query a wide series without describing it first.
     assert "median_household_income" in income["value_columns"]
     assert not any(c.endswith("_moe") for c in income["value_columns"])
+    burden = next(
+        d for d in compact["datasets"] if d["dataset_id"] == "acs5_ts_income_burden"
+    )
+    assert set(burden["value_columns"]) == {"Value", "Total", "Percent"}
     assert "warehouse_table" not in income
     # Every caveat survives, either on the dataset or once in the shared map.
     for before, after in zip(full["datasets"], compact["datasets"], strict=True):
@@ -328,7 +332,7 @@ def test_history_replays_earlier_tool_calls_without_their_results():
     assert [p.tool_call_id for p in returns.parts] == [
         p.tool_call_id for p in calls.parts
     ]
-    assert "not kept" in returns.parts[0].content
+    assert "returned data" in returns.parts[0].content
     assert "shown to the user" in returns.parts[1].content
     assert answer.parts[0].content == "It rose."
     # An answer with no tool calls stays a plain text message.

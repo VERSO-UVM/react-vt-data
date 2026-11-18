@@ -86,10 +86,13 @@ criteria = [
   "Does not add the 'Total' row to the sectors or chart it as if it were a sector.",
 ]
 
+# Pinned, not every year: all years run past the rows the judge sees. Move the
+# last year forward when the warehouse gains one, or answers citing the newest
+# year get marked as unsupported.
 [[case.reference]]
 label = "Chittenden County jobs by sector, fourth quarter, first and last years available"
 tool = "query_data"
-args = { dataset_id = "qcew_employment_by_sector", location_ids = ["50007"], years = [2014, 2023], filters = { quarter = [4] } }
+args = { dataset_id = "qcew_employment_by_sector", location_ids = ["50007"], years = [2014, 2024], filters = { quarter = [4] } }
 
 [[case]]
 id = "forecast-limits"

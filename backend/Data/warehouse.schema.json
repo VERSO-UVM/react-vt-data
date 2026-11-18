@@ -369,6 +369,8 @@
     },
     "acs5Demographics_ageDependencyRatio_timeseries": {
       "age_dependency_ratio": "DOUBLE",
+      "age_dependency_ratio_moe": "DOUBLE",
+      "age_dependency_ratio_reliability": "VARCHAR",
       "county": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
@@ -399,6 +401,8 @@
     },
     "acs5Economics_healthInsurance_timeseries": {
       "Value": "DOUBLE",
+      "Value_MOE": "DOUBLE",
+      "Value_Reliability": "VARCHAR",
       "Variable": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
@@ -408,6 +412,8 @@
     },
     "acs5Economics_medianEarnings_timeseries": {
       "Value": "DOUBLE",
+      "Value_MOE": "DOUBLE",
+      "Value_Reliability": "VARCHAR",
       "Variable": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",
@@ -450,8 +456,14 @@
     },
     "acs5Housing_incomeBurden_timeseries": {
       "Percent": "DOUBLE",
+      "Percent_MOE": "DOUBLE",
+      "Percent_Reliability": "VARCHAR",
       "Total": "DOUBLE",
+      "Total_MOE": "DOUBLE",
+      "Total_Reliability": "VARCHAR",
       "Value": "DOUBLE",
+      "Value_MOE": "DOUBLE",
+      "Value_Reliability": "VARCHAR",
       "Variable": "VARCHAR",
       "county_fips": "VARCHAR",
       "geo_type": "VARCHAR",

@@ -60,9 +60,9 @@ ACS_CAVEATS = (
 ACS_MOE_CAVEATS = (
     _ACS_PERIOD,
     (
-        "Columns ending in _moe are 90% margins of error: the estimate plus or "
-        "minus its margin is the 90% confidence interval; percent_moe is in "
-        "percentage points. Margins of sums and percentages are Census "
+        "Columns ending in _moe or _MOE are 90% margins of error: the estimate "
+        "plus or minus its margin is the 90% confidence interval; percent "
+        "margins are in percentage points. Margins of sums and percentages are Census "
         "approximations. For estimates from periods that do not overlap (such as "
         "2018 and 2023), or from separate places in the same period, a difference "
         "larger than the square root of the sum of their squared margins is "
@@ -160,9 +160,14 @@ def _acs_series(
     # ACS series carry the standard geoid/county_fips identifiers; `county` is
     # False for tables built with `with_county=False` in clean_acs5_timeseries.
     identifiers = ("geoid", "county_fips") + (("county",) if county else ())
-    # Series with <measure>_moe columns also carry <measure>_reliability.
-    margins = [c.removesuffix("_moe") for c in values if c.endswith("_moe")]
-    acs_caveats = ACS_MOE_CAVEATS if margins else ACS_CAVEATS
+    # Each margin column has a reliability label beside it, in the same case:
+    # x_moe with x_reliability, Value_MOE with Value_Reliability.
+    reliability = [
+        c[:-3] + ("Reliability" if c.endswith("_MOE") else "reliability")
+        for c in values
+        if c.lower().endswith("_moe")
+    ]
+    acs_caveats = ACS_MOE_CAVEATS if reliability else ACS_CAVEATS
     return Dataset(
         f"acs5_ts_{key}",
         label,
@@ -190,7 +195,7 @@ def _acs_series(
         filter_columns=("year", "name", "geo_type")
         + dimensions
         + (("geoid", "county_fips", "County") if historic else identifiers)
-        + tuple(f"{measure}_reliability" for measure in margins),
+        + tuple(reliability),
     )
 
 
@@ -427,7 +432,10 @@ _DATASET_LIST = [
         "age_dependency_ratio",
         "Age dependency ratio",
         "acs5Demographics_ageDependencyRatio_timeseries",
-        {"age_dependency_ratio": "dependents per 100 working-age people"},
+        {
+            "age_dependency_ratio": "dependents per 100 working-age people",
+            "age_dependency_ratio_moe": "dependents per 100 working-age people",
+        },
     ),
     _acs_series(
         "median_home_value",
@@ -449,7 +457,14 @@ _DATASET_LIST = [
         "income_burden",
         "Housing cost burden by tenure",
         "acs5Housing_incomeBurden_timeseries",
-        {"Value": "households", "Total": "households", "Percent": "percent"},
+        {
+            "Value": "households",
+            "Value_MOE": "households",
+            "Total": "households",
+            "Total_MOE": "households",
+            "Percent": "percent",
+            "Percent_MOE": "percentage points",
+        },
         dimensions=("Variable",),
         county=False,
         description="Households spending at least 30% of household income on "
@@ -481,7 +496,10 @@ _DATASET_LIST = [
         "median_earnings",
         "Median earnings",
         "acs5Economics_medianEarnings_timeseries",
-        {"Value": "USD (year-specific dollars)"},
+        {
+            "Value": "USD (year-specific dollars)",
+            "Value_MOE": "USD (year-specific dollars)",
+        },
         dimensions=("Variable",),
         county=False,
     ),
@@ -489,7 +507,7 @@ _DATASET_LIST = [
         "health_insurance",
         "Health insurance coverage",
         "acs5Economics_healthInsurance_timeseries",
-        {"Value": "people"},
+        {"Value": "people", "Value_MOE": "people"},
         dimensions=("Variable",),
         county=False,
         description="People by health insurance coverage category.",
@@ -1389,8 +1407,9 @@ def decode_variable_id(dataset: Dataset, variable_id: str) -> dict[str, Any]:
 def margin_column(dataset: Dataset, measure: str) -> str | None:
     """The column holding `measure`'s 90% margin of error, if it has one."""
     columns = dataset.value_columns or {}
-    if f"{measure}_moe" in columns:
-        return f"{measure}_moe"
+    for margin in (f"{measure}_moe", f"{measure}_MOE"):
+        if margin in columns:
+            return margin
     # Data profile rows keep their published margin as `moe` beside `value`.
     if dataset.kind == "dp" and measure == "value" and "moe" in columns:
         return "moe"
