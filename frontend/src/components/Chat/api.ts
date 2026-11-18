@@ -72,6 +72,9 @@ export type ChatEvent =
 export interface HistoryMessage {
   role: 'user' | 'assistant';
   content: string;
+  // Tool calls an earlier answer made; the server replays them so follow-ups
+  // can reuse the same dataset, places, and chart.
+  tools?: { name: string; args: Record<string, unknown> }[];
 }
 
 const OFF: ChatStatus = {

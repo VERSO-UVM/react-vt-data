@@ -13,6 +13,9 @@ export interface ToolStep {
   name: string;
   status: 'running' | 'ok' | 'error';
   error?: string | null;
+  // Kept so follow-up questions can send the call back (see toHistory).
+  // Chats saved before this was recorded don't have it.
+  args?: Record<string, unknown>;
 }
 
 export interface ChatTurn {
@@ -123,19 +126,22 @@ export const useChat = create<ChatStore>()(
   ),
 );
 
-/** The text history the API expects; failed or empty answers are skipped.
- *  Tool calls aren't replayed, so charts are noted by title to keep the
- *  model aware of what the user has already seen. */
+/** The history the API expects; failed or empty answers are skipped. Each
+ *  answer carries the tool calls that worked, which the server replays so a
+ *  follow-up can reuse their dataset, places, and chart spec. Chats saved
+ *  before calls were recorded fall back to noting their charts by title. */
 export function toHistory(turns: ChatTurn[]): HistoryMessage[] {
   return turns
     .filter((t) => t.content.trim() && !(t.role === 'assistant' && t.error))
     .map((t) => {
+      if (t.role === 'user') return { role: t.role, content: t.content };
+      const tools = (t.steps ?? []).flatMap((s) =>
+        s.status === 'ok' && s.args ? [{ name: s.name, args: s.args }] : [],
+      );
+      if (tools.length > 0) return { role: t.role, content: t.content, tools };
       const charts = (t.charts ?? []).map(
         (c) => `[Chart shown: ${c.spec.title}]`,
       );
-      return {
-        role: t.role,
-        content: [...charts, t.content].join('\n'),
-      };
+      return { role: t.role, content: [...charts, t.content].join('\n') };
     });
 }

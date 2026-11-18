@@ -142,10 +142,28 @@ That's a few dozen tokens however large the result is.
   plus counts) before they reach the model. The model reads enough to write the
   narrative; full rows go to the browser by reference. This is also the biggest
   lever on token cost, since tool results are re-sent on every loop iteration.
+- **The dataset list is in the instructions,** not behind a tool
+  (`dataset_catalog` in `chat/agent.py`). Every question needs it, so listing
+  it up front saves a model request, and as part of the fixed prefix it is
+  cached (see Decision 4). It goes ahead of the rules, which the model follows
+  better when they come last. It is a compact listing: caveats shared by several
+  datasets are stated once, and lineage and column plumbing are left to
+  `describe_dataset`. It is built when the API starts, so restart the API after
+  replacing the warehouse; if the warehouse can't be read then, the agent keeps
+  a `list_datasets` tool instead. The MCP's `list_datasets` is unchanged.
 - **Fits the existing types:** `ItemDataRef` in `frontend/src/types/cachedCharts.ts`
   describes exactly this, though nothing uses it yet. Agent charts become ordinary
   `ChartItem`s with a `dataRef`, so "Add to working report" works with the current
   store.
+- **Follow-ups reuse references too:** the browser keeps each answer's tool
+  calls (name and arguments, never results) and sends them back with the
+  history. The server replays them as tool calls with a placeholder result
+  (`to_history` in `chat/agent.py`), so "how does Rutland compare?" or "make
+  that a bar chart" starts from the dataset, places, and chart spec already
+  used. Only the agent's own tool names are accepted, within a size bound.
+  Place lookups are the exception to the placeholder: the newest few are
+  re-run and replayed with their top matches (names and ids), since their
+  arguments don't say which id is which place.
 
 **Chart kinds:** `line` (change over years), `bar` (compare places or
 categories; named categories draw as horizontal bars), `stacked_bar` and
@@ -223,6 +241,17 @@ against live warehouse data, with `data_collection: "deny"` routing.
   and comparison cases. OpenRouter serves it through about 35 third-party
   hosts, many running reduced-precision (fp4) builds, so quality can vary by
   host.
+
+These runs predate prompt caching and the dataset list in the instructions.
+Claude requests now mark the tool definitions, the instructions (with the
+dataset list), and the newest message as cacheable (`build_agent` in
+`chat/agent.py`). The fixed prefix is about 42,000 characters and is shared by
+every question while the cache is warm; within a turn, each later request also
+reads the earlier tool results at the cached rate. The turn's `usage` reports
+`cache_read_tokens` and `cache_write_tokens`. Other providers ignore the
+markers. Measured on 2026-11-13 against `main` the same day: $0.0039 per chat
+instead of $0.0146, scoring 89% against 91%
+([reports/chat-eval-history.md](../reports/chat-eval-history.md)).
 
 Costs are per eval chat. Real questions may be longer or chattier, so treat
 the last column as an upper bound on volume until we log real usage. The earlier

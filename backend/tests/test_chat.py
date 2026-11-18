@@ -5,20 +5,39 @@ import json
 import logging
 
 import duckdb
+import httpx2
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from pydantic_ai import ToolReturn
+from pydantic_ai import ModelRequest, ModelResponse, ToolCallPart, ToolReturn
 from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.models.function import FunctionModel
+from pydantic_ai.models.openrouter import OpenRouterModel
+from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 from chat import access
-from chat.agent import build_agent, chart_tool, preview, rank_tool, stream_answer
+from chat.agent import (
+    HISTORY_RESULT,
+    MAX_REPLAYED_LOOKUPS,
+    build_agent,
+    chart_tool,
+    compact_datasets,
+    preview,
+    rank_tool,
+    stream_answer,
+    to_history,
+)
 from chat.charts import ChartSpec, DataRef, overlapping_rows, resolve_rows
 from chat.config import ChatSettings
 from chat.demo import CHART
-from chat.router import UNLOCK_ATTEMPTS, ChatMessage, bounded_history, create_router
+from chat.router import (
+    UNLOCK_ATTEMPTS,
+    ChatMessage,
+    ToolUse,
+    bounded_history,
+    create_router,
+)
 from data_tools.service import DataToolService
 
 INCOME = "acs5_ts_household_income"
@@ -87,6 +106,99 @@ def test_preview_trims_rows_for_the_model():
     assert "render_chart" in trimmed["preview_note"]
     small = {"rows": [{"n": 1}]}
     assert preview(small, 5) is small
+
+
+def test_dataset_list_is_compact_and_states_shared_caveats_once(service):
+    full = service.call("list_datasets", {})
+    compact = compact_datasets(full)
+    assert [d["dataset_id"] for d in compact["datasets"]] == [
+        d["dataset_id"] for d in full["datasets"]
+    ]
+    assert len(json.dumps(compact)) < len(json.dumps(full, default=str)) / 2
+    income = next(d for d in compact["datasets"] if d["dataset_id"] == INCOME)
+    # Enough to query a wide series without describing it first.
+    assert "median_household_income" in income["value_columns"]
+    assert not any(c.endswith("_moe") for c in income["value_columns"])
+    assert "warehouse_table" not in income
+    # Every caveat survives, either on the dataset or once in the shared map.
+    for before, after in zip(full["datasets"], compact["datasets"], strict=True):
+        kept = after.get("caveats", []) + [
+            compact["shared_caveats"][key] for key in after.get("shared_caveats", [])
+        ]
+        assert sorted(kept) == sorted(before["caveats"])
+    assert all(
+        sum(c in d["caveats"] for d in full["datasets"]) > 1
+        for c in compact["shared_caveats"].values()
+    )
+
+
+def test_sparse_series_list_their_years_instead_of_their_gaps():
+    census = [1791, *range(1800, 2021, 10)]
+    listing = {
+        "datasets": [
+            {
+                "dataset_id": "historic",
+                "year_min": 1791,
+                "year_max": 2020,
+                "years_available": census,
+                "gaps": [y for y in range(1791, 2021) if y not in census],
+            },
+            {
+                "dataset_id": "annual",
+                "year_min": 2009,
+                "year_max": 2024,
+                "years_available": [y for y in range(2009, 2025) if y != 2010],
+                "gaps": [2010],
+            },
+        ]
+    }
+    historic, annual = compact_datasets(listing)["datasets"]
+    # Decennial data reads as complete, not as 206 missing years.
+    assert historic["years_available"] == census
+    assert "gaps" not in historic
+    # A few gaps are clearer than a long list of years.
+    assert annual["gaps"] == [2010]
+    assert "years_available" not in annual
+
+
+def seen_by_model(agent, settings):
+    """The instructions and tool names one request hands the model."""
+    seen = {}
+
+    async def answers(_messages, info):
+        seen["instructions"] = info.instructions
+        seen["tools"] = [tool.name for tool in info.function_tools]
+        yield "ok"
+
+    async def run():
+        with agent.override(model=FunctionModel(stream_function=answers)):
+            return [e async for e in stream_answer(agent, settings, "hi", [])]
+
+    assert asyncio.run(run())[-1]["type"] == "done"
+    return seen
+
+
+def test_datasets_are_listed_in_the_instructions_not_behind_a_tool(warehouse):
+    settings = ChatSettings(model="demo", warehouse_path=warehouse)
+    seen = seen_by_model(build_agent(settings, DataToolService(warehouse)), settings)
+    assert INCOME in seen["instructions"]
+    assert "shared_caveats" in seen["instructions"]
+    assert "list_datasets" not in seen["tools"]
+    assert "list_datasets" not in seen["instructions"]
+    assert "describe_dataset" in seen["tools"]
+    # The rules come after the list, where the model weighs them most.
+    assert seen["instructions"].index(INCOME) < seen["instructions"].index(
+        "Charts and tables:"
+    )
+
+
+def test_agent_keeps_the_dataset_tool_when_the_warehouse_cant_be_read(tmp_path):
+    missing = tmp_path / "absent.duckdb"
+    settings = ChatSettings(model="demo", warehouse_path=missing)
+    seen = seen_by_model(build_agent(settings, DataToolService(missing)), settings)
+    assert "list_datasets" in seen["tools"]
+    assert "Start with list_datasets" in seen["instructions"]
+    assert INCOME not in seen["instructions"]
 
 
 def test_data_ref_drops_paging_and_validates_tool_args():
@@ -185,6 +297,174 @@ def test_bounded_history_keeps_newest_turns_starting_with_user():
     assert question == "user 6"
     assert [m["role"] for m in history] == ["user", "assistant"]
     assert history[0]["content"] == "user 4"
+
+
+SERIES_CALL = {"name": "get_timeseries", "args": {"dataset_id": INCOME}}
+
+
+def test_history_replays_earlier_tool_calls_without_their_results():
+    history = to_history(
+        [
+            {"role": "user", "content": "Income in Addison?"},
+            {
+                "role": "assistant",
+                "content": "It rose.",
+                "tools": [SERIES_CALL, {"name": "render_chart", "args": CHART}],
+            },
+        ]
+    )
+    _question, calls, returns, answer = history
+    assert [type(m) for m in history] == [
+        ModelRequest,
+        ModelResponse,
+        ModelRequest,
+        ModelResponse,
+    ]
+    assert [(p.tool_name, p.args) for p in calls.parts] == [
+        ("get_timeseries", {"dataset_id": INCOME}),
+        ("render_chart", CHART),
+    ]
+    # Each call is answered by id, with a placeholder instead of rows.
+    assert [p.tool_call_id for p in returns.parts] == [
+        p.tool_call_id for p in calls.parts
+    ]
+    assert "not kept" in returns.parts[0].content
+    assert "shown to the user" in returns.parts[1].content
+    assert answer.parts[0].content == "It rose."
+    # An answer with no tool calls stays a plain text message.
+    assert len(to_history([{"role": "assistant", "content": "Hi."}])) == 1
+
+
+def test_bounded_history_keeps_only_replayable_tool_calls():
+    settings = ChatSettings(max_history_tool_calls=2, max_history_tool_chars=100)
+    known = ToolUse(**SERIES_CALL)
+    messages = [
+        ChatMessage(role="user", content="q1", tools=[known]),
+        ChatMessage(
+            role="assistant",
+            content="a1",
+            tools=[
+                ToolUse(name="search_locations", args={"query": "Addison"}),
+                ToolUse(name="run_sql", args={"sql": "DROP TABLE x"}),
+                ToolUse(name="query_data", args={"dataset_id": "x" * 200}),
+                known,
+                ToolUse(name="list_datasets", args={}),
+                known,
+            ],
+        ),
+        ChatMessage(role="user", content="q2"),
+    ]
+    _question, history = bounded_history(messages, settings)
+    # Tools on a user message are ignored; unknown names, oversized
+    # arguments, and list_datasets (now in the instructions, so usually not a
+    # tool) are dropped; only the newest calls are kept.
+    assert history[0]["tools"] == []
+    assert history[1]["tools"] == [SERIES_CALL, SERIES_CALL]
+
+
+def lookup(query):
+    return {"name": "search_locations", "args": {"query": query}}
+
+
+def test_history_replays_place_lookups_with_their_matches(service):
+    history = to_history(
+        [
+            {"role": "user", "content": "Income in Addison?"},
+            {
+                "role": "assistant",
+                "content": "It rose.",
+                "tools": [lookup("Addison"), SERIES_CALL],
+            },
+        ],
+        service,
+    )
+    found, series = history[2].parts
+    # Which id is which place, so a follow-up needn't look it up again.
+    assert found.content == {
+        "locations": [
+            {"id": "50001", "name": "Addison County, Vermont", "geo_type": "county"}
+        ]
+    }
+    # Data rows are still never replayed.
+    assert series.content == HISTORY_RESULT
+    # Without a service, lookups get the placeholder like any other call.
+    assert (
+        to_history(
+            [{"role": "assistant", "content": "a", "tools": [lookup("Addison")]}]
+        )[1]
+        .parts[0]
+        .content
+        == HISTORY_RESULT
+    )
+
+
+def test_only_the_newest_place_lookups_are_re_run(service):
+    queries = [f"Place {n}" for n in range(MAX_REPLAYED_LOOKUPS + 2)]
+    history = to_history(
+        [
+            {
+                "role": "assistant",
+                "content": "a",
+                "tools": [lookup(q) for q in queries],
+            }
+        ],
+        service,
+    )
+    replayed = [part.content != HISTORY_RESULT for part in history[1].parts]
+    assert replayed == [False, False] + [True] * MAX_REPLAYED_LOOKUPS
+
+
+def test_follow_up_question_sees_the_earlier_tool_calls(warehouse):
+    seen = []
+
+    async def answers(messages, _info):
+        seen.extend(messages)
+        yield "Same dataset."
+
+    settings = ChatSettings(model="demo", warehouse_path=warehouse)
+    client = make_client(warehouse)
+    agent_model = FunctionModel(stream_function=answers)
+    app_agent = build_agent(settings, DataToolService(warehouse))
+
+    async def run():
+        history = to_history(
+            [
+                {"role": "user", "content": "Income in Addison?"},
+                {"role": "assistant", "content": "It rose.", "tools": [SERIES_CALL]},
+            ]
+        )
+        with app_agent.override(model=agent_model):
+            return [
+                e
+                async for e in stream_answer(
+                    app_agent, settings, "And Chittenden?", history
+                )
+            ]
+
+    events = asyncio.run(run())
+    assert events[-1]["type"] == "done"
+    replayed = [
+        part
+        for message in seen
+        for part in message.parts
+        if isinstance(part, ToolCallPart)
+    ]
+    assert [(p.tool_name, p.args) for p in replayed] == [
+        ("get_timeseries", {"dataset_id": INCOME})
+    ]
+    # The route accepts the same shape from the browser.
+    response = client.post(
+        "/api/chat",
+        json={
+            "messages": [
+                {"role": "user", "content": "Income in Addison?"},
+                {"role": "assistant", "content": "It rose.", "tools": [SERIES_CALL]},
+                {"role": "user", "content": "And Chittenden?"},
+            ]
+        },
+    )
+    assert response.status_code == 200
+    assert '"type": "done"' in response.text
 
 
 def test_status_route(warehouse):
@@ -493,3 +773,95 @@ def test_openrouter_models_report_cost_and_skip_data_collecting_providers(wareho
     agent = build_agent(settings, DataToolService(warehouse))
     assert agent.model_settings["openrouter_provider"] == {"data_collection": "deny"}
     assert agent.model_settings["openrouter_usage"] == {"include": True}
+
+
+def openrouter_requests(warehouse, slug):
+    """Play one tool-using turn against a fake OpenRouter; return the request
+    bodies it received and the turn's events."""
+    bodies = []
+
+    def respond(request):
+        body = json.loads(request.content)
+        bodies.append(body)
+        delta = (
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "index": 0,
+                        "id": "call_1",
+                        "type": "function",
+                        "function": {
+                            "name": "describe_dataset",
+                            "arguments": json.dumps({"dataset_id": INCOME}),
+                        },
+                    }
+                ],
+            }
+            if len(bodies) == 1
+            else {"role": "assistant", "content": "Done."}
+        )
+        chunk = {
+            "id": "x",
+            "object": "chat.completion.chunk",
+            "created": 1,
+            "model": body["model"],
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": delta,
+                    "finish_reason": "tool_calls" if len(bodies) == 1 else "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 10,
+                "completion_tokens": 1,
+                "total_tokens": 11,
+                "prompt_tokens_details": {"cached_tokens": 7, "cache_write_tokens": 2},
+            },
+        }
+        return httpx2.Response(
+            200,
+            content=f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n",
+            headers={"content-type": "text/event-stream"},
+        )
+
+    settings = ChatSettings(model=slug, warehouse_path=warehouse)
+    agent = build_agent(settings, DataToolService(warehouse))
+
+    async def run():
+        client = httpx2.AsyncClient(transport=httpx2.MockTransport(respond))
+        model = OpenRouterModel(
+            slug, provider=OpenRouterProvider(api_key="test", http_client=client)
+        )
+        with agent.override(model=model):
+            return [e async for e in stream_answer(agent, settings, "hi", [])]
+
+    return bodies, asyncio.run(run())
+
+
+def cache_marked(part) -> bool:
+    return "cache_control" in json.dumps(part)
+
+
+def test_claude_requests_mark_the_repeated_prefix_as_cacheable(warehouse):
+    bodies, events = openrouter_requests(warehouse, "anthropic/claude-haiku-5.5")
+    assert len(bodies) == 2
+    for body in bodies:
+        # The last tool definition, the instructions, and the newest message:
+        # everything before each marker is read from cache on the next request.
+        assert [cache_marked(tool) for tool in body["tools"]][-1]
+        assert cache_marked(body["messages"][0])
+        assert cache_marked(body["messages"][-1])
+        # The dataset list rides in the cached instructions.
+        assert INCOME in json.dumps(body["messages"][0])
+    assert bodies[1]["messages"][-1]["role"] == "tool"
+    usage = events[-1]["usage"]
+    assert usage["cache_read_tokens"] == 14
+    assert usage["cache_write_tokens"] == 4
+
+
+def test_other_models_get_no_cache_markers(warehouse):
+    bodies, events = openrouter_requests(warehouse, "openai/gpt-6.1-sol")
+    assert events[-1]["type"] == "done"
+    assert not any(cache_marked(body) for body in bodies)
