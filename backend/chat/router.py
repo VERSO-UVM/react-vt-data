@@ -16,6 +16,7 @@ Streaming protocol for POST /api/chat: server-sent events, one JSON object per
 from __future__ import annotations
 
 import json
+import logging
 import threading
 import time
 from collections import defaultdict, deque
@@ -33,6 +34,7 @@ from chat.agent import (
     stream_answer,
     to_history,
     tool_error,
+    usage_log,
 )
 from chat.charts import DataRef, resolve_rows
 from chat.config import ChatSettings
@@ -155,6 +157,13 @@ def create_router(
     limiter = RateLimiter(settings.rate_limit)
     unlock_limiter = RateLimiter(UNLOCK_ATTEMPTS)
     router = APIRouter(prefix="/chat", tags=["chat"])
+    # Uvicorn only shows its own loggers at INFO, so send usage lines to
+    # stderr ourselves (once, however many routers are built).
+    if not usage_log.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
+        usage_log.addHandler(handler)
+        usage_log.setLevel(logging.INFO)
 
     def unlocked(request: Request) -> bool:
         code = settings.access_code
