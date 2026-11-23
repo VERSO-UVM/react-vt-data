@@ -4,9 +4,10 @@
 **Description**:
     Jinja SQL rendering plus the general-purpose filter compiler.
 
-    SQL files under `query/sql/` and `build/sql/` are Jinja templates, so they can
-    be linted with sqlfluff (`uv run sqlfluff lint query/sql build/sql` from
-    `backend/`; lint-time template context lives in `backend/.sqlfluff`).
+    SQL files under `query/sql/` and `data_cleaning/sql/` are Jinja templates, so
+    they can be linted with sqlfluff (`uv run sqlfluff lint query/sql
+    data_cleaning/sql` from `backend/`; lint-time template context lives in
+    `backend/.sqlfluff`).
 
     Python compiles FilterSource objects into SQL fragments (filter CTEs, joins,
     and WHERE clauses) and injects them through the Jinja context. This keeps the
@@ -128,18 +129,21 @@ def compile_filters(sources: list[FilterSource], params: list) -> tuple[str, str
     return cte_block, join_block
 
 
-def sql_filter_block(sql_path: Path, sources: list[FilterSource]) -> tuple[str, list]:
+def sql_filter_block(
+    sql_path: Path, sources: list[FilterSource], **extra
+) -> tuple[str, list]:
     """Render a query template with compiled filters; returns (sql, params).
 
     Only the fragments the template actually references are compiled, so `params`
     contains exactly the values behind the $N placeholders present in the SQL.
+    `extra` is passed to the template as is (e.g. a flag for optional columns).
     Execute with `DB.execute(sql, params)`.
     """
     source_text = sql_path.read_text()
     used = meta.find_undeclared_variables(JINJA_ENV.parse(source_text))
 
     params: list = []
-    context: dict = {}
+    context: dict = dict(extra)
     if used & {"cte_filter_block", "join_filter_block"}:
         cte_block, join_block = compile_filters(sources, params)
         context["cte_filter_block"] = cte_block

@@ -27,6 +27,7 @@ import {
 } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
 import { COLORS, FONTS } from '@/app/theme';
+import { isTooltipMeta, withTooltipMargin } from '@/components/Charts/margins';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { MapRef } from 'react-map-gl/maplibre';
 import {

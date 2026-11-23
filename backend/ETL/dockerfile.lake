@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/home/app/.cache/uv,uid=1000,gid=1000 \
 RUN uv run python -c "import duckdb; duckdb.connect().execute('INSTALL spatial')"
 
 # The source data collection scripts (source --> destination)
+COPY --chown=app:app ./logger /code/logger
 COPY --chown=app:app ./lake_build.py /code/lake_build.py
 
 ENV DATA_DIR=/data

@@ -48,8 +48,11 @@
 
 .link {
   position: relative;
+  display: flex;
+  align-items: center;
   padding: 10px 16px;
   border-radius: 999px;
+  color: var(--nav-active-bg);
 
   transition:
     background 0.2s ease,

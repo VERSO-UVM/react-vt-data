@@ -1,0 +1,109 @@
+/* Shared by the chat page and the eval comparison page. */
+
+/* ---------- agent steps ---------- */
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stepsToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--mantine-font-size-xs);
+  font-weight: 500;
+  color: var(--mantine-color-gray-7);
+}
+
+.stepsToggle:hover {
+  color: var(--mantine-color-text);
+}
+
+.stepList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 4px;
+  padding-left: 12px;
+  border-left: 2px solid #e2e4e8;
+  font-size: var(--mantine-font-size-xs);
+  color: var(--mantine-color-dimmed);
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---------- answer text ---------- */
+
+.markdown {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0 0 0.85em;
+}
+
+.markdown li + li {
+  margin-top: 0.25em;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 1.2em 0 0.5em;
+  font-size: 1.05em;
+}
+
+.markdown code {
+  font-size: 0.9em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  margin: 0.25em 0 1em;
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.45;
+}
+
+.markdown th {
+  text-align: left;
+  font-weight: 600;
+  color: #40525a;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1.5px solid #d3d6db;
+}
+
+.markdown td {
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid #e9ebee;
+  vertical-align: top;
+}
+
+.markdown tr:last-child td {
+  border-bottom: 0;
+}

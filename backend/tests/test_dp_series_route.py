@@ -29,6 +29,9 @@ ROWS = [
     (2012, "DP04_0100E", "Housing units with a mortgage", "1764"),
 ]
 
+# Published margins, by variable code
+MOES = {"DP04_0107E": 61.0, "DP04_0100E": 88.0}
+
 REQUEST = {
     "name": BURLINGTON,
     "table": "DP04",
@@ -41,9 +44,11 @@ REQUEST = {
 }
 
 
-def _client(monkeypatch, with_identity: bool) -> TestClient:
+def _client(monkeypatch, with_identity: bool, with_margins=False) -> TestClient:
     conn = duckdb.connect()
     identity = ", variable_code VARCHAR, source_label VARCHAR" if with_identity else ""
+    if with_margins:
+        identity += ", moe DOUBLE, reliability VARCHAR"
     conn.execute(
         f"""
         CREATE TABLE acs5_dp_combined_tidy (
@@ -58,6 +63,8 @@ def _client(monkeypatch, with_identity: bool) -> TestClient:
         base += ["Estimate", value]
         if with_identity:
             base += [code, LABEL.format(part)]
+        if with_margins:
+            base += [MOES[code], "high"]
         conn.execute(
             f"INSERT INTO acs5_dp_combined_tidy VALUES ({', '.join('?' * len(base))})",
             base,
@@ -129,3 +136,19 @@ def test_without_identity_columns_rows_keep_load_order(monkeypatch):
     assert "variable_code" not in data[0]
     # Same position each year, so the chart's nth line stays one observation.
     assert [r["Value"] for r in data] == [699, 1731, 737, 1764]
+
+
+@pytest.mark.parametrize("with_margins", [True, False])
+def test_margins_come_with_their_values(monkeypatch, with_margins):
+    rows = _client(monkeypatch, True, with_margins).post(
+        "/load/acs5-db/dp-combined/series", json=REQUEST
+    )
+    first = rows.json()["data"][0]
+    if with_margins:
+        assert (first["Value"], first["Value_MOE"], first["Value_Reliability"]) == (
+            1731,
+            88.0,
+            "high",
+        )
+    else:
+        assert "Value_MOE" not in first and "Value_Reliability" not in first

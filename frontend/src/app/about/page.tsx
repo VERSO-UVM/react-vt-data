@@ -320,15 +320,15 @@ function WhatWeDo() {
     },
     {
       icon: <IconArrowsDiff size={25} />,
-      title: 'Compare Communities',
-      text: 'Put municipalities side by side using consistent measures and indicators.',
-      href: '/data-viewer',
+      title: 'Community Reports',
+      text: 'Put municipalities side by side across various topics using consistent measures and indicators.',
+      href: '/data-comparison/reports-by-topic',
     },
     {
       icon: <IconDatabaseExport size={25} />,
       title: 'Use the Data',
       text: 'Discover the datasets and variables behind the platform and use them for your own work.',
-      href: '/data-sources',
+      href: '/resources/data-sources',
     },
   ];
 

@@ -2,7 +2,8 @@
 Fetch ACS 5-Year Data Profile tables (DP02-DP05) for Vermont
 Geographies: counties + county subdivisions + Vermont statewide + United States
 Years: 2009 - Latest published data
-Output: one wide table and tidy table
+Output: one wide table and tidy table. Each tidy row carries its published
+90% margin of error as MOE (the M code for an estimate, PM for a percent).
 
 Geography selection
 -------------------
@@ -10,6 +11,7 @@ Pass --geos on the CLI to scrape only specific geographic levels.
 Use --append to merge new rows into existing files instead of overwriting.
 """
 
+import logging
 import os
 import time
 from datetime import datetime
@@ -21,6 +23,8 @@ from data_collection.base import ALL_GEOS
 from data_collection.census import tidy_census
 from data_collection.parallel import pmap
 from query.clock import EASTERN_STD_TIME
+
+logger = logging.getLogger(__name__)
 
 # Define API key through the .env file
 API_KEY = os.environ.get("CENSUS_API_KEY")
@@ -51,7 +55,7 @@ def fetch_table(year, table, for_clause, in_clause) -> pd.DataFrame | None:
         "key": API_KEY,
     }
     if params.get("key") is None:
-        print("API key is either missing or set to None.")
+        logger.error("API key is either missing or set to None.")
         return None
 
     if in_clause:  # state/national geos have no "in" clause
@@ -78,7 +82,7 @@ def fetch_table(year, table, for_clause, in_clause) -> pd.DataFrame | None:
         df["table"] = table
         return df
     except Exception as e:  # noqa: BLE001 -- skip and keep the run going
-        print(f"  SKIP {year} / {table} / {for_clause}: {e}")
+        logger.warning("SKIP %s / %s / %s: %s", year, table, for_clause, e)
         return None
 
 
@@ -91,7 +95,7 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
 
     def fetch_one(task):
         year, (geo_label, for_clause, in_clause), table = task
-        print(f"  {year} / {table} / {geo_label}...")
+        logger.debug("%s / %s / %s...", year, table, geo_label)
         df = fetch_table(year, table, for_clause, in_clause)
         time.sleep(0.01)
         return table, geo_label, df
@@ -107,7 +111,7 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
     # Process each ACS profile table independently
     for table, frames in all_frames.items():
         if not frames:
-            print(f"  No frames for {table}, skipping.")
+            logger.warning("No frames for %s, skipping.", table)
             continue
 
         label = TABLES[table]
@@ -136,7 +140,7 @@ def run_acs5_scrape(years: range = YEARS, geos: list = GEOS, append: bool = Fals
                 tidy_frames.append(tidy_year)
 
             except Exception as e:  # noqa: BLE001 -- skip and keep the run going
-                print(f"  SKIP tidy {year} / {table}: {e}")
+                logger.warning("SKIP tidy %s / %s: %s", year, table, e)
 
         if tidy_frames:
             tidy = pd.concat(

@@ -7,6 +7,7 @@
     fetches the parcel dataset
 """
 
+import logging
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -16,6 +17,8 @@ import pandas as pd
 import requests
 
 from data_collection.parallel import pmap
+
+logger = logging.getLogger(__name__)
 
 # list of towns from which to gather data
 VT_TOWNS = [
@@ -322,7 +325,7 @@ def standardize_town(shp_path: Path) -> gpd.GeoDataFrame:
 # need to add a failsafe - all towns might not work
 def collect():
     def fetch_logged(town):
-        print(f"{town} ...")
+        logger.debug("%s ...", town)
         fetch_town(town)
 
     pmap(fetch_logged, VT_TOWNS)

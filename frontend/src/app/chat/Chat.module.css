@@ -1,0 +1,222 @@
+/* Data Chat page. Colors follow the site palette in app/theme.ts; the page
+   background is globals.css --background, so nothing here paints white
+   blocks onto it except the input box and charts. */
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
+  min-height: calc(100vh - 140px);
+}
+
+@media (max-width: 62em) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Doubled class so this beats the .sidebar rule below. */
+  .layout .sidebar {
+    display: none;
+  }
+}
+
+/* ---------- sidebar ---------- */
+
+.sidebar {
+  position: sticky;
+  top: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.sidebarLabel {
+  margin: 16px 10px 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mantine-color-dimmed);
+}
+
+.newChat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+  color: #1b3a2f;
+}
+
+.newChat:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+.conversationRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.conversationRow:hover {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+.conversationActive,
+.conversationActive:hover {
+  background: rgba(0, 0, 0, 0.075);
+}
+
+.conversation {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font-size: var(--mantine-font-size-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit;
+}
+
+.conversationActive .conversation {
+  font-weight: 600;
+}
+
+.deleteButton {
+  opacity: 0;
+  margin-right: 4px;
+}
+
+.conversationRow:hover .deleteButton,
+.deleteButton:focus-visible {
+  opacity: 1;
+}
+
+/* ---------- conversation column ---------- */
+
+.main {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 140px);
+}
+
+.thread {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 8px 0 24px;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 0 24px;
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.suggestion {
+  padding: 14px 16px;
+  border: 1px solid #e2e4e8;
+  border-radius: 12px;
+  background: #fff;
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.45;
+  text-align: left;
+  color: inherit;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.suggestion:hover {
+  border-color: #c5c9cf;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.userTurn {
+  align-self: flex-end;
+  max-width: 80%;
+  padding: 10px 16px;
+  border-radius: 18px 18px 4px 18px;
+  background: #e9ebee;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+/* Copy / ask again under an answer: quiet until hovered. */
+.actions {
+  margin-top: -6px;
+  opacity: 0.7;
+}
+
+.actions:hover,
+.actions:focus-within {
+  opacity: 1;
+}
+
+/* ---------- composer ---------- */
+
+.composer {
+  position: sticky;
+  bottom: 0;
+  padding: 24px 0 14px;
+  /* Fade the thread out under the input instead of painting a block. */
+  background: linear-gradient(
+    to bottom,
+    rgba(248, 249, 250, 0),
+    var(--background) 22px
+  );
+}
+
+.inputBox {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid #dcdfe3;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.inputBox:focus-within {
+  border-color: #aab0b8;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+}
+
+.input {
+  flex: 1;
+}
+
+.input textarea {
+  padding: 6px 0;
+  font-size: var(--mantine-font-size-md);
+  line-height: 1.5;
+}
+
+.disclaimer {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--mantine-color-dimmed);
+}

@@ -60,3 +60,20 @@ if os.environ.get("MCP_ENABLED", "").lower() in {"1", "true", "yes"}:
     from mcp_server.server import attach_mcp
 
     attach_mcp(app)
+
+# Data chat is behind a feature flag; when off, its routes don't exist and the
+# frontend hides it. See docs/architecture/data-chat.md.
+if os.environ.get("CHAT_ENABLED", "").lower() in {"1", "true", "yes"}:
+    from chat.router import create_router
+
+    app.include_router(create_router(), prefix="/api")
+
+    # Local model comparison page; never set in production.
+    if os.environ.get("CHAT_EVALS_DIR"):
+        from pathlib import Path
+
+        from chat.evals_router import create_evals_router
+
+        app.include_router(
+            create_evals_router(Path(os.environ["CHAT_EVALS_DIR"])), prefix="/api"
+        )

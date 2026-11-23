@@ -1,8 +1,8 @@
 -- Parts of a town that no zoning district covers: the "we have no zoning
 -- information here" layer.
 --
--- Both inputs are WGS84 (zoning_raw ships as EPSG:4326; town_boundaries is
--- normalised to it in build/FIPS_data.py), so the difference is taken directly.
+-- Both inputs are WGS84 (every lake geometry is reprojected to EPSG:4326 in
+-- lake_build.py), so the difference is taken directly.
 --
 -- ST_MakeValid before the union matters: several districts are self-intersecting
 -- and ST_Union_Agg raises a topology error on them otherwise.
@@ -28,7 +28,7 @@ gaps AS (
         t.id,
         t.NAME,
         ST_DIFFERENCE(
-            ST_GeomFromWKB(geometry),
+            ST_GeomFromWKB(t.geometry),
             COALESCE(c.geom, ST_GEOMFROMTEXT('POLYGON EMPTY'))
         ) AS geom
     FROM town_boundaries AS t
@@ -41,7 +41,7 @@ exploded AS (
     SELECT
         g.id,
         g.NAME,
-        UNNEST(ST_DUMP(geom), recursive := true)  -- noqa: AL03
+        UNNEST(ST_DUMP(g.geom), recursive := true)  -- noqa: AL03
     FROM gaps AS g
     WHERE NOT ST_ISEMPTY(g.geom)
 ),

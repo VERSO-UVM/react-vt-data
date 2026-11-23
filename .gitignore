@@ -13,6 +13,10 @@ venv/
 *tidy.csv*
 *.ipynb
 
+# Logs
+*.log
+**.log.*
+
 # Large geodata files — not for version control
 backend/Data/Parcels/
 
@@ -40,6 +44,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 backend/logger/*.log
+backend/Data/logs/
 
 # Environment files
 .env
@@ -64,3 +69,6 @@ backend/Data/Census/**/*.csv
 frontend/tsconfig.tsbuildinfo
 
 tmp/
+
+# Data Chat eval runs (docs/guides/chat-evals.md)
+backend/evals/chat/results/

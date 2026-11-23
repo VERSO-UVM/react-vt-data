@@ -12,15 +12,19 @@
 python -m run_data_loading
 """
 
+import logging
 import os
 from pathlib import Path
 
 import duckdb
 
+from logger.logging import setup_etl_logging
 from warehouse_schema import write_schema_snapshot
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "Data"))
+
+logger = logging.getLogger(__name__)
 
 
 def get_cleaned_tables(db_con: duckdb.DuckDBPyConnection) -> list[str]:
@@ -85,10 +89,11 @@ def create_duckdb():
             flush=True,
         )
 
+    print()  # end the \r progress line
     if failed:
-        print(f"\n{len(failed)} tables failed:")
+        logger.error("%d tables failed:", len(failed))
         for table, error in failed:
-            print(f"  {table}: {error}")
+            logger.error("  %s: %s", table, error)
 
     db_con.execute("DETACH lake")
     try:
@@ -97,11 +102,12 @@ def create_duckdb():
     finally:
         db_con.close()
 
-    print("\nDATABASE COMPLETED!")
-    print(f"Schema snapshot: {schema_path}")
+    logger.info("DATABASE COMPLETED!")
+    logger.info("Schema snapshot: %s", schema_path)
 
 
 def main():
+    setup_etl_logging("load")
     create_duckdb()
 
 

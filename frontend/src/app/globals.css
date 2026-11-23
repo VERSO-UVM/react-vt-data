@@ -9,6 +9,11 @@
   --font-serif: var(--font-zilla-slab), Georgia, serif;
 }
 
+/* Edit Mantine's dimmed color to be contrast accessible */
+:root[data-mantine-color-scheme='light'] {
+  --mantine-color-dimmed: #40525a;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

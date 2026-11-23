@@ -17,6 +17,7 @@ COPY --chown=app:app ./query /code/query
 COPY --chown=app:app ./logger /code/logger
 COPY --chown=app:app ./data_tools /code/data_tools
 COPY --chown=app:app ./mcp_server /code/mcp_server
+COPY --chown=app:app ./chat /code/chat
 
 
 
