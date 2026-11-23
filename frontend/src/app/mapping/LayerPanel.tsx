@@ -1,54 +1,50 @@
 'use client';
 
-import { Stack, Divider } from '@mantine/core';
 import { MAP_LAYERS } from '@/app/mapping/MapLayers';
 import LayerRow from './LayerRow';
 import type { LayerStats } from './UseMapLayer';
+import type { ParcelColorMode } from './layerColors';
 import type { FeatureCollection } from 'geojson';
 import type { FilterSpec } from '@/components/FilterRedux/filterTypes';
+import styles from './explorer.module.css';
 
 interface LayerPanelProps {
   activeLayers: Set<string>;
   onToggle: (id: string, active: boolean) => void;
   onDataChange: (id: string, geojson: FeatureCollection | null) => void;
   onStatsChange: (id: string, stats: LayerStats | null) => void;
+  onLoadingChange: (id: string, loading: boolean) => void;
   presetFilters?: Record<string, FilterSpec[]>;
   lockedLayerIds: Set<string>;
+  combinedLayerIds: Set<string>;
   townCandidates: string[] | null;
   townBBox: [number, number, number, number] | null;
+  townName: string;
   scopeVersion: number;
+  parcelColorMode: ParcelColorMode;
+  onParcelColorMode: (mode: ParcelColorMode) => void;
 }
 
 export default function LayerPanel({
   activeLayers,
-  onToggle,
-  onDataChange,
-  onStatsChange,
   presetFilters,
   lockedLayerIds,
-  townCandidates,
-  townBBox,
-  scopeVersion,
+  combinedLayerIds,
+  ...shared
 }: LayerPanelProps) {
   return (
-    <Stack gap="md">
-      {MAP_LAYERS.map((cfg, i) => (
-        <div key={cfg.id}>
-          {i > 0 && <Divider mb="md" />}
-          <LayerRow
-            config={cfg}
-            active={activeLayers.has(cfg.id)}
-            onToggle={onToggle}
-            onDataChange={onDataChange}
-            onStatsChange={onStatsChange}
-            presetFilters={presetFilters?.[cfg.id]}
-            locked={lockedLayerIds.has(cfg.id)}
-            townCandidates={townCandidates}
-            townBBox={townBBox}
-            scopeVersion={scopeVersion}
-          />
-        </div>
+    <div className={styles.layers}>
+      {MAP_LAYERS.map((cfg) => (
+        <LayerRow
+          key={cfg.id}
+          config={cfg}
+          active={activeLayers.has(cfg.id)}
+          presetFilters={presetFilters?.[cfg.id]}
+          locked={lockedLayerIds.has(cfg.id)}
+          combined={combinedLayerIds.has(cfg.id)}
+          {...shared}
+        />
       ))}
-    </Stack>
+    </div>
   );
 }

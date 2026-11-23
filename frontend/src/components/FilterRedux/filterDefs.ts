@@ -71,6 +71,12 @@ export const parcels_filtering: filterDef[] = [
   },
   {
     filter_table: 'VCGIParcels_info',
+    filter_style: 'Checkbox',
+    label: 'Out-of-State Owner',
+    cols: ['Out-of-State Owner'],
+  },
+  {
+    filter_table: 'VCGIParcels_info',
     filter_style: 'Range',
     label: 'Parcel Size',
     cols: ['Parcel Size (ac)'],

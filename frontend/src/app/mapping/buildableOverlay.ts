@@ -59,6 +59,32 @@ function pairFC(a: PolyFeature, b: PolyFeature): PolyFC {
   return { type: 'FeatureCollection', features: [a, b] };
 }
 
+/** One shape covering everything in `fc`. Turf's union throws on fewer than
+ *  two geometries, so a lone feature is returned as is. */
+function dissolve(fc: PolyFC): PolyFeature | null {
+  return fc.features.length === 1 ? fc.features[0] : union(fc);
+}
+
+/** Acres of `boundary` (a town) that a layer's features cover — overlapping
+ *  features counted once, and anything spilling past the boundary left out.
+ *  Null when there is nothing to measure or the geometry can't be combined. */
+export function acresInside(
+  fc: FeatureCollection | null | undefined,
+  boundary: PolyFeature | null,
+): number | null {
+  const polys = asPolygonFC(fc);
+  if (!polys || !boundary) return null;
+  try {
+    const footprint = dissolve(polys);
+    if (!footprint) return null;
+    const inside = intersect(pairFC(footprint, boundary));
+    return inside ? area(inside) * ACRES_PER_SQM : 0;
+  } catch (e) {
+    console.error('area-within-town computation failed', e);
+    return null;
+  }
+}
+
 /** "Conservation" districts (Forest Conservation District, Resource
  *  Conservation Overlay, ...) show up across every District Type, including
  *  ones tagged Residential/Mixed — so the District Type filter alone lets
@@ -161,7 +187,10 @@ export function computeBuildableOverlay(
   zoningFc: FeatureCollection | null,
   soilFc: FeatureCollection | null,
   floodFc: FeatureCollection | null,
-  townName?: string,
+  /** What to call the shape. "Buildable area" is only true under the
+   *  Buildable Areas preset's filters — for any other zoning + soil
+   *  combination the caller should pass a neutral name. */
+  title = 'Buildable Area',
 ): BuildableOverlay | null {
   const zoning = excludeConservationDistricts(asPolygonFC(zoningFc));
   const soil = asPolygonFC(soilFc);
@@ -174,8 +203,8 @@ export function computeBuildableOverlay(
     const districtTypes = distinctValues(zoning, 'District Type');
     const suitabilityLevels = distinctValues(soil, 'Suitability');
 
-    const zoningUnion = union(zoning);
-    const soilUnion = union(soil);
+    const zoningUnion = dissolve(zoning);
+    const soilUnion = dissolve(soil);
     if (!zoningUnion || !soilUnion) return null;
 
     let buildable = intersect(pairFC(zoningUnion, soilUnion));
@@ -184,7 +213,7 @@ export function computeBuildableOverlay(
     const flood = specialFloodHazardAreas(asPolygonFC(floodFc));
     let floodExcluded = false;
     if (flood) {
-      const floodUnion = union(flood);
+      const floodUnion = dissolve(flood);
       if (floodUnion) {
         // null here means flood fully covers the overlap — correctly "no
         // buildable area", not a fallback to the pre-flood shape.
@@ -206,9 +235,7 @@ export function computeBuildableOverlay(
             properties: {
               rgba_color: BUILDABLE_COLOR,
               tooltip: {
-                __title__: townName
-                  ? `Buildable Area — ${townName}`
-                  : 'Buildable Area',
+                __title__: title,
                 Acreage: `${Math.round(acres).toLocaleString()} ac`,
                 'Zoning Districts': districtCount,
                 'District Types': districtTypes.join(', ') || '—',

@@ -20,8 +20,9 @@
  */
 
 import type { FeatureCollection } from 'geojson';
+import type { LegendItem } from '@/components/Legend';
 
-type RGBA = [number, number, number, number];
+export type RGBA = [number, number, number, number];
 
 const ZONING_DISTRICT_COLORS: Record<string, RGBA> = {
   Residential: [37, 99, 235, 190], // blue-600
@@ -82,6 +83,20 @@ const PARCEL_VALUE_DEFAULT: RGBA = [148, 163, 184, 150]; // slate-400, missing v
 
 export type ParcelColorMode = 'category' | 'value';
 
+/** The assessed values on screen and the four quintile cut points the
+ *  "Assessed Value" ramp is split at. */
+function parcelValueBreaks(fc: FeatureCollection) {
+  const values = fc.features
+    .map((f) => f.properties?.['Assessed Value'])
+    .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v))
+    .sort((a, b) => a - b);
+
+  const breaks = [0.2, 0.4, 0.6, 0.8].map(
+    (q) => values[Math.min(values.length - 1, Math.floor(q * values.length))],
+  );
+  return { values, breaks };
+}
+
 /** Recolor a parcels FeatureCollection by CATEGORY (fixed 3-bucket palette)
  *  or by Assessed Value (5-step quantile ramp, computed from the values
  *  currently on screen so the ramp stays meaningful at any zoom/town). */
@@ -106,14 +121,7 @@ export function recolorParcels(
     );
   }
 
-  const values = fc.features
-    .map((f) => f.properties?.['Assessed Value'])
-    .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v))
-    .sort((a, b) => a - b);
-
-  const breaks = [0.2, 0.4, 0.6, 0.8].map(
-    (q) => values[Math.min(values.length - 1, Math.floor(q * values.length))],
-  );
+  const { values, breaks } = parcelValueBreaks(fc);
 
   const bucketOf = (v: number) => breaks.filter((b) => v > b).length;
 
@@ -178,5 +186,128 @@ export function recolorLayer(
       return recolorFlat(fc, TREATMENT_FACILITY_COLOR);
     default:
       return fc;
+  }
+}
+
+export const css = ([r, g, b, a]: RGBA) => `rgba(${r},${g},${b},${a / 255})`;
+
+const compactDollars = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumSignificantDigits: 3,
+});
+
+// Best to worst. Mirrors the backend's filter option order
+// (CUSTOM_OPTION_ORDER in query/core_functions.py) — keep the two in sync.
+export const SOIL_SUITABILITY_ORDER = [
+  'Well Suited',
+  'Moderately Suited',
+  'Marginally Suited',
+  'Not Suited',
+  'Not Rated',
+];
+
+/** Distinct values of `property` among the features, each with the color
+ *  its first feature is drawn in. Features with no color (drawn
+ *  transparent) are left out. */
+function colorsOnMap(fc: FeatureCollection, property: string) {
+  const seen = new Map<string, string>();
+  for (const f of fc.features) {
+    const value = f.properties?.[property];
+    const color = f.properties?.rgba_color;
+    if (value == null || !Array.isArray(color) || seen.has(String(value))) {
+      continue;
+    }
+    seen.set(String(value), css(color as RGBA));
+  }
+  return seen;
+}
+
+/** `seen` as legend entries: the labels in `order` first, then any others. */
+function inOrder(seen: Map<string, string>, order: string[]): LegendItem[] {
+  const rank = (label: string) => {
+    const i = order.indexOf(label);
+    return i === -1 ? order.length : i;
+  };
+  return [...seen]
+    .map(([label, color]) => ({ label, color }))
+    .sort((a, b) => rank(a.label) - rank(b.label));
+}
+
+/** Map key entries for a layer as currently drawn — only what is actually
+ *  on the map, so a filtered layer gets a filtered key. */
+export function legendItems(
+  layerId: string,
+  fc: FeatureCollection | null,
+  parcelMode: ParcelColorMode,
+): LegendItem[] {
+  if (!fc?.features.length) return [];
+
+  switch (layerId) {
+    case 'zoning':
+      return inOrder(
+        colorsOnMap(fc, 'District Type'),
+        Object.keys(ZONING_DISTRICT_COLORS),
+      );
+    case 'soil-suitability':
+      return inOrder(colorsOnMap(fc, 'Suitability'), SOIL_SUITABILITY_ORDER);
+    case 'flood-legal': {
+      // The server colors flood polygons by FEMA zone. Zone X carries no
+      // color (it is drawn transparent), so it never shows up here.
+      const risks = new Map<string, unknown>();
+      for (const f of fc.features) {
+        risks.set(
+          String(f.properties?.flood_zone_type),
+          f.properties?.flood_risk,
+        );
+      }
+      return [...colorsOnMap(fc, 'flood_zone_type')]
+        .map(([zone, color]) => {
+          const risk = risks.get(zone);
+          return {
+            label: risk
+              ? `Zone ${zone} (${String(risk).toLowerCase()} risk)`
+              : zone,
+            color,
+          };
+        })
+        .sort((a, b) => a.label.localeCompare(b.label));
+    }
+    case 'service-areas':
+      return [{ label: 'Sewer service area', color: css(SERVICE_AREA_COLOR) }];
+    case 'treatment-facilities':
+      return [
+        { label: 'Treatment facility', color: css(TREATMENT_FACILITY_COLOR) },
+      ];
+    case 'parcels': {
+      if (parcelMode === 'category') {
+        const present = new Set(
+          fc.features.map((f) =>
+            bucketParcelCategory(f.properties?.Category as string | undefined),
+          ),
+        );
+        return Object.entries(PARCEL_CATEGORY_COLORS)
+          .filter(([label]) => present.has(label as ParcelCategoryBucket))
+          .map(([label, c]) => ({ label, color: css(c) }));
+      }
+      const { values, breaks } = parcelValueBreaks(fc);
+      if (values.length === 0) return [];
+      const [b0, b1, b2, b3] = breaks.map((b) => compactDollars.format(b));
+      const steps = [
+        `Up to ${b0}`,
+        `${b0} – ${b1}`,
+        `${b1} – ${b2}`,
+        `${b2} – ${b3}`,
+        `Over ${b3}`,
+      ];
+      return (
+        PARCEL_VALUE_RAMP.map((c, i) => ({ label: steps[i], color: css(c) }))
+          // Tied cut points (many parcels at one value) leave a step empty.
+          .filter((_, i) => i === 0 || i === 4 || breaks[i - 1] !== breaks[i])
+      );
+    }
+    default:
+      return [];
   }
 }

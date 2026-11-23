@@ -178,7 +178,7 @@ export function CascadeFilter(params: apiFilterParams) {
   }, [tree, labels, spec.filters]);
 
   return (
-    <Stack gap={18}>
+    <Stack gap="sm">
       {labels.map((label, i) => {
         const flagged = new Set(badges[label] ?? []);
         return (
@@ -248,24 +248,23 @@ export function CascadeFilter(params: apiFilterParams) {
             }
             searchable
             radius="sm"
-            size="md"
+            size="sm"
+            comboboxProps={{ shadow: 'sm' }}
             styles={{
               label: {
                 fontFamily: FONTS.body,
                 fontSize: '0.875rem',
-                fontWeight: 500,
+                fontWeight: 600,
                 color: COLORS.ink,
-                marginBottom: 7,
+                marginBottom: 4,
               },
 
               input: {
-                backgroundColor: COLORS.birch,
+                backgroundColor: '#fff',
                 border: `1px solid ${COLORS.line}`,
                 color: COLORS.ink,
                 fontFamily: FONTS.body,
-                fontSize: '0.9rem',
-                minHeight: 42,
-                transition: 'border-color 150ms ease',
+                fontSize: '0.875rem',
               },
 
               section: {
@@ -273,10 +272,9 @@ export function CascadeFilter(params: apiFilterParams) {
               },
 
               dropdown: {
-                backgroundColor: COLORS.birch,
+                backgroundColor: '#fff',
                 border: `1px solid ${COLORS.line}`,
                 borderRadius: 6,
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
                 overflow: 'hidden',
               },
 
@@ -284,7 +282,7 @@ export function CascadeFilter(params: apiFilterParams) {
                 fontFamily: FONTS.body,
                 fontSize: '0.875rem',
                 color: COLORS.ink,
-                padding: '9px 12px',
+                padding: '8px 12px',
               },
             }}
           />
