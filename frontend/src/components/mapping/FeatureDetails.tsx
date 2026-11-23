@@ -6,16 +6,7 @@
  *   shared by the map's built-in detail card and the explorer's spot card.
  */
 
-import { Fragment } from 'react';
-import {
-  Badge,
-  Divider,
-  Group,
-  Paper,
-  SimpleGrid,
-  Stack,
-  Text,
-} from '@mantine/core';
+import { Badge, Group, Stack, Text } from '@mantine/core';
 import { COLORS, FONTS } from '@/app/theme';
 
 const CURRENCY_FIELDS = new Set(['Assessed Value', 'Value Per Acre']);
@@ -55,13 +46,12 @@ export function formatDetailValue(key: string, value: unknown): string {
 }
 
 /** Groups the flat tooltip fields into the labeled sections a parcel's
- *  detail card is organized into — Location, Valuation (rendered as stat
- *  tiles), Owner — with anything left over (and every non-parcel layer,
- *  which won't match any of these field names) falling into a plain
- *  "Details" catch-all so the same card still works generically. Each
- *  section gets its own accent color so the card reads as distinct,
- *  physically separate blocks rather than one long list. `tab` is the tab a
- *  section sits under where the card is tabbed. */
+ *  detail card is organized into — Location, Valuation, Owner — with
+ *  anything left over (and every non-parcel layer, which won't match any of
+ *  these field names) falling into a plain "Details" catch-all so the same
+ *  card still works generically. `tab` is the tab a section sits under where
+ *  the card is tabbed. `stat` and `accent` are kept so existing callers
+ *  still type-check; the card no longer renders them. */
 const DETAIL_GROUPS: {
   title: string;
   fields: string[];
@@ -130,12 +120,12 @@ export function detailSections(
   return sections;
 }
 
+/** Section headings: plain sentence case, no decoration. */
 export const SECTION_LABEL_STYLE = {
-  fontFamily: FONTS.mono,
-  fontSize: 13,
-  fontWeight: 700,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase' as const,
+  fontFamily: FONTS.body,
+  fontSize: 14,
+  fontWeight: 600,
+  color: COLORS.ink,
 };
 
 export function DetailRow({ label, value }: { label: string; value: unknown }) {
@@ -149,78 +139,36 @@ export function DetailRow({ label, value }: { label: string; value: unknown }) {
   }
   if (label === 'Out-of-State Owner') {
     return value ? (
-      <Badge color="orange" variant="filled" size="md">
+      <Badge color="orange" variant="light" size="md" radius="sm">
         Out-of-state owner
       </Badge>
     ) : null;
   }
   return (
     <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
-      <Text size="md" c={COLORS.slate} fw={500}>
+      <Text size="sm" c={COLORS.slate}>
         {label}
       </Text>
-      <Text size="md" fw={700} ta="right" style={{ color: COLORS.ink }}>
+      <Text size="sm" fw={500} ta="right" c={COLORS.ink}>
         {formatDetailValue(label, value)}
       </Text>
     </Group>
   );
 }
 
-function StatTile({ label, value }: { label: string; value: unknown }) {
-  return (
-    <Paper radius="md" p="sm" style={{ background: '#fff' }}>
-      <Text
-        style={{
-          fontFamily: FONTS.display,
-          fontWeight: 800,
-          fontSize: '1.4rem',
-          lineHeight: 1.15,
-          color: COLORS.spruce,
-        }}
-      >
-        {formatDetailValue(label, value)}
-      </Text>
-      <Text
-        mt={4}
-        style={{ ...SECTION_LABEL_STYLE, fontSize: 11, color: COLORS.slate }}
-      >
-        {label}
-      </Text>
-    </Paper>
-  );
-}
-
+/** One titled group of rows. No box, border or accent color — the
+ *  container separates sections. */
 export function DetailSectionCard({ section }: { section: DetailSection }) {
   return (
-    <Paper
-      radius="md"
-      p="md"
-      withBorder
-      style={{
-        background: '#fff',
-        borderColor: COLORS.line,
-        borderLeft: `4px solid ${section.accent}`,
-      }}
-    >
-      <Text style={{ ...SECTION_LABEL_STYLE, color: section.accent }} mb={10}>
+    <div>
+      <Text style={SECTION_LABEL_STYLE} mb={8}>
         {section.title}
       </Text>
-      {section.stat ? (
-        <SimpleGrid cols={2} spacing="sm">
-          {section.entries.map(([k, v]) => (
-            <StatTile key={k} label={k} value={v} />
-          ))}
-        </SimpleGrid>
-      ) : (
-        <Stack gap={10}>
-          {section.entries.map(([k, v], i) => (
-            <Fragment key={k}>
-              {i > 0 && <Divider color={COLORS.line} />}
-              <DetailRow label={k} value={v} />
-            </Fragment>
-          ))}
-        </Stack>
-      )}
-    </Paper>
+      <Stack gap={8}>
+        {section.entries.map(([k, v]) => (
+          <DetailRow key={k} label={k} value={v} />
+        ))}
+      </Stack>
+    </div>
   );
 }

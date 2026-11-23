@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { IconArrowRight, IconCheck, IconX } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck } from '@tabler/icons-react';
 import { MAP_PRESETS, type MapPreset } from './MapPresets';
 import styles from './explorer.module.css';
 
@@ -22,7 +22,6 @@ export default function QuestionList({
     <div className={styles.questions}>
       {MAP_PRESETS.map((preset) => {
         const active = preset.id === activeId;
-        const Icon = preset.icon;
         return (
           <div
             key={preset.id}
@@ -35,13 +34,14 @@ export default function QuestionList({
               aria-pressed={active}
               onClick={() => (active ? onClear() : onSelect(preset))}
             >
-              <span className={styles.questionIcon}>
-                <Icon size={19} stroke={1.8} />
-              </span>
               <span className={styles.questionText}>{preset.question}</span>
-              <span className={styles.questionArrow}>
-                {active ? <IconX size={16} /> : <IconArrowRight size={16} />}
-              </span>
+              {active ? (
+                <span className={styles.questionClear}>Clear</span>
+              ) : (
+                <span className={styles.questionArrow}>
+                  <IconArrowRight size={16} />
+                </span>
+              )}
             </button>
             {active && (
               <div className={styles.questionBody}>

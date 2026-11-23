@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Fragment,
   useState,
   useCallback,
   useEffect,
@@ -16,18 +17,9 @@ import { WebMercatorViewport } from '@math.gl/web-mercator';
 import type { LayersList, MapViewState } from '@deck.gl/core';
 import type { Feature, FeatureCollection } from 'geojson';
 import type { StyleSpecification } from 'maplibre-gl';
-import {
-  Paper,
-  Card,
-  Divider,
-  ActionIcon,
-  Group,
-  Stack,
-  Text,
-} from '@mantine/core';
+import { Paper, ActionIcon, Divider, Group, Stack, Text } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
 import { COLORS, FONTS } from '@/app/theme';
-import { isTooltipMeta, withTooltipMargin } from '@/components/Charts/margins';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { MapRef } from 'react-map-gl/maplibre';
 import {
@@ -168,6 +160,15 @@ const PARCEL_LINE_COLOR: Record<Basemap, RGBA> = {
 };
 const OUTLINE_COLOR: RGBA = [221, 154, 47, 255]; // COLORS.amber
 const OUTLINE_HALO: RGBA = [255, 255, 255, 235];
+
+// Floating panels (hover tooltip, detail card) share one look: plain white,
+// a hairline border and a small radius, so they read clearly over any basemap.
+const PANEL_STYLE = {
+  background: '#fff',
+  borderColor: COLORS.line,
+  fontFamily: FONTS.body,
+  zIndex: 1000,
+} as const;
 
 type HoverInfo = {
   x: number;
@@ -332,6 +333,16 @@ export default function VTMap({
     null,
   );
 
+  // Esc closes the detail card.
+  useEffect(() => {
+    if (!selected) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelected(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selected]);
+
   const onClick = (info: {
     coordinate?: number[];
     layer?: { id: string } | null;
@@ -361,10 +372,11 @@ export default function VTMap({
     highlightId != null &&
     String(d.properties?.tooltip?.__title__ ?? '') === highlightId;
 
+  // Same amber as the selection ring, so "highlighted" looks like one thing.
   const makeGetLineColor =
     (baseColor: RGBA) =>
     (d: { properties?: { tooltip?: Record<string, unknown> } }): RGBA =>
-      isHighlighted(d) ? [255, 209, 0, 255] : baseColor;
+      isHighlighted(d) ? OUTLINE_COLOR : baseColor;
 
   const makeGetLineWidth =
     (baseWidth: number) =>
@@ -445,171 +457,138 @@ export default function VTMap({
     );
   }
 
+  const tooltipRows = tooltip?.content
+    ? (tooltip.fields ?? Object.keys(tooltip.content))
+        .filter((k) => k !== '__title__' && !isBlank(tooltip.content[k]))
+        .slice(0, 2)
+    : [];
+
   return (
     <div
       ref={containerRef}
       style={{
-        display: 'flex',
-        flexDirection: 'column',
+        position: 'relative',
         width: '100%',
         height: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
       }}
     >
-      <div
-        style={{
-          flex: 1,
-          position: 'relative',
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
+      <DeckGL
+        viewState={viewState}
+        onViewStateChange={onViewStateChange}
+        controller={controllerOn}
+        layers={deckLayers}
+        onClick={onClick}
+        getCursor={({ isDragging, isHovering }) =>
+          isDragging ? 'grabbing' : isHovering ? 'pointer' : 'grab'
+        }
+        style={{ width: '100%', height: '100%' }}
       >
-        <DeckGL
-          viewState={viewState}
-          onViewStateChange={onViewStateChange}
-          controller={controllerOn}
-          layers={deckLayers}
-          onClick={onClick}
-          getCursor={({ isDragging, isHovering }) =>
-            isDragging ? 'grabbing' : isHovering ? 'pointer' : 'grab'
-          }
-          style={{ width: '100%', height: '100%' }}
+        <Map ref={mapRef} mapStyle={BASE_STYLES[basemap]} />
+      </DeckGL>
+
+      {tooltip?.content && (
+        <Paper
+          withBorder
+          shadow="sm"
+          radius="md"
+          px={10}
+          py={6}
+          style={{
+            ...PANEL_STYLE,
+            position: 'absolute',
+            // Open toward the middle of the map so it never runs off an edge.
+            ...(tooltip.x > tooltip.width / 2
+              ? { right: tooltip.width - tooltip.x + 16 }
+              : { left: tooltip.x + 16 }),
+            ...(tooltip.y > tooltip.height / 2
+              ? { bottom: tooltip.height - tooltip.y + 16 }
+              : { top: tooltip.y + 16 }),
+            pointerEvents: 'none',
+            maxWidth: 220,
+          }}
         >
-          <Map ref={mapRef} mapStyle={BASE_STYLES[basemap]} />
-        </DeckGL>
-
-        {tooltip && tooltip.content && (
-          <Paper
-            shadow="md"
-            radius="md"
-            p="sm"
-            withBorder
-            style={{
-              position: 'absolute',
-              // Open toward the middle of the map so it never runs off an edge.
-              ...(tooltip.x > tooltip.width / 2
-                ? { right: tooltip.width - tooltip.x + 12 }
-                : { left: tooltip.x + 12 }),
-              ...(tooltip.y > tooltip.height / 2
-                ? { bottom: tooltip.height - tooltip.y + 12 }
-                : { top: tooltip.y + 12 }),
-              pointerEvents: 'none',
-              zIndex: 1000,
-              maxWidth: 300,
-              borderColor: COLORS.line,
-              background: COLORS.birch,
-              fontFamily: FONTS.body,
-            }}
-          >
-            <Text
-              fw={700}
-              size="md"
-              style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
-            >
-              {String(tooltip.content.__title__ ?? 'Details')}
-            </Text>
-            {(() => {
-              const rows = (
-                tooltip.fields ?? Object.keys(tooltip.content)
-              ).filter(
-                (k) => k !== '__title__' && !isBlank(tooltip.content[k]),
-              );
-              return (
-                rows.length > 0 && (
-                  <>
-                    <Divider my={6} color={COLORS.line} />
-                    <Stack gap={4}>
-                      {rows.map((k) => (
-                        <Group
-                          key={k}
-                          justify="space-between"
-                          align="flex-start"
-                          wrap="nowrap"
-                          gap="sm"
-                        >
-                          <Text size="xs" c={COLORS.slate} fw={500}>
-                            {k}
-                          </Text>
-                          <Text
-                            size="xs"
-                            fw={700}
-                            ta="right"
-                            style={{ color: COLORS.ink }}
-                          >
-                            {formatDetailValue(k, tooltip.content[k])}
-                          </Text>
-                        </Group>
-                      ))}
-                    </Stack>
-                  </>
-                )
-              );
-            })()}
-            {tooltip.hint && (
-              <Text size="xs" c="dimmed" mt={6}>
-                {tooltip.hint}
-              </Text>
-            )}
-          </Paper>
-        )}
-
-        {selected && (
-          <Card
-            withBorder
-            radius="lg"
-            p={0}
-            shadow="xl"
-            style={{
-              position: 'absolute',
-              right: 12,
-              top: 12,
-              bottom: 12,
-              width: 340,
-              overflowY: 'auto',
-              zIndex: 1000,
-              borderColor: COLORS.line,
-              background: COLORS.birch,
-              fontFamily: FONTS.body,
-            }}
-          >
-            <Group
-              justify="space-between"
-              align="center"
-              wrap="nowrap"
-              p="lg"
-              pb="md"
-              style={{
-                background: COLORS.birch,
-                position: 'sticky',
-                top: 0,
-                zIndex: 1,
-              }}
-            >
-              <Text
-                fw={800}
-                size="xl"
-                style={{ fontFamily: FONTS.display, color: COLORS.spruce }}
-              >
-                {String(selected.__title__ ?? 'Details')}
-              </Text>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                size="md"
-                aria-label="Close details"
-                onClick={() => setSelected(null)}
-                style={{ color: COLORS.spruceDeep }}
-              >
-                <IconX size={18} />
-              </ActionIcon>
-            </Group>
-            <Stack gap="md" p="lg" pt="md">
-              {detailSections(selected).map((section) => (
-                <DetailSectionCard key={section.title} section={section} />
+          <Text fw={600} size="sm" c={COLORS.ink} lh={1.3}>
+            {String(tooltip.content.__title__ ?? 'Details')}
+          </Text>
+          {tooltipRows.length > 0 && (
+            <Stack gap={2} mt={6}>
+              {tooltipRows.map((k) => (
+                <Group
+                  key={k}
+                  justify="space-between"
+                  align="flex-start"
+                  wrap="nowrap"
+                  gap="md"
+                >
+                  <Text size="xs" c={COLORS.slate}>
+                    {k}
+                  </Text>
+                  <Text size="xs" fw={500} ta="right" c={COLORS.ink}>
+                    {formatDetailValue(k, tooltip.content[k])}
+                  </Text>
+                </Group>
               ))}
             </Stack>
-          </Card>
-        )}
-      </div>
+          )}
+        </Paper>
+      )}
+
+      {selected && (
+        <Paper
+          withBorder
+          shadow="md"
+          radius="md"
+          role="dialog"
+          aria-label={String(selected.__title__ ?? 'Details')}
+          style={{
+            ...PANEL_STYLE,
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            bottom: 12,
+            width: 340,
+            maxWidth: 'calc(100% - 24px)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <Group
+            justify="space-between"
+            align="flex-start"
+            wrap="nowrap"
+            gap="sm"
+            px="md"
+            py="sm"
+            style={{ borderBottom: `1px solid ${COLORS.line}`, flexShrink: 0 }}
+          >
+            <Text fw={600} size="md" c={COLORS.ink} lh={1.3}>
+              {String(selected.__title__ ?? 'Details')}
+            </Text>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="sm"
+              aria-label="Close details"
+              onClick={() => setSelected(null)}
+            >
+              <IconX size={16} />
+            </ActionIcon>
+          </Group>
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <Stack gap="md" p="md">
+              {detailSections(selected).map((section, i) => (
+                <Fragment key={section.title}>
+                  {i > 0 && <Divider color={COLORS.line} />}
+                  <DetailSectionCard section={section} />
+                </Fragment>
+              ))}
+            </Stack>
+          </div>
+        </Paper>
+      )}
     </div>
   );
 }

@@ -12,16 +12,14 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import type { Feature, FeatureCollection } from 'geojson';
-import { Autocomplete } from '@mantine/core';
+import { Autocomplete, Group, Text, Title } from '@mantine/core';
 import {
   IconChevronRight,
-  IconHandClick,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconSearch,
 } from '@tabler/icons-react';
 import { area } from '@turf/area';
-import { AnimatePresence, motion } from 'motion/react';
 
 import VTMap, {
   type Basemap,
@@ -106,6 +104,8 @@ function fillViewportBelow(el: HTMLDivElement | null) {
   el.style.height = `calc(100dvh - ${top}px)`;
 }
 
+/** A plain heading for a group in the side panel, with an optional action
+ *  on the right. */
 function SectionLabel({
   children,
   aside,
@@ -114,10 +114,12 @@ function SectionLabel({
   aside?: ReactNode;
 }) {
   return (
-    <div className={styles.sectionLabel}>
-      <span className={styles.eyebrow}>{children}</span>
+    <Group justify="space-between" align="center" mt="md" mb="xs">
+      <Text fw={600} size="sm" c={COLORS.ink}>
+        {children}
+      </Text>
       {aside}
-    </div>
+    </Group>
   );
 }
 
@@ -583,7 +585,7 @@ function MapExplorerContent() {
       placeholder={
         selectedTown ? 'Search another town…' : 'Search a town or city…'
       }
-      leftSection={<IconSearch size={18} color={COLORS.spruce} />}
+      leftSection={<IconSearch size={18} color={COLORS.slate} />}
       data={options}
       value={searchValue}
       onChange={handleSearchChange}
@@ -592,7 +594,7 @@ function MapExplorerContent() {
       size={selectedTown ? 'sm' : 'md'}
       radius="md"
       autoFocus={!selectedTown}
-      comboboxProps={{ shadow: 'lg', radius: 'md' }}
+      comboboxProps={{ shadow: 'sm', radius: 'md' }}
       classNames={{ dropdown: styles.portal }}
       style={{ flex: 1 }}
     />
@@ -643,26 +645,28 @@ function MapExplorerContent() {
         >
           <div className={styles.panelHead}>
             {!selectedTown && (
-              <>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <span className={styles.eyebrow}>Map explorer · Beta</span>
-                  <CollapseButton onClick={() => setPanelOpen(false)} />
+              <Group justify="space-between" align="flex-start" wrap="nowrap">
+                <div>
+                  <Title order={1} size="h3" c={COLORS.ink}>
+                    Vermont map explorer
+                  </Title>
+                  <Text size="sm" c={COLORS.slate} mt={4}>
+                    Search for a town, or click one on the map, to see its
+                    zoning, flood zones, soils, sewer service and parcels.
+                  </Text>
                 </div>
-                <h1 className={styles.heroTitle}>
-                  Explore Vermont,
-                  <br />
-                  town by town.
-                </h1>
-                <p className={styles.lede}>
-                  Zoning, flood zones, soils, sewer service and property lines —
-                  together on one map, in plain language.
-                </p>
-              </>
+                <CollapseButton onClick={() => setPanelOpen(false)} />
+              </Group>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginTop: selectedTown ? 0 : 16,
+              }}
+            >
               {search}
               {selectedTown && (
                 <CollapseButton onClick={() => setPanelOpen(false)} />
@@ -717,86 +721,53 @@ function MapExplorerContent() {
             )}
           </div>
 
-          <div className={styles.panelBody}>
-            {!selectedTown ? (
-              <ol className={styles.steps}>
-                <li>
-                  <span>
-                    <b>Pick a town.</b>
-                    Search above, or click one on the map.
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    <b>Ask a question.</b>
-                    Like “Where could housing be built?”
-                  </span>
-                </li>
-                <li>
-                  <span>
-                    <b>Click the map.</b>
-                    See what applies at any spot, in one card.
-                  </span>
-                </li>
-              </ol>
-            ) : (
-              <>
-                <SectionLabel>Start with a question</SectionLabel>
-                <QuestionList
-                  activeId={activePresetId}
-                  onSelect={handlePresetSelect}
-                  onClear={handlePresetClear}
-                />
+          {/* Nothing to show here until a town is chosen. */}
+          {selectedTown && (
+            <div className={styles.panelBody}>
+              <SectionLabel>Start with a question</SectionLabel>
+              <QuestionList
+                activeId={activePresetId}
+                onSelect={handlePresetSelect}
+                onClear={handlePresetClear}
+              />
 
-                <SectionLabel
-                  aside={
-                    activeLayers.size > 0 && (
-                      <button
-                        type="button"
-                        className={styles.linkButton}
-                        onClick={handlePresetClear}
-                      >
-                        Clear the map
-                      </button>
-                    )
-                  }
-                >
-                  Or choose what to show
-                </SectionLabel>
-                <LayerPanel
-                  activeLayers={activeLayers}
-                  onToggle={handleToggle}
-                  onDataChange={handleDataChange}
-                  onStatsChange={handleStatsChange}
-                  onLoadingChange={handleLoadingChange}
-                  presetFilters={presetFilters}
-                  lockedLayerIds={lockedLayerIds}
-                  combinedLayerIds={combinedLayerIds}
-                  townCandidates={townCandidates}
-                  townBBox={selectedBBox}
-                  townName={townName}
-                  scopeVersion={scopeVersion}
-                  parcelColorMode={parcelColorMode}
-                  onParcelColorMode={setParcelColorMode}
-                />
-              </>
-            )}
-          </div>
+              <SectionLabel
+                aside={
+                  activeLayers.size > 0 && (
+                    <button
+                      type="button"
+                      className={styles.linkButton}
+                      onClick={handlePresetClear}
+                    >
+                      Clear the map
+                    </button>
+                  )
+                }
+              >
+                Or choose what to show
+              </SectionLabel>
+              <LayerPanel
+                activeLayers={activeLayers}
+                onToggle={handleToggle}
+                onDataChange={handleDataChange}
+                onStatsChange={handleStatsChange}
+                onLoadingChange={handleLoadingChange}
+                presetFilters={presetFilters}
+                lockedLayerIds={lockedLayerIds}
+                combinedLayerIds={combinedLayerIds}
+                townCandidates={townCandidates}
+                townBBox={selectedBBox}
+                townName={townName}
+                scopeVersion={scopeVersion}
+                parcelColorMode={parcelColorMode}
+                onParcelColorMode={setParcelColorMode}
+              />
+            </div>
+          )}
         </aside>
 
         <div className={styles.middle}>
           <div className={styles.top}>
-            {!selectedTown && (
-              <div className={styles.pill}>
-                <IconHandClick size={16} />
-                Click any town on the map to begin
-              </div>
-            )}
-            {selectedTown && activeLayers.size === 0 && (
-              <div className={styles.pill}>
-                Pick a question on the left to see it on the map
-              </div>
-            )}
             {selectedTown && (
               <InsightStrip insights={insights} loading={loadingTitles} />
             )}
@@ -813,26 +784,17 @@ function MapExplorerContent() {
           </div>
         </div>
 
-        <AnimatePresence>
-          {selection && (
-            <motion.div
-              key="spot"
-              style={{ display: 'flex', flexShrink: 0 }}
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 24 }}
-              transition={{ duration: 0.2 }}
-            >
-              <SpotCard
-                click={selection}
-                report={report}
-                townName={townName}
-                onShowLayer={(id) => handleToggle(id, true)}
-                onClose={() => setSelection(null)}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {selection && (
+          <div style={{ display: 'flex', flexShrink: 0 }}>
+            <SpotCard
+              click={selection}
+              report={report}
+              townName={townName}
+              onShowLayer={(id) => handleToggle(id, true)}
+              onClose={() => setSelection(null)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

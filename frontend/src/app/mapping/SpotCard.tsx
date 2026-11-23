@@ -1,7 +1,8 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { CloseButton, Stack, Tabs } from '@mantine/core';
+import { Stack, Tabs } from '@mantine/core';
+import { IconExternalLink, IconX } from '@tabler/icons-react';
 import type { MapClick } from '@/components/mapping';
 import {
   DetailSectionCard,
@@ -34,7 +35,7 @@ function ReportRow({
         {row.status === 'off' && (
           <button
             type="button"
-            className={styles.linkButton}
+            className={styles.spotAction}
             onClick={() => onShowLayer(row.id)}
           >
             Show on map
@@ -46,7 +47,7 @@ function ReportRow({
         {row.status === 'none' &&
           (row.fields.length > 0 || row.id !== 'overlap'
             ? 'None at this spot.'
-            : 'No — not at this spot.')}
+            : 'Not at this spot.')}
         {row.status === 'here' &&
           (fields.length > 0 ? (
             fields.map(([key, value]) => (
@@ -56,7 +57,9 @@ function ReportRow({
               </div>
             ))
           ) : (
-            <span className={styles.spotAnswer}>Yes — this spot is in it.</span>
+            <span className={styles.spotAnswer}>
+              Yes, this spot is inside it.
+            </span>
           ))}
       </div>
     </div>
@@ -85,7 +88,9 @@ export default function SpotCard({
   const title = String(
     (isBlank(named) ? tooltip?.__title__ : named) ?? `A spot in ${townName}`,
   );
-  const eyebrow = layer?.title ?? (tooltip ? 'On the map' : 'Nothing mapped');
+  // Which layer the feature comes from, shown only when the title doesn't
+  // already say it.
+  const kind = layer?.title ?? (tooltip ? 'On the map' : 'Nothing mapped');
 
   const sections = tooltip ? detailSections(tooltip) : [];
   const sectionTabs = [...new Set(sections.map((section) => section.tab))];
@@ -94,23 +99,18 @@ export default function SpotCard({
   return (
     <aside className={styles.spot} aria-label="Details for the clicked spot">
       <div className={styles.spotHead}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 8,
-          }}
-        >
-          <span className={styles.eyebrow}>{eyebrow}</span>
-          <CloseButton
-            size="sm"
-            aria-label="Close details"
-            onClick={onClose}
-            style={{ marginTop: -4, marginRight: -6 }}
-          />
+        <div>
+          <h2 className={styles.spotTitle}>{title}</h2>
+          <p className={styles.spotKind}>{kind}</p>
         </div>
-        <h2 className={styles.spotTitle}>{title}</h2>
+        <button
+          type="button"
+          className={styles.spotClose}
+          aria-label="Close details"
+          onClick={onClose}
+        >
+          <IconX size={18} />
+        </button>
       </div>
 
       <Tabs
@@ -144,7 +144,7 @@ export default function SpotCard({
 
         {sectionTabs.map((tab) => (
           <Tabs.Panel key={tab} value={tab}>
-            <Stack gap="sm" p="md">
+            <Stack gap="md" p="md">
               {sections
                 .filter((section) => section.tab === tab)
                 .map((section) => (
@@ -160,11 +160,13 @@ export default function SpotCard({
           {Math.abs(lat).toFixed(5)}° N, {Math.abs(lng).toFixed(5)}° W
         </span>
         <a
+          className={styles.spotFootButton}
           href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
           target="_blank"
           rel="noopener noreferrer"
         >
-          Open in Google Maps ↗
+          Google Maps
+          <IconExternalLink size={14} />
         </a>
       </div>
     </aside>
