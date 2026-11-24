@@ -1,8 +1,4 @@
 """
-**Author**:
-    marobinette
-**Created**:
-    2026-11-23
 **Description**:
     Fetches county land area from the Census Gazetteer counties file, used to
     compute population density on the Statewide County Comparison page.

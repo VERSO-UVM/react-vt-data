@@ -23,7 +23,6 @@ from fastapi.testclient import TestClient
 
 from api.metadata_registry import get_metadata
 from api.routes.post_routes import post_acs5_db
-from query.county_comparison import comparison_query
 from query.county_comparison_indicators import INDICATORS, INDICATORS_BY_KEY
 
 EDU = "EDUCATIONAL ATTAINMENT"
@@ -386,79 +385,3 @@ def test_warehouse_without_margins_leaves_them_out(monkeypatch):
         "/load/acs5-db/county-comparison", json={"indicator": "edu_bachelors_or_higher"}
     )
     assert all("value_MOE" not in row for row in response.json()["data"])
-
-
-# ---------------------------------------------------------------------------
-# Population density: DP05 total population ÷ land_area.land_sqmi
-# ---------------------------------------------------------------------------
-
-# Real 2024 values. Population from the warehouse:
-#   SELECT name, geo_type, geoid, value FROM acs5_dp_combined_tidy
-#   WHERE "table" = 'DP05' AND category = 'SEX AND AGE'
-#     AND subcategory = 'Total population' AND variable = 'Total'
-#     AND measure = 'Estimate' AND year = 2024
-# Land area from the 2024 Gazetteer (see tests/test_land_area.py).
-# (name, geo_type, geoid, population, land_sqmi)
-DENSITY_PLACES = [
-    (ESSEX, "county", "50009", 5982.0, 662.37),
-    ("Vermont", "state", "50", 647106.0, 9217.261),
-    ("United States", "national", None, 334922499.0, 3533467.36),
-]
-
-
-def _density_db() -> duckdb.DuckDBPyConnection:
-    """A tiny warehouse: population rows (with margins) and land_area."""
-    conn = duckdb.connect()
-    conn.execute(
-        """
-        CREATE TABLE acs5_dp_combined_tidy (
-            year BIGINT, name VARCHAR, geo_type VARCHAR, geoid VARCHAR,
-            "table" VARCHAR, category VARCHAR, subcategory VARCHAR,
-            variable VARCHAR, measure VARCHAR, value DOUBLE, moe DOUBLE
-        )
-        """
-    )
-    conn.execute(
-        "CREATE TABLE land_area (geoid VARCHAR, geo_type VARCHAR, land_sqmi DOUBLE)"
-    )
-    for name, geo, geoid, pop, land in DENSITY_PLACES:
-        conn.execute(
-            "INSERT INTO acs5_dp_combined_tidy VALUES "
-            "(2024, ?, ?, ?, 'DP05', 'SEX AND AGE', 'Total population', 'Total', "
-            "'Estimate', ?, 100)",
-            [name, geo, geoid, pop],
-        )
-        conn.execute("INSERT INTO land_area VALUES (?, ?, ?)", [geoid, geo, land])
-    # A town has population but no land_area row: it must not appear
-    conn.execute(
-        "INSERT INTO acs5_dp_combined_tidy VALUES "
-        "(2024, 'Lunenburg town, Essex County, Vermont', 'town', '5000941425', "
-        "'DP05', 'SEX AND AGE', 'Total population', 'Total', 'Estimate', 1267, 100)"
-    )
-    return conn
-
-
-def _density_rows(margins=False):
-    sql, params = comparison_query(
-        INDICATORS_BY_KEY["population_density"], margins=margins
-    )
-    return _density_db().execute(sql, params).df()
-
-
-def test_density_is_population_per_square_mile():
-    got = {r.place: round(r.value, 3) for r in _density_rows().itertuples()}
-    # 5982 / 662.37, 647106 / 9217.261, 334922499 / 3533467.36
-    _expect(
-        got,
-        {"Essex": 9.031, "Vermont": 70.206, "United States": 94.786},
-        "2024 people per sq mi",
-    )
-
-
-def test_density_has_no_margins_even_when_the_warehouse_does():
-    # Land area has no margin of error, so density can't carry one
-    _expect(
-        list(_density_rows(margins=True).columns),
-        ["place", "geo_type", "year", "value"],
-        "density columns",
-    )

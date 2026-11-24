@@ -1,8 +1,4 @@
 """
-**Author**:
-    marobinette
-**Created**:
-    2026-11-23
 **Description**:
     Data cleaning script for the raw `gazetteer` table in the DuckLake.
     Turns ~3,200 US counties into lake.CLEANED.land_area: land area in square

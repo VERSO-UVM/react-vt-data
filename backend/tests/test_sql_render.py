@@ -292,13 +292,22 @@ def test_templates_pass_sqlfluff():
     assert violations == [], [str(v) for v in violations]
 
 
+# Extra template variables a query template needs beyond its filters.
+QUERY_TEMPLATE_EXTRA = {
+    "query/sql/acs5/acs5_dp_county_density.sql": {"land_table": "land_area"},
+}
+
+
 @pytest.mark.parametrize("margins", [True, False])
 @pytest.mark.parametrize("template", sorted(QUERY_TEMPLATE_SOURCES))
 def test_rendered_query_sql_parses(template, margins):
     # `margins` adds the ACS templates' optional margin columns; the rest
     # ignore it.
     sql, _params = sql_filter_block(
-        BACKEND / template, QUERY_TEMPLATE_SOURCES[template], margins=margins
+        BACKEND / template,
+        QUERY_TEMPLATE_SOURCES[template],
+        margins=margins,
+        **QUERY_TEMPLATE_EXTRA.get(template, {}),
     )
     _assert_parses(sql, template)
 
