@@ -46,6 +46,10 @@ class Indicator:
     paths: tuple[tuple[str, str], ...] = ()  # (subcategory, variable)
     measures: tuple[str, ...] = PERCENT_MEASURES
     available: bool = True
+    # How the value is computed: "profile" reads it as stored; "density"
+    # divides it by the place's land area (CLEANED.land_area, from the Census
+    # Gazetteer) to get a value per square mile.
+    kind: str = "profile"
 
 
 def _education(key: str, label: str, *names: str) -> Indicator:
@@ -102,6 +106,21 @@ def _disability(key: str, label: str, who: str, group: str) -> Indicator:
 
 
 INDICATORS = [
+    Indicator(
+        key="population_density",
+        label="Population density",
+        topic="Population",
+        description=(
+            "People per square mile of land: total population divided by land "
+            "area from the 2024 Census Gazetteer."
+        ),
+        units="per sq mi",
+        table="DP05",
+        category="SEX AND AGE",
+        paths=(("Total population", "Total"),),  # one label, 2010-2024
+        measures=("Estimate",),
+        kind="density",
+    ),
     _education(
         "edu_bachelors_or_higher",
         "Bachelor's degree or higher",

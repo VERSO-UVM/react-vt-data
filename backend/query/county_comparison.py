@@ -10,10 +10,12 @@ from pathlib import Path
 from query.county_comparison_indicators import Indicator
 from query.sql_render import _placeholder, filter_clauses, render_sql
 
-SQL_PATH = (
-    Path(__file__).resolve().parent / "sql" / "acs5" / "acs5_dp_county_comparison.sql"
-)
+SQL_DIR = Path(__file__).resolve().parent / "sql" / "acs5"
+SQL_PATH = SQL_DIR / "acs5_dp_county_comparison.sql"
+# kind="density" indicators: population ÷ land area, joined in SQL.
+DENSITY_SQL_PATH = SQL_DIR / "acs5_dp_county_density.sql"
 SOURCE_TABLE = "acs5_dp_combined_tidy"
+LAND_TABLE = "land_area"
 
 # Geographies the comparison shows: the 14 counties plus two benchmarks.
 GEO_TYPES = ("county", "state", "national")
@@ -47,6 +49,16 @@ def comparison_query(indicator: Indicator, margins: bool = False) -> tuple[str, 
     # with nulls, as query/acs5.py does.
     clauses.append("value >= 0")
     where_string = "WHERE " + "\n    AND ".join(clauses)
+    if indicator.kind == "density":
+        # Same population filter, then divided by land area. Land area has no
+        # margin, so neither does the result.
+        sql = render_sql(
+            DENSITY_SQL_PATH,
+            table=SOURCE_TABLE,
+            land_table=LAND_TABLE,
+            where_string=where_string,
+        )
+        return sql, params
     sql = render_sql(
         SQL_PATH, table=SOURCE_TABLE, where_string=where_string, margins=margins
     )

@@ -941,7 +941,9 @@ const CompareHBarChart = ({
 // data:                [{<xField>, <yField>, <color field>}], already sorted
 // chartParams.color:   field holding each bar's color
 // chartParams.unit:    'percent' adds a %; 'dollars' adds a $, shortened to
-//                      thousands ($59.3k) on bars and the axis so 16 labels fit
+//                      thousands ($59.3k) on bars and the axis so 16 labels fit;
+//                      'per sq mi' adds "/ sq mi" in the tooltip only, as the
+//                      bars have no room for it
 // chartParams.yLabel:  column name for the value in the table view
 // ---------------------------------------------------------------------------
 
@@ -971,6 +973,7 @@ const RankedBarChart = ({
         ? `$${(n / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}k`
         : `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
     const num = n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    if (unit === 'per sq mi') return short ? num : `${num} / sq mi`;
     return percent ? `${num}%` : num;
   };
   const fmtShort = (v: unknown) => fmt(v, true);
