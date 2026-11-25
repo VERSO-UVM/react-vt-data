@@ -176,6 +176,13 @@ function AssistantTurn({
   );
 }
 
+// Module scope so it outlives the page: Stop still reaches an answer that
+// kept streaming while the user was on another page.
+let answerController: AbortController | null = null;
+const startAnswer = () => (answerController = new AbortController());
+const endAnswer = () => (answerController = null);
+const stopAnswer = () => answerController?.abort();
+
 export default function ChatPage() {
   const status = useChatStatus();
   const {
@@ -194,10 +201,11 @@ export default function ChatPage() {
     profileHydrated ? myLocation : { type: 'state', name: 'Vermont' },
   );
   const [input, setInput] = useState('');
-  const [streaming, setStreaming] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // From the store, not component state: an answer keeps streaming while the
+  // user is elsewhere in the app, and coming back should find it still busy.
+  const streaming = conversations.some((c) => c.turns.some((t) => t.pending));
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const turns = active?.turns ?? [];
   // A chat joins the list once it has a question; until then it's just the
@@ -235,13 +243,12 @@ export default function ChatPage() {
       content: '',
       steps: [],
       charts: [],
+      pending: true,
     });
     const update = (fn: (t: ChatTurn) => ChatTurn) =>
       updateTurn(conversationId, answerId, fn);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setStreaming(true);
+    const controller = startAnswer();
     // Text arrives in many small deltas; write it to the persisted store at
     // most every 100 ms instead of on every chunk.
     let answer = '';
@@ -315,12 +322,12 @@ export default function ChatPage() {
       // Steps still running when the stream ended didn't finish.
       update((t) => ({
         ...t,
+        pending: false,
         steps: (t.steps ?? []).map((s) =>
           s.status === 'running' ? { ...s, status: 'error' } : s,
         ),
       }));
-      setStreaming(false);
-      abortRef.current = null;
+      endAnswer();
       // If the access code changed or expired, this brings back the code form.
       if (failed) refreshChatStatus();
     }
@@ -461,7 +468,7 @@ export default function ChatPage() {
                   <AssistantTurn
                     key={turn.id}
                     turn={turn}
-                    busy={streaming && i === turns.length - 1}
+                    busy={Boolean(turn.pending)}
                     onRetry={
                       i === turns.length - 1 ? () => retry(turn.id) : undefined
                     }
@@ -505,7 +512,7 @@ export default function ChatPage() {
                     radius="xl"
                     variant="default"
                     aria-label="Stop answering"
-                    onClick={() => abortRef.current?.abort()}
+                    onClick={stopAnswer}
                   >
                     <StopIcon size={14} weight="fill" />
                   </ActionIcon>
