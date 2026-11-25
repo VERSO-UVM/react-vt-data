@@ -16,14 +16,21 @@ export type Blog = {
 // content/<slug>/charts.json and put a [chart:<id>] paragraph in the docx.
 export const BLOGS: Blog[] = [
   {
-    title: "Vermont's Community Health Indicators",
+    title: 'A Data Snapshot of the Northeast Kingdom',
     summary:
-      'Exploring the state of community health indicators in Vermont and their impact on public health policy.',
+      "A county-by-county look at population change, housing costs, disability, poverty, and education in Vermont's Essex, Caledonia, and Orleans counties.",
     author: TEAM[5],
-    date: 'November 15th, 2026',
-    source: 'CDC PLACES',
-    slug: 'vermont-community-health-indicators',
-    tags: ['Community Health', 'Poverty', 'Health Insurance'],
-    published: false,
+    date: 'November 25th, 2026',
+    source: 'Census ACS 5-Year Estimates',
+    slug: 'northeast-kingdom-snapshot',
+    tags: [
+      'Community Health',
+      'Demographics',
+      'Housing',
+      'Disability',
+      'Education',
+      'Poverty',
+    ],
+    published: true,
   },
 ];

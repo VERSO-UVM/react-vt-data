@@ -20,6 +20,12 @@ import { BLOGS, Blog } from './blogs';
 
 const TAGS = [...new Set(BLOGS.flatMap((blog) => blog.tags))].sort();
 
+// White cards (same surface as BlogChart) so they separate from the birch page.
+const CARD_SHADOW =
+  '0 1px 2px rgba(20, 30, 25, 0.05), 0 6px 18px rgba(20, 30, 25, 0.06)';
+const CARD_SHADOW_HOVER =
+  '0 2px 4px rgba(20, 30, 25, 0.06), 0 14px 30px rgba(20, 30, 25, 0.12)';
+
 // -----------------------------------------------------------------------------
 // Blog card
 // -----------------------------------------------------------------------------
@@ -27,33 +33,40 @@ const TAGS = [...new Set(BLOGS.flatMap((blog) => blog.tags))].sort();
 function BlogCard({ blog }: { blog: Blog }) {
   const cardContent = (
     <>
-      <Group justify="space-between" align="center" mb="md">
-        <Text
-          style={{
-            fontFamily: FONTS.mono,
-            fontSize: 11,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: COLORS.spruce,
-          }}
-        >
-          Source: {blog.source}
-        </Text>
-      </Group>
+      <Text
+        style={{
+          fontFamily: FONTS.mono,
+          fontSize: 11,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: COLORS.spruce,
+        }}
+      >
+        Source: {blog.source}
+      </Text>
 
       <Title
         order={3}
+        mt="sm"
         style={{
           fontFamily: FONTS.display,
           color: COLORS.ink,
-          fontSize: 21,
-          lineHeight: 1.35,
+          fontSize: 22,
+          lineHeight: 1.3,
         }}
       >
         {blog.title}
       </Title>
 
-      <Text size="sm" mt="sm" style={{ lineHeight: 1.65, color: COLORS.slate }}>
+      <Text
+        mt="sm"
+        style={{
+          fontSize: 15,
+          lineHeight: 1.65,
+          color: COLORS.ink,
+          opacity: 0.8,
+        }}
+      >
         {blog.summary}
       </Text>
 
@@ -65,17 +78,23 @@ function BlogCard({ blog }: { blog: Blog }) {
         ))}
       </Group>
 
-      <Group gap="xs" mt="lg">
+      {/* Byline, separated from the summary and tags */}
+      <Group
+        gap="xs"
+        mt="auto"
+        pt="md"
+        style={{ borderTop: `1px solid ${COLORS.line}`, marginTop: 24 }}
+      >
         <Image
           src={blog.author.image}
           alt={blog.author.name}
           radius="xl"
-          h={25}
-          w={25}
+          h={28}
+          w={28}
           fit="cover"
           fallbackSrc="https://placehold.co/400x400?text=No+Image"
         />
-        <Text size="sm" style={{ color: COLORS.slate }}>
+        <Text size="sm" fw={500} style={{ color: COLORS.ink }}>
           {blog.author.name}
         </Text>
       </Group>
@@ -88,10 +107,12 @@ function BlogCard({ blog }: { blog: Blog }) {
       <Box
         style={{
           height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           border: `1px dashed ${COLORS.line}`,
           borderRadius: 14,
           padding: 'var(--mantine-spacing-xl)',
-          opacity: 0.75,
+          background: 'rgba(255, 255, 255, 0.5)',
         }}
       >
         {cardContent}
@@ -101,9 +122,15 @@ function BlogCard({ blog }: { blog: Blog }) {
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      initial="rest"
+      whileHover="hover"
+      animate="rest"
+      variants={{
+        rest: { y: 0, boxShadow: CARD_SHADOW },
+        hover: { y: -4, boxShadow: CARD_SHADOW_HOVER },
+      }}
       transition={{ duration: 0.18 }}
-      style={{ height: '100%' }}
+      style={{ height: '100%', borderRadius: 16 }}
     >
       <Card
         component="a"
@@ -113,10 +140,12 @@ function BlogCard({ blog }: { blog: Blog }) {
         p="xl"
         h="100%"
         style={{
+          display: 'flex',
+          flexDirection: 'column',
           textDecoration: 'none',
           color: 'inherit',
           borderColor: COLORS.line,
-          background: COLORS.birch,
+          background: '#fff',
         }}
       >
         {cardContent}
@@ -193,7 +222,7 @@ export default function DataBlogsPage() {
             mt="md"
             maw={650}
             style={{
-              color: 'rgba(246,245,239,.72)',
+              color: 'rgba(246,245,239,.9)',
               lineHeight: 1.7,
             }}
           >

@@ -9,6 +9,18 @@ const CONTENT_DIR = path.join(
   'src/app/resources/data-blog/content',
 );
 
+// Opens all links in a new tab with appropriate security attributes.
+function openLinksInNewTab(html: string): string {
+  return html.replace(/<a\b([^>]*)>/gi, (_match, attributes: string) => {
+    // Remove any existing target and rel attributes to avoid duplicates.
+    const cleanAttributes = attributes
+      .replace(/\s+target\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+      .replace(/\s+rel\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+
+    return `<a${cleanAttributes} target="_blank" rel="noopener noreferrer">`;
+  });
+}
+
 // Converts a blog's content.docx (paragraphs, headings, links, lists)
 // into HTML at build time, so authors can write in Word instead of JSX.
 export async function loadBlogHtml(slug: string): Promise<string> {
@@ -17,7 +29,8 @@ export async function loadBlogHtml(slug: string): Promise<string> {
   try {
     const buffer = await fs.readFile(docxPath);
     const { value } = await mammoth.convertToHtml({ buffer });
-    return value;
+
+    return openLinksInNewTab(value);
   } catch {
     return '<p><em>Content coming soon &mdash; add a content.docx file to this blog&rsquo;s content folder.</em></p>';
   }
