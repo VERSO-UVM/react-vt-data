@@ -37,6 +37,9 @@ class ChatSettings:
     max_model_requests: int = 20
     max_tool_calls: int = 30
     max_output_tokens: int = 40_000
+    # Seconds one answer may take before it ends with an error, so a stalled
+    # provider can't hold a stream open.
+    turn_timeout: float = 180.0
     # Rows of each data tool result the model sees; the browser gets full rows
     # by reference through /api/chat/data.
     preview_rows: int = 20
@@ -44,10 +47,19 @@ class ChatSettings:
     max_history_messages: int = 20
     max_message_chars: int = 4_000
     max_history_chars: int = 40_000
+    # Tool calls replayed from one earlier answer, and the size of each one's
+    # arguments (see agent.to_history); larger or extra ones are dropped.
+    max_history_tool_calls: int = 12
+    max_history_tool_chars: int = 2_000
     # Questions per client IP per rolling hour, per worker process.
     rate_limit: int = 30
     # Rows /api/chat/data returns for one chart reference.
     chart_max_rows: int = 5_000
+    # Shared code people enter to use chat (chat/access.py). Unset, chat is
+    # open to anyone who can reach it, which is only fine locally.
+    access_code: str | None = None
+    # How long an entered code is remembered in that browser.
+    access_days: int = 30
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> ChatSettings:
@@ -62,12 +74,15 @@ class ChatSettings:
                 max_model_requests=int(env.get("CHAT_MAX_MODEL_REQUESTS", "20")),
                 max_tool_calls=int(env.get("CHAT_MAX_TOOL_CALLS", "30")),
                 max_output_tokens=int(env.get("CHAT_MAX_OUTPUT_TOKENS", "40000")),
+                turn_timeout=float(env.get("CHAT_TURN_TIMEOUT", "180")),
                 preview_rows=int(env.get("CHAT_PREVIEW_ROWS", "20")),
                 max_history_messages=int(env.get("CHAT_MAX_HISTORY_MESSAGES", "20")),
                 max_message_chars=int(env.get("CHAT_MAX_MESSAGE_CHARS", "4000")),
                 max_history_chars=int(env.get("CHAT_MAX_HISTORY_CHARS", "40000")),
                 rate_limit=int(env.get("CHAT_RATE_LIMIT", "30")),
                 chart_max_rows=int(env.get("CHAT_CHART_MAX_ROWS", "5000")),
+                access_code=env.get("CHAT_ACCESS_CODE", "").strip() or None,
+                access_days=int(env.get("CHAT_ACCESS_DAYS", "30")),
             )
         except ValueError:
             # Don't echo environment contents, which can sit next to secrets.

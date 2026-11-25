@@ -2,7 +2,7 @@
 
 The **Vermont Data Collaborative** is an open-source web app that makes Vermont's public data easy to explore. It pulls together housing, demographic, zoning, flood hazard, soil suitability, parcel, and wastewater data from state and federal sources, and shows it through interactive maps, charts, and tables you can filter by town, county, or region. It's built for people who aren't data specialists, like Regional Planning Commissions, Select Boards, developers, reporters, and engaged residents. You can compare places, save charts to a working report and export it as a PDF, or download the raw data for your own analysis. The frontend runs on Next.js and the backend on FastAPI with DuckDB.
 
-New to the codebase? Read the [Codebase Primer](docs/Codebase_Primer.md); all other documentation is indexed in [docs/](docs/README.md).
+New to the codebase? Read the [Codebase Primer](docs/codebase_primer.md); all other documentation is indexed in [docs/](docs/README.md).
 
 ---
 

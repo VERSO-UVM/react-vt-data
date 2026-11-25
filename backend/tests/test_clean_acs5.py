@@ -28,7 +28,7 @@ BURLINGTON_GEOID = "5000710675"
 _RAW_SCHEMA = """
     year BIGINT, NAME VARCHAR, Variable_Code VARCHAR, Source_Label VARCHAR,
     Category VARCHAR, Subcategory VARCHAR, Variable VARCHAR, Measure VARCHAR,
-    Value VARCHAR, geo_type VARCHAR, state VARCHAR, county VARCHAR
+    Value VARCHAR, geo_type VARCHAR, state VARCHAR, county VARCHAR, MOE VARCHAR
 """
 
 # (year, Variable_Code, Value) for Burlington's colliding DP04 SMOC medians.
@@ -66,9 +66,10 @@ def _housing_rows(rows):
             {year}, '{BURLINGTON}', '{code}',
             'Estimate!!SELECTED MONTHLY OWNER COSTS (SMOC)!!Median (dollars)',
             'SELECTED MONTHLY OWNER COSTS (SMOC)', 'Median (dollars)', 'Total',
-            'Estimate', '{value}', 'county_subdivision', '50', '007'
+            'Estimate', '{value}', 'county_subdivision', '50', '007',
+            {f"'{moe[0]}'" if moe else "NULL"}
         )"""
-        for year, code, value in rows
+        for year, code, value, *moe in rows
     )
     return f"""
         CREATE TABLE lake.RAW.acs5_housing ({_RAW_SCHEMA});
@@ -89,10 +90,49 @@ def test_colliding_smoc_observations_survive_distinctly():
     ).fetchall()
 
     assert rows == [
-        (2011, "DP04_0100E", "1731"),
-        (2011, "DP04_0107E", "699"),
-        (2012, "DP04_0100E", "1764"),
-        (2012, "DP04_0107E", "737"),
+        (2011, "DP04_0100E", 1731.0),
+        (2011, "DP04_0107E", 699.0),
+        (2012, "DP04_0100E", 1764.0),
+        (2012, "DP04_0107E", 737.0),
+    ]
+
+
+def test_dp_values_are_numeric_with_unavailable_codes_nulled():
+    con = _base_con()
+    # Census marks values it cannot publish with "(X)" or a sentinel code.
+    con.execute(
+        _housing_rows(
+            [
+                (2011, "DP04_0100E", "1731"),
+                (2011, "DP04_0101E", "(X)"),
+                (2011, "DP04_0102E", "666666666"),
+                (2011, "DP04_0103E", "-666666666"),
+                (2011, "DP04_0104E", "-888888888"),
+                (2011, "DP04_0105E", "-999999999"),
+            ]
+        )
+    )
+    build_dp_combined(con)
+
+    assert con.execute(
+        """
+        SELECT data_type FROM duckdb_columns()
+        WHERE table_name = 'acs5_dp_combined_tidy' AND column_name = 'value'
+        """
+    ).fetchone() == ("DOUBLE",)
+    rows = con.execute(
+        """
+        SELECT variable_code, value FROM lake.CLEANED.acs5_dp_combined_tidy
+        ORDER BY variable_code
+        """
+    ).fetchall()
+    assert rows == [
+        ("DP04_0100E", 1731.0),
+        ("DP04_0101E", None),
+        ("DP04_0102E", None),
+        ("DP04_0103E", None),
+        ("DP04_0104E", None),
+        ("DP04_0105E", None),
     ]
 
 
@@ -129,11 +169,55 @@ def test_duplicate_town_lines_row_does_not_fan_out_observations():
     _assert_unique_observations(con)  # should not raise despite the dup join row
 
 
+@pytest.mark.requires_warehouse
 def test_dp_value_col():
     con = get_db()
+    (data_type,) = con.execute(
+        """
+        SELECT data_type FROM information_schema.columns
+        WHERE table_name = 'acs5_dp_combined_tidy' AND column_name = 'value'
+        """
+    ).fetchone()
+    if data_type != "DOUBLE":
+        pytest.skip(
+            f"warehouse.duckdb predates the DOUBLE value cast ({data_type}); "
+            "rebuild it with `just etl`"
+        )
     df = con.execute("SELECT value FROM main.acs5_dp_combined_tidy").df()
     print(df["value"].dtype, df["value"].min(), df["value"].max())
 
     assert df["value"].dtype.kind == "f"
     assert df["value"].min() >= 0
     assert df["value"].max() < 666666666
+
+
+def test_dp_margins_are_numeric_and_labeled():
+    con = _base_con()
+    con.execute(
+        _housing_rows(
+            [
+                (2023, "DP04_0100E", "1800", "90"),  # CV 3% -> high
+                (2023, "DP04_0101E", "40", "-555555555"),  # controlled -> 0
+                (2023, "DP04_0102E", "0", "-222222222"),  # not computable
+                (2023, "DP04_0103E", "-666666666", "-222222222"),
+                (2023, "DP04_0104E", "500", "(X)"),
+                (2023, "DP04_0105E", "100", "60"),  # CV 36% -> low
+            ]
+        )
+    )
+    build_dp_combined(con)
+
+    rows = con.execute(
+        """
+        SELECT variable_code, value, moe, reliability
+        FROM lake.CLEANED.acs5_dp_combined_tidy ORDER BY variable_code
+        """
+    ).fetchall()
+    assert rows == [
+        ("DP04_0100E", 1800.0, 90.0, "high"),
+        ("DP04_0101E", 40.0, 0.0, "high"),
+        ("DP04_0102E", 0.0, None, None),
+        ("DP04_0103E", None, None, None),
+        ("DP04_0104E", 500.0, None, None),
+        ("DP04_0105E", 100.0, 60.0, "low"),
+    ]

@@ -16,7 +16,9 @@ Decisions so far:
   candidates first: [guides/chat-evals.md](../guides/chat-evals.md).
 - **Data routing:** every OpenRouter request sets `data_collection: "deny"`, so
   it never goes to a provider that stores or trains on inputs.
-- **Feature flag:** backend environment flag only. No invite codes or per-user gating.
+- **Feature flag:** a backend environment flag, plus an optional shared access
+  code (`CHAT_ACCESS_CODE`) for testers until there are accounts. See
+  [Feature flag design](#feature-flag-design).
 - **v0 has no database and no spend cap.** Chats live in the browser's
   localStorage, and the browser sends the conversation history with each request,
   so the server stores nothing. The budget ledger, accounts, and server-side chat
@@ -31,7 +33,8 @@ Decisions so far:
 | The data tools, in-process (with previews trimmed for the model)                        | Server-side chat history and conversation logging   |
 | `render_chart` tool using data references, and `POST /api/chat/data` to resolve them    | PDF report blocks                                   |
 | `/chat` page; chats saved in localStorage like the working report                       | Session workspace handles that persist across turns |
-| Per-turn bounds: output length, tool-loop iterations, maximum history size              |                                                     |
+| Per-turn bounds: output length, tool-loop iterations, seconds, maximum history size     |                                                     |
+| One log line per turn (`chat_turn ...`: outcome, model, tokens, cost; never the text)   |                                                     |
 | In-memory per-IP rate limit (same approach as the MCP's; per worker, resets on restart) |                                                     |
 | A dedicated OpenRouter key with a credit limit, which hard-stops requests once spent    |                                                     |
 
@@ -44,18 +47,19 @@ internal testers. That environment is a prerequisite for enabling chat anywhere.
 
 ## v0 implementation map
 
-| Piece                | Where                                                                                           |
-| -------------------- | ----------------------------------------------------------------------------------------------- |
-| Flag + mount         | `backend/api/main.py` (`CHAT_ENABLED`), settings in `backend/chat/config.py`                    |
-| Agent (Pydantic AI)  | `backend/chat/agent.py`: data tools with trimmed previews, `render_chart`, event streaming      |
-| Chart contract       | `backend/chat/charts.py`: `ChartSpec`, `DataRef`, `resolve_rows`                                |
-| Routes               | `backend/chat/router.py`: `GET /api/chat/status`, `POST /api/chat` (SSE), `POST /api/chat/data` |
-| Offline model        | `backend/chat/demo.py` (`CHAT_MODEL=demo`), for UI work without an API key                      |
-| Tests                | `backend/tests/test_chat.py` (fixture warehouse + demo model, no network)                       |
-| Page                 | `frontend/src/app/chat/page.tsx`; nav link in `HeaderMenu` appears only when status is enabled  |
-| Client, store, chart | `frontend/src/components/Chat/` (localStorage store, SSE client, `ChatChart`)                   |
-| Report chart         | `frontend/src/components/Charts/AgentChart.tsx` (subtype `AgentChart`, works in working report) |
-| Deploy               | `frontend/nginx.conf` (`/api/chat` unbuffered + client IP), `justfile` `chat_container_env`     |
+| Piece                | Where                                                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Flag + mount         | `backend/api/main.py` (`CHAT_ENABLED`), settings in `backend/chat/config.py`                                             |
+| Agent (Pydantic AI)  | `backend/chat/agent.py`: data tools with trimmed previews, `render_chart`, event streaming                               |
+| Chart contract       | `backend/chat/charts.py`: `ChartSpec`, `DataRef`, `resolve_rows`                                                         |
+| Routes               | `backend/chat/router.py`: `GET /api/chat/status`, `POST /api/chat` (SSE), `POST /api/chat/data`, `POST /api/chat/unlock` |
+| Access code          | `backend/chat/access.py` (signed cookie); `frontend/src/components/Chat/AccessCodeForm.tsx`                              |
+| Offline model        | `backend/chat/demo.py` (`CHAT_MODEL=demo`), for UI work without an API key                                               |
+| Tests                | `backend/tests/test_chat.py` (fixture warehouse + demo model, no network)                                                |
+| Page                 | `frontend/src/app/chat/page.tsx`; nav link in `HeaderMenu` appears only when status is enabled                           |
+| Client, store, chart | `frontend/src/components/Chat/` (localStorage store, SSE client, `ChatChart`)                                            |
+| Report chart         | `frontend/src/components/Charts/AgentChart.tsx` (subtype `AgentChart`, works in working report)                          |
+| Deploy               | `frontend/nginx.conf` (`/api/chat` unbuffered + client IP), `justfile` `chat_container_env`                              |
 
 Run locally with the demo model: `CHAT_ENABLED=1 CHAT_MODEL=demo just local-api`
 and `just local-frontend`, then open `/chat`.
@@ -138,10 +142,28 @@ That's a few dozen tokens however large the result is.
   plus counts) before they reach the model. The model reads enough to write the
   narrative; full rows go to the browser by reference. This is also the biggest
   lever on token cost, since tool results are re-sent on every loop iteration.
+- **The dataset list is in the instructions,** not behind a tool
+  (`dataset_catalog` in `chat/agent.py`). Every question needs it, so listing
+  it up front saves a model request, and as part of the fixed prefix it is
+  cached (see Decision 4). It goes ahead of the rules, which the model follows
+  better when they come last. It is a compact listing: caveats shared by several
+  datasets are stated once, and lineage and column plumbing are left to
+  `describe_dataset`. It is built when the API starts, so restart the API after
+  replacing the warehouse; if the warehouse can't be read then, the agent keeps
+  a `list_datasets` tool instead. The MCP's `list_datasets` is unchanged.
 - **Fits the existing types:** `ItemDataRef` in `frontend/src/types/cachedCharts.ts`
   describes exactly this, though nothing uses it yet. Agent charts become ordinary
   `ChartItem`s with a `dataRef`, so "Add to working report" works with the current
   store.
+- **Follow-ups reuse references too:** the browser keeps each answer's tool
+  calls (name and arguments, never results) and sends them back with the
+  history. The server replays them as tool calls with a placeholder result
+  (`to_history` in `chat/agent.py`), so "how does Rutland compare?" or "make
+  that a bar chart" starts from the dataset, places, and chart spec already
+  used. Only the agent's own tool names are accepted, within a size bound.
+  Place lookups are the exception to the placeholder: the newest few are
+  re-run and replayed with their top matches (names and ids), since their
+  arguments don't say which id is which place.
 
 **Chart kinds:** `line` (change over years), `bar` (compare places or
 categories; named categories draw as horizontal bars), `stacked_bar` and
@@ -220,6 +242,17 @@ against live warehouse data, with `data_collection: "deny"` routing.
   hosts, many running reduced-precision (fp4) builds, so quality can vary by
   host.
 
+These runs predate prompt caching and the dataset list in the instructions.
+Claude requests now mark the tool definitions, the instructions (with the
+dataset list), and the newest message as cacheable (`build_agent` in
+`chat/agent.py`). The fixed prefix is about 42,000 characters and is shared by
+every question while the cache is warm; within a turn, each later request also
+reads the earlier tool results at the cached rate. The turn's `usage` reports
+`cache_read_tokens` and `cache_write_tokens`. Other providers ignore the
+markers. Measured on 2026-11-13 against `main` the same day: $0.0039 per chat
+instead of $0.0146, scoring 89% against 91%
+([reports/chat-eval-history.md](../reports/chat-eval-history.md)).
+
 Costs are per eval chat. Real questions may be longer or chattier, so treat
 the last column as an upper bound on volume until we log real usage. The earlier
 planning estimate (about $0.08 per question for Sol) was roughly double Sol's
@@ -241,20 +274,23 @@ depth, from the inside out:
    - **OpenRouter:** an optional credit limit per API key. Once it's spent, that key's requests fail even if the account has credit. The docs give 402 ("insufficient credits") in one place and 403 with `error.metadata.limit_source: "openrouter_key_limit"` in another. A limit can reset on a schedule or never; `GET /api/v1/key` shows what's left.
    - **OpenAI** (only for a direct `openai:` model): a project or organization hard limit, which must be switched on ("Enforce a hard limit"); spend alerts alone don't block anything. Hitting it returns 429 with `project_spend_limit_exceeded` (or `organization_spend_limit_exceeded`).
    - Enforcement isn't instant on OpenAI, so spend can slightly exceed the limit; set it a little under what we can afford.
-   - **Known gap:** the chat only recognizes 402 as "usage limit reached". An OpenRouter 403 key-limit error would read as "isn't configured", and an OpenAI 429 spend-limit error as "busy, try again". Reading `limit_source` or the error code from the response body would fix both.
+   - The chat reads all three as "usage limit reached": a 402, an OpenRouter
+     403 naming `openrouter_key_limit`, and an OpenAI 429 whose code ends in
+     `spend_limit_exceeded` (`spend_limit_reached` in `chat/agent.py`).
 6. **Reconcile** (optional, later): a nightly job compares the ledger with the provider's usage/cost API.
 
 When the cap is reached, `GET /api/chat/status` returns `{ "available": false, "resets_at": "2026-11-01" }` and the UI shows: _"Data Chat has reached its monthly usage limit and will be back on November 1."_
 
 ## Feature flag design
 
-One backend environment flag:
+A backend environment flag, and a shared access code for testers:
 
 - `CHAT_ENABLED` (backend env). The chat router is only mounted when it's set, the same pattern as `MCP_ENABLED`. Off means the endpoints don't exist.
-- The frontend calls `GET /api/chat/status` → `{ enabled, available, resets_at }`. The nav entry and chat page render only when `enabled` is true. If the call fails or the route is missing (flag off, or the GitHub Pages build with no API), chat stays hidden.
-- Flipping the flag needs an API restart, not a frontend rebuild.
+- `CHAT_ACCESS_CODE` (backend env, optional). When set, `/chat` asks for the code and `POST /api/chat/unlock` checks it (10 tries per IP per hour). The right code sets an HttpOnly cookie, signed with a key derived from the code and valid for `CHAT_ACCESS_DAYS` (default 30). `POST /api/chat` and `POST /api/chat/data` answer 401 without it. Changing the code signs everyone out; there's no way to sign out one person.
+- The frontend calls `GET /api/chat/status` → `{ enabled, available, resets_at, unlocked }`. The nav entry appears only when `enabled` and `unlocked` are both true, so testers go to `/chat` directly to enter the code. If the call fails or the route is missing (flag off, or the GitHub Pages build with no API), chat stays hidden.
+- Flipping the flag or changing the code needs an API restart, not a frontend rebuild.
 
-Trade-off: there's no "on for testers only" state. To test in production we turn it on for everyone, so the per-client throttle and global cap have to be in place before the first time we enable it. Local and staging testing just set the flag in `.env`.
+The code is a stopgap until accounts (likely a magic link and a token): anyone given it can pass it on, so it limits who runs up the bill, not who can see data that's already public. The check is one FastAPI dependency (`require_access` in `chat/router.py`), which a login check can replace. Local testing can leave the code unset.
 
 ## Proposed request flow
 

@@ -59,6 +59,10 @@ const links: NavItem[] = [
             link: '/data-comparison/dp-explorer',
             label: 'Census Variable Comparison',
           },
+          {
+            link: '/data-comparison/county-comparison',
+            label: 'Statewide County Comparison',
+          },
           // Legacy page (CDC only version of the variable relationship map)
           // {
           //   link: '/data-comparison/variable-comparison',
@@ -256,8 +260,10 @@ export default function HeaderMenu() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Data Chat sits after Data, only when the backend has CHAT_ENABLED set.
-  const chatEnabled = useChatStatus()?.enabled ?? false;
+  // Data Chat sits after Data, only when the backend has CHAT_ENABLED set and
+  // this browser has entered the access code; testers go to /chat to enter it.
+  const chatStatus = useChatStatus();
+  const chatEnabled = !!(chatStatus?.enabled && chatStatus.unlocked);
   const navLinks: NavItem[] = chatEnabled
     ? [...links.slice(0, 3), { link: '/chat', label: 'Ask' }, ...links.slice(3)]
     : links;

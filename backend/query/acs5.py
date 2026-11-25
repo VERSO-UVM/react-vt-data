@@ -126,6 +126,8 @@ ACS5_TREE_LABELS = ["Location"]
 
 # The cleaned timeseries tables store their measure columns in snake_case, but
 # the frontend charts read these Title_Case field names, so responses keep them.
+# Where a series has a 90% margin of error, it follows as `<field>_MOE`, with
+# its reliability label (high, medium or low) as `<field>_Reliability`.
 TIMESERIES_FIELD_NAMES = {
     "median_age": "Median_Age",
     "age_dependency_ratio": "Age_Dependency_Ratio",
@@ -134,6 +136,26 @@ TIMESERIES_FIELD_NAMES = {
     "total_housing_units": "Total_Housing_Units",
     "median_home_value": "Median_Home_Value",
     "percent": "Percent",
+}
+TIMESERIES_FIELD_NAMES |= {
+    f"{column}_{suffix.lower()}": f"{field}_{suffix}"
+    for column, field in TIMESERIES_FIELD_NAMES.items()
+    for suffix in ("MOE", "Reliability")
+}
+
+# The tidy tables' columns the tidy endpoints return, under the Title Case
+# names the frontend reads. A warehouse built before margins were collected
+# has no margin columns; its responses just leave them out.
+TIDY_FIELD_NAMES = {
+    "year": "year",
+    "section": "Section",
+    "variable": "Variable",
+    "value": "Value",
+    "value_moe": "Value_MOE",
+    "value_reliability": "Value_Reliability",
+    "percent": "Percent",
+    "percent_moe": "Percent_MOE",
+    "percent_reliability": "Percent_Reliability",
 }
 
 
@@ -172,6 +194,9 @@ def get_acs5_tidy(dataset: str, filters: dict | None = None) -> pd.DataFrame:
     sql, params = sql_filter_block(sql_path / "acs5_tidy.sql", [source])
 
     result = DB.execute(sql, params).df()
+    result = result[[c for c in TIDY_FIELD_NAMES if c in result.columns]].rename(
+        columns=TIDY_FIELD_NAMES
+    )
 
     if result.empty:
         logger.error(

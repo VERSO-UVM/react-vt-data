@@ -5,6 +5,7 @@ export {
   CompareDiffPerXBarChart,
   CompareHBarChart,
   ZoningAllowanceStackedBarChart,
+  RankedBarChart,
 } from './Bar';
 
 export {
@@ -63,6 +64,7 @@ import * as motion from 'motion/react-client';
 import { AddChart, RemoveChart } from './saving';
 import { useEffect, useRef, useState } from 'react';
 import { TableView, ViewSwitch } from './TableView';
+import { MarginsSwitch } from './margins';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 import { useItems } from '@/components/ItemsProvider';
 import classes from './ChartCard.module.css';
@@ -96,6 +98,12 @@ interface ChartCardProps<TData extends DataRow> {
     listeners: DraggableSyntheticListeners;
   };
 }
+/** Whether any of a chart's rows has a margin of error to show or hide. */
+const carriesMargins = (chart: ChartItem<DataRow>) =>
+  [...(chart.data ?? []), ...(chart.compareData ?? [])].some((row) =>
+    Object.entries(row).some(([k, v]) => k.endsWith('_MOE') && v != null),
+  );
+
 export const ChartCard = <TData extends DataRow>({
   chart,
   ChartComponent,
@@ -295,6 +303,9 @@ export const ChartCard = <TData extends DataRow>({
               </Group>
             )}
 
+            {!isPdfMode && !isGallery && carriesMargins(chart) && (
+              <MarginsSwitch />
+            )}
             {!isPdfMode && showViewSwitch && (
               <ViewSwitch view={localView} setView={setLocalView} />
             )}
