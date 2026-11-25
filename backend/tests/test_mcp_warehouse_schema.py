@@ -162,7 +162,17 @@ OLD_BURDEN_COLUMNS = {
     "pct_housing_burden": "DOUBLE",
     "year": "BIGINT",
 }
-NEW_BURDEN_MEASURES = {"Percent", "Total", "Value", "Variable"}
+NEW_BURDEN_MEASURES = {
+    "Percent",
+    "Total",
+    "Value",
+    "Variable",
+    *(
+        f"{m}_{s}"
+        for m in ("Percent", "Total", "Value")
+        for s in ("MOE", "Reliability")
+    ),
+}
 
 
 def _error_columns(errors, prefix):

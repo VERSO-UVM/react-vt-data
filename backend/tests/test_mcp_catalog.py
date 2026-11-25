@@ -15,6 +15,7 @@ from data_tools.catalog import (
     encode_variable_id,
     get_dataset,
     list_datasets,
+    margin_column,
     provenance_metadata,
     search_locations,
     search_variables,
@@ -567,3 +568,20 @@ def test_percent_total_units_are_conservative_but_true_percent_brackets_survive(
         == "percent"
     )
     assert any("contain totals" in caveat for caveat in dataset.caveats)
+
+
+def test_datasets_with_margins_explain_them():
+    """A dataset told to the model as having no margins must really have none."""
+    for dataset in DATASETS.values():
+        margins = [c for c in dataset.value_columns if c.lower().endswith("_moe")]
+        denies = any(
+            c.startswith("Margins of error are not included") for c in dataset.caveats
+        )
+        assert not (margins and denies), dataset.id
+    # Upper-case margins (Value_MOE) pair with their measure and reliability label.
+    burden = get_dataset("acs5_ts_income_burden")
+    assert margin_column(burden, "Percent") == "Percent_MOE"
+    assert {"Value_Reliability", "Percent_Reliability"} <= set(burden.filter_columns)
+    assert not any(
+        c.startswith("Margins of error are not included") for c in burden.caveats
+    )

@@ -17,6 +17,43 @@ Case columns: **Trend** = income-trend, **Rank** = renter-burden-ranking,
 **Compare** = home-values-follow-up, **Mix** = jobs-mix, **Limits** =
 forecast-limits.
 
+## 2026-11-18: Haiku 5.5 vs GPT-6.2 Sol, 3 repeats
+
+- **Setup:** 3 repeats per model, 30 chats, at `df7f5ad2` (run
+  `20261118-145824`). The jobs-mix reference still ended at 2023 though the
+  warehouse has 2024, so Mix was rerun after fixing it (`74db12d9`, run
+  `20261118-150844`); the tables use that rerun for Mix.
+- **Decision:** keep Claude Haiku 5.5 as the default. Sol scores a little
+  lower at about 8 times the cost.
+
+| Model            | Score | Quality | Cost / chat | Time / chat | Errors |
+| ---------------- | ----- | ------- | ----------- | ----------- | ------ |
+| Claude Haiku 5.5 | 93%   | 7.5/10  | $0.0036     | 13s         | 0      |
+| GPT-6.2 Sol      | 91%   | 7.3/10  | $0.0297     | 12s         | 0      |
+
+| Model            | Trend | Rank | Compare | Mix | Limits |
+| ---------------- | ----- | ---- | ------- | --- | ------ |
+| Claude Haiku 5.5 | 100%  | 90%  | 93%     | 93% | 89%    |
+| GPT-6.2 Sol      | 100%  | 83%  | 96%     | 73% | 100%   |
+
+- **Cost of the runs:** $0.61 in chat calls plus $1.41 for the judge.
+- **Notes:**
+  - Sol 6.2 is as fast as Haiku, with no stalls (6.1 took 50s a chat).
+    Prompt caching works for it without OpenRouter cache settings.
+  - Sol left Burlington, Winooski, and Essex Junction out of every Rank
+    answer, reading "towns" as excluding cities, and put the Total row in its
+    Mix chart or table as if it were a sector in all 3 runs.
+  - Both models said the ranking data has no margins of error, though it
+    does: four ACS catalog entries (cost burden, age dependency, median
+    earnings, health insurance) never declared their margins and kept the
+    "not included" caveat. After fixing them, Haiku's Rank rerun scored 93%
+    at 8.0/10 (run `20261118-153908`), and every answer used the margins.
+  - Haiku's answers run about 170 words against the prompt's 150; Sol's about
+    100.
+  - Before the Mix fix, answers citing 2024 jobs were marked unsupported
+    (Sol 90% and Haiku 77% on Mix). The reference pins its first and last
+    years, so move the last year forward when the warehouse gains one.
+
 ## 2026-11-13: dataset list in the prompt with caching, Haiku 5.5, 3 repeats
 
 - **Setup:** Claude Haiku 5.5 only, 3 repeats, 15 chats per run, all on the
