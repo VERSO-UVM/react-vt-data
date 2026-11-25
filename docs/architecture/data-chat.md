@@ -176,6 +176,14 @@ and scatter plots. References can point at `query_data`, `get_timeseries`,
 `compare_places`, or `get_zoning_summary`, and can rank rows with `sort_by`
 and `top`.
 
+**Margins of error:** when the rows carry a margin for the charted value,
+chat charts draw it as the app's other charts do: bands behind lines,
+whiskers on bars, hollow dots for low reliability, and "value ± margin" in
+tooltips and table cells. Stacks show margins only in the tooltip, since parts'
+margins don't add up to the stack's. The card's "Margins of error" switch is the
+app-wide setting. A reference that lists `columns` still gets each estimate's
+margin and reliability label (`query_data` adds them).
+
 **One row per point:** `render_chart` rejects a spec when several rows land on
 the same x (and series) value, which would silently hide all but one (the
 issue #106 failure). The error names the columns that tell those rows apart,

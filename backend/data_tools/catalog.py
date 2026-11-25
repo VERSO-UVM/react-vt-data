@@ -1416,6 +1416,13 @@ def margin_column(dataset: Dataset, measure: str) -> str | None:
     return None
 
 
+def reliability_column(margin: str) -> str:
+    """The reliability label beside a margin column, named in the same case."""
+    if margin == "moe":
+        return "reliability"
+    return margin[:-3] + ("Reliability" if margin.endswith("_MOE") else "reliability")
+
+
 def with_margins(dataset: Dataset, measures: list[str]) -> list[str]:
     """`measures` with each one's margin right after it. A margin means nothing
     without its estimate, so the two always travel together."""

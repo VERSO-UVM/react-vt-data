@@ -5,7 +5,9 @@
  * stacked area, or table (chartParams.kind). The agent picks the columns
  * (chartParams.series / yUnit / columns plus xField / yField), so this draws
  * whatever rows its data reference returned rather than one fixed dataset like
- * the other chart components.
+ * the other chart components. Rows with margins of error draw them the way the
+ * other charts do (see margins.tsx): bands behind lines, whiskers on bars, and
+ * "± margin" in tooltips and table cells.
  */
 import React, { useEffect, useMemo } from 'react';
 import {
@@ -14,9 +16,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
+  ErrorBar,
   Legend,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -26,6 +29,19 @@ import { ScrollArea, Table, Text } from '@mantine/core';
 import { COLORS } from '@/app/theme';
 import { usePdfMode } from '@/contexts/PdfModeContext';
 import type { ChartItem, DataRow } from '@/types/cachedCharts';
+import {
+  intervalAt,
+  isMarginColumn,
+  marginBand,
+  marginColumns,
+  marginFootnote,
+  marginNoteText,
+  moeKey,
+  reliabilityDots,
+  reliabilityKey,
+  useShowMargins,
+  withMargin,
+} from './margins';
 
 // Distinct hues from the site palette outward, ordered so neighbors in a
 // stack never share a family (two ambers, or spruce next to slate, blur).
@@ -92,12 +108,16 @@ function tooltipLabel(v: unknown, format: Format) {
 /** "Mendon town, Rutland County, Vermont" -> "Mendon town" for labels. */
 const shortName = (v: unknown) => String(v ?? '').split(',')[0];
 
-/** Turn long rows (one per x and series) into one row per x value. */
+type MarginColumns = { moe: string; reliability: string };
+
+/** Turn long rows (one per x and series) into one row per x value, keeping
+ *  each value's margin and reliability beside it when the rows have them. */
 export function pivotRows(
   rows: DataRow[],
   x: string,
   y: string,
   series?: string | null,
+  margin?: MarginColumns | null,
 ) {
   const keys: string[] = [];
   const byX = new Map<string, DataRow>();
@@ -109,6 +129,11 @@ export function pivotRows(
     const id = String(xValue);
     const point = byX.get(id) ?? { [x]: xValue };
     point[key] = row[y] == null ? null : Number(row[y]);
+    if (margin) {
+      const moe = row[margin.moe];
+      point[moeKey(key)] = moe == null ? null : Number(moe);
+      point[reliabilityKey(key)] = row[margin.reliability] ?? null;
+    }
     byX.set(id, point);
   }
   const points = Array.from(byX.values());
@@ -143,20 +168,39 @@ function cellText(column: string, value: unknown) {
   return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
-/** Rows as a scrollable table, for results too many or varied to chart. */
-function AgentTable({
-  rows,
-  columns,
-}: {
-  rows: DataRow[];
-  columns?: string[] | null;
-}) {
-  const shown =
+/** The columns a table shows, and the margins of those that have one. A
+ *  margin goes in its value's cell ("12 ± 3"), so its own column and the
+ *  reliability label's are left out. */
+function tableColumns(rows: DataRow[], columns?: string[] | null) {
+  const listed =
     columns && columns.length
       ? columns
       : Object.keys(rows[0] ?? {}).filter(
           (c) => !HIDDEN_COLUMNS.has(c) && typeof rows[0][c] !== 'object',
         );
+  const margins: Record<string, MarginColumns> = {};
+  for (const c of listed) {
+    const margin = isMarginColumn(c) ? null : marginColumns(rows, c);
+    if (margin) margins[c] = margin;
+  }
+  const folded = new Set(
+    Object.values(margins).flatMap((m) => [m.moe, m.reliability]),
+  );
+  return { shown: listed.filter((c) => !folded.has(c)), margins };
+}
+
+/** Rows as a scrollable table, for results too many or varied to chart. */
+function AgentTable({
+  rows,
+  shown,
+  margins,
+  show,
+}: {
+  rows: DataRow[];
+  shown: string[];
+  margins: Record<string, MarginColumns>;
+  show: boolean;
+}) {
   // Numeric columns line up on the right, like a spreadsheet.
   const numeric = new Set(
     shown.filter(
@@ -190,7 +234,16 @@ function AgentTable({
           <Table.Tr key={i}>
             {shown.map((c) => (
               <Table.Td key={c} style={{ textAlign: align(c) }}>
-                {cellText(c, row[c])}
+                {margins[c] && typeof row[c] === 'number'
+                  ? withMargin(
+                      cellText(c, row[c]),
+                      row[margins[c].moe],
+                      row[margins[c].reliability],
+                      (m) => cellText(c, m),
+                      '*',
+                      show,
+                    )
+                  : cellText(c, row[c])}
               </Table.Td>
             ))}
           </Table.Tr>
@@ -206,6 +259,19 @@ function AgentTable({
       {table}
     </ScrollArea>
   );
+}
+
+/** Whether a chart of these rows has margins of error to draw, so its card
+ *  can offer the show/hide switch. */
+export function hasChartMargins(
+  kind: AgentChartKind,
+  rows: DataRow[],
+  y: string | null | undefined,
+  columns?: string[] | null,
+) {
+  if (kind === 'table')
+    return Object.keys(tableColumns(rows, columns).margins).length > 0;
+  return !!y && !!marginColumns(rows, y);
 }
 
 interface AgentChartProps<TData> {
@@ -226,23 +292,58 @@ export const AgentChart = <TData,>({
   const kind = (params.kind as AgentChartKind | undefined) ?? 'line';
   const series = (params.series as string | null | undefined) ?? null;
   const format = formatFor(params.yUnit);
+  const percent = format === 'percent';
   const rows = chart.data as unknown as DataRow[];
+  const show = useShowMargins();
+  const columns = params.columns as string[] | null | undefined;
 
+  const margin = useMemo(
+    () => (kind === 'table' ? null : marginColumns(rows, chart.yField)),
+    [kind, rows, chart.yField],
+  );
+  const table = useMemo(
+    () => (kind === 'table' ? tableColumns(rows, columns) : null),
+    [kind, rows, columns],
+  );
   const { points, keys } = useMemo(
     () =>
       kind === 'table'
         ? { points: rows, keys: [] as string[] }
-        : pivotRows(rows, chart.xField, chart.yField, series),
-    [kind, rows, chart.xField, chart.yField, series],
+        : pivotRows(rows, chart.xField, chart.yField, series, margin),
+    [kind, rows, chart.xField, chart.yField, series, margin],
   );
   const stacked = kind === 'stacked_bar' || kind === 'area';
   const drawn = keys.slice(0, stacked ? MAX_LAYERS : MAX_LINES);
   const clipped = keys.length > drawn.length;
   // A missing value leaves a hole in a stack; say so rather than draw a zero.
   const gaps = stacked && points.some((p) => drawn.some((k) => p[k] == null));
+  // Margins of stacked parts don't add up to the stack's, so stacks show them
+  // only in the tooltip.
+  const drawMargins = !!margin && show && !stacked;
+  const low = table
+    ? Object.entries(table.margins).some(([, m]) =>
+        rows.some((r) => r[m.reliability] === 'low'),
+      )
+    : !!margin &&
+      points.some((p) => drawn.some((k) => p[reliabilityKey(k)] === 'low'));
+  const marginNote = table
+    ? Object.keys(table.margins).length > 0
+      ? marginFootnote(low, show)
+      : ''
+    : !margin
+      ? ''
+      : stacked
+        ? [
+            show && 'Hover over a value to see its margin of error.',
+            low && 'The tooltip marks low-reliability estimates.',
+          ]
+            .filter(Boolean)
+            .join(' ')
+        : marginNoteText(low, kind === 'bar', show);
   const notes = [
     clipped ? `Showing ${drawn.length} of ${keys.length} series.` : '',
     gaps ? 'Gaps mark missing values.' : '',
+    marginNote,
   ].filter(Boolean);
   const notesKey = notes.join('|');
 
@@ -255,9 +356,21 @@ export const AgentChart = <TData,>({
   }, [notesKey, onNotes]);
   const ownNotes = onNotes ? [] : notes;
 
-  if (kind === 'table') {
+  if (table) {
     return (
-      <AgentTable rows={rows} columns={params.columns as string[] | null} />
+      <>
+        <AgentTable
+          rows={rows}
+          shown={table.shown}
+          margins={table.margins}
+          show={show}
+        />
+        {ownNotes.length > 0 && (
+          <Text size="xs" c="dimmed" mt={4}>
+            {ownNotes.join(' ')}
+          </Text>
+        )}
+      </>
     );
   }
 
@@ -302,7 +415,20 @@ export const AgentChart = <TData,>({
   const overlays = (
     <>
       <Tooltip
-        formatter={(v, name) => [tooltipLabel(v, format), shortName(name)]}
+        formatter={(v, name, item) => {
+          const key = String(name);
+          return [
+            withMargin(
+              tooltipLabel(v, format),
+              item.payload?.[moeKey(key)],
+              item.payload?.[reliabilityKey(key)],
+              (m) => tooltipLabel(m, format),
+              ' (low reliability)',
+              show,
+            ),
+            shortName(name),
+          ];
+        }}
         labelFormatter={shortName}
       />
       {drawn.length > 1 && (
@@ -322,6 +448,14 @@ export const AgentChart = <TData,>({
   // as a nested path. The accessor is new each render, which would restart
   // the draw-in animation (and catch PDF export mid-draw), so animation is off.
   const accessor = (key: string) => (d: DataRow) => d[key];
+  // ErrorBar wants offsets below and above the value, not the range itself.
+  const whiskers = (key: string) => (d: DataRow) => {
+    const range = intervalAt(d, key, percent);
+    const value = d[key];
+    return range && typeof value === 'number'
+      ? [value - range[0], range[1] - value]
+      : null;
+  };
 
   return (
     <>
@@ -341,7 +475,11 @@ export const AgentChart = <TData,>({
                 stackId={stacked ? 'stack' : undefined}
                 fill={PALETTE[i % PALETTE.length]}
                 isAnimationActive={false}
-              />
+              >
+                {drawMargins && (
+                  <ErrorBar dataKey={whiskers(key)} width={6} stroke="#333" />
+                )}
+              </Bar>
             ))}
           </BarChart>
         ) : kind === 'area' ? (
@@ -363,9 +501,18 @@ export const AgentChart = <TData,>({
             ))}
           </AreaChart>
         ) : (
-          <LineChart {...shared}>
+          <ComposedChart {...shared}>
             {axes}
             {overlays}
+            {/* Bands first, so every line draws over them. */}
+            {drawMargins &&
+              drawn.map((key, i) =>
+                marginBand({
+                  dataKey: key,
+                  color: PALETTE[i % PALETTE.length],
+                  percent,
+                }),
+              )}
             {drawn.map((key, i) => (
               <Line
                 key={key}
@@ -373,12 +520,17 @@ export const AgentChart = <TData,>({
                 dataKey={accessor(key)}
                 stroke={PALETTE[i % PALETTE.length]}
                 strokeWidth={2}
-                dot={{ r: 2 }}
+                // Hollow dots mark low reliability even with margins hidden.
+                dot={
+                  margin
+                    ? reliabilityDots(key, PALETTE[i % PALETTE.length], true)
+                    : { r: 2 }
+                }
                 connectNulls={false}
                 isAnimationActive={false}
               />
             ))}
-          </LineChart>
+          </ComposedChart>
         )}
       </ResponsiveContainer>
       {ownNotes.length > 0 && (

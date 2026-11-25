@@ -101,7 +101,10 @@ interface ChartCardProps<TData extends DataRow> {
 /** Whether any of a chart's rows has a margin of error to show or hide. */
 const carriesMargins = (chart: ChartItem<DataRow>) =>
   [...(chart.data ?? []), ...(chart.compareData ?? [])].some((row) =>
-    Object.entries(row).some(([k, v]) => k.endsWith('_MOE') && v != null),
+    Object.entries(row).some(
+      // Data chat charts keep the data tools' names (x_moe, Value_MOE, moe).
+      ([k, v]) => /_moe$|^moe$/i.test(k) && v != null,
+    ),
   );
 
 export const ChartCard = <TData extends DataRow>({
