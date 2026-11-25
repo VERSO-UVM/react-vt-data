@@ -39,3 +39,4 @@ indicators = 'ASTHMA', 'DIABETES'
 path = dummy.csv
 min_acres = 10
 margins = True
+land_table = land_area

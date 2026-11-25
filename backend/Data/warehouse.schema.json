@@ -764,6 +764,11 @@
       "variable_code": "VARCHAR",
       "year": "BIGINT"
     },
+    "land_area": {
+      "geo_type": "VARCHAR",
+      "geoid": "VARCHAR",
+      "land_sqmi": "DOUBLE"
+    },
     "qcew_sectorEmployment_timeseries": {
       "county": "VARCHAR",
       "county_fips": "VARCHAR",

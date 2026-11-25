@@ -82,6 +82,7 @@ const BAR_COLORS = {
 // hides the Add button when a chart's categories match none of the user's
 // interests, so the raw topic names can't be used as categories.
 const TOPIC_INTERESTS: Record<string, Interest> = {
+  Population: 'Demographics',
   'Educational attainment': 'Education',
   Income: 'Labor & Economy',
   Unemployment: 'Labor & Economy',
@@ -205,6 +206,13 @@ export default function CountyComparisonPage() {
     : !loading && dataError
       ? 'Could not load data for this variable.'
       : null;
+
+  // Density (and a warehouse built before margins) has no margin of error to
+  // show, so the note below says so instead of pointing at the whiskers.
+  const hasMargins = useMemo(
+    () => rows.some((r) => r.value_MOE != null),
+    [rows],
+  );
 
   const years = useMemo(
     () => Array.from(new Set(rows.map((r) => r.year))).sort((a, b) => b - a),
@@ -408,10 +416,14 @@ export default function CountyComparisonPage() {
                 <Group gap={6} mt="sm" wrap="nowrap" align="flex-start">
                   <InfoIcon size={14} color={COLORS.slate} />
                   <Text size="xs" c="dimmed">
-                    Values are Census survey estimates and have a margin of
-                    error. Small counties such as Essex and Grand Isle have the
-                    widest margins, so small differences between counties may
-                    not be meaningful.
+                    {hasMargins
+                      ? 'Values are Census survey estimates and have a margin ' +
+                        'of error. Small counties such as Essex and Grand Isle ' +
+                        'have the widest margins, so small differences between ' +
+                        'counties may not be meaningful.'
+                      : 'Values are based on Census survey estimates, which ' +
+                        'have a margin of error not shown here, so small ' +
+                        'differences between counties may not be meaningful.'}
                   </Text>
                 </Group>
               </Paper>

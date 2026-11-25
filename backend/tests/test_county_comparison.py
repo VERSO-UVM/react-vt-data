@@ -291,6 +291,7 @@ def test_indicator_list_has_every_topic(monkeypatch):
     _expect(
         topics,
         {
+            "Population": 1,
             "Educational attainment": 9,
             "Disability": 4,
             "Unemployment": 1,
