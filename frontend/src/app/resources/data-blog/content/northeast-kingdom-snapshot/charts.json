@@ -1,0 +1,973 @@
+{
+  "chart-1": {
+    "type": "line",
+    "title": "Annual population change: Orleans County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates, 2010–2024",
+    "x": "year",
+    "unit": "%",
+    "series": [
+      {
+        "key": "vermont",
+        "label": "Vermont"
+      },
+      {
+        "key": "county",
+        "label": "Orleans County"
+      }
+    ],
+    "data": [
+      {
+        "year": "2010",
+        "vermont": 0.6,
+        "county": 0
+      },
+      {
+        "year": "2011",
+        "vermont": 0.1,
+        "county": 0
+      },
+      {
+        "year": "2012",
+        "vermont": 0.1,
+        "county": -0.2
+      },
+      {
+        "year": "2013",
+        "vermont": 0.1,
+        "county": -0.1
+      },
+      {
+        "year": "2014",
+        "vermont": 0.1,
+        "county": -0.1
+      },
+      {
+        "year": "2015",
+        "vermont": 0,
+        "county": -0.1
+      },
+      {
+        "year": "2016",
+        "vermont": -0.1,
+        "county": -0.3
+      },
+      {
+        "year": "2017",
+        "vermont": -0.3,
+        "county": -0.5
+      },
+      {
+        "year": "2018",
+        "vermont": 0.1,
+        "county": -0.1
+      },
+      {
+        "year": "2019",
+        "vermont": -0.1,
+        "county": 0
+      },
+      {
+        "year": "2020",
+        "vermont": 0,
+        "county": -0.2
+      },
+      {
+        "year": "2021",
+        "vermont": 2.8,
+        "county": 1.8
+      },
+      {
+        "year": "2022",
+        "vermont": 0.3,
+        "county": 0.5
+      },
+      {
+        "year": "2023",
+        "vermont": 0.2,
+        "county": 0.1
+      },
+      {
+        "year": "2024",
+        "vermont": 0.3,
+        "county": 0.4
+      }
+    ]
+  },
+  "chart-2": {
+    "type": "line",
+    "title": "Annual population change: Caledonia County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates, 2010–2024",
+    "x": "year",
+    "unit": "%",
+    "series": [
+      {
+        "key": "vermont",
+        "label": "Vermont"
+      },
+      {
+        "key": "county",
+        "label": "Caledonia County"
+      }
+    ],
+    "data": [
+      {
+        "year": "2010",
+        "vermont": 0.6,
+        "county": 2.8
+      },
+      {
+        "year": "2011",
+        "vermont": 0.1,
+        "county": -0.1
+      },
+      {
+        "year": "2012",
+        "vermont": 0.1,
+        "county": -0.1
+      },
+      {
+        "year": "2013",
+        "vermont": 0.1,
+        "county": 0
+      },
+      {
+        "year": "2014",
+        "vermont": 0.1,
+        "county": -0.2
+      },
+      {
+        "year": "2015",
+        "vermont": 0,
+        "county": -0.3
+      },
+      {
+        "year": "2016",
+        "vermont": -0.1,
+        "county": -0.5
+      },
+      {
+        "year": "2017",
+        "vermont": -0.3,
+        "county": -0.9
+      },
+      {
+        "year": "2018",
+        "vermont": 0.1,
+        "county": -0.5
+      },
+      {
+        "year": "2019",
+        "vermont": -0.1,
+        "county": -0.6
+      },
+      {
+        "year": "2020",
+        "vermont": 0,
+        "county": -0.7
+      },
+      {
+        "year": "2021",
+        "vermont": 2.8,
+        "county": 1.2
+      },
+      {
+        "year": "2022",
+        "vermont": 0.3,
+        "county": 0.1
+      },
+      {
+        "year": "2023",
+        "vermont": 0.2,
+        "county": 0
+      },
+      {
+        "year": "2024",
+        "vermont": 0.3,
+        "county": 0.2
+      }
+    ]
+  },
+  "chart-3": {
+    "type": "line",
+    "title": "Annual population change: Essex County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates, 2010–2024",
+    "x": "year",
+    "unit": "%",
+    "series": [
+      {
+        "key": "vermont",
+        "label": "Vermont"
+      },
+      {
+        "key": "county",
+        "label": "Essex County"
+      }
+    ],
+    "data": [
+      {
+        "year": "2010",
+        "vermont": 0.6,
+        "county": -1.2
+      },
+      {
+        "year": "2011",
+        "vermont": 0.1,
+        "county": -0.1
+      },
+      {
+        "year": "2012",
+        "vermont": 0.1,
+        "county": -0.5
+      },
+      {
+        "year": "2013",
+        "vermont": 0.1,
+        "county": -0.6
+      },
+      {
+        "year": "2014",
+        "vermont": 0.1,
+        "county": -0.7
+      },
+      {
+        "year": "2015",
+        "vermont": 0,
+        "county": -0.4
+      },
+      {
+        "year": "2016",
+        "vermont": -0.1,
+        "county": -0.5
+      },
+      {
+        "year": "2017",
+        "vermont": -0.3,
+        "county": 0.5
+      },
+      {
+        "year": "2018",
+        "vermont": 0.1,
+        "county": 0.1
+      },
+      {
+        "year": "2019",
+        "vermont": -0.1,
+        "county": -0.1
+      },
+      {
+        "year": "2020",
+        "vermont": 0,
+        "county": -0.3
+      },
+      {
+        "year": "2021",
+        "vermont": 2.8,
+        "county": -3.4
+      },
+      {
+        "year": "2022",
+        "vermont": 0.3,
+        "county": 0.1
+      },
+      {
+        "year": "2023",
+        "vermont": 0.2,
+        "county": -0.1
+      },
+      {
+        "year": "2024",
+        "vermont": 0.3,
+        "county": 0.2
+      }
+    ]
+  },
+  "chart-4": {
+    "type": "line",
+    "title": "Housing cost burden (30%+ of income): Caledonia County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates, 2013–2024",
+    "x": "year",
+    "unit": "%",
+    "series": [
+      {
+        "key": "all_county",
+        "label": "Caledonia County: all households"
+      },
+      {
+        "key": "renters_county",
+        "label": "Caledonia County: renters"
+      },
+      {
+        "key": "mortgage_county",
+        "label": "Caledonia County: owners with a mortgage"
+      },
+      {
+        "key": "nomortgage_county",
+        "label": "Caledonia County: owners without a mortgage"
+      },
+      {
+        "key": "all_vermont",
+        "label": "Vermont: all households",
+        "color": "#9aa0a6"
+      }
+    ],
+    "data": [
+      {
+        "year": "2013",
+        "all_county": 36.9,
+        "renters_county": 60.9,
+        "mortgage_county": 34.9,
+        "nomortgage_county": 20.1,
+        "all_vermont": 37.8
+      },
+      {
+        "year": "2014",
+        "all_county": 36.8,
+        "renters_county": 57.9,
+        "mortgage_county": 35.8,
+        "nomortgage_county": 21.8,
+        "all_vermont": 37.5
+      },
+      {
+        "year": "2015",
+        "all_county": 35.9,
+        "renters_county": 55.8,
+        "mortgage_county": 35.1,
+        "nomortgage_county": 22,
+        "all_vermont": 36.9
+      },
+      {
+        "year": "2016",
+        "all_county": 35.3,
+        "renters_county": 54.2,
+        "mortgage_county": 35,
+        "nomortgage_county": 21.5,
+        "all_vermont": 36.2
+      },
+      {
+        "year": "2017",
+        "all_county": 34.6,
+        "renters_county": 51,
+        "mortgage_county": 34.3,
+        "nomortgage_county": 22.2,
+        "all_vermont": 35.6
+      },
+      {
+        "year": "2018",
+        "all_county": 33.9,
+        "renters_county": 50.3,
+        "mortgage_county": 32.5,
+        "nomortgage_county": 22,
+        "all_vermont": 34.7
+      },
+      {
+        "year": "2019",
+        "all_county": 32.7,
+        "renters_county": 50.8,
+        "mortgage_county": 31.4,
+        "nomortgage_county": 19.9,
+        "all_vermont": 33.6
+      },
+      {
+        "year": "2020",
+        "all_county": 31,
+        "renters_county": 49.2,
+        "mortgage_county": 30.7,
+        "nomortgage_county": 18.4,
+        "all_vermont": 32.3
+      },
+      {
+        "year": "2021",
+        "all_county": 30.8,
+        "renters_county": 50.8,
+        "mortgage_county": 29.8,
+        "nomortgage_county": 18.9,
+        "all_vermont": 31.6
+      },
+      {
+        "year": "2022",
+        "all_county": 29.4,
+        "renters_county": 49.7,
+        "mortgage_county": 29.5,
+        "nomortgage_county": 17.2,
+        "all_vermont": 31.5
+      },
+      {
+        "year": "2023",
+        "all_county": 28.1,
+        "renters_county": 48.3,
+        "mortgage_county": 28.4,
+        "nomortgage_county": 16.4,
+        "all_vermont": 31.3
+      },
+      {
+        "year": "2024",
+        "all_county": 26.6,
+        "renters_county": 47.6,
+        "mortgage_county": 26.3,
+        "nomortgage_county": 16.2,
+        "all_vermont": 31
+      }
+    ]
+  },
+  "chart-5": {
+    "type": "line",
+    "title": "Housing cost burden (30%+ of income): Essex County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates, 2013–2024",
+    "x": "year",
+    "unit": "%",
+    "series": [
+      {
+        "key": "all_county",
+        "label": "Essex County: all households"
+      },
+      {
+        "key": "renters_county",
+        "label": "Essex County: renters"
+      },
+      {
+        "key": "mortgage_county",
+        "label": "Essex County: owners with a mortgage"
+      },
+      {
+        "key": "nomortgage_county",
+        "label": "Essex County: owners without a mortgage"
+      },
+      {
+        "key": "all_vermont",
+        "label": "Vermont: all households",
+        "color": "#9aa0a6"
+      }
+    ],
+    "data": [
+      {
+        "year": "2013",
+        "all_county": 34.4,
+        "renters_county": 59.6,
+        "mortgage_county": 37.4,
+        "nomortgage_county": 21.1,
+        "all_vermont": 37.8
+      },
+      {
+        "year": "2014",
+        "all_county": 34.3,
+        "renters_county": 56,
+        "mortgage_county": 37.6,
+        "nomortgage_county": 22.3,
+        "all_vermont": 37.5
+      },
+      {
+        "year": "2015",
+        "all_county": 33.8,
+        "renters_county": 51.1,
+        "mortgage_county": 36.7,
+        "nomortgage_county": 23.4,
+        "all_vermont": 36.9
+      },
+      {
+        "year": "2016",
+        "all_county": 29.8,
+        "renters_county": 41.1,
+        "mortgage_county": 32.2,
+        "nomortgage_county": 22.4,
+        "all_vermont": 36.2
+      },
+      {
+        "year": "2017",
+        "all_county": 32.6,
+        "renters_county": 46.1,
+        "mortgage_county": 34.8,
+        "nomortgage_county": 23.8,
+        "all_vermont": 35.6
+      },
+      {
+        "year": "2018",
+        "all_county": 31.4,
+        "renters_county": 48,
+        "mortgage_county": 34.1,
+        "nomortgage_county": 21.7,
+        "all_vermont": 34.7
+      },
+      {
+        "year": "2019",
+        "all_county": 31,
+        "renters_county": 51.2,
+        "mortgage_county": 35.7,
+        "nomortgage_county": 18,
+        "all_vermont": 33.6
+      },
+      {
+        "year": "2020",
+        "all_county": 31.5,
+        "renters_county": 50.8,
+        "mortgage_county": 39.9,
+        "nomortgage_county": 16.5,
+        "all_vermont": 32.3
+      },
+      {
+        "year": "2021",
+        "all_county": 32.8,
+        "renters_county": 53,
+        "mortgage_county": 41.9,
+        "nomortgage_county": 16.7,
+        "all_vermont": 31.6
+      },
+      {
+        "year": "2022",
+        "all_county": 31.1,
+        "renters_county": 45.3,
+        "mortgage_county": 40.2,
+        "nomortgage_county": 18.2,
+        "all_vermont": 31.5
+      },
+      {
+        "year": "2023",
+        "all_county": 31.2,
+        "renters_county": 47.7,
+        "mortgage_county": 39.1,
+        "nomortgage_county": 18.7,
+        "all_vermont": 31.3
+      },
+      {
+        "year": "2024",
+        "all_county": 30.5,
+        "renters_county": 49.6,
+        "mortgage_county": 34.5,
+        "nomortgage_county": 21,
+        "all_vermont": 31
+      }
+    ]
+  },
+  "chart-6": {
+    "type": "line",
+    "title": "Housing cost burden (30%+ of income): Orleans County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates, 2013–2024",
+    "x": "year",
+    "unit": "%",
+    "series": [
+      {
+        "key": "all_county",
+        "label": "Orleans County: all households"
+      },
+      {
+        "key": "renters_county",
+        "label": "Orleans County: renters"
+      },
+      {
+        "key": "mortgage_county",
+        "label": "Orleans County: owners with a mortgage"
+      },
+      {
+        "key": "nomortgage_county",
+        "label": "Orleans County: owners without a mortgage"
+      },
+      {
+        "key": "all_vermont",
+        "label": "Vermont: all households",
+        "color": "#9aa0a6"
+      }
+    ],
+    "data": [
+      {
+        "year": "2013",
+        "all_county": 38.9,
+        "renters_county": 54.9,
+        "mortgage_county": 40.3,
+        "nomortgage_county": 27.6,
+        "all_vermont": 37.8
+      },
+      {
+        "year": "2014",
+        "all_county": 37.9,
+        "renters_county": 53.9,
+        "mortgage_county": 38.8,
+        "nomortgage_county": 27.3,
+        "all_vermont": 37.5
+      },
+      {
+        "year": "2015",
+        "all_county": 36.5,
+        "renters_county": 51.5,
+        "mortgage_county": 38.3,
+        "nomortgage_county": 26.2,
+        "all_vermont": 36.9
+      },
+      {
+        "year": "2016",
+        "all_county": 35.8,
+        "renters_county": 52.4,
+        "mortgage_county": 37.2,
+        "nomortgage_county": 24.8,
+        "all_vermont": 36.2
+      },
+      {
+        "year": "2017",
+        "all_county": 34.8,
+        "renters_county": 50.4,
+        "mortgage_county": 36.3,
+        "nomortgage_county": 24,
+        "all_vermont": 35.6
+      },
+      {
+        "year": "2018",
+        "all_county": 34.7,
+        "renters_county": 48.7,
+        "mortgage_county": 35.9,
+        "nomortgage_county": 25.1,
+        "all_vermont": 34.7
+      },
+      {
+        "year": "2019",
+        "all_county": 35.1,
+        "renters_county": 53.3,
+        "mortgage_county": 35.9,
+        "nomortgage_county": 24.3,
+        "all_vermont": 33.6
+      },
+      {
+        "year": "2020",
+        "all_county": 32.1,
+        "renters_county": 51.3,
+        "mortgage_county": 32.2,
+        "nomortgage_county": 20.8,
+        "all_vermont": 32.3
+      },
+      {
+        "year": "2021",
+        "all_county": 29.9,
+        "renters_county": 48.8,
+        "mortgage_county": 32,
+        "nomortgage_county": 17.6,
+        "all_vermont": 31.6
+      },
+      {
+        "year": "2022",
+        "all_county": 29.3,
+        "renters_county": 45,
+        "mortgage_county": 32.8,
+        "nomortgage_county": 16.8,
+        "all_vermont": 31.5
+      },
+      {
+        "year": "2023",
+        "all_county": 29.8,
+        "renters_county": 48.8,
+        "mortgage_county": 32.1,
+        "nomortgage_county": 16.8,
+        "all_vermont": 31.3
+      },
+      {
+        "year": "2024",
+        "all_county": 28.7,
+        "renters_county": 43.4,
+        "mortgage_county": 31.6,
+        "nomortgage_county": 17.3,
+        "all_vermont": 31
+      }
+    ]
+  },
+  "chart-7": {
+    "type": "bar",
+    "title": "Share of residents with a disability, by county (lowest to highest)",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates",
+    "x": "place",
+    "unit": "%",
+    "series": [
+      {
+        "key": "rate",
+        "label": "With a disability"
+      }
+    ],
+    "data": [
+      {
+        "place": "Chittenden",
+        "rate": 11.4
+      },
+      {
+        "place": "Lamoille",
+        "rate": 12.8
+      },
+      {
+        "place": "United States",
+        "rate": 13.3
+      },
+      {
+        "place": "Grand Isle",
+        "rate": 13.6
+      },
+      {
+        "place": "Washington",
+        "rate": 13.6
+      },
+      {
+        "place": "Vermont",
+        "rate": 14.4
+      },
+      {
+        "place": "Franklin",
+        "rate": 15.1
+      },
+      {
+        "place": "Rutland",
+        "rate": 15.2
+      },
+      {
+        "place": "Addison",
+        "rate": 15.3
+      },
+      {
+        "place": "Windsor",
+        "rate": 15.5
+      },
+      {
+        "place": "Windham",
+        "rate": 15.7
+      },
+      {
+        "place": "Bennington",
+        "rate": 16.4
+      },
+      {
+        "place": "Orange",
+        "rate": 17.1
+      },
+      {
+        "place": "Orleans",
+        "rate": 17.3
+      },
+      {
+        "place": "Caledonia",
+        "rate": 17.7
+      },
+      {
+        "place": "Essex",
+        "rate": 22.2
+      }
+    ]
+  },
+  "chart-8": {
+    "type": "bar",
+    "title": "Poverty rate, by county (lowest to highest)",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates",
+    "x": "place",
+    "unit": "%",
+    "series": [
+      {
+        "key": "rate",
+        "label": "In poverty"
+      }
+    ],
+    "data": [
+      {
+        "place": "Addison",
+        "rate": 7.6
+      },
+      {
+        "place": "Grand Isle",
+        "rate": 7.9
+      },
+      {
+        "place": "Lamoille",
+        "rate": 8.5
+      },
+      {
+        "place": "Washington",
+        "rate": 8.7
+      },
+      {
+        "place": "Windsor",
+        "rate": 9.2
+      },
+      {
+        "place": "Orange",
+        "rate": 9.3
+      },
+      {
+        "place": "Chittenden",
+        "rate": 9.7
+      },
+      {
+        "place": "Vermont",
+        "rate": 10.1
+      },
+      {
+        "place": "Franklin",
+        "rate": 10.3
+      },
+      {
+        "place": "Bennington",
+        "rate": 11.3
+      },
+      {
+        "place": "Windham",
+        "rate": 11.6
+      },
+      {
+        "place": "Caledonia",
+        "rate": 11.7
+      },
+      {
+        "place": "Orleans",
+        "rate": 11.7
+      },
+      {
+        "place": "Rutland",
+        "rate": 11.8
+      },
+      {
+        "place": "United States",
+        "rate": 12.5
+      },
+      {
+        "place": "Essex",
+        "rate": 13.8
+      }
+    ]
+  },
+  "chart-9": {
+    "type": "bar",
+    "title": "Educational attainment: Caledonia County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates",
+    "x": "level",
+    "unit": "%",
+    "series": [
+      {
+        "key": "vermont",
+        "label": "Vermont"
+      },
+      {
+        "key": "county",
+        "label": "Caledonia County"
+      }
+    ],
+    "data": [
+      {
+        "level": "No High School Diploma",
+        "vermont": 5.1,
+        "county": 6.3
+      },
+      {
+        "level": "High School Graduate",
+        "vermont": 26.8,
+        "county": 34.1
+      },
+      {
+        "level": "Some College, No Degree",
+        "vermont": 15.8,
+        "county": 18.9
+      },
+      {
+        "level": "Associate's Degree",
+        "vermont": 8.6,
+        "county": 7.5
+      },
+      {
+        "level": "Bachelor's Degree",
+        "vermont": 25.2,
+        "county": 19.8
+      },
+      {
+        "level": "Postgraduate Degree",
+        "vermont": 18.6,
+        "county": 13.5
+      }
+    ]
+  },
+  "chart-10": {
+    "type": "bar",
+    "title": "Educational attainment: Essex County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates",
+    "x": "level",
+    "unit": "%",
+    "series": [
+      {
+        "key": "vermont",
+        "label": "Vermont"
+      },
+      {
+        "key": "county",
+        "label": "Essex County"
+      }
+    ],
+    "data": [
+      {
+        "level": "No High School Diploma",
+        "vermont": 5.1,
+        "county": 10.3
+      },
+      {
+        "level": "High School Graduate",
+        "vermont": 26.8,
+        "county": 41.3
+      },
+      {
+        "level": "Some College, No Degree",
+        "vermont": 15.8,
+        "county": 18.3
+      },
+      {
+        "level": "Associate's Degree",
+        "vermont": 8.6,
+        "county": 8.6
+      },
+      {
+        "level": "Bachelor's Degree",
+        "vermont": 25.2,
+        "county": 12.7
+      },
+      {
+        "level": "Postgraduate Degree",
+        "vermont": 18.6,
+        "county": 8.8
+      }
+    ]
+  },
+  "chart-11": {
+    "type": "bar",
+    "title": "Educational attainment: Orleans County vs. Vermont",
+    "source": "U.S. Census Bureau, American Community Survey 5-Year Estimates",
+    "x": "level",
+    "unit": "%",
+    "series": [
+      {
+        "key": "vermont",
+        "label": "Vermont"
+      },
+      {
+        "key": "county",
+        "label": "Orleans County"
+      }
+    ],
+    "data": [
+      {
+        "level": "No High School Diploma",
+        "vermont": 5.1,
+        "county": 7.8
+      },
+      {
+        "level": "High School Graduate",
+        "vermont": 26.8,
+        "county": 35.8
+      },
+      {
+        "level": "Some College, No Degree",
+        "vermont": 15.8,
+        "county": 16.9
+      },
+      {
+        "level": "Associate's Degree",
+        "vermont": 8.6,
+        "county": 9.1
+      },
+      {
+        "level": "Bachelor's Degree",
+        "vermont": 25.2,
+        "county": 18.5
+      },
+      {
+        "level": "Postgraduate Degree",
+        "vermont": 18.6,
+        "county": 12
+      }
+    ]
+  }
+}

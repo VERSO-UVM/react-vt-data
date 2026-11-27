@@ -1,0 +1,256 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Badge,
+  Box,
+  Card,
+  Chip,
+  Container,
+  Group,
+  Image,
+  SimpleGrid,
+  Text,
+  Title,
+} from '@mantine/core';
+import * as motion from 'motion/react-client';
+
+import { COLORS, FONTS } from '@/app/theme';
+import { BLOGS, Blog } from './blogs';
+
+const TAGS = [...new Set(BLOGS.flatMap((blog) => blog.tags))].sort();
+
+// White cards (same surface as BlogChart) so they separate from the birch page.
+const CARD_SHADOW =
+  '0 1px 2px rgba(20, 30, 25, 0.05), 0 6px 18px rgba(20, 30, 25, 0.06)';
+const CARD_SHADOW_HOVER =
+  '0 2px 4px rgba(20, 30, 25, 0.06), 0 14px 30px rgba(20, 30, 25, 0.12)';
+
+// -----------------------------------------------------------------------------
+// Blog card
+// -----------------------------------------------------------------------------
+
+function BlogCard({ blog }: { blog: Blog }) {
+  const cardContent = (
+    <>
+      <Text
+        style={{
+          fontFamily: FONTS.mono,
+          fontSize: 11,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: COLORS.spruce,
+        }}
+      >
+        Source: {blog.source}
+      </Text>
+
+      <Title
+        order={3}
+        mt="sm"
+        style={{
+          fontFamily: FONTS.display,
+          color: COLORS.ink,
+          fontSize: 22,
+          lineHeight: 1.3,
+        }}
+      >
+        {blog.title}
+      </Title>
+
+      <Text
+        mt="sm"
+        style={{
+          fontSize: 15,
+          lineHeight: 1.65,
+          color: COLORS.ink,
+          opacity: 0.8,
+        }}
+      >
+        {blog.summary}
+      </Text>
+
+      <Group gap={6} mt="md">
+        {blog.tags.map((tag) => (
+          <Badge key={tag} variant="light" color={COLORS.spruce} size="sm">
+            {tag}
+          </Badge>
+        ))}
+      </Group>
+
+      {/* Byline, separated from the summary and tags */}
+      <Group
+        gap="xs"
+        mt="auto"
+        pt="md"
+        style={{ borderTop: `1px solid ${COLORS.line}`, marginTop: 24 }}
+      >
+        <Image
+          src={blog.author.image}
+          alt={blog.author.name}
+          radius="xl"
+          h={28}
+          w={28}
+          fit="cover"
+          fallbackSrc="https://placehold.co/400x400?text=No+Image"
+        />
+        <Text size="sm" fw={500} style={{ color: COLORS.ink }}>
+          {blog.author.name}
+        </Text>
+      </Group>
+    </>
+  );
+
+  // Unpublished posts aren't clickable
+  if (!blog.published) {
+    return (
+      <Box
+        style={{
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          border: `1px dashed ${COLORS.line}`,
+          borderRadius: 14,
+          padding: 'var(--mantine-spacing-xl)',
+          background: 'rgba(255, 255, 255, 0.5)',
+        }}
+      >
+        {cardContent}
+      </Box>
+    );
+  }
+
+  return (
+    <motion.div
+      initial="rest"
+      whileHover="hover"
+      animate="rest"
+      variants={{
+        rest: { y: 0, boxShadow: CARD_SHADOW },
+        hover: { y: -4, boxShadow: CARD_SHADOW_HOVER },
+      }}
+      transition={{ duration: 0.18 }}
+      style={{ height: '100%', borderRadius: 16 }}
+    >
+      <Card
+        component="a"
+        href={`/resources/data-blog/${blog.slug}`}
+        withBorder
+        radius="lg"
+        p="xl"
+        h="100%"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          textDecoration: 'none',
+          color: 'inherit',
+          borderColor: COLORS.line,
+          background: '#fff',
+        }}
+      >
+        {cardContent}
+      </Card>
+    </motion.div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Page
+// -----------------------------------------------------------------------------
+
+export default function DataBlogsPage() {
+  const [selected, setSelected] = useState<string[]>([]);
+  const visible = selected.length
+    ? BLOGS.filter((blog) => blog.tags.some((tag) => selected.includes(tag)))
+    : BLOGS;
+
+  return (
+    <Box
+      style={{
+        backgroundColor: COLORS.birch,
+        minHeight: '100vh',
+      }}
+    >
+      {/* Hero */}
+      <Box
+        style={{
+          background: `linear-gradient(
+            145deg,
+            ${COLORS.spruceDeep} 0%,
+            ${COLORS.spruce} 100%
+          )`,
+        }}
+        pt={{ base: 55, sm: 75 }}
+        pb={{ base: 45, sm: 60 }}
+      >
+        <Container size="xl">
+          <Group gap={10} mb={20}>
+            <Box
+              style={{
+                width: 28,
+                height: 1,
+                background: COLORS.amberSoft,
+              }}
+            />
+
+            <Text
+              style={{
+                fontFamily: FONTS.mono,
+                fontSize: 12,
+                letterSpacing: '0.14em',
+                color: COLORS.amberSoft,
+              }}
+            >
+              DATA STORIES
+            </Text>
+          </Group>
+
+          <Title
+            order={1}
+            style={{
+              fontFamily: FONTS.display,
+              color: COLORS.birch,
+              fontSize: 'clamp(2.4rem, 5vw, 4rem)',
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Data Blog
+          </Title>
+
+          <Text
+            mt="md"
+            maw={650}
+            style={{
+              color: 'rgba(246,245,239,.9)',
+              lineHeight: 1.7,
+            }}
+          >
+            Data-driven posts that dig into available data here on the platform.
+            What the numbers say about housing, health, and land in state areas,
+            and where to explore the data yourself on the platform.
+          </Text>
+        </Container>
+      </Box>
+
+      {/* Posts */}
+      <Container size="xl" py={{ base: 50, sm: 70 }}>
+        <Chip.Group multiple value={selected} onChange={setSelected}>
+          <Group gap="xs" mb="xl">
+            {TAGS.map((tag) => (
+              <Chip key={tag} value={tag} color="spruce" variant="outline">
+                {tag}
+              </Chip>
+            ))}
+          </Group>
+        </Chip.Group>
+
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+          {visible.map((blog) => (
+            <BlogCard key={blog.slug} blog={blog} />
+          ))}
+        </SimpleGrid>
+      </Container>
+    </Box>
+  );
+}

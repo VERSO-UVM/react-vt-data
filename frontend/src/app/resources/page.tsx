@@ -63,6 +63,14 @@ const RESOURCES: Resource[] = [
     icon: BellIcon,
   },
   {
+    href: '/resources/data-blog',
+    label: 'Data Blog',
+    description:
+      "Insights and updates from our team using the collaborative's data.",
+    icon: FileTextIcon,
+    external: false,
+  },
+  {
     href: 'https://github.com/VERSO-UVM/react-vt-data',
     label: 'GitHub',
     description:
@@ -70,14 +78,6 @@ const RESOURCES: Resource[] = [
     icon: GithubLogoIcon,
     external: true,
   },
-  // {
-  //   href: '/resources/benefits-estimator',
-  //   label: 'Vermont Benefits Estimator',
-  //   description:
-  //     'Estimate eligibility for Three Squares VT (SNAP), Medicaid, Dr. Dynasaur, and Child Care Financial Assistance based on household income and composition.',
-  //   icon: CalculatorIcon,
-  //   badge: 'Beta',
-  // },
 ];
 
 function ResourceCard({ resource }: { resource: Resource }) {
